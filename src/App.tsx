@@ -11,6 +11,8 @@ import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import Projects from "./pages/Projects";
 import Documents from "./pages/Documents";
+import Finances from "./pages/Finances";
+import Accounting from "./pages/Accounting";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -79,6 +81,26 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <Documents />
+                  </Layout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/finances" 
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Finances />
+                  </Layout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/accounting" 
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Accounting />
                   </Layout>
                 </ProtectedRoute>
               } 
