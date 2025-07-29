@@ -333,12 +333,55 @@ export type Database = {
           },
         ]
       }
+      user_permissions: {
+        Row: {
+          can_create: boolean
+          can_delete: boolean
+          can_edit: boolean
+          can_view: boolean
+          created_at: string
+          id: string
+          module: Database["public"]["Enums"]["module_name"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          can_create?: boolean
+          can_delete?: boolean
+          can_edit?: boolean
+          can_view?: boolean
+          created_at?: string
+          id?: string
+          module: Database["public"]["Enums"]["module_name"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          can_create?: boolean
+          can_delete?: boolean
+          can_edit?: boolean
+          can_view?: boolean
+          created_at?: string
+          id?: string
+          module?: Database["public"]["Enums"]["module_name"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_module_permission: {
+        Args: {
+          _user_id: string
+          _module: Database["public"]["Enums"]["module_name"]
+          _permission: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       client_status: "potential" | "existing" | "active" | "completed"
@@ -347,6 +390,14 @@ export type Database = {
         | "sales"
         | "financial"
         | "construction"
+      module_name:
+        | "dashboard"
+        | "clients"
+        | "projects"
+        | "documents"
+        | "finances"
+        | "accounting"
+        | "progress_photos"
       project_status:
         | "planning"
         | "design"
@@ -488,6 +539,15 @@ export const Constants = {
         "sales",
         "financial",
         "construction",
+      ],
+      module_name: [
+        "dashboard",
+        "clients",
+        "projects",
+        "documents",
+        "finances",
+        "accounting",
+        "progress_photos",
       ],
       project_status: [
         "planning",
