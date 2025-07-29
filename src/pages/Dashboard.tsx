@@ -172,131 +172,170 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-fade-in">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">Resumen general del CRM</p>
+        <div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            Dashboard
+          </h1>
+          <p className="text-muted-foreground text-lg mt-2">
+            Resumen ejecutivo de tu negocio
+          </p>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="status-dot bg-success"></div>
+          Sistema operativo
+        </div>
       </div>
 
       {/* Tarjetas de estadísticas principales */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="card-hover border-0 bg-gradient-to-br from-success/10 to-success/5 border-l-4 border-l-success">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Clientes Activos</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-success-foreground">Clientes Activos</CardTitle>
+            <div className="p-2 bg-success/20 rounded-lg">
+              <Users className="h-5 w-5 text-success" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.activeClients}</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+{stats.potentialClients}</span> potenciales
+            <div className="text-3xl font-bold text-success">{stats.activeClients}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              <span className="text-success font-medium">+{stats.potentialClients}</span> potenciales
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="card-hover border-0 bg-gradient-to-br from-info/10 to-info/5 border-l-4 border-l-info">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Proyectos en Curso</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 bg-info/20 rounded-lg">
+              <Building2 className="h-5 w-5 text-info" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.activeProjects}</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-blue-600">{stats.completedProjects}</span> completados
+            <div className="text-3xl font-bold text-info">{stats.activeProjects}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              <span className="text-info font-medium">{stats.completedProjects}</span> completados
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="card-hover border-0 bg-gradient-to-br from-orange/10 to-orange/5 border-l-4 border-l-orange">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Gastos del Mes</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 bg-orange/20 rounded-lg">
+              <DollarSign className="h-5 w-5 text-orange" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(stats.monthlyExpenses)}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-3xl font-bold text-orange">{formatCurrency(stats.monthlyExpenses)}</div>
+            <p className="text-xs text-muted-foreground mt-1">
               Total: {formatCurrency(stats.totalExpenses)}
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="card-hover border-0 bg-gradient-to-br from-pink/10 to-pink/5 border-l-4 border-l-pink">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Fotos de Avance</CardTitle>
-            <Camera className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 bg-pink/20 rounded-lg">
+              <Camera className="h-5 w-5 text-pink" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalPhotos}</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+{stats.recentPhotos}</span> esta semana
+            <div className="text-3xl font-bold text-pink">{stats.totalPhotos}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              <span className="text-pink font-medium">+{stats.recentPhotos}</span> esta semana
             </p>
           </CardContent>
         </Card>
       </div>
 
       {/* Secciones de información detallada */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
+      <div className="grid gap-8 lg:grid-cols-2">
+        <Card className="card-hover border-0 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-t-lg">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 bg-primary/20 rounded-lg">
+                <TrendingUp className="h-6 w-6 text-primary" />
+              </div>
               Métricas de Negocio
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-base">
               Indicadores clave de rendimiento
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span>Conversión de Clientes</span>
-                <span className="font-medium">{conversionRate.toFixed(1)}%</span>
+          <CardContent className="space-y-8 p-6">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Conversión de Clientes</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold text-success">{conversionRate.toFixed(1)}%</span>
+                </div>
               </div>
-              <Progress value={conversionRate} className="h-2" />
-              <p className="text-xs text-muted-foreground">
-                {stats.activeClients} de {stats.totalClients} clientes convertidos
+              <div className="relative">
+                <Progress value={conversionRate} className="h-3" />
+                <div className="absolute inset-0 bg-gradient-to-r from-success/20 to-success/40 rounded-full" 
+                     style={{ width: `${conversionRate}%` }}></div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-success">{stats.activeClients}</span> de {stats.totalClients} clientes convertidos
               </p>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span>Proyectos Completados</span>
-                <span className="font-medium">{projectCompletionRate.toFixed(1)}%</span>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Proyectos Completados</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl font-bold text-info">{projectCompletionRate.toFixed(1)}%</span>
+                </div>
               </div>
-              <Progress value={projectCompletionRate} className="h-2" />
-              <p className="text-xs text-muted-foreground">
-                {stats.completedProjects} de {stats.totalProjects} proyectos finalizados
+              <div className="relative">
+                <Progress value={projectCompletionRate} className="h-3" />
+                <div className="absolute inset-0 bg-gradient-to-r from-info/20 to-info/40 rounded-full" 
+                     style={{ width: `${projectCompletionRate}%` }}></div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-info">{stats.completedProjects}</span> de {stats.totalProjects} proyectos finalizados
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 pt-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{stats.totalClients}</div>
-                <p className="text-xs text-muted-foreground">Total Clientes</p>
+            <div className="grid grid-cols-2 gap-6 pt-6 border-t">
+              <div className="text-center p-4 bg-success/5 rounded-lg">
+                <div className="text-3xl font-bold text-success">{stats.totalClients}</div>
+                <p className="text-sm text-muted-foreground font-medium">Total Clientes</p>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{stats.totalProjects}</div>
-                <p className="text-xs text-muted-foreground">Total Proyectos</p>
+              <div className="text-center p-4 bg-info/5 rounded-lg">
+                <div className="text-3xl font-bold text-info">{stats.totalProjects}</div>
+                <p className="text-sm text-muted-foreground font-medium">Total Proyectos</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
+        <Card className="card-hover border-0 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-purple/5 to-pink/5 rounded-t-lg">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 bg-purple/20 rounded-lg">
+                <Calendar className="h-6 w-6 text-purple" />
+              </div>
               Actividad Reciente
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-base">
               Últimas acciones en el sistema
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             {recentActivity.length > 0 ? (
               <div className="space-y-4">
-                {recentActivity.map((activity) => (
-                  <div key={activity.id} className="flex items-start gap-3">
-                    <div className="p-2 bg-muted rounded-lg">
+                {recentActivity.map((activity, index) => (
+                  <div key={activity.id} className="flex items-start gap-4 p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className={`p-2 rounded-lg ${
+                      activity.type === 'client' ? 'bg-success/20' :
+                      activity.type === 'project' ? 'bg-info/20' :
+                      activity.type === 'expense' ? 'bg-orange/20' :
+                      'bg-pink/20'
+                    }`}>
                       {getActivityIcon(activity.type)}
                     </div>
                     <div className="flex-1 space-y-1">
@@ -306,7 +345,7 @@ export default function Dashboard() {
                           {formatDate(activity.date)}
                         </p>
                         {activity.amount && (
-                          <Badge variant="outline">
+                          <Badge variant="outline" className="bg-orange/10 text-orange border-orange/20">
                             {formatCurrency(activity.amount)}
                           </Badge>
                         )}
@@ -316,10 +355,12 @@ export default function Dashboard() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No hay actividad reciente</p>
-                <p className="text-sm">Empieza creando clientes y proyectos</p>
+              <div className="text-center py-12">
+                <div className="p-4 bg-muted/20 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                  <AlertCircle className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <p className="text-muted-foreground font-medium">No hay actividad reciente</p>
+                <p className="text-sm text-muted-foreground">Empieza creando clientes y proyectos</p>
               </div>
             )}
           </CardContent>

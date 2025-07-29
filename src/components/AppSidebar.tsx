@@ -28,19 +28,19 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 
 const adminItems = [
-  { title: "Dashboard", url: "/dashboard", icon: BarChart3 },
-  { title: "Clientes", url: "/clients", icon: Users },
-  { title: "Proyectos", url: "/projects", icon: Building2 },
-  { title: "Documentos", url: "/documents", icon: FolderOpen },
-  { title: "Finanzas", url: "/finances", icon: DollarSign },
-  { title: "Contabilidad", url: "/accounting", icon: Calculator },
-  { title: "Fotos de Avance", url: "/progress-photos", icon: Camera },
+  { title: "Dashboard", url: "/dashboard", icon: BarChart3, color: "text-primary" },
+  { title: "Clientes", url: "/clients", icon: Users, color: "text-success" },
+  { title: "Proyectos", url: "/projects", icon: Building2, color: "text-info" },
+  { title: "Documentos", url: "/documents", icon: FolderOpen, color: "text-warning" },
+  { title: "Finanzas", url: "/finances", icon: DollarSign, color: "text-orange" },
+  { title: "Contabilidad", url: "/accounting", icon: Calculator, color: "text-purple" },
+  { title: "Fotos de Avance", url: "/progress-photos", icon: Camera, color: "text-pink" },
 ];
 
 const clientItems = [
-  { title: "Mi Proyecto", url: "/my-project", icon: Building2 },
-  { title: "Documentos", url: "/my-documents", icon: FolderOpen },
-  { title: "Fotos de Avance", url: "/my-photos", icon: Camera },
+  { title: "Mi Proyecto", url: "/my-project", icon: Building2, color: "text-info" },
+  { title: "Documentos", url: "/my-documents", icon: FolderOpen, color: "text-warning" },
+  { title: "Fotos de Avance", url: "/my-photos", icon: Camera, color: "text-pink" },
 ];
 
 export function AppSidebar() {
@@ -52,33 +52,53 @@ export function AppSidebar() {
 
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    isActive ? "bg-sidebar-accent text-sidebar-accent-foreground" : "hover:bg-sidebar-accent/50";
+    isActive 
+      ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md" 
+      : "hover:bg-sidebar-accent/80 transition-all duration-200";
 
   // For now, showing admin items. Later we'll add role-based logic
   const menuItems = adminItems;
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="p-4">
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
+      <SidebarHeader className="p-4 border-b border-sidebar-border">
         {!collapsed && (
-          <div className="flex items-center gap-2">
-            <Building2 className="h-6 w-6 text-sidebar-primary" />
-            <span className="font-semibold text-sidebar-foreground">DOVITA CRM</span>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary rounded-lg">
+              <Building2 className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <div>
+              <span className="font-bold text-lg text-sidebar-foreground">DOVITA</span>
+              <p className="text-xs text-sidebar-foreground/70">CRM & ERP</p>
+            </div>
+          </div>
+        )}
+        {collapsed && (
+          <div className="flex justify-center">
+            <div className="p-2 bg-primary rounded-lg">
+              <Building2 className="h-6 w-6 text-primary-foreground" />
+            </div>
           </div>
         )}
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="px-2">
         <SidebarGroup>
-          <SidebarGroupLabel>Módulos</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-sidebar-foreground/70 font-medium">
+            Módulos Principales
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild className="h-11">
                     <NavLink to={item.url} className={getNavCls}>
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      <div className={`p-1.5 rounded-lg ${item.color}`}>
+                        <item.icon className="h-5 w-5" />
+                      </div>
+                      {!collapsed && (
+                        <span className="font-medium">{item.title}</span>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -88,21 +108,42 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-4 border-t border-sidebar-border">
         {!collapsed && user && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm text-sidebar-foreground">
-              <User className="h-4 w-4" />
-              <span>{user.email}</span>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 p-3 bg-sidebar-accent/50 rounded-lg">
+              <div className="p-2 bg-primary rounded-full">
+                <User className="h-4 w-4 text-primary-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-sidebar-foreground truncate">
+                  {user.email}
+                </p>
+                <p className="text-xs text-sidebar-foreground/70">
+                  Administrador
+                </p>
+              </div>
             </div>
             <Button 
               variant="outline" 
               size="sm" 
               onClick={signOut}
-              className="w-full"
+              className="w-full bg-transparent border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent"
             >
               <LogOut className="h-4 w-4 mr-2" />
               Cerrar Sesión
+            </Button>
+          </div>
+        )}
+        {collapsed && user && (
+          <div className="flex justify-center">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={signOut}
+              className="p-2 bg-transparent border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent"
+            >
+              <LogOut className="h-4 w-4" />
             </Button>
           </div>
         )}
