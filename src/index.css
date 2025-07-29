@@ -38,14 +38,14 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
 
-    /* Monday.com inspired colors - Fixed for better readability */
+    /* Monday.com inspired colors - Updated for better visibility */
     --success: 22 163 74;
     --success-foreground: 0 0% 100%;
     
     --warning: 245 158 11;
     --warning-foreground: 0 0% 100%;
     
-    --info: 59 130 246;
+    --info: 37 99 235;
     --info-foreground: 0 0% 100%;
     
     --purple: 147 51 234;

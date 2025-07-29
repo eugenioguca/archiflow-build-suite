@@ -28,13 +28,13 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 
 const adminItems = [
-  { title: "Dashboard", url: "/dashboard", icon: BarChart3, color: "text-primary" },
-  { title: "Clientes", url: "/clients", icon: Users, color: "text-info" },
-  { title: "Proyectos", url: "/projects", icon: Building2, color: "text-info" },
-  { title: "Documentos", url: "/documents", icon: FolderOpen, color: "text-info" },
-  { title: "Finanzas", url: "/finances", icon: DollarSign, color: "text-info" },
-  { title: "Contabilidad", url: "/accounting", icon: Calculator, color: "text-info" },
-  { title: "Fotos de Avance", url: "/progress-photos", icon: Camera, color: "text-info" },
+  { title: "Dashboard", url: "/dashboard", icon: BarChart3, color: "text-blue-600" },
+  { title: "Clientes", url: "/clients", icon: Users, color: "text-blue-600" },
+  { title: "Proyectos", url: "/projects", icon: Building2, color: "text-blue-600" },
+  { title: "Documentos", url: "/documents", icon: FolderOpen, color: "text-blue-600" },
+  { title: "Finanzas", url: "/finances", icon: DollarSign, color: "text-blue-600" },
+  { title: "Contabilidad", url: "/accounting", icon: Calculator, color: "text-blue-600" },
+  { title: "Fotos de Avance", url: "/progress-photos", icon: Camera, color: "text-blue-600" },
 ];
 
 const clientItems = [
