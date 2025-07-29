@@ -97,6 +97,16 @@ const App = () => (
               } 
             />
             <Route 
+              path="/finances" 
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Finances />
+                  </Layout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
               path="/accounting" 
               element={
                 <ProtectedRoute>
