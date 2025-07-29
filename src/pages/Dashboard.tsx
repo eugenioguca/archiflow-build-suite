@@ -190,45 +190,45 @@ export default function Dashboard() {
 
       {/* Tarjetas de estadísticas principales */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="card-hover border-0 bg-gradient-to-br from-success/10 to-success/5 border-l-4 border-l-success">
+        <Card className="card-hover border-0 bg-gradient-to-br from-orange/10 to-orange/5 border-l-4 border-l-orange">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-success-foreground">Clientes Activos</CardTitle>
-            <div className="p-2 bg-success/20 rounded-lg">
-              <Users className="h-5 w-5 text-success" />
+            <CardTitle className="text-sm font-medium">Clientes Activos</CardTitle>
+            <div className="p-2 bg-orange/20 rounded-lg">
+              <Users className="h-5 w-5 text-orange" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-success">{stats.activeClients}</div>
+            <div className="text-3xl font-bold text-orange">{stats.activeClients}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              <span className="text-success font-medium">+{stats.potentialClients}</span> potenciales
+              <span className="text-orange font-medium">+{stats.potentialClients}</span> potenciales
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="card-hover border-0 bg-gradient-to-br from-success/10 to-success/5 border-l-4 border-l-success">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Proyectos en Curso</CardTitle>
+            <div className="p-2 bg-success/20 rounded-lg">
+              <Building2 className="h-5 w-5 text-success" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-success">{stats.activeProjects}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              <span className="text-success font-medium">{stats.completedProjects}</span> completados
             </p>
           </CardContent>
         </Card>
 
         <Card className="card-hover border-0 bg-gradient-to-br from-info/10 to-info/5 border-l-4 border-l-info">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Proyectos en Curso</CardTitle>
-            <div className="p-2 bg-info/20 rounded-lg">
-              <Building2 className="h-5 w-5 text-info" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-info">{stats.activeProjects}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              <span className="text-info font-medium">{stats.completedProjects}</span> completados
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="card-hover border-0 bg-gradient-to-br from-orange/10 to-orange/5 border-l-4 border-l-orange">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Gastos del Mes</CardTitle>
-            <div className="p-2 bg-orange/20 rounded-lg">
-              <DollarSign className="h-5 w-5 text-orange" />
+            <div className="p-2 bg-info/20 rounded-lg">
+              <DollarSign className="h-5 w-5 text-info" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-orange">{formatCurrency(stats.monthlyExpenses)}</div>
+            <div className="text-3xl font-bold text-info">{formatCurrency(stats.monthlyExpenses)}</div>
             <p className="text-xs text-muted-foreground mt-1">
               Total: {formatCurrency(stats.totalExpenses)}
             </p>
@@ -270,16 +270,16 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Conversión de Clientes</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold text-success">{conversionRate.toFixed(1)}%</span>
+                  <span className="text-2xl font-bold text-orange">{conversionRate.toFixed(1)}%</span>
                 </div>
               </div>
               <div className="relative">
                 <Progress value={conversionRate} className="h-3" />
-                <div className="absolute inset-0 bg-gradient-to-r from-success/20 to-success/40 rounded-full" 
+                <div className="absolute inset-0 bg-gradient-to-r from-orange/20 to-orange/40 rounded-full" 
                      style={{ width: `${conversionRate}%` }}></div>
               </div>
               <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-success">{stats.activeClients}</span> de {stats.totalClients} clientes convertidos
+                <span className="font-medium text-orange">{stats.activeClients}</span> de {stats.totalClients} clientes convertidos
               </p>
             </div>
 
@@ -287,26 +287,26 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Proyectos Completados</span>
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold text-info">{projectCompletionRate.toFixed(1)}%</span>
+                  <span className="text-2xl font-bold text-success">{projectCompletionRate.toFixed(1)}%</span>
                 </div>
               </div>
               <div className="relative">
                 <Progress value={projectCompletionRate} className="h-3" />
-                <div className="absolute inset-0 bg-gradient-to-r from-info/20 to-info/40 rounded-full" 
+                <div className="absolute inset-0 bg-gradient-to-r from-success/20 to-success/40 rounded-full" 
                      style={{ width: `${projectCompletionRate}%` }}></div>
               </div>
               <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-info">{stats.completedProjects}</span> de {stats.totalProjects} proyectos finalizados
+                <span className="font-medium text-success">{stats.completedProjects}</span> de {stats.totalProjects} proyectos finalizados
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-6 pt-6 border-t">
-              <div className="text-center p-4 bg-success/5 rounded-lg">
-                <div className="text-3xl font-bold text-success">{stats.totalClients}</div>
+              <div className="text-center p-4 bg-orange/5 rounded-lg">
+                <div className="text-3xl font-bold text-orange">{stats.totalClients}</div>
                 <p className="text-sm text-muted-foreground font-medium">Total Clientes</p>
               </div>
-              <div className="text-center p-4 bg-info/5 rounded-lg">
-                <div className="text-3xl font-bold text-info">{stats.totalProjects}</div>
+              <div className="text-center p-4 bg-success/5 rounded-lg">
+                <div className="text-3xl font-bold text-success">{stats.totalProjects}</div>
                 <p className="text-sm text-muted-foreground font-medium">Total Proyectos</p>
               </div>
             </div>
@@ -331,12 +331,19 @@ export default function Dashboard() {
                 {recentActivity.map((activity, index) => (
                   <div key={activity.id} className="flex items-start gap-4 p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
                     <div className={`p-2 rounded-lg ${
-                      activity.type === 'client' ? 'bg-success/20' :
-                      activity.type === 'project' ? 'bg-info/20' :
-                      activity.type === 'expense' ? 'bg-orange/20' :
+                      activity.type === 'client' ? 'bg-orange/20' :
+                      activity.type === 'project' ? 'bg-success/20' :
+                      activity.type === 'expense' ? 'bg-info/20' :
                       'bg-pink/20'
                     }`}>
-                      {getActivityIcon(activity.type)}
+                      <div className={
+                        activity.type === 'client' ? 'text-orange' :
+                        activity.type === 'project' ? 'text-success' :
+                        activity.type === 'expense' ? 'text-info' :
+                        'text-pink'
+                      }>
+                        {getActivityIcon(activity.type)}
+                      </div>
                     </div>
                     <div className="flex-1 space-y-1">
                       <p className="text-sm font-medium">{activity.description}</p>
@@ -345,7 +352,7 @@ export default function Dashboard() {
                           {formatDate(activity.date)}
                         </p>
                         {activity.amount && (
-                          <Badge variant="outline" className="bg-orange/10 text-orange border-orange/20">
+                          <Badge variant="outline" className="bg-info/10 text-info border-info/20">
                             {formatCurrency(activity.amount)}
                           </Badge>
                         )}
