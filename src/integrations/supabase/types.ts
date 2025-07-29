@@ -14,7 +14,325 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      clients: {
+        Row: {
+          address: string | null
+          assigned_advisor_id: string | null
+          budget: number | null
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          notes: string | null
+          phone: string | null
+          profile_id: string | null
+          status: Database["public"]["Enums"]["client_status"]
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          assigned_advisor_id?: string | null
+          budget?: number | null
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          profile_id?: string | null
+          status?: Database["public"]["Enums"]["client_status"]
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          assigned_advisor_id?: string | null
+          budget?: number | null
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          profile_id?: string | null
+          status?: Database["public"]["Enums"]["client_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_assigned_advisor_id_fkey"
+            columns: ["assigned_advisor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          category: string | null
+          client_id: string | null
+          created_at: string
+          description: string | null
+          file_path: string
+          file_type: string | null
+          id: string
+          name: string
+          project_id: string | null
+          uploaded_by: string
+        }
+        Insert: {
+          category?: string | null
+          client_id?: string | null
+          created_at?: string
+          description?: string | null
+          file_path: string
+          file_type?: string | null
+          id?: string
+          name: string
+          project_id?: string | null
+          uploaded_by: string
+        }
+        Update: {
+          category?: string | null
+          client_id?: string | null
+          created_at?: string
+          description?: string | null
+          file_path?: string
+          file_type?: string | null
+          id?: string
+          name?: string
+          project_id?: string | null
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expenses: {
+        Row: {
+          amount: number
+          category: Database["public"]["Enums"]["expense_category"]
+          client_id: string | null
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          invoice_date: string | null
+          invoice_number: string | null
+          project_id: string | null
+          tax_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category: Database["public"]["Enums"]["expense_category"]
+          client_id?: string | null
+          created_at?: string
+          created_by: string
+          description: string
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          project_id?: string | null
+          tax_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: Database["public"]["Enums"]["expense_category"]
+          client_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          project_id?: string | null
+          tax_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          phone: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      progress_photos: {
+        Row: {
+          description: string | null
+          id: string
+          photo_url: string
+          project_id: string
+          taken_at: string
+          taken_by: string
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          photo_url: string
+          project_id: string
+          taken_at?: string
+          taken_by: string
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          photo_url?: string
+          project_id?: string
+          taken_at?: string
+          taken_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progress_photos_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "progress_photos_taken_by_fkey"
+            columns: ["taken_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          actual_completion: string | null
+          budget: number | null
+          client_id: string
+          created_at: string
+          description: string | null
+          estimated_completion: string | null
+          id: string
+          name: string
+          progress_percentage: number | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["project_status"]
+          total_cost: number | null
+          updated_at: string
+        }
+        Insert: {
+          actual_completion?: string | null
+          budget?: number | null
+          client_id: string
+          created_at?: string
+          description?: string | null
+          estimated_completion?: string | null
+          id?: string
+          name: string
+          progress_percentage?: number | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
+          total_cost?: number | null
+          updated_at?: string
+        }
+        Update: {
+          actual_completion?: string | null
+          budget?: number | null
+          client_id?: string
+          created_at?: string
+          description?: string | null
+          estimated_completion?: string | null
+          id?: string
+          name?: string
+          progress_percentage?: number | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
+          total_cost?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +341,20 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      client_status: "potential" | "existing" | "active" | "completed"
+      expense_category:
+        | "administration"
+        | "sales"
+        | "financial"
+        | "construction"
+      project_status:
+        | "planning"
+        | "design"
+        | "permits"
+        | "construction"
+        | "completed"
+        | "cancelled"
+      user_role: "admin" | "employee" | "client"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +481,23 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      client_status: ["potential", "existing", "active", "completed"],
+      expense_category: [
+        "administration",
+        "sales",
+        "financial",
+        "construction",
+      ],
+      project_status: [
+        "planning",
+        "design",
+        "permits",
+        "construction",
+        "completed",
+        "cancelled",
+      ],
+      user_role: ["admin", "employee", "client"],
+    },
   },
 } as const
