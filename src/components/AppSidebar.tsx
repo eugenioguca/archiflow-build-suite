@@ -31,7 +31,7 @@ const adminItems = [
   { title: "Dashboard", url: "/dashboard", icon: BarChart3, color: "text-primary" },
   { title: "Clientes", url: "/clients", icon: Users, color: "text-success" },
   { title: "Proyectos", url: "/projects", icon: Building2, color: "text-info" },
-  { title: "Documentos", url: "/documents", icon: FolderOpen, color: "text-warning" },
+  { title: "Documentos", url: "/documents", icon: FolderOpen, color: "text-info" },
   { title: "Finanzas", url: "/finances", icon: DollarSign, color: "text-orange" },
   { title: "Contabilidad", url: "/accounting", icon: Calculator, color: "text-purple" },
   { title: "Fotos de Avance", url: "/progress-photos", icon: Camera, color: "text-pink" },
@@ -39,7 +39,7 @@ const adminItems = [
 
 const clientItems = [
   { title: "Mi Proyecto", url: "/my-project", icon: Building2, color: "text-info" },
-  { title: "Documentos", url: "/my-documents", icon: FolderOpen, color: "text-warning" },
+  { title: "Documentos", url: "/my-documents", icon: FolderOpen, color: "text-info" },
   { title: "Fotos de Avance", url: "/my-photos", icon: Camera, color: "text-pink" },
 ];
 
