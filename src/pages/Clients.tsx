@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Phone, Mail } from 'lucide-react';
+import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Phone, Mail, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
