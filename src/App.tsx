@@ -13,6 +13,7 @@ import Projects from "./pages/Projects";
 import Documents from "./pages/Documents";
 import Finances from "./pages/Finances";
 import Accounting from "./pages/Accounting";
+import ProgressPhotos from "./pages/ProgressPhotos";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -86,11 +87,11 @@ const App = () => (
               } 
             />
             <Route 
-              path="/finances" 
+              path="/progress-photos" 
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <Finances />
+                    <ProgressPhotos />
                   </Layout>
                 </ProtectedRoute>
               } 
