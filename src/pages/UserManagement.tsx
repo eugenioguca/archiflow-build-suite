@@ -28,6 +28,8 @@ interface UserPermission {
   can_delete: boolean;
 }
 
+type ModuleName = 'dashboard' | 'clients' | 'projects' | 'documents' | 'finances' | 'accounting' | 'progress_photos';
+
 const modules = [
   { id: 'dashboard', name: 'Dashboard', description: 'Vista principal y estadísticas' },
   { id: 'clients', name: 'Clientes', description: 'Gestión de clientes' },
@@ -137,7 +139,7 @@ export default function UserManagement() {
         .from('user_permissions')
         .upsert({
           user_id: userId,
-          module,
+          module: module as ModuleName,
           [permission]: value,
           // Keep existing permissions for other actions
           can_view: permission === 'can_view' ? value : selectedUser?.permissions?.find(p => p.module === module)?.can_view || false,
@@ -183,8 +185,9 @@ export default function UserManagement() {
     }
   };
 
-  const getUserPermission = (user: User, module: string, permission: string) => {
-    return user.permissions?.find(p => p.module === module)?.[permission as keyof UserPermission] || false;
+  const getUserPermission = (user: User, module: string, permission: string): boolean => {
+    const perm = user.permissions?.find(p => p.module === module)?.[permission as keyof UserPermission];
+    return Boolean(perm);
   };
 
   if (loading) {
