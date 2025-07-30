@@ -1,8 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Building2, Users, BarChart3, FileText, Zap, Shield, Globe, ArrowRight, Sparkles } from 'lucide-react';
-import logoDark from '@/assets/logo-dark.png';
-import logoLight from '@/assets/logo-light.png';
 
 const Index = () => {
   return (
@@ -17,7 +15,7 @@ const Index = () => {
         <div className="text-center mb-20">
           <div className="flex justify-center mb-8">
             <img 
-              src={logoLight} 
+              src="/lovable-uploads/7a3755e3-978f-4182-af7d-1db88590b5a4.png" 
               alt="Dovita Arquitectura" 
               className="h-24 w-auto"
             />

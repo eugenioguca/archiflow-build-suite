@@ -14,8 +14,6 @@ import {
   Activity
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import logoDark from '@/assets/logo-dark.png';
-import logoLight from '@/assets/logo-light.png';
 
 import {
   Sidebar,
@@ -97,12 +95,12 @@ export function AppSidebar() {
         {!collapsed && (
           <div className="flex justify-center">
             <img 
-              src={logoDark} 
+              src="/lovable-uploads/2d4574ff-eac1-4a35-8890-f3fb20cf2252.png" 
               alt="Dovita Arquitectura" 
               className="h-12 w-auto dark:hidden"
             />
             <img 
-              src={logoLight} 
+              src="/lovable-uploads/7a3755e3-978f-4182-af7d-1db88590b5a4.png" 
               alt="Dovita Arquitectura" 
               className="h-12 w-auto hidden dark:block"
             />

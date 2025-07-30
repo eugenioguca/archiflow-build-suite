@@ -7,8 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
-import logoDark from '@/assets/logo-dark.png';
-import logoLight from '@/assets/logo-light.png';
 
 export default function Auth() {
   const { user, signIn, signUp, loading } = useAuth();
@@ -85,12 +83,12 @@ export default function Auth() {
         <CardHeader className="text-center space-y-6">
           <div className="flex justify-center">
             <img 
-              src={logoDark} 
+              src="/lovable-uploads/2d4574ff-eac1-4a35-8890-f3fb20cf2252.png" 
               alt="Dovita Arquitectura" 
               className="h-16 w-auto dark:hidden"
             />
             <img 
-              src={logoLight} 
+              src="/lovable-uploads/7a3755e3-978f-4182-af7d-1db88590b5a4.png" 
               alt="Dovita Arquitectura" 
               className="h-16 w-auto hidden dark:block"
             />
