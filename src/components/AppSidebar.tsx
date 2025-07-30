@@ -57,21 +57,15 @@ export function AppSidebar() {
   useEffect(() => {
     const fetchUserRole = async () => {
       if (user) {
-        console.log('Fetching role for user:', user.id, user.email);
         const { data, error } = await supabase
           .from('profiles')
           .select('role')
           .eq('user_id', user.id)
           .single();
         
-        console.log('Profile data:', data);
-        console.log('Profile error:', error);
-        
         if (data && !error) {
-          console.log('Setting user role to:', data.role);
           setUserRole(data.role);
         } else {
-          console.log('Failed to fetch user role');
           setUserRole(null);
         }
       }
@@ -87,13 +81,9 @@ export function AppSidebar() {
       : "hover:bg-sidebar-accent/80 transition-all duration-200";
 
   // Filter menu items based on user role
-  // If userRole is null, show all items as fallback for admin users
-  const menuItems = userRole === 'admin' || userRole === null 
+  const menuItems = userRole === 'admin' 
     ? adminItems 
     : adminItems.filter(item => item.url !== '/user-management');
-
-  console.log('Current userRole:', userRole);
-  console.log('Menu items shown:', menuItems.map(item => item.title));
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">

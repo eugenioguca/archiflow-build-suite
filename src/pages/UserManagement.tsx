@@ -53,36 +53,19 @@ export default function UserManagement() {
 
   const fetchUsers = async () => {
     try {
-      // First fetch all profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-        throw profilesError;
-      }
+      if (profilesError) throw profilesError;
 
-      if (!profiles || profiles.length === 0) {
-        console.log('No profiles found in database');
-        setUsers([]);
-        return;
-      }
-
-      console.log('Fetched profiles:', profiles);
-
-      // Then fetch permissions for each user
       const usersWithPermissions = await Promise.all(
         profiles.map(async (profile) => {
-          const { data: permissions, error: permError } = await supabase
+          const { data: permissions } = await supabase
             .from('user_permissions')
             .select('*')
             .eq('user_id', profile.user_id);
-
-          if (permError) {
-            console.error('Error fetching permissions for user:', profile.user_id, permError);
-          }
 
           return {
             ...profile,
@@ -92,7 +75,6 @@ export default function UserManagement() {
         })
       );
 
-      console.log('Users with permissions:', usersWithPermissions);
       setUsers(usersWithPermissions);
     } catch (error: any) {
       toast({
