@@ -17,6 +17,7 @@ interface DashboardStats {
   monthlyExpenses: number;
   totalPhotos: number;
   recentPhotos: number;
+  pipelineValue?: number;
 }
 
 interface RecentActivity {
@@ -40,6 +41,7 @@ export default function Dashboard() {
     monthlyExpenses: 0,
     totalPhotos: 0,
     recentPhotos: 0,
+    pipelineValue: 0,
   });
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +58,10 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      setLoading(true);
+      // Solo mostrar loading en la primera carga
+      if (stats.totalClients === 0 && stats.totalProjects === 0) {
+        setLoading(true);
+      }
       
       // Fetch real clients data
       const { data: clients } = await supabase.from('clients').select('status');
@@ -64,8 +69,8 @@ export default function Dashboard() {
       const activeClients = clients?.filter(c => c.status === 'active').length || 0;
       const potentialClients = clients?.filter(c => c.status === 'potential').length || 0;
 
-      // Fetch real projects data
-      const { data: projects } = await supabase.from('projects').select('status, name, created_at, progress_percentage');
+      // Fetch real projects data with budget for pipeline calculation
+      const { data: projects } = await supabase.from('projects').select('status, name, created_at, progress_percentage, budget');
       const totalProjects = projects?.length || 0;
       const activeProjects = projects?.filter(p => ['construction', 'design', 'permits', 'planning'].includes(p.status)).length || 0;
       const completedProjects = projects?.filter(p => p.status === 'completed').length || 0;
@@ -98,8 +103,12 @@ export default function Dashboard() {
         .order('created_at', { ascending: false })
         .limit(3);
 
-      // Fetch real income data
+      // Fetch real income data  
       const { data: incomes } = await supabase.from('incomes').select('amount, description, created_at');
+
+      // Calculate pipeline value from potential projects' budgets
+      const potentialProjectsBudgets = projects?.filter(p => p.status === 'planning').reduce((sum, p) => sum + (Number(p.budget) || 0), 0) || 0;
+      const pipelineValue = potentialProjectsBudgets + (potentialClients * 250000); // Valor estimado por cliente potencial
 
       setStats({
         totalClients,
@@ -112,6 +121,7 @@ export default function Dashboard() {
         monthlyExpenses,
         totalPhotos,
         recentPhotos,
+        pipelineValue,
       });
 
       // Create recent activity from real data only
@@ -185,6 +195,7 @@ export default function Dashboard() {
         monthlyExpenses: 0,
         totalPhotos: 0,
         recentPhotos: 0,
+        pipelineValue: 0,
       });
       setRecentActivity([]);
     } finally {
@@ -254,17 +265,17 @@ export default function Dashboard() {
       </div>
 
       {/* Métricas de Ventas y Avances de Proyectos */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="card-hover border-0 bg-gradient-to-br from-green-100/50 to-green-50/50 border-l-4 border-l-green-500 cursor-pointer glassmorphic-bg enhanced-hover" onClick={() => navigate('/sales')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pipeline de Ventas</CardTitle>
+            <CardTitle className="text-sm font-medium break-words">Pipeline de Ventas</CardTitle>
             <div className="p-2 bg-green-500/20 rounded-lg">
               <TrendingUp className="h-5 w-5 text-green-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600">
-              {formatCurrency(stats.potentialClients * 500000)} 
+            <div className="text-2xl sm:text-3xl font-bold text-green-600 break-words">
+              {formatCurrency(stats.pipelineValue || 0)} 
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {stats.potentialClients} clientes potenciales
@@ -274,14 +285,14 @@ export default function Dashboard() {
 
         <Card className="card-hover border-0 bg-gradient-to-br from-blue-100/50 to-blue-50/50 border-l-4 border-l-blue-500 cursor-pointer glassmorphic-bg enhanced-hover" onClick={() => navigate('/progress-overview')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Proyectos Activos</CardTitle>
+            <CardTitle className="text-sm font-medium break-words">Proyectos Activos</CardTitle>
             <div className="p-2 bg-blue-500/20 rounded-lg">
               <Building2 className="h-5 w-5 text-blue-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-blue-600">{stats.activeProjects}</div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <div className="text-2xl sm:text-3xl font-bold text-blue-600">{stats.activeProjects}</div>
+            <p className="text-xs text-muted-foreground mt-1 break-words">
               {stats.totalProjects > 0 ? `${stats.totalProjects} total` : 'Sin proyectos aún'}
             </p>
           </CardContent>
@@ -289,14 +300,14 @@ export default function Dashboard() {
 
         <Card className="card-hover border-0 bg-gradient-to-br from-purple-100/50 to-purple-50/50 border-l-4 border-l-purple-500 cursor-pointer glassmorphic-bg enhanced-hover" onClick={() => navigate('/sales')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Clientes Potenciales</CardTitle>
+            <CardTitle className="text-sm font-medium break-words">Clientes Potenciales</CardTitle>
             <div className="p-2 bg-purple-500/20 rounded-lg">
               <Users className="h-5 w-5 text-purple-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-purple-600">{stats.potentialClients}</div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <div className="text-2xl sm:text-3xl font-bold text-purple-600">{stats.potentialClients}</div>
+            <p className="text-xs text-muted-foreground mt-1 break-words">
               {stats.totalClients > 0 ? 'En pipeline' : 'Sin clientes aún'}
             </p>
           </CardContent>
@@ -304,16 +315,16 @@ export default function Dashboard() {
 
         <Card className="card-hover border-0 bg-gradient-to-br from-orange-100/50 to-orange-50/50 border-l-4 border-l-orange-500 glassmorphic-bg enhanced-hover">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tasa de Conversión</CardTitle>
+            <CardTitle className="text-sm font-medium break-words">Tasa de Conversión</CardTitle>
             <div className="p-2 bg-orange-500/20 rounded-lg">
               <BarChart3 className="h-5 w-5 text-orange-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-orange-600">
+            <div className="text-2xl sm:text-3xl font-bold text-orange-600">
               {stats.totalClients > 0 ? Math.round((stats.activeClients / stats.totalClients) * 100) : 0}%
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-1 break-words">
               Conversión de clientes
             </p>
           </CardContent>
@@ -321,7 +332,7 @@ export default function Dashboard() {
       </div>
 
       {/* Secciones de información detallada */}
-      <div className="grid gap-8 lg:grid-cols-2">
+      <div className="grid gap-6 lg:gap-8 grid-cols-1 lg:grid-cols-2">
         <Card className="card-hover border-0 shadow-lg glassmorphic-bg enhanced-hover">
           <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-t-lg">
             <CardTitle className="flex items-center gap-3 text-xl">
