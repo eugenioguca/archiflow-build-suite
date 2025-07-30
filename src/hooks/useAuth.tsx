@@ -17,62 +17,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Changed to false to prevent initial loading flash
   const [isApproved, setIsApproved] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
-    
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Check approval status when user signs in
-        if (session?.user) {
-          setTimeout(async () => {
-            if (!mounted) return;
-            try {
-              const { data: profile } = await supabase
-                .from('profiles')
-                .select('approval_status')
-                .eq('user_id', session.user.id)
-                .single();
-              
-              if (mounted) {
-                setIsApproved(profile?.approval_status === 'approved');
-              }
-            } catch (error) {
-              console.error('Error checking approval status:', error);
-              if (mounted) {
-                setIsApproved(false);
-              }
-            }
-          }, 0);
-        } else {
-          setIsApproved(false);
-        }
-        
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    );
-
-    // THEN check for existing session
+    // Check for existing session first
     const initializeAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!mounted) return;
-        
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Check approval status for existing session
+        // Only check approval for authenticated users
         if (session?.user) {
           try {
             const { data: profile } = await supabase
@@ -80,37 +36,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               .select('approval_status')
               .eq('user_id', session.user.id)
               .single();
-            
-            if (mounted) {
-              setIsApproved(profile?.approval_status === 'approved');
-            }
+            setIsApproved(profile?.approval_status === 'approved');
           } catch (error) {
             console.error('Error checking approval status:', error);
-            if (mounted) {
-              setIsApproved(false);
-            }
+            setIsApproved(false);
           }
-        } else {
-          setIsApproved(false);
-        }
-        
-        if (mounted) {
-          setLoading(false);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
-        if (mounted) {
-          setLoading(false);
-        }
       }
     };
 
     initializeAuth();
 
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('approval_status')
+              .eq('user_id', session.user.id)
+              .single();
+            setIsApproved(profile?.approval_status === 'approved');
+          } catch (error) {
+            console.error('Error checking approval status:', error);
+            setIsApproved(false);
+          }
+        } else {
+          setIsApproved(false);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const signIn = async (email: string, password: string) => {
