@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/DatePicker";
 import { EditableCell } from "@/components/EditableCell";
 import { UserAvatar } from "@/components/UserAvatar";
+import { ProjectFormDialog } from "@/components/ProjectFormDialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface ProjectOverview {
   id: string;
@@ -47,6 +49,8 @@ export default function ProgressOverview() {
   const [activeProjects, setActiveProjects] = useState<ProjectOverview[]>([]);
   const [completedProjects, setCompletedProjects] = useState<ProjectOverview[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<ProjectOverview | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -167,31 +171,28 @@ export default function ProgressOverview() {
     });
   };
 
-  const addNewProject = () => {
+  const addNewProject = (formData: any) => {
     const newProject: ProjectOverview = {
       id: Date.now().toString(),
-      name: "Nuevo Proyecto",
-      description: "Descripción del proyecto",
-      location: "Ciudad, Estado",
+      name: formData.name,
+      description: formData.description,
+      location: formData.location,
       progress_percentage: 0,
       status: 'planning',
-      assigned_team: [
-        { name: "Nuevo Encargado", initials: "NE", avatar_url: null }
-      ],
-      phases: [
-        { name: "Diseño", value: 10, color: "bg-blue-500", status: 'not_started' },
-        { name: "Permisos", value: 5, color: "bg-gray-300", status: 'not_started' },
-        { name: "Construcción", value: 60, color: "bg-gray-300", status: 'not_started' },
-        { name: "Acabados", value: 20, color: "bg-gray-300", status: 'not_started' },
-        { name: "Entrega", value: 5, color: "bg-gray-300", status: 'not_started' }
-      ],
-      estimated_dates: [
-        { phase: "Diseño", date: new Date(Date.now() + 30*86400000).toISOString().split('T')[0] },
-        { phase: "Permisos", date: new Date(Date.now() + 60*86400000).toISOString().split('T')[0] },
-        { phase: "Construcción", date: new Date(Date.now() + 180*86400000).toISOString().split('T')[0] },
-        { phase: "Acabados", date: new Date(Date.now() + 240*86400000).toISOString().split('T')[0] },
-        { phase: "Entrega", date: new Date(Date.now() + 270*86400000).toISOString().split('T')[0] }
-      ]
+      assigned_team: formData.assigned_team.filter((name: string) => name.trim()).map((name: string) => ({
+        name: name.trim(),
+        initials: name.trim().split(' ').map(n => n[0]).join('').toUpperCase(),
+        avatar_url: null
+      })),
+      phases: formData.phases.map((phase: any) => ({
+        ...phase,
+        color: "bg-gray-300",
+        status: 'not_started' as const
+      })),
+      estimated_dates: formData.phases.map((phase: any, index: number) => ({
+        phase: phase.name,
+        date: new Date(Date.now() + (index + 1) * 30 * 86400000).toISOString().split('T')[0]
+      }))
     };
 
     const allProjects = [...activeProjects, ...completedProjects, newProject];
@@ -199,8 +200,8 @@ export default function ProgressOverview() {
     localStorage.setItem('projectsOverview', JSON.stringify(allProjects));
     
     toast({
-      title: "Nuevo proyecto agregado",
-      description: "Puedes editar la información haciendo clic en los campos",
+      title: "Nuevo proyecto creado",
+      description: `Proyecto "${formData.name}" agregado exitosamente`,
     });
   };
 
@@ -266,11 +267,17 @@ export default function ProgressOverview() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-foreground">Avances de Proyectos</h1>
-        <Button onClick={addNewProject}>
+        <Button onClick={() => setIsProjectFormOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Nuevo Proyecto
         </Button>
       </div>
+
+      <ProjectFormDialog
+        open={isProjectFormOpen}
+        onOpenChange={setIsProjectFormOpen}
+        onSubmit={addNewProject}
+      />
 
       {/* Proyectos Activos */}
       <Card>

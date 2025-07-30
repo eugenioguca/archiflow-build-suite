@@ -300,6 +300,38 @@ export default function Sales() {
     return Math.min(score, 100);
   };
 
+  const updateClient = async (clientId: string, updates: Partial<Client>) => {
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({ 
+          ...updates,
+          last_contact_date: new Date().toISOString().split('T')[0]
+        })
+        .eq('id', clientId);
+
+      if (error) throw error;
+
+      setClients(clients.map(client => 
+        client.id === clientId 
+          ? { ...client, ...updates, last_contact_date: new Date().toISOString().split('T')[0] }
+          : client
+      ));
+
+      toast({
+        title: "Cliente actualizado",
+        description: "Los cambios se han guardado correctamente",
+      });
+    } catch (error) {
+      console.error('Error updating client:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el cliente",
+        variant: "destructive",
+      });
+    }
+  };
+
   const updateClientStatus = async (clientId: string, newStatus: Client['status']) => {
     try {
       const config = statusConfig[newStatus];

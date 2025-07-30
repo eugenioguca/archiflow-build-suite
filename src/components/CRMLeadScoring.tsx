@@ -29,7 +29,7 @@ export function CRMLeadScoring({ client, onScoreUpdate }: LeadScoringProps) {
 
   useEffect(() => {
     calculateLeadScore();
-  }, [client]);
+  }, [client.id, client.budget, client.project_type, client.priority, client.last_contact_date, client.created_at]);
 
   const calculateLeadScore = () => {
     let totalScore = 0;
@@ -41,7 +41,7 @@ export function CRMLeadScoring({ client, onScoreUpdate }: LeadScoringProps) {
       authority: 0
     };
 
-    // Budget Score (0-30 points)
+    // Budget Score (0-30 points) - Basado en presupuesto real
     if (client.budget) {
       if (client.budget >= 2000000) breakdown.budget = 30;
       else if (client.budget >= 1000000) breakdown.budget = 25;
@@ -51,10 +51,7 @@ export function CRMLeadScoring({ client, onScoreUpdate }: LeadScoringProps) {
       else breakdown.budget = 5;
     }
 
-    // Engagement Score (0-25 points)
-    const daysSinceCreated = client.created_at ? 
-      Math.floor((Date.now() - new Date(client.created_at).getTime()) / (1000 * 60 * 60 * 24)) : 0;
-    
+    // Engagement Score (0-25 points) - Basado en última comunicación
     const daysSinceLastContact = client.last_contact_date ? 
       Math.floor((Date.now() - new Date(client.last_contact_date).getTime()) / (1000 * 60 * 60 * 24)) : 999;
 
@@ -64,40 +61,38 @@ export function CRMLeadScoring({ client, onScoreUpdate }: LeadScoringProps) {
     else if (daysSinceLastContact <= 60) breakdown.engagement = 10;
     else breakdown.engagement = 5;
 
-    // Timeline Score (0-20 points)
+    // Timeline Score (0-20 points) - Urgencia basada en cuando entró al pipeline
+    const daysSinceCreated = client.created_at ? 
+      Math.floor((Date.now() - new Date(client.created_at).getTime()) / (1000 * 60 * 60 * 24)) : 0;
+
     if (daysSinceCreated <= 7) breakdown.timeline = 20;
     else if (daysSinceCreated <= 30) breakdown.timeline = 15;
     else if (daysSinceCreated <= 90) breakdown.timeline = 10;
     else breakdown.timeline = 5;
 
-    // Project Fit Score (0-15 points)
-    const highValueProjects = ['commercial', 'industrial'];
-    const mediumValueProjects = ['residential', 'renovation'];
-    const specialtyProjects = ['landscape', 'interior_design'];
-
-    if (client.project_type) {
-      if (highValueProjects.includes(client.project_type)) breakdown.fit = 15;
-      else if (mediumValueProjects.includes(client.project_type)) breakdown.fit = 12;
-      else if (specialtyProjects.includes(client.project_type)) breakdown.fit = 10;
-      else breakdown.fit = 8;
+    // Fit Score (0-15 points) - Basado en experiencia con el cliente
+    switch (client.priority) {
+      case 'urgent': breakdown.fit = 15; break;
+      case 'high': breakdown.fit = 12; break;
+      case 'medium': breakdown.fit = 8; break;
+      case 'low': breakdown.fit = 5; break;
+      default: breakdown.fit = 6;
     }
 
-    // Priority/Authority Score (0-10 points)
-    switch (client.priority) {
-      case 'urgent': breakdown.authority = 10; break;
-      case 'high': breakdown.authority = 8; break;
-      case 'medium': breakdown.authority = 6; break;
-      case 'low': breakdown.authority = 4; break;
-      default: breakdown.authority = 5;
+    // Authority Score (0-10 points) - Basado en presupuesto como indicador de autoridad
+    if (client.budget) {
+      if (client.budget >= 1000000) breakdown.authority = 10;
+      else if (client.budget >= 500000) breakdown.authority = 8;
+      else if (client.budget >= 250000) breakdown.authority = 6;
+      else breakdown.authority = 4;
     }
 
     totalScore = Object.values(breakdown).reduce((sum, val) => sum + val, 0);
 
-    setScore(totalScore);
-    setScoreBreakdown(breakdown);
-    
-    if (onScoreUpdate && totalScore !== client.lead_score) {
-      onScoreUpdate(totalScore);
+    // Solo actualizar si es diferente para evitar loops
+    if (totalScore !== score) {
+      setScore(totalScore);
+      setScoreBreakdown(breakdown);
     }
   };
 
@@ -174,7 +169,7 @@ export function CRMLeadScoring({ client, onScoreUpdate }: LeadScoringProps) {
             </div>
             
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">🏗️ Tipo Proyecto</span>
+              <span className="text-gray-600">🤝 Fit Cliente</span>
               <div className="flex items-center gap-2">
                 <Progress value={(scoreBreakdown.fit / 15) * 100} className="w-16 h-1" />
                 <span className="font-medium w-8">{scoreBreakdown.fit}</span>
@@ -182,7 +177,7 @@ export function CRMLeadScoring({ client, onScoreUpdate }: LeadScoringProps) {
             </div>
             
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">👑 Prioridad</span>
+              <span className="text-gray-600">👑 Autoridad</span>
               <div className="flex items-center gap-2">
                 <Progress value={(scoreBreakdown.authority / 10) * 100} className="w-16 h-1" />
                 <span className="font-medium w-8">{scoreBreakdown.authority}</span>
