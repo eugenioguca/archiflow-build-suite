@@ -5,7 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { MapPin, User } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { MapPin, User, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/DatePicker";
+import { EditableCell } from "@/components/EditableCell";
 
 interface ProjectOverview {
   id: string;
@@ -162,6 +166,73 @@ export default function ProgressOverview() {
     });
   };
 
+  const addNewProject = () => {
+    const newProject: ProjectOverview = {
+      id: Date.now().toString(),
+      name: "Nuevo Proyecto",
+      description: "Descripción del proyecto",
+      location: "Ciudad, Estado",
+      progress_percentage: 0,
+      status: 'planning',
+      assigned_team: [
+        { name: "Nuevo Encargado", initials: "NE" }
+      ],
+      phases: [
+        { name: "Diseño", value: 10, color: "bg-blue-500", status: 'not_started' },
+        { name: "Permisos", value: 5, color: "bg-gray-300", status: 'not_started' },
+        { name: "Construcción", value: 60, color: "bg-gray-300", status: 'not_started' },
+        { name: "Acabados", value: 20, color: "bg-gray-300", status: 'not_started' },
+        { name: "Entrega", value: 5, color: "bg-gray-300", status: 'not_started' }
+      ],
+      estimated_dates: [
+        { phase: "Diseño", date: new Date(Date.now() + 30*86400000).toISOString().split('T')[0] },
+        { phase: "Permisos", date: new Date(Date.now() + 60*86400000).toISOString().split('T')[0] },
+        { phase: "Construcción", date: new Date(Date.now() + 180*86400000).toISOString().split('T')[0] },
+        { phase: "Acabados", date: new Date(Date.now() + 240*86400000).toISOString().split('T')[0] },
+        { phase: "Entrega", date: new Date(Date.now() + 270*86400000).toISOString().split('T')[0] }
+      ]
+    };
+
+    const allProjects = [...activeProjects, ...completedProjects, newProject];
+    setActiveProjects(allProjects.filter(p => p.status !== 'completed'));
+    localStorage.setItem('projectsOverview', JSON.stringify(allProjects));
+    
+    toast({
+      title: "Nuevo proyecto agregado",
+      description: "Puedes editar la información haciendo clic en los campos",
+    });
+  };
+
+  const updateProject = (projectId: string, updates: Partial<ProjectOverview>) => {
+    const allProjects = [...activeProjects, ...completedProjects];
+    const updatedProjects = allProjects.map(project => 
+      project.id === projectId ? { ...project, ...updates } : project
+    );
+
+    setActiveProjects(updatedProjects.filter(p => p.status !== 'completed'));
+    setCompletedProjects(updatedProjects.filter(p => p.status === 'completed'));
+    localStorage.setItem('projectsOverview', JSON.stringify(updatedProjects));
+    
+    toast({
+      title: "Proyecto actualizado",
+      description: "Los cambios se han guardado correctamente",
+    });
+  };
+
+  const updateEstimatedDate = (projectId: string, phaseIndex: number, newDate: Date) => {
+    const allProjects = [...activeProjects, ...completedProjects];
+    const project = allProjects.find(p => p.id === projectId);
+    if (!project) return;
+
+    const updatedDates = [...project.estimated_dates];
+    updatedDates[phaseIndex] = { 
+      ...updatedDates[phaseIndex], 
+      date: newDate.toISOString().split('T')[0] 
+    };
+    
+    updateProject(projectId, { estimated_dates: updatedDates });
+  };
+
   const getStatusBadge = (status: string) => {
     const config = phaseConfig[status as keyof typeof phaseConfig];
     if (!config) return null;
@@ -194,6 +265,10 @@ export default function ProgressOverview() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-foreground">Avances de Proyectos</h1>
+        <Button onClick={addNewProject}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nuevo Proyecto
+        </Button>
       </div>
 
       {/* Proyectos Activos */}
@@ -202,27 +277,46 @@ export default function ProgressOverview() {
           <CardTitle className="text-2xl text-foreground">Proyectos Activos</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {activeProjects.map((project) => (
-              <Card key={project.id} className="border border-border">
-                <CardContent className="p-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-6 gap-4 items-center">
-                    {/* Nombre del Proyecto */}
-                    <div className="lg:col-span-1">
-                      <h3 className="font-semibold text-foreground">{project.name}</h3>
-                      <p className="text-sm text-muted-foreground">{project.description}</p>
-                    </div>
-
-                    {/* Ubicación */}
-                    <div className="lg:col-span-1">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Proyecto</TableHead>
+                  <TableHead>Ubicación</TableHead>
+                  <TableHead>Equipo</TableHead>
+                  <TableHead>Progreso</TableHead>
+                  <TableHead>Fases del Proyecto</TableHead>
+                  <TableHead>Fechas Estimadas</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {activeProjects.map((project) => (
+                  <TableRow key={project.id} className="hover:bg-muted/50">
+                    <TableCell>
+                      <div className="space-y-1">
+                        <EditableCell 
+                          value={project.name} 
+                          onSave={(value) => updateProject(project.id, { name: value })}
+                          className="font-semibold text-foreground"
+                        />
+                        <EditableCell 
+                          value={project.description} 
+                          onSave={(value) => updateProject(project.id, { description: value })}
+                          className="text-sm text-muted-foreground"
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm text-foreground">{project.location}</span>
+                        <EditableCell 
+                          value={project.location || ""} 
+                          onSave={(value) => updateProject(project.id, { location: value })}
+                          className="text-sm text-foreground"
+                        />
                       </div>
-                    </div>
-
-                    {/* Equipo Asignado */}
-                    <div className="lg:col-span-1">
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground" />
                         <div className="flex -space-x-2">
@@ -235,10 +329,8 @@ export default function ProgressOverview() {
                           ))}
                         </div>
                       </div>
-                    </div>
-
-                    {/* Progreso General */}
-                    <div className="lg:col-span-1">
+                    </TableCell>
+                    <TableCell>
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <span className="text-sm text-foreground">Progreso</span>
@@ -248,37 +340,50 @@ export default function ProgressOverview() {
                         </div>
                         <Progress value={calculateTotalProgress(project.phases)} className="h-2" />
                       </div>
-                    </div>
-
-                    {/* Fases del Proyecto */}
-                    <div className="lg:col-span-2">
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-medium text-foreground">Fases del Proyecto</h4>
-                        <div className="grid grid-cols-2 gap-2">
-                          {project.phases.map((phase, index) => (
-                            <div key={index} className="flex items-center gap-2">
-                              <select
-                                value={phase.status}
-                                onChange={(e) => updatePhaseStatus(project.id, index, e.target.value as ProjectOverview['phases'][0]['status'])}
-                                className="text-xs px-2 py-1 border border-border rounded bg-background text-foreground"
-                              >
-                                {Object.entries(phaseConfig).map(([key, config]) => (
-                                  <option key={key} value={key}>{config.label}</option>
-                                ))}
-                              </select>
-                              <span className="text-xs text-muted-foreground">{phase.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Próxima fecha: {project.estimated_dates.find(d => d.phase === "Construcción")?.date}
-                        </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-2 min-w-[300px]">
+                        {project.phases.map((phase, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <select
+                              value={phase.status}
+                              onChange={(e) => updatePhaseStatus(project.id, index, e.target.value as ProjectOverview['phases'][0]['status'])}
+                              className="text-xs px-2 py-1 border border-border rounded bg-background text-foreground shadow-sm hover:bg-muted transition-colors"
+                            >
+                              {Object.entries(phaseConfig).map(([key, config]) => (
+                                <option key={key} value={key} className="bg-background text-foreground">
+                                  {config.label}
+                                </option>
+                              ))}
+                            </select>
+                            <span className="text-xs text-muted-foreground min-w-[80px]">{phase.name}</span>
+                            <span className="text-xs text-muted-foreground">({phase.value} pts)</span>
+                          </div>
+                        ))}
                       </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-2 min-w-[150px]">
+                        {project.estimated_dates.map((dateInfo, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground min-w-[80px]">{dateInfo.phase}:</span>
+                            <DatePicker
+                              date={new Date(dateInfo.date)}
+                              onDateChange={(date) => {
+                                if (date) {
+                                  updateEstimatedDate(project.id, index, date);
+                                }
+                              }}
+                              className="text-xs"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>

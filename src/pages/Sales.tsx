@@ -6,8 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, Phone, Mail, MessageSquare, Video, Plus, Filter } from "lucide-react";
+import { Calendar, Phone, Mail, MessageSquare, Video, Plus, Filter, Edit2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { DatePicker } from "@/components/DatePicker";
+import { EditableCell } from "@/components/EditableCell";
 
 interface SalesLead {
   id: string;
@@ -169,10 +171,37 @@ export default function Sales() {
     setFilteredLeads(filtered);
   };
 
+  const addNewLead = () => {
+    const newLead: SalesLead = {
+      id: Date.now().toString(),
+      client_name: "Nuevo Cliente",
+      email: "cliente@email.com",
+      phone: "+52 55 0000 0000",
+      status: "lead",
+      progress: 10,
+      last_contact: new Date().toISOString().split('T')[0],
+      next_action: "Contactar por primera vez",
+      next_action_date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+      action_type: "call",
+      budget_estimate: 100000,
+      probability: 20,
+      notes: "Nuevo prospecto"
+    };
+    
+    const updatedLeads = [...leads, newLead];
+    setLeads(updatedLeads);
+    localStorage.setItem('salesLeads', JSON.stringify(updatedLeads));
+    
+    toast({
+      title: "Nuevo prospecto agregado",
+      description: "Puedes editar la información haciendo clic en los campos",
+    });
+  };
+
   const getStatusBadge = (status: keyof typeof statusConfig) => {
     const config = statusConfig[status];
     return (
-      <Badge className={`${config.color} border-none`}>
+      <Badge className={`${config.color} border-none bg-opacity-100`}>
         {config.label}
       </Badge>
     );
@@ -216,7 +245,7 @@ export default function Sales() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-foreground">CRM de Ventas</h1>
-        <Button>
+        <Button onClick={addNewLead}>
           <Plus className="h-4 w-4 mr-2" />
           Nuevo Prospecto
         </Button>
@@ -311,16 +340,40 @@ export default function Sales() {
             </TableHeader>
             <TableBody>
               {filteredLeads.map((lead) => (
-                <TableRow key={lead.id}>
+                <TableRow key={lead.id} className="hover:bg-muted/50">
                   <TableCell>
-                    <div>
-                      <p className="font-medium text-foreground">{lead.client_name}</p>
-                      <p className="text-sm text-muted-foreground">{lead.email}</p>
-                      <p className="text-sm text-muted-foreground">{lead.phone}</p>
+                    <div className="space-y-1">
+                      <EditableCell 
+                        value={lead.client_name} 
+                        onSave={(value) => updateLead(lead.id, { client_name: value })}
+                        className="font-medium text-foreground"
+                      />
+                      <EditableCell 
+                        value={lead.email} 
+                        onSave={(value) => updateLead(lead.id, { email: value })}
+                        type="email"
+                        className="text-sm text-muted-foreground"
+                      />
+                      <EditableCell 
+                        value={lead.phone} 
+                        onSave={(value) => updateLead(lead.id, { phone: value })}
+                        type="phone"
+                        className="text-sm text-muted-foreground"
+                      />
                     </div>
                   </TableCell>
                   <TableCell>
-                    {getStatusBadge(lead.status)}
+                    <select
+                      value={lead.status}
+                      onChange={(e) => updateStatus(lead.id, e.target.value as SalesLead['status'])}
+                      className="px-3 py-2 border border-border rounded-md bg-background text-foreground shadow-sm hover:bg-muted transition-colors z-10"
+                    >
+                      {Object.entries(statusConfig).map(([key, config]) => (
+                        <option key={key} value={key} className="bg-background text-foreground">
+                          {config.label}
+                        </option>
+                      ))}
+                    </select>
                   </TableCell>
                   <TableCell>
                     <div className="space-y-1">
@@ -331,43 +384,64 @@ export default function Sales() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {getActionIcon(lead.action_type)}
-                      <span className="text-sm text-foreground">{lead.next_action}</span>
+                      <EditableCell 
+                        value={lead.next_action} 
+                        onSave={(value) => updateLead(lead.id, { next_action: value })}
+                        className="text-sm text-foreground"
+                      />
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm text-foreground">{lead.next_action_date}</span>
+                    <DatePicker
+                      date={new Date(lead.next_action_date)}
+                      onDateChange={(date) => {
+                        if (date) {
+                          updateLead(lead.id, { next_action_date: date.toISOString().split('T')[0] });
+                        }
+                      }}
+                      className="w-full"
+                    />
                   </TableCell>
                   <TableCell>
-                    <span className="font-medium text-foreground">
-                      {formatCurrency(lead.budget_estimate)}
-                    </span>
+                    <EditableCell 
+                      value={formatCurrency(lead.budget_estimate)} 
+                      onSave={(value) => {
+                        const numValue = parseFloat(value.replace(/[^0-9.-]+/g, ""));
+                        if (!isNaN(numValue)) {
+                          updateLead(lead.id, { budget_estimate: numValue });
+                        }
+                      }}
+                      className="font-medium text-foreground"
+                    />
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="text-foreground">
-                      {lead.probability}%
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={lead.probability}
+                        onChange={(e) => updateLead(lead.id, { probability: parseInt(e.target.value) })}
+                        className="w-16 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <Badge variant="outline" className="text-foreground bg-background">
+                        {lead.probability}%
+                      </Badge>
+                    </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1">
                       <select
-                        value={lead.status}
-                        onChange={(e) => updateStatus(lead.id, e.target.value as SalesLead['status'])}
+                        value={lead.action_type}
+                        onChange={(e) => updateLead(lead.id, { action_type: e.target.value as SalesLead['action_type'] })}
                         className="px-2 py-1 text-xs border border-border rounded bg-background text-foreground"
                       >
-                        {Object.entries(statusConfig).map(([key, config]) => (
-                          <option key={key} value={key}>{config.label}</option>
-                        ))}
+                        <option value="call">Llamada</option>
+                        <option value="email">Email</option>
+                        <option value="meeting">Reunión</option>
+                        <option value="message">Mensaje</option>
+                        <option value="video_call">Video</option>
                       </select>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => {
-                          const newAction = prompt("Nueva acción:", lead.next_action);
-                          if (newAction) updateLead(lead.id, { next_action: newAction });
-                        }}
-                      >
-                        <Calendar className="h-4 w-4" />
-                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
