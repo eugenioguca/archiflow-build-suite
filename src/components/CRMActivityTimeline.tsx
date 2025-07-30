@@ -387,9 +387,9 @@ export function CRMActivityTimeline({ clientId }: CRMActivityTimelineProps) {
                     )}
                     
                     <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                      <span>{activity.user.full_name}</span>
+                      <span>{activity.user?.full_name || 'Usuario desconocido'}</span>
                       <span>{timeAgo}</span>
-                      <span>{contactMethodLabels[activity.contact_method as keyof typeof contactMethodLabels]}</span>
+                      <span>{contactMethodLabels[activity.contact_method as keyof typeof contactMethodLabels] || activity.contact_method}</span>
                       {activity.scheduled_date && (
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
