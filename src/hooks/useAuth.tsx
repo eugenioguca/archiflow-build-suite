@@ -17,7 +17,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(false); // Changed to false to prevent initial loading flash
+  const [loading, setLoading] = useState(true); // Cambiado a true para evitar flash inicial
   const [isApproved, setIsApproved] = useState(false);
 
   useEffect(() => {
@@ -55,9 +55,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.error('Error checking approval status:', error);
             setIsApproved(false);
           }
+        } else {
+          setIsApproved(false);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
+      } finally {
+        setLoading(false);
       }
     };
 

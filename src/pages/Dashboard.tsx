@@ -49,8 +49,13 @@ export default function Dashboard() {
   useEffect(() => {
     fetchDashboardData();
     
-    // Configurar actualización automática cada 30 segundos
-    const interval = setInterval(fetchDashboardData, 30000);
+    // Configurar actualización automática cada 5 minutos en lugar de 30 segundos
+    const interval = setInterval(() => {
+      // Solo actualizar si la página está visible para el usuario
+      if (!document.hidden) {
+        fetchDashboardData();
+      }
+    }, 300000); // 5 minutos
     
     // Limpiar interval al desmontar el componente
     return () => clearInterval(interval);
@@ -58,8 +63,9 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      // Solo mostrar loading en la primera carga
-      if (stats.totalClients === 0 && stats.totalProjects === 0) {
+      // Solo mostrar loading en la primera carga inicial (cuando no hay datos y realmente estamos cargando)
+      const hasData = stats.totalClients > 0 || stats.totalProjects > 0 || stats.totalExpenses > 0 || recentActivity.length > 0;
+      if (!hasData && !loading) {
         setLoading(true);
       }
       
@@ -287,7 +293,7 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl sm:text-3xl font-bold text-green-600 break-words">
+            <div className="text-xl md:text-2xl xl:text-3xl font-bold text-green-600 whitespace-nowrap overflow-hidden">
               {formatCurrency(stats.pipelineValue || 0)} 
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -304,8 +310,8 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl sm:text-3xl font-bold text-blue-600">{stats.activeProjects}</div>
-            <p className="text-xs text-muted-foreground mt-1 break-words">
+            <div className="text-xl md:text-2xl xl:text-3xl font-bold text-blue-600 whitespace-nowrap">{stats.activeProjects}</div>
+            <p className="text-xs text-muted-foreground mt-1 whitespace-nowrap overflow-hidden text-ellipsis">
               {stats.totalProjects > 0 ? `${stats.totalProjects} total` : 'Sin proyectos aún'}
             </p>
           </CardContent>
@@ -319,8 +325,8 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl sm:text-3xl font-bold text-purple-600">{stats.potentialClients}</div>
-            <p className="text-xs text-muted-foreground mt-1 break-words">
+            <div className="text-xl md:text-2xl xl:text-3xl font-bold text-purple-600 whitespace-nowrap">{stats.potentialClients}</div>
+            <p className="text-xs text-muted-foreground mt-1 whitespace-nowrap overflow-hidden text-ellipsis">
               {stats.totalClients > 0 ? 'En pipeline' : 'Sin clientes aún'}
             </p>
           </CardContent>
@@ -334,10 +340,10 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl sm:text-3xl font-bold text-orange-600">
+            <div className="text-xl md:text-2xl xl:text-3xl font-bold text-orange-600 whitespace-nowrap">
               {stats.totalClients > 0 ? Math.round((stats.activeClients / stats.totalClients) * 100) : 0}%
             </div>
-            <p className="text-xs text-muted-foreground mt-1 break-words">
+            <p className="text-xs text-muted-foreground mt-1 whitespace-nowrap overflow-hidden text-ellipsis">
               Conversión de clientes
             </p>
           </CardContent>
