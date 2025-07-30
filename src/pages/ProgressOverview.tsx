@@ -50,55 +50,80 @@ export default function ProgressOverview() {
 
   const fetchProjects = async () => {
     try {
-      const { data: projects, error } = await supabase
-        .from('projects')
-        .select(`
-          id,
-          name,
-          description,
-          progress_percentage,
-          status,
-          clients (
-            full_name,
-            address
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      // Mock data para demostración
-      const mockProjects: ProjectOverview[] = (projects || []).map(project => ({
-        id: project.id,
-        name: project.name,
-        description: project.description || '',
-        location: project.clients?.address || 'Sin dirección',
-        progress_percentage: project.progress_percentage || 0,
-        status: project.status,
-        assigned_team: [
-          { name: "Juan Pérez", initials: "JP" },
-          { name: "María García", initials: "MG" }
-        ],
-        phases: [
-          { name: "Diseño", value: 1, color: "bg-blue-500", status: 'completed' },
-          { name: "Construcción", value: 5, color: "bg-yellow-500", status: 'in_progress' },
-          { name: "Acabados", value: 3, color: "bg-gray-300", status: 'not_started' },
-          { name: "Entrega", value: 1, color: "bg-gray-300", status: 'not_started' }
-        ],
-        estimated_dates: [
-          { phase: "Diseño", date: "2024-02-15" },
-          { phase: "Construcción", date: "2024-06-30" },
-          { phase: "Acabados", date: "2024-08-15" },
-          { phase: "Entrega", date: "2024-09-01" }
-        ]
-      }));
-
-      // Separar proyectos activos y completados
-      const active = mockProjects.filter(p => p.status !== 'completed');
-      const completed = mockProjects.filter(p => p.status === 'completed');
-
-      setActiveProjects(active);
-      setCompletedProjects(completed);
+      // Cargar desde localStorage para persistencia local
+      const savedProjects = localStorage.getItem('projectsOverview');
+      if (savedProjects) {
+        const allProjects: ProjectOverview[] = JSON.parse(savedProjects);
+        setActiveProjects(allProjects.filter(p => p.status !== 'completed'));
+        setCompletedProjects(allProjects.filter(p => p.status === 'completed'));
+      } else {
+        // Datos iniciales si no hay datos guardados
+        const initialProjects: ProjectOverview[] = [
+          {
+            id: "1",
+            name: "Casa Moderna Satelite",
+            description: "Construcción de casa residencial 200m²",
+            location: "Av. Constituyentes 123, Naucalpan, Estado de México",
+            progress_percentage: 60,
+            status: 'construction',
+            assigned_team: [
+              { name: "Juan Pérez", initials: "JP" },
+              { name: "María García", initials: "MG" },
+              { name: "Carlos López", initials: "CL" }
+            ],
+            phases: [
+              { name: "Diseño", value: 10, color: "bg-blue-500", status: 'completed' },
+              { name: "Permisos", value: 5, color: "bg-yellow-500", status: 'completed' },
+              { name: "Cimientos", value: 15, color: "bg-green-500", status: 'completed' },
+              { name: "Estructura", value: 20, color: "bg-yellow-500", status: 'in_progress' },
+              { name: "Instalaciones", value: 15, color: "bg-gray-300", status: 'not_started' },
+              { name: "Acabados", value: 25, color: "bg-gray-300", status: 'not_started' },
+              { name: "Entrega", value: 10, color: "bg-gray-300", status: 'not_started' }
+            ],
+            estimated_dates: [
+              { phase: "Diseño", date: "2024-01-15" },
+              { phase: "Permisos", date: "2024-02-01" },
+              { phase: "Cimientos", date: "2024-03-15" },
+              { phase: "Estructura", date: "2024-05-30" },
+              { phase: "Instalaciones", date: "2024-07-15" },
+              { phase: "Acabados", date: "2024-09-30" },
+              { phase: "Entrega", date: "2024-10-15" }
+            ]
+          },
+          {
+            id: "2",
+            name: "Oficinas Corporativas",
+            description: "Remodelación de oficinas 500m²",
+            location: "Polanco, CDMX",
+            progress_percentage: 25,
+            status: 'design',
+            assigned_team: [
+              { name: "Ana Martínez", initials: "AM" },
+              { name: "Roberto Silva", initials: "RS" }
+            ],
+            phases: [
+              { name: "Diseño", value: 15, color: "bg-yellow-500", status: 'in_progress' },
+              { name: "Permisos", value: 5, color: "bg-gray-300", status: 'not_started' },
+              { name: "Demolición", value: 10, color: "bg-gray-300", status: 'not_started' },
+              { name: "Construcción", value: 40, color: "bg-gray-300", status: 'not_started' },
+              { name: "Instalaciones", value: 20, color: "bg-gray-300", status: 'not_started' },
+              { name: "Acabados", value: 10, color: "bg-gray-300", status: 'not_started' }
+            ],
+            estimated_dates: [
+              { phase: "Diseño", date: "2024-02-28" },
+              { phase: "Permisos", date: "2024-03-15" },
+              { phase: "Demolición", date: "2024-04-01" },
+              { phase: "Construcción", date: "2024-07-15" },
+              { phase: "Instalaciones", date: "2024-08-30" },
+              { phase: "Acabados", date: "2024-09-30" }
+            ]
+          }
+        ];
+        
+        setActiveProjects(initialProjects.filter(p => p.status !== 'completed'));
+        setCompletedProjects(initialProjects.filter(p => p.status === 'completed'));
+        localStorage.setItem('projectsOverview', JSON.stringify(initialProjects));
+      }
     } catch (error) {
       console.error('Error fetching projects:', error);
       toast({
@@ -109,6 +134,32 @@ export default function ProgressOverview() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const updatePhaseStatus = (projectId: string, phaseIndex: number, newStatus: ProjectOverview['phases'][0]['status']) => {
+    const allProjects = [...activeProjects, ...completedProjects];
+    const updatedProjects = allProjects.map(project => {
+      if (project.id === projectId) {
+        const updatedPhases = [...project.phases];
+        updatedPhases[phaseIndex] = { ...updatedPhases[phaseIndex], status: newStatus };
+        
+        const newProgress = calculateTotalProgress(updatedPhases);
+        const newProjectStatus = newProgress === 100 ? 'completed' : project.status;
+        
+        return { ...project, phases: updatedPhases, progress_percentage: newProgress, status: newProjectStatus };
+      }
+      return project;
+    });
+
+    // Actualizar estado y localStorage
+    setActiveProjects(updatedProjects.filter(p => p.status !== 'completed'));
+    setCompletedProjects(updatedProjects.filter(p => p.status === 'completed'));
+    localStorage.setItem('projectsOverview', JSON.stringify(updatedProjects));
+    
+    toast({
+      title: "Fase actualizada",
+      description: "El progreso del proyecto se ha actualizado",
+    });
   };
 
   const getStatusBadge = (status: string) => {
@@ -203,10 +254,18 @@ export default function ProgressOverview() {
                     <div className="lg:col-span-2">
                       <div className="space-y-2">
                         <h4 className="text-sm font-medium text-foreground">Fases del Proyecto</h4>
-                        <div className="flex gap-2 flex-wrap">
+                        <div className="grid grid-cols-2 gap-2">
                           {project.phases.map((phase, index) => (
-                            <div key={index} className="flex items-center gap-1">
-                              {getStatusBadge(phase.status)}
+                            <div key={index} className="flex items-center gap-2">
+                              <select
+                                value={phase.status}
+                                onChange={(e) => updatePhaseStatus(project.id, index, e.target.value as ProjectOverview['phases'][0]['status'])}
+                                className="text-xs px-2 py-1 border border-border rounded bg-background text-foreground"
+                              >
+                                {Object.entries(phaseConfig).map(([key, config]) => (
+                                  <option key={key} value={key}>{config.label}</option>
+                                ))}
+                              </select>
                               <span className="text-xs text-muted-foreground">{phase.name}</span>
                             </div>
                           ))}

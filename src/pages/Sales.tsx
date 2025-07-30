@@ -61,56 +61,63 @@ export default function Sales() {
 
   const fetchLeads = async () => {
     try {
-      // Mock data para demostración - en producción vendría de la base de datos
-      const mockLeads: SalesLead[] = [
-        {
-          id: "1",
-          client_name: "Empresa ABC",
-          email: "contacto@empresaabc.com",
-          phone: "+52 55 1234 5678",
-          status: "interested",
-          progress: 40,
-          last_contact: "2024-01-28",
-          next_action: "Enviar propuesta detallada",
-          next_action_date: "2024-01-30",
-          action_type: "email",
-          budget_estimate: 500000,
-          probability: 70,
-          notes: "Cliente muy interesado en proyecto de oficinas"
-        },
-        {
-          id: "2",
-          client_name: "Construcciones XYZ",
-          email: "info@construccionesxyz.com",
-          phone: "+52 55 9876 5432",
-          status: "proposal_sent",
-          progress: 60,
-          last_contact: "2024-01-25",
-          next_action: "Seguimiento de propuesta",
-          next_action_date: "2024-01-29",
-          action_type: "call",
-          budget_estimate: 1200000,
-          probability: 85,
-          notes: "Propuesta enviada, esperando respuesta"
-        },
-        {
-          id: "3",
-          client_name: "Desarrollos Inmobiliarios",
-          email: "ventas@desarrollos.com",
-          phone: "+52 55 4444 7777",
-          status: "negotiating",
-          progress: 80,
-          last_contact: "2024-01-27",
-          next_action: "Reunión para negociar términos",
-          next_action_date: "2024-01-31",
-          action_type: "meeting",
-          budget_estimate: 2000000,
-          probability: 90,
-          notes: "En negociación final de precios y términos"
-        }
-      ];
-
-      setLeads(mockLeads);
+      // Cargar desde localStorage para persistencia local
+      const savedLeads = localStorage.getItem('salesLeads');
+      if (savedLeads) {
+        setLeads(JSON.parse(savedLeads));
+      } else {
+        // Datos iniciales si no hay datos guardados
+        const initialLeads: SalesLead[] = [
+          {
+            id: "1",
+            client_name: "Empresa ABC",
+            email: "contacto@empresaabc.com",
+            phone: "+52 55 1234 5678",
+            status: "interested",
+            progress: 40,
+            last_contact: "2024-01-28",
+            next_action: "Enviar propuesta detallada",
+            next_action_date: "2024-01-30",
+            action_type: "email",
+            budget_estimate: 500000,
+            probability: 70,
+            notes: "Cliente muy interesado en proyecto de oficinas"
+          },
+          {
+            id: "2",
+            client_name: "Construcciones XYZ",
+            email: "info@construccionesxyz.com",
+            phone: "+52 55 9876 5432",
+            status: "proposal_sent",
+            progress: 60,
+            last_contact: "2024-01-25",
+            next_action: "Seguimiento de propuesta",
+            next_action_date: "2024-01-29",
+            action_type: "call",
+            budget_estimate: 1200000,
+            probability: 85,
+            notes: "Propuesta enviada, esperando respuesta"
+          },
+          {
+            id: "3",
+            client_name: "Desarrollos Inmobiliarios",
+            email: "ventas@desarrollos.com",
+            phone: "+52 55 4444 7777",
+            status: "negotiating",
+            progress: 80,
+            last_contact: "2024-01-27",
+            next_action: "Reunión para negociar términos",
+            next_action_date: "2024-01-31",
+            action_type: "meeting",
+            budget_estimate: 2000000,
+            probability: 90,
+            notes: "En negociación final de precios y términos"
+          }
+        ];
+        
+        setLeads(initialLeads);
+        localStorage.setItem('salesLeads', JSON.stringify(initialLeads));
+      }
     } catch (error) {
       console.error('Error fetching leads:', error);
       toast({
@@ -121,6 +128,28 @@ export default function Sales() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const updateLead = (leadId: string, updates: Partial<SalesLead>) => {
+    const updatedLeads = leads.map(lead => 
+      lead.id === leadId ? { ...lead, ...updates } : lead
+    );
+    setLeads(updatedLeads);
+    localStorage.setItem('salesLeads', JSON.stringify(updatedLeads));
+    
+    toast({
+      title: "Prospecto actualizado",
+      description: "Los cambios se han guardado correctamente",
+    });
+  };
+
+  const updateStatus = (leadId: string, newStatus: SalesLead['status']) => {
+    const config = statusConfig[newStatus];
+    updateLead(leadId, { 
+      status: newStatus, 
+      progress: config.progress,
+      last_contact: new Date().toISOString().split('T')[0]
+    });
   };
 
   const filterLeads = () => {
@@ -320,10 +349,23 @@ export default function Sales() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline">
-                        {getActionIcon(lead.action_type)}
-                      </Button>
-                      <Button size="sm" variant="outline">
+                      <select
+                        value={lead.status}
+                        onChange={(e) => updateStatus(lead.id, e.target.value as SalesLead['status'])}
+                        className="px-2 py-1 text-xs border border-border rounded bg-background text-foreground"
+                      >
+                        {Object.entries(statusConfig).map(([key, config]) => (
+                          <option key={key} value={key}>{config.label}</option>
+                        ))}
+                      </select>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          const newAction = prompt("Nueva acción:", lead.next_action);
+                          if (newAction) updateLead(lead.id, { next_action: newAction });
+                        }}
+                      >
                         <Calendar className="h-4 w-4" />
                       </Button>
                     </div>
