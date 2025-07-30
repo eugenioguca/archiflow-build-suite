@@ -136,7 +136,19 @@ All colors MUST be HSL.
   }
 
   .card-hover {
-    @apply transition-all duration-200 hover:shadow-lg hover:-translate-y-1;
+    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:shadow-primary/10;
+  }
+
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-sm border border-border/50 shadow-lg;
+  }
+
+  .glass-input {
+    @apply bg-background/60 backdrop-blur-sm border border-border/60 focus:border-primary/60 focus:bg-background/80 transition-all duration-200;
+  }
+
+  .subtle-glow {
+    @apply shadow-sm hover:shadow-md transition-shadow duration-200;
   }
 
   .gradient-primary {
@@ -151,7 +163,20 @@ All colors MUST be HSL.
     background: var(--gradient-warning);
   }
 
-  .gradient-purple {
-    background: var(--gradient-purple);
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  /* Glassmorphism effects */
+  .glass-effect {
+    @apply backdrop-blur-md bg-background/40 border border-white/10;
+  }
+
+  .glass-button {
+    @apply bg-primary/10 backdrop-blur-sm border border-primary/20 hover:bg-primary/20 transition-all duration-200;
+  }
+
+  .floating-effect {
+    @apply hover:scale-[1.02] transition-transform duration-200 hover:shadow-xl;
   }
 }
