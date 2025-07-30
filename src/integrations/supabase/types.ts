@@ -352,6 +352,7 @@ export type Database = {
       profiles: {
         Row: {
           approval_status: string | null
+          avatar_url: string | null
           created_at: string
           email: string
           full_name: string
@@ -363,6 +364,7 @@ export type Database = {
         }
         Insert: {
           approval_status?: string | null
+          avatar_url?: string | null
           created_at?: string
           email: string
           full_name: string
@@ -374,6 +376,7 @@ export type Database = {
         }
         Update: {
           approval_status?: string | null
+          avatar_url?: string | null
           created_at?: string
           email?: string
           full_name?: string

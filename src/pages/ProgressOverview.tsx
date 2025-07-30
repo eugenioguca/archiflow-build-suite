@@ -4,12 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { MapPin, User, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/DatePicker";
 import { EditableCell } from "@/components/EditableCell";
+import { UserAvatar } from "@/components/UserAvatar";
 
 interface ProjectOverview {
   id: string;
@@ -21,6 +21,7 @@ interface ProjectOverview {
   assigned_team: {
     name: string;
     initials: string;
+    avatar_url?: string | null;
   }[];
   phases: {
     name: string;
@@ -71,9 +72,9 @@ export default function ProgressOverview() {
             progress_percentage: 60,
             status: 'construction',
             assigned_team: [
-              { name: "Juan Pérez", initials: "JP" },
-              { name: "María García", initials: "MG" },
-              { name: "Carlos López", initials: "CL" }
+              { name: "Juan Pérez", initials: "JP", avatar_url: null },
+              { name: "María García", initials: "MG", avatar_url: null },
+              { name: "Carlos López", initials: "CL", avatar_url: null }
             ],
             phases: [
               { name: "Diseño", value: 10, color: "bg-blue-500", status: 'completed' },
@@ -102,8 +103,8 @@ export default function ProgressOverview() {
             progress_percentage: 25,
             status: 'design',
             assigned_team: [
-              { name: "Ana Martínez", initials: "AM" },
-              { name: "Roberto Silva", initials: "RS" }
+              { name: "Ana Martínez", initials: "AM", avatar_url: null },
+              { name: "Roberto Silva", initials: "RS", avatar_url: null }
             ],
             phases: [
               { name: "Diseño", value: 15, color: "bg-yellow-500", status: 'in_progress' },
@@ -175,7 +176,7 @@ export default function ProgressOverview() {
       progress_percentage: 0,
       status: 'planning',
       assigned_team: [
-        { name: "Nuevo Encargado", initials: "NE" }
+        { name: "Nuevo Encargado", initials: "NE", avatar_url: null }
       ],
       phases: [
         { name: "Diseño", value: 10, color: "bg-blue-500", status: 'not_started' },
@@ -316,20 +317,25 @@ export default function ProgressOverview() {
                         />
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <div className="flex -space-x-2">
-                          {project.assigned_team.map((member, index) => (
-                            <Avatar key={index} className="h-8 w-8 border-2 border-background">
-                              <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-                                {member.initials}
-                              </AvatarFallback>
-                            </Avatar>
-                          ))}
-                        </div>
-                      </div>
-                    </TableCell>
+                     <TableCell>
+                       <div className="flex items-center gap-2">
+                         <User className="h-4 w-4 text-muted-foreground" />
+                         <div className="flex -space-x-2">
+                           {project.assigned_team.map((member, index) => (
+                             <UserAvatar 
+                               key={index}
+                               user={{ 
+                                 full_name: member.name, 
+                                 avatar_url: member.avatar_url 
+                               }}
+                               size="sm"
+                               showTooltip={true}
+                               className="border-2 border-background"
+                             />
+                           ))}
+                         </div>
+                       </div>
+                     </TableCell>
                     <TableCell>
                       <div className="space-y-2">
                         <div className="flex justify-between">

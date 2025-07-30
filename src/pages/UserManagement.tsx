@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,8 +9,9 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Users, Shield, Settings, Palette, Upload, Image } from "lucide-react";
+import { Loader2, Users, Shield, Settings, Palette, Upload, Image, Camera } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UserAvatar } from "@/components/UserAvatar";
 
 interface User {
   id: string;
@@ -20,6 +21,7 @@ interface User {
   role: 'admin' | 'employee' | 'client';
   approval_status: 'pending' | 'approved' | 'rejected';
   created_at: string;
+  avatar_url?: string | null;
   permissions?: UserPermission[];
 }
 
@@ -65,6 +67,8 @@ export default function UserManagement() {
     company_name: 'Mi Empresa'
   });
   const [activeTab, setActiveTab] = useState('users');
+  const [uploadingAvatar, setUploadingAvatar] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -155,6 +159,81 @@ export default function UserManagement() {
         variant: "destructive"
       });
     }
+  };
+
+  const uploadAvatar = async (userId: string, file: File) => {
+    setUploadingAvatar(userId);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${userId}/avatar.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('user-avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('user-avatars')
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('user_id', userId);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: "Foto actualizada",
+        description: "La foto de perfil se ha actualizado correctamente"
+      });
+
+      fetchUsers();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la foto de perfil",
+        variant: "destructive"
+      });
+    } finally {
+      setUploadingAvatar(null);
+    }
+  };
+
+  const handleAvatarClick = (userId: string) => {
+    fileInputRef.current?.click();
+    fileInputRef.current?.setAttribute('data-user-id', userId);
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    const userId = event.target.getAttribute('data-user-id');
+    
+    if (file && userId) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Error",
+          description: "El archivo debe ser menor a 5MB",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Error",
+          description: "Solo se permiten archivos de imagen",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      uploadAvatar(userId, file);
+    }
+    
+    // Reset input
+    event.target.value = '';
   };
 
   const updateUserRole = async (userId: string, newRole: 'admin' | 'employee' | 'client') => {
@@ -351,16 +430,39 @@ export default function UserManagement() {
                     onClick={() => setSelectedUser(user)}
                   >
                     <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{user.full_name}</p>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant={getRoleBadgeVariant(user.role)}>
-                            {getRoleLabel(user.role)}
-                          </Badge>
-                          <Badge variant={getApprovalBadgeVariant(user.approval_status)}>
-                            {getApprovalLabel(user.approval_status)}
-                          </Badge>
+                      <div className="flex items-center gap-3">
+                         <div 
+                           className="relative cursor-pointer hover:opacity-80 transition-opacity"
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             handleAvatarClick(user.user_id);
+                           }}
+                         >
+                           <UserAvatar 
+                             user={user} 
+                             size="md" 
+                             showTooltip={false}
+                           />
+                           {uploadingAvatar === user.user_id && (
+                             <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                               <Loader2 className="h-4 w-4 animate-spin text-white" />
+                             </div>
+                           )}
+                           <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-1 cursor-pointer hover:bg-primary/80 transition-colors">
+                             <Camera className="h-3 w-3" />
+                           </div>
+                         </div>
+                        <div>
+                          <p className="font-medium">{user.full_name}</p>
+                          <p className="text-sm text-muted-foreground">{user.email}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant={getRoleBadgeVariant(user.role)}>
+                              {getRoleLabel(user.role)}
+                            </Badge>
+                            <Badge variant={getApprovalBadgeVariant(user.approval_status)}>
+                              {getApprovalLabel(user.approval_status)}
+                            </Badge>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -657,6 +759,14 @@ export default function UserManagement() {
           </div>
         </TabsContent>
       </Tabs>
+      
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileChange}
+      />
     </div>
   );
 }

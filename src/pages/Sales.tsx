@@ -6,10 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, Phone, Mail, MessageSquare, Video, Plus, Filter, Edit2 } from "lucide-react";
+import { Calendar, Phone, Mail, MessageSquare, Video, Plus, Filter, Edit2, Settings } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { DatePicker } from "@/components/DatePicker";
 import { EditableCell } from "@/components/EditableCell";
+import { CustomizableTable } from "@/components/CustomizableTable";
 
 interface SalesLead {
   id: string;
@@ -51,6 +52,14 @@ export default function Sales() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
+  const [showCustomTable, setShowCustomTable] = useState(false);
+  const [customColumns, setCustomColumns] = useState<any[]>([
+    { id: 'client_name', header: 'Cliente', type: 'text', editable: true, sortable: true },
+    { id: 'status', header: 'Estado', type: 'select', options: ['lead', 'contacted', 'interested', 'proposal_sent', 'negotiating', 'won', 'lost'], editable: true, sortable: true },
+    { id: 'budget_estimate', header: 'Valor Estimado', type: 'number', editable: true, sortable: true },
+    { id: 'probability', header: 'Probabilidad', type: 'number', editable: true, sortable: true },
+    { id: 'next_action', header: 'Próxima Acción', type: 'text', editable: true, sortable: true },
+  ]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -245,10 +254,19 @@ export default function Sales() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-foreground">CRM de Ventas</h1>
-        <Button onClick={addNewLead}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Prospecto
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowCustomTable(!showCustomTable)}
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            {showCustomTable ? 'Vista Estándar' : 'Vista Personalizable'}
+          </Button>
+          <Button onClick={addNewLead}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Prospecto
+          </Button>
+        </div>
       </div>
 
       {/* Métricas del Pipeline */}
@@ -319,8 +337,31 @@ export default function Sales() {
         </CardContent>
       </Card>
 
-      {/* Tabla de Prospectos */}
-      <Card>
+      {/* Vista Personalizable o Tabla Estándar */}
+      {showCustomTable ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Tabla Personalizable de Ventas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CustomizableTable
+              data={filteredLeads}
+              columns={customColumns}
+              onDataChange={(newData) => {
+                setLeads(newData as SalesLead[]);
+                localStorage.setItem('salesLeads', JSON.stringify(newData));
+              }}
+              onColumnsChange={setCustomColumns}
+              storageKey="sales_table"
+              title="CRM de Ventas"
+              canAddRows={true}
+              canDeleteRows={true}
+              canCustomizeColumns={true}
+            />
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
         <CardHeader>
           <CardTitle className="text-xl text-foreground">Pipeline de Ventas</CardTitle>
         </CardHeader>
@@ -450,6 +491,7 @@ export default function Sales() {
           </Table>
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }

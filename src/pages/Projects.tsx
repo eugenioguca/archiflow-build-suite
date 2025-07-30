@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Building2, Calendar, DollarSign, MoreHorizontal, Edit, Trash2, Users } from 'lucide-react';
+import { Plus, Search, Building2, Calendar, DollarSign, MoreHorizontal, Edit, Trash2, Users, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +13,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { CustomizableTable } from '@/components/CustomizableTable';
+import { UserAvatar } from '@/components/UserAvatar';
 
 interface Project {
   id: string;
@@ -25,6 +27,7 @@ interface Project {
   estimated_completion: string | null;
   actual_completion: string | null;
   progress_percentage: number;
+  assigned_team?: string;
   client: {
     id: string;
     full_name: string;
@@ -63,6 +66,15 @@ export default function Projects() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [showCustomTable, setShowCustomTable] = useState(false);
+  const [customColumns, setCustomColumns] = useState<any[]>([
+    { id: 'name', header: 'Nombre del Proyecto', type: 'text', editable: true, sortable: true },
+    { id: 'client_name', header: 'Cliente', type: 'text', editable: false, sortable: true },
+    { id: 'status', header: 'Estado', type: 'select', options: ['planning', 'design', 'permits', 'construction', 'completed', 'cancelled'], editable: true, sortable: true },
+    { id: 'assigned_team', header: 'Equipo Asignado', type: 'text', editable: true, sortable: true },
+    { id: 'progress_percentage', header: 'Progreso (%)', type: 'number', editable: true, sortable: true },
+    { id: 'budget', header: 'Presupuesto', type: 'number', editable: true, sortable: true },
+  ]);
 
   useEffect(() => {
     fetchProjects();
@@ -220,6 +232,29 @@ export default function Projects() {
     return new Date(dateString).toLocaleDateString('es-MX');
   };
 
+  const convertProjectsToTableData = () => {
+    return projects.map(project => ({
+      id: project.id,
+      name: project.name,
+      client_name: project.client.full_name,
+      status: project.status,
+      assigned_team: project.assigned_team || '',
+      progress_percentage: project.progress_percentage,
+      budget: project.budget || 0,
+      description: project.description || '',
+      start_date: project.start_date || '',
+      estimated_completion: project.estimated_completion || '',
+    }));
+  };
+
+  const handleTableDataChange = (newData: Record<string, any>[]) => {
+    // Aquí podrías sincronizar con la base de datos si es necesario
+    toast({
+      title: "Datos actualizados",
+      description: "Los cambios se han guardado en la tabla personalizada",
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -236,13 +271,22 @@ export default function Projects() {
           <p className="text-muted-foreground">Administra los proyectos de construcción</p>
         </div>
         
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Proyecto
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowCustomTable(!showCustomTable)}
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            {showCustomTable ? 'Vista Estándar' : 'Vista Personalizable'}
+          </Button>
+          
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={resetForm}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo Proyecto
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
@@ -380,6 +424,7 @@ export default function Projects() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Filtros */}
@@ -410,9 +455,31 @@ export default function Projects() {
         </Select>
       </div>
 
-      {/* Lista de proyectos */}
-      <div className="grid gap-6">
-        {filteredProjects.map((project) => (
+      {/* Vista Personalizable */}
+      {showCustomTable ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Tabla Personalizable de Proyectos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CustomizableTable
+              data={convertProjectsToTableData()}
+              columns={customColumns}
+              onDataChange={handleTableDataChange}
+              onColumnsChange={setCustomColumns}
+              storageKey="projects_table"
+              title="Gestión de Proyectos"
+              canAddRows={true}
+              canDeleteRows={true}
+              canCustomizeColumns={true}
+            />
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Lista de proyectos */}
+          <div className="grid gap-6">
+            {filteredProjects.map((project) => (
           <Card key={project.id}>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -503,7 +570,9 @@ export default function Projects() {
             </CardContent>
           </Card>
         )}
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
