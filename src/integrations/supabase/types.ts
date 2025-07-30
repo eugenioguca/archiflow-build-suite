@@ -70,43 +70,97 @@ export type Database = {
           address: string | null
           assigned_advisor_id: string | null
           budget: number | null
+          company_size: string | null
           created_at: string
+          decision_maker_name: string | null
+          decision_maker_role: string | null
           email: string | null
           full_name: string
           id: string
+          last_contact_date: string | null
+          lead_score: number | null
+          lead_source: Database["public"]["Enums"]["lead_source"] | null
+          location_details: Json | null
+          next_contact_date: string | null
           notes: string | null
           phone: string | null
+          preferred_contact_method:
+            | Database["public"]["Enums"]["contact_method"]
+            | null
+          priority: Database["public"]["Enums"]["priority_level"] | null
           profile_id: string | null
+          project_size: string | null
+          project_type: Database["public"]["Enums"]["project_type"] | null
+          social_media: Json | null
           status: Database["public"]["Enums"]["client_status"]
+          tags: string[] | null
+          timeline_months: number | null
           updated_at: string
+          website: string | null
         }
         Insert: {
           address?: string | null
           assigned_advisor_id?: string | null
           budget?: number | null
+          company_size?: string | null
           created_at?: string
+          decision_maker_name?: string | null
+          decision_maker_role?: string | null
           email?: string | null
           full_name: string
           id?: string
+          last_contact_date?: string | null
+          lead_score?: number | null
+          lead_source?: Database["public"]["Enums"]["lead_source"] | null
+          location_details?: Json | null
+          next_contact_date?: string | null
           notes?: string | null
           phone?: string | null
+          preferred_contact_method?:
+            | Database["public"]["Enums"]["contact_method"]
+            | null
+          priority?: Database["public"]["Enums"]["priority_level"] | null
           profile_id?: string | null
+          project_size?: string | null
+          project_type?: Database["public"]["Enums"]["project_type"] | null
+          social_media?: Json | null
           status?: Database["public"]["Enums"]["client_status"]
+          tags?: string[] | null
+          timeline_months?: number | null
           updated_at?: string
+          website?: string | null
         }
         Update: {
           address?: string | null
           assigned_advisor_id?: string | null
           budget?: number | null
+          company_size?: string | null
           created_at?: string
+          decision_maker_name?: string | null
+          decision_maker_role?: string | null
           email?: string | null
           full_name?: string
           id?: string
+          last_contact_date?: string | null
+          lead_score?: number | null
+          lead_source?: Database["public"]["Enums"]["lead_source"] | null
+          location_details?: Json | null
+          next_contact_date?: string | null
           notes?: string | null
           phone?: string | null
+          preferred_contact_method?:
+            | Database["public"]["Enums"]["contact_method"]
+            | null
+          priority?: Database["public"]["Enums"]["priority_level"] | null
           profile_id?: string | null
+          project_size?: string | null
+          project_type?: Database["public"]["Enums"]["project_type"] | null
+          social_media?: Json | null
           status?: Database["public"]["Enums"]["client_status"]
+          tags?: string[] | null
+          timeline_months?: number | null
           updated_at?: string
+          website?: string | null
         }
         Relationships: [
           {
@@ -121,6 +175,229 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_activities: {
+        Row: {
+          activity_type: Database["public"]["Enums"]["activity_type"]
+          attachments: Json | null
+          client_id: string
+          completed_date: string | null
+          contact_method: Database["public"]["Enums"]["contact_method"] | null
+          created_at: string
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          is_completed: boolean | null
+          next_action: string | null
+          next_action_date: string | null
+          outcome: string | null
+          scheduled_date: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_type: Database["public"]["Enums"]["activity_type"]
+          attachments?: Json | null
+          client_id: string
+          completed_date?: string | null
+          contact_method?: Database["public"]["Enums"]["contact_method"] | null
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          is_completed?: boolean | null
+          next_action?: string | null
+          next_action_date?: string | null
+          outcome?: string | null
+          scheduled_date?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_type?: Database["public"]["Enums"]["activity_type"]
+          attachments?: Json | null
+          client_id?: string
+          completed_date?: string | null
+          contact_method?: Database["public"]["Enums"]["contact_method"] | null
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          is_completed?: boolean | null
+          next_action?: string | null
+          next_action_date?: string | null
+          outcome?: string | null
+          scheduled_date?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_activities_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_metrics: {
+        Row: {
+          calls_made: number | null
+          created_at: string
+          date: string
+          emails_sent: number | null
+          id: string
+          leads_converted: number | null
+          meetings_held: number | null
+          proposals_sent: number | null
+          revenue_generated: number | null
+          user_id: string
+        }
+        Insert: {
+          calls_made?: number | null
+          created_at?: string
+          date?: string
+          emails_sent?: number | null
+          id?: string
+          leads_converted?: number | null
+          meetings_held?: number | null
+          proposals_sent?: number | null
+          revenue_generated?: number | null
+          user_id: string
+        }
+        Update: {
+          calls_made?: number | null
+          created_at?: string
+          date?: string
+          emails_sent?: number | null
+          id?: string
+          leads_converted?: number | null
+          meetings_held?: number | null
+          proposals_sent?: number | null
+          revenue_generated?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      crm_proposals: {
+        Row: {
+          amount: number | null
+          client_id: string
+          created_at: string
+          created_by: string
+          currency: string | null
+          description: string | null
+          document_url: string | null
+          id: string
+          proposal_date: string
+          status: string | null
+          terms_conditions: string | null
+          title: string
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          amount?: number | null
+          client_id: string
+          created_at?: string
+          created_by: string
+          currency?: string | null
+          description?: string | null
+          document_url?: string | null
+          id?: string
+          proposal_date?: string
+          status?: string | null
+          terms_conditions?: string | null
+          title: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          amount?: number | null
+          client_id?: string
+          created_at?: string
+          created_by?: string
+          currency?: string | null
+          description?: string | null
+          document_url?: string | null
+          id?: string
+          proposal_date?: string
+          status?: string | null
+          terms_conditions?: string | null
+          title?: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_proposals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_reminders: {
+        Row: {
+          activity_id: string | null
+          client_id: string
+          created_at: string
+          email_sent: boolean | null
+          id: string
+          is_sent: boolean | null
+          message: string
+          popup_shown: boolean | null
+          reminder_date: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          activity_id?: string | null
+          client_id: string
+          created_at?: string
+          email_sent?: boolean | null
+          id?: string
+          is_sent?: boolean | null
+          message: string
+          popup_shown?: boolean | null
+          reminder_date: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          activity_id?: string | null
+          client_id?: string
+          created_at?: string
+          email_sent?: boolean | null
+          id?: string
+          is_sent?: boolean | null
+          message?: string
+          popup_shown?: boolean | null
+          reminder_date?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_reminders_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "crm_activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_reminders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
@@ -541,7 +818,23 @@ export type Database = {
       }
     }
     Enums: {
+      activity_type:
+        | "call"
+        | "email"
+        | "meeting"
+        | "proposal_sent"
+        | "site_visit"
+        | "follow_up"
+        | "negotiation"
+        | "contract_review"
       client_status: "potential" | "existing" | "active" | "completed"
+      contact_method:
+        | "phone"
+        | "email"
+        | "whatsapp"
+        | "meeting"
+        | "site_visit"
+        | "video_call"
       expense_category:
         | "administration"
         | "sales"
@@ -554,6 +847,14 @@ export type Database = {
         | "maintenance"
         | "other"
       income_payment_status: "pending" | "partial" | "paid" | "overdue"
+      lead_source:
+        | "website"
+        | "referral"
+        | "social_media"
+        | "advertisement"
+        | "cold_call"
+        | "event"
+        | "partner"
       module_name:
         | "dashboard"
         | "clients"
@@ -562,6 +863,7 @@ export type Database = {
         | "finances"
         | "accounting"
         | "progress_photos"
+      priority_level: "low" | "medium" | "high" | "urgent"
       project_status:
         | "planning"
         | "design"
@@ -569,6 +871,13 @@ export type Database = {
         | "construction"
         | "completed"
         | "cancelled"
+      project_type:
+        | "residential"
+        | "commercial"
+        | "industrial"
+        | "renovation"
+        | "landscape"
+        | "interior_design"
       receivable_status: "pending" | "partial" | "paid" | "overdue"
       user_role: "admin" | "employee" | "client"
     }
@@ -698,7 +1007,25 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      activity_type: [
+        "call",
+        "email",
+        "meeting",
+        "proposal_sent",
+        "site_visit",
+        "follow_up",
+        "negotiation",
+        "contract_review",
+      ],
       client_status: ["potential", "existing", "active", "completed"],
+      contact_method: [
+        "phone",
+        "email",
+        "whatsapp",
+        "meeting",
+        "site_visit",
+        "video_call",
+      ],
       expense_category: [
         "administration",
         "sales",
@@ -713,6 +1040,15 @@ export const Constants = {
         "other",
       ],
       income_payment_status: ["pending", "partial", "paid", "overdue"],
+      lead_source: [
+        "website",
+        "referral",
+        "social_media",
+        "advertisement",
+        "cold_call",
+        "event",
+        "partner",
+      ],
       module_name: [
         "dashboard",
         "clients",
@@ -722,6 +1058,7 @@ export const Constants = {
         "accounting",
         "progress_photos",
       ],
+      priority_level: ["low", "medium", "high", "urgent"],
       project_status: [
         "planning",
         "design",
@@ -729,6 +1066,14 @@ export const Constants = {
         "construction",
         "completed",
         "cancelled",
+      ],
+      project_type: [
+        "residential",
+        "commercial",
+        "industrial",
+        "renovation",
+        "landscape",
+        "interior_design",
       ],
       receivable_status: ["pending", "partial", "paid", "overdue"],
       user_role: ["admin", "employee", "client"],
