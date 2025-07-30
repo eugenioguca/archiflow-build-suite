@@ -35,6 +35,7 @@ const adminItems = [
   { title: "Finanzas", url: "/finances", icon: DollarSign, color: "text-blue-600" },
   { title: "Contabilidad", url: "/accounting", icon: Calculator, color: "text-blue-600" },
   { title: "Fotos de Avance", url: "/progress-photos", icon: Camera, color: "text-blue-600" },
+  { title: "Gestión de Usuarios", url: "/user-management", icon: User, color: "text-blue-600" },
 ];
 
 const clientItems = [

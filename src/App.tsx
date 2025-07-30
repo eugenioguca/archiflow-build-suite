@@ -14,6 +14,7 @@ import Documents from "./pages/Documents";
 import Finances from "./pages/Finances";
 import Accounting from "./pages/Accounting";
 import ProgressPhotos from "./pages/ProgressPhotos";
+import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -112,6 +113,16 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <Accounting />
+                  </Layout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/user-management" 
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <UserManagement />
                   </Layout>
                 </ProtectedRoute>
               } 
