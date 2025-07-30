@@ -14,6 +14,8 @@ import Documents from "./pages/Documents";
 import Finances from "./pages/Finances";
 import Accounting from "./pages/Accounting";
 import ProgressPhotos from "./pages/ProgressPhotos";
+import ProgressOverview from "./pages/ProgressOverview";
+import Sales from "./pages/Sales";
 import UserManagement from "./pages/UserManagement";
 import PendingApproval from "./components/PendingApproval";
 import NotFound from "./pages/NotFound";
@@ -119,6 +121,26 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <Accounting />
+                  </Layout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/progress-overview" 
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <ProgressOverview />
+                  </Layout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/sales" 
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Sales />
                   </Layout>
                 </ProtectedRoute>
               } 

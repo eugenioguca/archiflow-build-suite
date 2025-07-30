@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Building2, DollarSign, Camera, TrendingUp, AlertCircle, Calendar, FileText } from 'lucide-react';
+import { Users, Building2, DollarSign, Camera, TrendingUp, AlertCircle, Calendar, FileText, BarChart3 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -188,64 +188,64 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Tarjetas de estadísticas principales */}
+      {/* Métricas de Ventas y Avances de Proyectos */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="card-hover border-0 bg-gradient-to-br from-orange/10 to-orange/5 border-l-4 border-l-orange">
+        <Card className="card-hover border-0 bg-gradient-to-br from-green-100/50 to-green-50/50 border-l-4 border-l-green-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Clientes Activos</CardTitle>
-            <div className="p-2 bg-orange/20 rounded-lg">
-              <Users className="h-5 w-5 text-orange" />
+            <CardTitle className="text-sm font-medium">Pipeline de Ventas</CardTitle>
+            <div className="p-2 bg-green-500/20 rounded-lg">
+              <TrendingUp className="h-5 w-5 text-green-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-orange">{stats.activeClients}</div>
+            <div className="text-3xl font-bold text-green-600">$1.2M</div>
             <p className="text-xs text-muted-foreground mt-1">
-              <span className="text-orange font-medium">+{stats.potentialClients}</span> potenciales
+              <span className="text-green-600 font-medium">+15%</span> este mes
             </p>
           </CardContent>
         </Card>
 
-        <Card className="card-hover border-0 bg-gradient-to-br from-success/10 to-success/5 border-l-4 border-l-success">
+        <Card className="card-hover border-0 bg-gradient-to-br from-blue-100/50 to-blue-50/50 border-l-4 border-l-blue-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Proyectos en Curso</CardTitle>
-            <div className="p-2 bg-success/20 rounded-lg">
-              <Building2 className="h-5 w-5 text-success" />
+            <CardTitle className="text-sm font-medium">Proyectos Activos</CardTitle>
+            <div className="p-2 bg-blue-500/20 rounded-lg">
+              <Building2 className="h-5 w-5 text-blue-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-success">{stats.activeProjects}</div>
+            <div className="text-3xl font-bold text-blue-600">{stats.activeProjects}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              <span className="text-success font-medium">{stats.completedProjects}</span> completados
+              <span className="text-blue-600 font-medium">78%</span> progreso promedio
             </p>
           </CardContent>
         </Card>
 
-        <Card className="card-hover border-0 bg-gradient-to-br from-info/10 to-info/5 border-l-4 border-l-info">
+        <Card className="card-hover border-0 bg-gradient-to-br from-purple-100/50 to-purple-50/50 border-l-4 border-l-purple-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Gastos del Mes</CardTitle>
-            <div className="p-2 bg-info/20 rounded-lg">
-              <DollarSign className="h-5 w-5 text-info" />
+            <CardTitle className="text-sm font-medium">Clientes Potenciales</CardTitle>
+            <div className="p-2 bg-purple-500/20 rounded-lg">
+              <Users className="h-5 w-5 text-purple-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-info">{formatCurrency(stats.monthlyExpenses)}</div>
+            <div className="text-3xl font-bold text-purple-600">12</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Total: {formatCurrency(stats.totalExpenses)}
+              <span className="text-purple-600 font-medium">85%</span> probabilidad promedio
             </p>
           </CardContent>
         </Card>
 
-        <Card className="card-hover border-0 bg-gradient-to-br from-pink/10 to-pink/5 border-l-4 border-l-pink">
+        <Card className="card-hover border-0 bg-gradient-to-br from-orange-100/50 to-orange-50/50 border-l-4 border-l-orange-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Fotos de Avance</CardTitle>
-            <div className="p-2 bg-pink/20 rounded-lg">
-              <Camera className="h-5 w-5 text-pink" />
+            <CardTitle className="text-sm font-medium">Tasa de Conversión</CardTitle>
+            <div className="p-2 bg-orange-500/20 rounded-lg">
+              <BarChart3 className="h-5 w-5 text-orange-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-pink">{stats.totalPhotos}</div>
+            <div className="text-3xl font-bold text-orange-600">68%</div>
             <p className="text-xs text-muted-foreground mt-1">
-              <span className="text-pink font-medium">+{stats.recentPhotos}</span> esta semana
+              <span className="text-orange-600 font-medium">+5%</span> vs mes anterior
             </p>
           </CardContent>
         </Card>
