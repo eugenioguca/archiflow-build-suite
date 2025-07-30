@@ -7,7 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { CustomizableTable } from "@/components/CustomizableTable";
 import { ClientNotesDialog } from "@/components/ClientNotesDialog";
 import { 
   Users, 
@@ -223,58 +222,91 @@ export default function Sales() {
           </Card>
         </div>
 
-          <CustomizableTable
-            data={clients}
-            columns={[
-              {
-                header: 'Cliente',
-                cell: ({ row }: any) => (
-                  <div className="space-y-1">
-                    <p className="font-medium text-foreground">{row.full_name}</p>
-                    <p className="text-sm text-muted-foreground">{row.email}</p>
-                  </div>
-                )
-              },
-              {
-                header: 'Proyecto',
-                cell: ({ row }: any) => (
-                  <div className="space-y-1">
-                    <p className="font-medium capitalize">{row.project_type || 'No especificado'}</p>
-                    <p className="text-sm text-muted-foreground">${(row.budget || 0).toLocaleString('es-MX')}</p>
-                  </div>
-                )
-              },
-              {
-                header: 'Asesor',
-                cell: ({ row }: any) => row.assigned_advisor?.full_name || 'Sin asignar'
-              },
-              {
-                header: 'Acciones',
-                cell: ({ row }: any) => (
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => viewClientDetails(row)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <StickyNote className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => scheduleReminder(row.id, row.full_name)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Bell className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )
-              }
-            ]}
-            searchPlaceholder="Buscar clientes potenciales..."
-            title="Pipeline de Clientes Potenciales"
-          />
+          <div className="bg-background/60 backdrop-blur-xl border border-border/50 rounded-lg">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Pipeline de Clientes Potenciales ({clients.length})</h3>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border/50">
+                      <th className="text-left p-3 font-medium">Cliente</th>
+                      <th className="text-left p-3 font-medium">Proyecto</th>
+                      <th className="text-left p-3 font-medium">Asesor</th>
+                      <th className="text-left p-3 font-medium">Registrado por</th>
+                      <th className="text-left p-3 font-medium">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {clients.map((client) => (
+                      <tr key={client.id} className="border-b border-border/30 hover:bg-muted/50">
+                        <td className="p-3">
+                          <div className="space-y-1">
+                            <p className="font-medium text-foreground">{client.full_name}</p>
+                            <p className="text-sm text-muted-foreground">{client.email}</p>
+                            <p className="text-xs text-muted-foreground">{client.phone}</p>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div className="space-y-1">
+                            <p className="font-medium capitalize">{client.project_type || 'No especificado'}</p>
+                            <p className="text-sm text-muted-foreground">
+                              ${(client.budget || 0).toLocaleString('es-MX')}
+                            </p>
+                            <Badge variant={client.priority === 'high' ? 'destructive' : 'secondary'} className="text-xs">
+                              {client.priority === 'high' ? 'Alta' : 
+                               client.priority === 'medium' ? 'Media' : 'Baja'}
+                            </Badge>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <span className="text-sm text-muted-foreground">
+                            {client.assigned_advisor?.full_name || 'Sin asignar'}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex items-center gap-2">
+                            <UserCheck className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">
+                              {client.created_by_profile?.full_name || 'Sistema'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => viewClientDetails(client)}
+                              className="h-8 w-8 p-0"
+                              title="Ver notas y detalles"
+                            >
+                              <StickyNote className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => scheduleReminder(client.id, client.full_name)}
+                              className="h-8 w-8 p-0"
+                              title="Programar recordatorio"
+                            >
+                              <Bell className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {clients.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  No hay clientes potenciales registrados
+                </div>
+              )}
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="closed" className="space-y-6">
@@ -339,42 +371,61 @@ export default function Sales() {
           </Card>
         </div>
 
-          <CustomizableTable
-            data={closedClients}
-            columns={[
-              {
-                header: 'Cliente',
-                cell: ({ row }: any) => (
-                  <div className="space-y-1">
-                    <p className="font-medium text-foreground">{row.full_name}</p>
-                    <p className="text-sm text-muted-foreground">{row.email}</p>
-                  </div>
-                )
-              },
-              {
-                header: 'Estado',
-                cell: ({ row }: any) => (
-                  <Badge variant={row.status === 'completed' ? 'default' : 'secondary'}>
-                    {row.status === 'completed' ? 'Completado' : 'Activo'}
-                  </Badge>
-                )
-              },
-              {
-                header: 'Valor',
-                cell: ({ row }: any) => (
-                  <span className="font-medium text-green-600">
-                    ${(row.budget || 0).toLocaleString('es-MX')}
-                  </span>
-                )
-              },
-              {
-                header: 'Asesor',
-                cell: ({ row }: any) => row.assigned_advisor?.full_name || 'Sin asignar'
-              }
-            ]}
-            searchPlaceholder="Buscar clientes cerrados..."
-            title="Clientes Cerrados"
-          />
+          <div className="bg-background/60 backdrop-blur-xl border border-border/50 rounded-lg">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Clientes Cerrados ({closedClients.length})</h3>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border/50">
+                      <th className="text-left p-3 font-medium">Cliente</th>
+                      <th className="text-left p-3 font-medium">Estado</th>
+                      <th className="text-left p-3 font-medium">Valor del Proyecto</th>
+                      <th className="text-left p-3 font-medium">Tipo</th>
+                      <th className="text-left p-3 font-medium">Asesor</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {closedClients.map((client) => (
+                      <tr key={client.id} className="border-b border-border/30 hover:bg-muted/50">
+                        <td className="p-3">
+                          <div className="space-y-1">
+                            <p className="font-medium text-foreground">{client.full_name}</p>
+                            <p className="text-sm text-muted-foreground">{client.email}</p>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <Badge variant={client.status === 'completed' ? 'default' : 'secondary'}>
+                            {client.status === 'completed' ? 'Completado' : 'Activo'}
+                          </Badge>
+                        </td>
+                        <td className="p-3">
+                          <span className="font-medium text-green-600">
+                            ${(client.budget || 0).toLocaleString('es-MX')}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <span className="capitalize">{client.project_type || 'No especificado'}</span>
+                        </td>
+                        <td className="p-3">
+                          <span className="text-sm text-muted-foreground">
+                            {client.assigned_advisor?.full_name || 'Sin asignar'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {closedClients.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  No hay clientes cerrados registrados
+                </div>
+              )}
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 
