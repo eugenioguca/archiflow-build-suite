@@ -23,8 +23,7 @@ export function SmartReminders() {
             full_name,
             last_contact_date,
             status,
-            priority,
-            profiles!inner(user_id, full_name)
+            priority
           `)
           .eq('status', 'potential')
           .or(`last_contact_date.is.null,last_contact_date.lt.${sevenDaysAgo.toISOString()}`)
@@ -70,8 +69,7 @@ export function SmartReminders() {
             id,
             full_name,
             next_contact_date,
-            priority,
-            profiles!inner(user_id, full_name)
+            priority
           `)
           .eq('status', 'potential')
           .eq('priority', 'high')

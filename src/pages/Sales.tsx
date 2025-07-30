@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ClientNotesDialog } from "@/components/ClientNotesDialog";
 import { CRMActivityTimeline } from "@/components/CRMActivityTimeline";
 import { CRMLeadScoring } from "@/components/CRMLeadScoring";
+import { EditableField } from "@/components/EditableField";
 import { useForm } from "react-hook-form";
 import { 
   Users, 
@@ -133,6 +134,9 @@ export default function Sales() {
   const [showReminderDialog, setShowReminderDialog] = useState(false);
   const [reminderClientId, setReminderClientId] = useState<string>("");
   const [notesDialog, setNotesDialog] = useState({ open: false, clientId: "", clientName: "" });
+  const [showActivities, setShowActivities] = useState(false);
+  const [editingClient, setEditingClient] = useState<string | null>(null);
+  const [editingField, setEditingField] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -215,6 +219,7 @@ export default function Sales() {
       setLoading(false);
     }
   };
+
 
   const createClient = async (data: Client) => {
     try {
@@ -574,7 +579,11 @@ export default function Sales() {
         </div>
         <div className="flex gap-2">
           {pendingReminders.length > 0 && (
-            <Badge variant="destructive" className="animate-pulse">
+            <Badge 
+              variant="destructive" 
+              className="animate-pulse cursor-pointer hover:bg-red-700 transition-colors"
+              onClick={() => setShowActivities(true)}
+            >
               <Bell className="h-4 w-4 mr-1" />
               {pendingReminders.length} recordatorios
             </Badge>
@@ -922,34 +931,78 @@ export default function Sales() {
                   <tbody>
                     {filteredClients.map((client) => (
                       <tr key={client.id} className="border-b border-border/30 hover:bg-muted/50">
-                        <td className="p-3">
-                          <div className="space-y-1">
-                            <p className="font-medium text-foreground">{client.full_name}</p>
-                            <p className="text-sm text-muted-foreground">{client.email}</p>
-                            <p className="text-xs text-muted-foreground">{client.phone}</p>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <div className="space-y-1">
-                            <p className="font-medium capitalize">{projectTypeConfig[client.project_type] || 'No especificado'}</p>
-                            <p className="text-sm text-muted-foreground">
-                              ${(client.budget || 0).toLocaleString('es-MX')}
-                            </p>
-                            <Badge variant={client.priority === 'urgent' ? 'destructive' : 
-                                           client.priority === 'high' ? 'default' : 'secondary'} className="text-xs">
-                              {client.priority === 'urgent' ? 'Urgente' :
-                               client.priority === 'high' ? 'Alta' :
-                               client.priority === 'medium' ? 'Media' : 'Baja'}
-                            </Badge>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <div className="flex items-center space-x-2">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-green-500 flex items-center justify-center text-white text-xs font-bold">
-                              {client.lead_score || calculateLeadScore(client)}
-                            </div>
-                          </div>
-                        </td>
+                         <td className="p-3">
+                           <div className="space-y-1">
+                             <EditableField
+                               value={client.full_name}
+                               onSave={(value) => updateClient(client.id, { full_name: value.toString() })}
+                               className="font-medium text-foreground"
+                             />
+                             <EditableField
+                               value={client.email || ''}
+                               onSave={(value) => updateClient(client.id, { email: value.toString() })}
+                               type="email"
+                               className="text-sm text-muted-foreground"
+                             />
+                             <EditableField
+                               value={client.phone || ''}
+                               onSave={(value) => updateClient(client.id, { phone: value.toString() })}
+                               type="phone"
+                               className="text-xs text-muted-foreground"
+                             />
+                           </div>
+                         </td>
+                         <td className="p-3">
+                           <div className="space-y-2">
+                             <EditableField
+                               value={client.project_type}
+                               onSave={(value) => updateClient(client.id, { project_type: value as any })}
+                               type="select"
+                               options={[
+                                 { value: 'residential', label: 'Residencial' },
+                                 { value: 'commercial', label: 'Comercial' },
+                                 { value: 'industrial', label: 'Industrial' },
+                                 { value: 'renovation', label: 'Remodelación' },
+                                 { value: 'landscape', label: 'Paisajismo' },
+                                 { value: 'interior_design', label: 'Diseño Interior' }
+                               ]}
+                               className="font-medium capitalize"
+                               displayTransform={(value) => projectTypeConfig[value as keyof typeof projectTypeConfig] || 'No especificado'}
+                             />
+                             <EditableField
+                               value={client.budget || 0}
+                               onSave={(value) => updateClient(client.id, { budget: Number(value) })}
+                               type="number"
+                               className="text-sm text-muted-foreground"
+                               displayTransform={(value) => `$${Number(value).toLocaleString('es-MX')}`}
+                             />
+                             <EditableField
+                               value={client.priority}
+                               onSave={(value) => updateClient(client.id, { priority: value as any })}
+                               type="select"
+                               options={[
+                                 { value: 'low', label: 'Baja' },
+                                 { value: 'medium', label: 'Media' },
+                                 { value: 'high', label: 'Alta' },
+                                 { value: 'urgent', label: 'Urgente' }
+                               ]}
+                               className="text-xs"
+                               displayTransform={(value) => {
+                                 const label = value === 'urgent' ? 'Urgente' :
+                                              value === 'high' ? 'Alta' :
+                                              value === 'medium' ? 'Media' : 'Baja';
+                                 return label;
+                               }}
+                             />
+                           </div>
+                         </td>
+                         <td className="p-3">
+                           <div className="flex items-center space-x-2">
+                             <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-green-500 flex items-center justify-center text-foreground text-xs font-bold">
+                               {client.lead_score || calculateLeadScore(client)}
+                             </div>
+                           </div>
+                         </td>
                         <td className="p-3">
                           <span className="text-sm text-muted-foreground">
                             {client.assigned_advisor?.full_name || 'Sin asignar'}
@@ -1136,10 +1189,62 @@ export default function Sales() {
         <TabsContent value="activities" className="space-y-6">
           <Card className="bg-background/60 backdrop-blur-xl border border-border/50">
             <CardHeader>
-              <CardTitle>Timeline de Actividades</CardTitle>
+              <CardTitle>Timeline de Actividades y Recordatorios</CardTitle>
             </CardHeader>
             <CardContent>
-              <CRMActivityTimeline clientId="" />
+              <div className="space-y-4">
+                {/* Recordatorios Pendientes */}
+                <div className="bg-yellow-50/50 border border-yellow-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-yellow-800 mb-3">Recordatorios Pendientes ({pendingReminders.length})</h4>
+                  {pendingReminders.length > 0 ? (
+                    <div className="space-y-2">
+                      {pendingReminders.map((reminder) => (
+                        <div key={reminder.id} className="flex items-center justify-between bg-white p-3 rounded border">
+                          <div>
+                            <p className="font-medium text-gray-900">{reminder.title}</p>
+                            <p className="text-sm text-gray-600">{reminder.message}</p>
+                            <p className="text-xs text-gray-500">
+                              {format(new Date(reminder.reminder_date), 'PPpp', { locale: es })}
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                await supabase
+                                  .from('crm_reminders')
+                                  .update({ is_sent: true })
+                                  .eq('id', reminder.id);
+                                fetchData();
+                                toast({
+                                  title: "Recordatorio marcado como atendido",
+                                  description: "El recordatorio ha sido procesado",
+                                });
+                              } catch (error) {
+                                console.error('Error updating reminder:', error);
+                              }
+                            }}
+                          >
+                            Marcar como atendido
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-yellow-700">No hay recordatorios pendientes</p>
+                  )}
+                </div>
+
+                {/* Activities Timeline for all clients */}
+                <div className="space-y-6">
+                  {filteredClients.map((client) => (
+                    <div key={client.id} className="border border-border/50 rounded-lg p-4">
+                      <h4 className="font-semibold mb-3 text-foreground">Actividades - {client.full_name}</h4>
+                      <CRMActivityTimeline clientId={client.id} />
+                    </div>
+                  ))}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -1191,6 +1296,91 @@ export default function Sales() {
         clientId={notesDialog.clientId}
         clientName={notesDialog.clientName}
       />
+
+      {/* Dialog para actividades y recordatorios */}
+      <Dialog open={showActivities} onOpenChange={setShowActivities}>
+        <DialogContent className="max-w-6xl h-[80vh] overflow-y-auto bg-background/95 backdrop-blur-xl border border-border/50">
+          <DialogHeader>
+            <DialogTitle>Actividades y Recordatorios del Sistema</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Recordatorios Pendientes */}
+            <div className="bg-yellow-50/50 border border-yellow-200 rounded-lg p-4">
+              <h4 className="font-semibold text-yellow-800 mb-3 flex items-center gap-2">
+                <Bell className="h-4 w-4" />
+                Recordatorios Pendientes ({pendingReminders.length})
+              </h4>
+              {pendingReminders.length > 0 ? (
+                <div className="space-y-3">
+                  {pendingReminders.map((reminder) => (
+                    <div key={reminder.id} className="flex items-center justify-between bg-white p-4 rounded border shadow-sm">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">{reminder.title}</p>
+                        <p className="text-sm text-gray-600 mt-1">{reminder.message}</p>
+                        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {format(new Date(reminder.reminder_date), 'PPpp', { locale: es })}
+                        </p>
+                      </div>
+                      <div className="flex gap-2 ml-4">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={async () => {
+                            try {
+                              await supabase
+                                .from('crm_reminders')
+                                .update({ is_sent: true })
+                                .eq('id', reminder.id);
+                              fetchData();
+                              toast({
+                                title: "Recordatorio procesado",
+                                description: "El recordatorio ha sido marcado como atendido",
+                              });
+                            } catch (error) {
+                              console.error('Error updating reminder:', error);
+                            }
+                          }}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Marcar como atendido
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-yellow-700">
+                  <Bell className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>No hay recordatorios pendientes</p>
+                </div>
+              )}
+            </div>
+
+            {/* Actividades por Cliente */}
+            <div className="space-y-6">
+              <h4 className="font-semibold text-foreground text-lg">Actividades por Cliente</h4>
+              {filteredClients.map((client) => (
+                <div key={client.id} className="border border-border/50 rounded-lg p-4 bg-background/50">
+                  <div className="flex items-center justify-between mb-4">
+                    <h5 className="font-semibold text-foreground">
+                      {client.full_name}
+                      <span className="ml-2 text-sm text-muted-foreground">
+                        (Score: {client.lead_score || calculateLeadScore(client)})
+                      </span>
+                    </h5>
+                    <Badge variant="outline">
+                      {statusConfig[client.status].label}
+                    </Badge>
+                  </div>
+                  <CRMActivityTimeline clientId={client.id} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

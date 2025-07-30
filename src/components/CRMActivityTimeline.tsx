@@ -95,7 +95,7 @@ export function CRMActivityTimeline({ clientId }: CRMActivityTimelineProps) {
         .from('crm_activities')
         .select(`
           *,
-          user:profiles!crm_activities_user_id_fkey(full_name)
+          user:profiles(full_name)
         `)
         .eq('client_id', clientId)
         .order('created_at', { ascending: false });
