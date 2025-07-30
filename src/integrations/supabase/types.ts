@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounts_receivable: {
+        Row: {
+          amount_due: number
+          amount_paid: number | null
+          client_id: string
+          created_at: string
+          due_date: string
+          id: string
+          income_id: string
+          status: Database["public"]["Enums"]["receivable_status"] | null
+          updated_at: string
+        }
+        Insert: {
+          amount_due: number
+          amount_paid?: number | null
+          client_id: string
+          created_at?: string
+          due_date: string
+          id?: string
+          income_id: string
+          status?: Database["public"]["Enums"]["receivable_status"] | null
+          updated_at?: string
+        }
+        Update: {
+          amount_due?: number
+          amount_paid?: number | null
+          client_id?: string
+          created_at?: string
+          due_date?: string
+          id?: string
+          income_id?: string
+          status?: Database["public"]["Enums"]["receivable_status"] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_receivable_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_receivable_income_id_fkey"
+            columns: ["income_id"]
+            isOneToOne: false
+            referencedRelation: "incomes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
@@ -201,6 +252,102 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      incomes: {
+        Row: {
+          amount: number
+          category: Database["public"]["Enums"]["income_category"]
+          client_id: string | null
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          invoice_date: string | null
+          invoice_number: string | null
+          payment_date: string | null
+          payment_status:
+            | Database["public"]["Enums"]["income_payment_status"]
+            | null
+          project_id: string | null
+          tax_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category: Database["public"]["Enums"]["income_category"]
+          client_id?: string | null
+          created_at?: string
+          created_by: string
+          description: string
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          payment_date?: string | null
+          payment_status?:
+            | Database["public"]["Enums"]["income_payment_status"]
+            | null
+          project_id?: string | null
+          tax_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: Database["public"]["Enums"]["income_category"]
+          client_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          payment_date?: string | null
+          payment_status?:
+            | Database["public"]["Enums"]["income_payment_status"]
+            | null
+          project_id?: string | null
+          tax_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incomes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incomes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_settings: {
+        Row: {
+          created_at: string
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          setting_key: string
+          setting_value: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -397,6 +544,13 @@ export type Database = {
         | "sales"
         | "financial"
         | "construction"
+      income_category:
+        | "construction_service"
+        | "consultation"
+        | "project_management"
+        | "maintenance"
+        | "other"
+      income_payment_status: "pending" | "partial" | "paid" | "overdue"
       module_name:
         | "dashboard"
         | "clients"
@@ -412,6 +566,7 @@ export type Database = {
         | "construction"
         | "completed"
         | "cancelled"
+      receivable_status: "pending" | "partial" | "paid" | "overdue"
       user_role: "admin" | "employee" | "client"
     }
     CompositeTypes: {
@@ -547,6 +702,14 @@ export const Constants = {
         "financial",
         "construction",
       ],
+      income_category: [
+        "construction_service",
+        "consultation",
+        "project_management",
+        "maintenance",
+        "other",
+      ],
+      income_payment_status: ["pending", "partial", "paid", "overdue"],
       module_name: [
         "dashboard",
         "clients",
@@ -564,6 +727,7 @@ export const Constants = {
         "completed",
         "cancelled",
       ],
+      receivable_status: ["pending", "partial", "paid", "overdue"],
       user_role: ["admin", "employee", "client"],
     },
   },

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Receipt, Calculator, FileText, TrendingUp, PieChart } from 'lucide-react';
+import { Plus, Receipt, Calculator, FileText, TrendingUp, PieChart, BookOpen, CreditCard } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -24,20 +24,54 @@ interface ExpenseWithTax {
   };
 }
 
+interface IncomeWithTax {
+  id: string;
+  description: string;
+  amount: number;
+  category: string;
+  invoice_number: string | null;
+  invoice_date: string | null;
+  tax_amount: number | null;
+  payment_status: string;
+  created_at: string;
+  project?: {
+    name: string;
+  };
+  client?: {
+    full_name: string;
+  };
+}
+
 const categoryLabels = {
   administration: 'Administración',
   sales: 'Ventas',
   financial: 'Financieros',
-  construction: 'Construcción'
+  construction: 'Construcción',
+  construction_service: 'Servicio de Construcción',
+  consultation: 'Consultoría',
+  project_management: 'Gestión de Proyectos',
+  maintenance: 'Mantenimiento',
+  other: 'Otros'
 };
 
 export default function Accounting() {
   const [expenses, setExpenses] = useState<ExpenseWithTax[]>([]);
+  const [incomes, setIncomes] = useState<IncomeWithTax[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchExpenses();
+    fetchData();
   }, []);
+
+  const fetchData = async () => {
+    try {
+      await Promise.all([fetchExpenses(), fetchIncomes()]);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchExpenses = async () => {
     try {
@@ -54,8 +88,24 @@ export default function Accounting() {
       setExpenses(data || []);
     } catch (error) {
       console.error('Error fetching expenses:', error);
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  const fetchIncomes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('incomes')
+        .select(`
+          *,
+          project:projects(name),
+          client:clients(full_name)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setIncomes(data || []);
+    } catch (error) {
+      console.error('Error fetching incomes:', error);
     }
   };
 
@@ -71,19 +121,31 @@ export default function Accounting() {
     return new Date(dateString).toLocaleDateString('es-MX');
   };
 
-  // Cálculos contables
+  // Cálculos contables principales
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const totalTaxes = expenses.reduce((sum, expense) => sum + (expense.tax_amount || 0), 0);
-  const totalWithTaxes = totalExpenses + totalTaxes;
+  const totalIncomes = incomes.reduce((sum, income) => sum + income.amount, 0);
+  const totalExpenseTaxes = expenses.reduce((sum, expense) => sum + (expense.tax_amount || 0), 0);
+  const totalIncomeTaxes = incomes.reduce((sum, income) => sum + (income.tax_amount || 0), 0);
   
-  // Gastos con facturas vs sin facturas
+  // IVA por pagar/cobrar (diferencia entre IVA cobrado e IVA pagado)
+  const ivaBalance = totalIncomeTaxes - totalExpenseTaxes;
+  
+  // Utilidad bruta
+  const grossProfit = totalIncomes - totalExpenses;
+  
+  // Gastos con facturas vs sin facturas (compliance fiscal)
   const expensesWithInvoice = expenses.filter(e => e.invoice_number);
   const expensesWithoutInvoice = expenses.filter(e => !e.invoice_number);
-  const invoiceComplianceRate = expenses.length > 0 ? (expensesWithInvoice.length / expenses.length) * 100 : 0;
+  const expenseComplianceRate = expenses.length > 0 ? (expensesWithInvoice.length / expenses.length) * 100 : 0;
+  
+  // Ingresos con facturas vs sin facturas
+  const incomesWithInvoice = incomes.filter(i => i.invoice_number);
+  const incomesWithoutInvoice = incomes.filter(i => !i.invoice_number);
+  const incomeComplianceRate = incomes.length > 0 ? (incomesWithInvoice.length / incomes.length) * 100 : 0;
 
-  // IVA por categoría (asumiendo 16% IVA estándar en México)
+  // IVA por categoría para gastos
   const VAT_RATE = 0.16;
-  const categoryTaxBreakdown = expenses.reduce((acc, expense) => {
+  const expenseCategoryTaxBreakdown = expenses.reduce((acc, expense) => {
     const category = expense.category;
     const subtotal = expense.amount;
     const iva = expense.tax_amount || (subtotal * VAT_RATE);
@@ -99,23 +161,48 @@ export default function Accounting() {
     return acc;
   }, {} as Record<string, { subtotal: number; iva: number; total: number }>);
 
-  // Gastos por mes para tendencias
-  const monthlyExpenses = expenses.reduce((acc, expense) => {
-    const month = new Date(expense.created_at).toLocaleDateString('es-MX', { 
+  // IVA por categoría para ingresos
+  const incomeCategoryTaxBreakdown = incomes.reduce((acc, income) => {
+    const category = income.category;
+    const subtotal = income.amount;
+    const iva = income.tax_amount || (subtotal * VAT_RATE);
+    
+    if (!acc[category]) {
+      acc[category] = { subtotal: 0, iva: 0, total: 0 };
+    }
+    
+    acc[category].subtotal += subtotal;
+    acc[category].iva += iva;
+    acc[category].total += subtotal + iva;
+    
+    return acc;
+  }, {} as Record<string, { subtotal: number; iva: number; total: number }>);
+
+  // Análisis mensual
+  const monthlyAnalysis = [...expenses, ...incomes].reduce((acc, item) => {
+    const month = new Date(item.created_at).toLocaleDateString('es-MX', { 
       year: 'numeric', 
       month: 'long' 
     });
     
     if (!acc[month]) {
-      acc[month] = { amount: 0, taxes: 0, count: 0 };
+      acc[month] = { income: 0, expense: 0, incomeTax: 0, expenseTax: 0, netProfit: 0 };
     }
     
-    acc[month].amount += expense.amount;
-    acc[month].taxes += expense.tax_amount || 0;
-    acc[month].count += 1;
+    if ('payment_status' in item) {
+      // Es un ingreso
+      acc[month].income += item.amount;
+      acc[month].incomeTax += item.tax_amount || 0;
+    } else {
+      // Es un gasto
+      acc[month].expense += item.amount;
+      acc[month].expenseTax += item.tax_amount || 0;
+    }
+    
+    acc[month].netProfit = acc[month].income - acc[month].expense;
     
     return acc;
-  }, {} as Record<string, { amount: number; taxes: number; count: number }>);
+  }, {} as Record<string, { income: number; expense: number; incomeTax: number; expenseTax: number; netProfit: number }>);
 
   if (loading) {
     return (
@@ -129,8 +216,8 @@ export default function Accounting() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Contabilidad</h1>
-          <p className="text-muted-foreground">Control contable y fiscal</p>
+          <h1 className="text-3xl font-bold">Contabilidad Fiscal</h1>
+          <p className="text-muted-foreground">Control contable y fiscal conforme a la legislación mexicana</p>
         </div>
       </div>
 
@@ -138,98 +225,192 @@ export default function Accounting() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Gastos</CardTitle>
-            <Calculator className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalExpenses)}</div>
+            <div className="text-2xl font-bold text-green-600">{formatCurrency(totalIncomes)}</div>
             <p className="text-xs text-muted-foreground">
-              Subtotal sin impuestos
+              Subtotal sin IVA
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">IVA Total</CardTitle>
-            <Receipt className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Gastos Totales</CardTitle>
+            <Calculator className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalTaxes)}</div>
+            <div className="text-2xl font-bold text-red-600">{formatCurrency(totalExpenses)}</div>
             <p className="text-xs text-muted-foreground">
-              Impuestos aplicados
+              Subtotal sin IVA
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total con IVA</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Utilidad Bruta</CardTitle>
+            <BookOpen className={`h-4 w-4 ${grossProfit >= 0 ? 'text-green-600' : 'text-red-600'}`} />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalWithTaxes)}</div>
+            <div className={`text-2xl font-bold ${grossProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatCurrency(grossProfit)}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Monto total final
+              Antes de impuestos
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cumplimiento Fiscal</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">IVA por {ivaBalance >= 0 ? 'Pagar' : 'Recuperar'}</CardTitle>
+            <CreditCard className={`h-4 w-4 ${ivaBalance >= 0 ? 'text-red-600' : 'text-green-600'}`} />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{invoiceComplianceRate.toFixed(1)}%</div>
+            <div className={`text-2xl font-bold ${ivaBalance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+              {formatCurrency(Math.abs(ivaBalance))}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Gastos con factura
+              IVA cobrado vs pagado
             </p>
           </CardContent>
         </Card>
       </div>
 
-      <Tabs defaultValue="breakdown" className="space-y-4">
+      <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="breakdown">Desglose por Categoría</TabsTrigger>
-          <TabsTrigger value="invoices">Control de Facturas</TabsTrigger>
-          <TabsTrigger value="trends">Tendencias Mensuales</TabsTrigger>
+          <TabsTrigger value="overview">Resumen Fiscal</TabsTrigger>
+          <TabsTrigger value="income-breakdown">Ingresos por Categoría</TabsTrigger>
+          <TabsTrigger value="expense-breakdown">Gastos por Categoría</TabsTrigger>
+          <TabsTrigger value="compliance">Cumplimiento Fiscal</TabsTrigger>
+          <TabsTrigger value="monthly">Análisis Mensual</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="breakdown">
+        <TabsContent value="overview">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Estado de Resultados Simplificado</CardTitle>
+                <CardDescription>Resumen de ingresos y gastos</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-center py-2 border-b">
+                  <span className="font-medium">Ingresos Totales</span>
+                  <span className="text-green-600 font-bold">{formatCurrency(totalIncomes)}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b">
+                  <span className="font-medium">IVA Cobrado</span>
+                  <span className="text-green-600">{formatCurrency(totalIncomeTaxes)}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b">
+                  <span className="font-medium">Gastos Totales</span>
+                  <span className="text-red-600 font-bold">{formatCurrency(totalExpenses)}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b">
+                  <span className="font-medium">IVA Pagado</span>
+                  <span className="text-red-600">{formatCurrency(totalExpenseTaxes)}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-t-2 border-primary">
+                  <span className="font-bold">Utilidad Bruta</span>
+                  <span className={`font-bold text-lg ${grossProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {formatCurrency(grossProfit)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2">
+                  <span className="font-bold">IVA por {ivaBalance >= 0 ? 'Pagar' : 'Recuperar'}</span>
+                  <span className={`font-bold ${ivaBalance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    {formatCurrency(Math.abs(ivaBalance))}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Indicadores de Cumplimiento Fiscal</CardTitle>
+                <CardDescription>Porcentajes de cumplimiento con SAT</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium">Ingresos Facturados</span>
+                    <span className="text-sm font-bold">{incomeComplianceRate.toFixed(1)}%</span>
+                  </div>
+                  <Progress value={incomeComplianceRate} className="h-2" />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {incomesWithInvoice.length} de {incomes.length} ingresos con factura
+                  </p>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium">Gastos Facturados</span>
+                    <span className="text-sm font-bold">{expenseComplianceRate.toFixed(1)}%</span>
+                  </div>
+                  <Progress value={expenseComplianceRate} className="h-2" />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {expensesWithInvoice.length} de {expenses.length} gastos con factura
+                  </p>
+                </div>
+
+                <div className="p-4 bg-muted rounded-lg">
+                  <h4 className="font-medium mb-2">Recomendaciones Fiscales</h4>
+                  <ul className="text-sm space-y-1 text-muted-foreground">
+                    {incomeComplianceRate < 90 && (
+                      <li>• Asegurar facturación de todos los ingresos</li>
+                    )}
+                    {expenseComplianceRate < 80 && (
+                      <li>• Solicitar facturas de gastos deducibles</li>
+                    )}
+                    {ivaBalance > 50000 && (
+                      <li>• Considerar estrategias de optimización fiscal</li>
+                    )}
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="income-breakdown">
           <Card>
             <CardHeader>
-              <CardTitle>Desglose Fiscal por Categoría</CardTitle>
+              <CardTitle>Desglose Fiscal de Ingresos por Categoría</CardTitle>
               <CardDescription>
-                Análisis de gastos e impuestos por categoría según la legislación mexicana
+                Análisis de ingresos e IVA por tipo de servicio
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {Object.entries(categoryTaxBreakdown).map(([category, data]) => (
+                {Object.entries(incomeCategoryTaxBreakdown).map(([category, data]) => (
                   <div key={category} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium">{categoryLabels[category as keyof typeof categoryLabels]}</h4>
-                      <Badge variant="outline">{formatCurrency(data.total)}</Badge>
+                      <Badge variant="outline" className="text-green-600 border-green-600">
+                        {formatCurrency(data.total)}
+                      </Badge>
                     </div>
                     
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <span className="text-muted-foreground">Subtotal:</span>
-                        <div className="font-medium">{formatCurrency(data.subtotal)}</div>
+                        <div className="font-medium text-green-600">{formatCurrency(data.subtotal)}</div>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">IVA (16%):</span>
-                        <div className="font-medium">{formatCurrency(data.iva)}</div>
+                        <span className="text-muted-foreground">IVA Cobrado (16%):</span>
+                        <div className="font-medium text-green-600">{formatCurrency(data.iva)}</div>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Total:</span>
-                        <div className="font-medium">{formatCurrency(data.total)}</div>
+                        <div className="font-medium text-green-600">{formatCurrency(data.total)}</div>
                       </div>
                     </div>
                     
                     <Progress 
-                      value={(data.total / totalWithTaxes) * 100} 
+                      value={(data.total / (totalIncomes + totalIncomeTaxes)) * 100} 
                       className="h-2"
                     />
                   </div>
@@ -239,36 +420,81 @@ export default function Accounting() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="invoices">
+        <TabsContent value="expense-breakdown">
+          <Card>
+            <CardHeader>
+              <CardTitle>Desglose Fiscal de Gastos por Categoría</CardTitle>
+              <CardDescription>
+                Análisis de gastos deducibles e IVA por categoría
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {Object.entries(expenseCategoryTaxBreakdown).map(([category, data]) => (
+                  <div key={category} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium">{categoryLabels[category as keyof typeof categoryLabels]}</h4>
+                      <Badge variant="outline" className="text-red-600 border-red-600">
+                        {formatCurrency(data.total)}
+                      </Badge>
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Subtotal:</span>
+                        <div className="font-medium text-red-600">{formatCurrency(data.subtotal)}</div>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">IVA Pagado (16%):</span>
+                        <div className="font-medium text-red-600">{formatCurrency(data.iva)}</div>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Total:</span>
+                        <div className="font-medium text-red-600">{formatCurrency(data.total)}</div>
+                      </div>
+                    </div>
+                    
+                    <Progress 
+                      value={(data.total / (totalExpenses + totalExpenseTaxes)) * 100} 
+                      className="h-2"
+                    />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="compliance">
           <div className="grid gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle className="text-green-600">Gastos con Factura</CardTitle>
+                <CardTitle className="text-green-600">Ingresos con Factura</CardTitle>
                 <CardDescription>
-                  {expensesWithInvoice.length} gastos debidamente facturados
+                  {incomesWithInvoice.length} ingresos debidamente facturados
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {expensesWithInvoice.slice(0, 5).map((expense) => (
-                    <div key={expense.id} className="flex justify-between items-center p-3 border rounded-lg">
+                  {incomesWithInvoice.slice(0, 5).map((income) => (
+                    <div key={income.id} className="flex justify-between items-center p-3 border rounded-lg border-green-200">
                       <div>
-                        <div className="font-medium">{expense.description}</div>
+                        <div className="font-medium">{income.description}</div>
                         <div className="text-sm text-muted-foreground">
-                          Factura: {expense.invoice_number}
+                          Factura: {income.invoice_number}
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-medium">{formatCurrency(expense.amount)}</div>
+                        <div className="font-medium text-green-600">{formatCurrency(income.amount)}</div>
                         <div className="text-sm text-muted-foreground">
-                          {formatDate(expense.invoice_date)}
+                          {formatDate(income.invoice_date)}
                         </div>
                       </div>
                     </div>
                   ))}
-                  {expensesWithInvoice.length > 5 && (
+                  {incomesWithInvoice.length > 5 && (
                     <p className="text-sm text-muted-foreground text-center">
-                      +{expensesWithInvoice.length - 5} gastos más...
+                      +{incomesWithInvoice.length - 5} ingresos más...
                     </p>
                   )}
                 </div>
@@ -277,32 +503,32 @@ export default function Accounting() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-red-600">Gastos sin Factura</CardTitle>
+                <CardTitle className="text-red-600">Ingresos sin Factura</CardTitle>
                 <CardDescription>
-                  {expensesWithoutInvoice.length} gastos pendientes de facturación
+                  {incomesWithoutInvoice.length} ingresos pendientes de facturación
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {expensesWithoutInvoice.slice(0, 5).map((expense) => (
-                    <div key={expense.id} className="flex justify-between items-center p-3 border rounded-lg border-red-200">
+                  {incomesWithoutInvoice.slice(0, 5).map((income) => (
+                    <div key={income.id} className="flex justify-between items-center p-3 border rounded-lg border-red-200">
                       <div>
-                        <div className="font-medium">{expense.description}</div>
+                        <div className="font-medium">{income.description}</div>
                         <div className="text-sm text-red-600">
-                          Requiere facturación
+                          Requiere facturación urgente
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-medium">{formatCurrency(expense.amount)}</div>
+                        <div className="font-medium text-red-600">{formatCurrency(income.amount)}</div>
                         <div className="text-sm text-muted-foreground">
-                          {formatDate(expense.created_at)}
+                          {formatDate(income.created_at)}
                         </div>
                       </div>
                     </div>
                   ))}
-                  {expensesWithoutInvoice.length > 5 && (
+                  {incomesWithoutInvoice.length > 5 && (
                     <p className="text-sm text-muted-foreground text-center">
-                      +{expensesWithoutInvoice.length - 5} gastos más...
+                      +{incomesWithoutInvoice.length - 5} ingresos más...
                     </p>
                   )}
                 </div>
@@ -311,42 +537,46 @@ export default function Accounting() {
           </div>
         </TabsContent>
 
-        <TabsContent value="trends">
+        <TabsContent value="monthly">
           <Card>
             <CardHeader>
-              <CardTitle>Tendencias Mensuales</CardTitle>
+              <CardTitle>Análisis Mensual</CardTitle>
               <CardDescription>
-                Evolución de gastos e impuestos por mes
+                Evolución de ingresos, gastos y utilidad por mes
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {Object.entries(monthlyExpenses).slice(0, 6).map(([month, data]) => (
+                {Object.entries(monthlyAnalysis).slice(0, 6).map(([month, data]) => (
                   <div key={month} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium">{month}</h4>
-                      <div className="text-sm text-muted-foreground">
-                        {data.count} gasto(s)
+                      <div className={`text-sm font-bold ${data.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        Utilidad: {formatCurrency(data.netProfit)}
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div className="grid grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Ingresos:</span>
+                        <div className="font-medium text-green-600">{formatCurrency(data.income)}</div>
+                      </div>
                       <div>
                         <span className="text-muted-foreground">Gastos:</span>
-                        <div className="font-medium">{formatCurrency(data.amount)}</div>
+                        <div className="font-medium text-red-600">{formatCurrency(data.expense)}</div>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Impuestos:</span>
-                        <div className="font-medium">{formatCurrency(data.taxes)}</div>
+                        <span className="text-muted-foreground">IVA Cobrado:</span>
+                        <div className="font-medium">{formatCurrency(data.incomeTax)}</div>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Total:</span>
-                        <div className="font-medium">{formatCurrency(data.amount + data.taxes)}</div>
+                        <span className="text-muted-foreground">IVA Pagado:</span>
+                        <div className="font-medium">{formatCurrency(data.expenseTax)}</div>
                       </div>
                     </div>
                     
                     <Progress 
-                      value={Math.min((data.amount / Math.max(...Object.values(monthlyExpenses).map(m => m.amount))) * 100, 100)} 
+                      value={data.income > 0 ? Math.min((data.income / Math.max(...Object.values(monthlyAnalysis).map(m => m.income))) * 100, 100) : 0} 
                       className="h-2"
                     />
                   </div>
