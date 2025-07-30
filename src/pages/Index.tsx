@@ -1,34 +1,31 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Building2, Users, BarChart3, FileText, Zap, Shield, Globe, ArrowRight, Sparkles } from 'lucide-react';
+import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
 
 const Index = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white relative overflow-hidden">
       {/* Background effects */}
       <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:60px_60px]" />
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/20 rounded-full blur-3xl" />
       
       {/* Hero Section */}
       <div className="relative container mx-auto px-4 py-20">
         <div className="text-center mb-20">
-          <div className="flex items-center justify-center gap-4 mb-8">
-            <div className="relative">
-              <Building2 className="h-16 w-16 text-blue-400" />
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-purple-400 rounded-full animate-pulse" />
-            </div>
-            <div>
-              <h1 className="text-6xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                DOVITA
-              </h1>
-              <p className="text-xl text-blue-300 font-semibold tracking-wider">ARQUITECTURA CRM</p>
-            </div>
+          <div className="flex justify-center mb-8">
+            <img 
+              src={logoLight} 
+              alt="Dovita Arquitectura" 
+              className="h-24 w-auto"
+            />
           </div>
           
           <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
             Gestión Inteligente para 
-            <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent"> Arquitectos</span>
+            <span className="bg-gradient-to-r from-blue-400 to-orange-400 bg-clip-text text-transparent"> Arquitectos</span>
           </h2>
           
           <p className="text-xl text-slate-300 mb-10 max-w-3xl mx-auto leading-relaxed">
@@ -38,7 +35,7 @@ const Index = () => {
           
           <div className="flex gap-6 justify-center items-center">
             <Link to="/auth">
-              <Button size="lg" className="px-8 py-4 text-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 border-0 shadow-2xl group">
+              <Button size="lg" className="px-8 py-4 text-lg bg-gradient-to-r from-blue-600 to-orange-600 hover:from-blue-700 hover:to-orange-700 border-0 shadow-2xl group">
                 <Sparkles className="mr-2 h-5 w-5 group-hover:animate-spin" />
                 Acceder al Sistema
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -49,8 +46,8 @@ const Index = () => {
 
         {/* Features Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-20">
-          <div className="group p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-purple-400/50 transition-all duration-300 hover:scale-105">
-            <div className="p-3 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-xl w-fit mb-6 group-hover:scale-110 transition-transform">
+          <div className="group p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-blue-400/50 transition-all duration-300 hover:scale-105">
+            <div className="p-3 bg-gradient-to-br from-blue-500/20 to-orange-500/20 rounded-xl w-fit mb-6 group-hover:scale-110 transition-transform">
               <Users className="h-8 w-8 text-blue-400" />
             </div>
             <h3 className="text-xl font-bold mb-3 text-white">CRM Avanzado</h3>
@@ -59,9 +56,9 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="group p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-blue-400/50 transition-all duration-300 hover:scale-105">
-            <div className="p-3 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl w-fit mb-6 group-hover:scale-110 transition-transform">
-              <Building2 className="h-8 w-8 text-purple-400" />
+          <div className="group p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-orange-400/50 transition-all duration-300 hover:scale-105">
+            <div className="p-3 bg-gradient-to-br from-orange-500/20 to-blue-500/20 rounded-xl w-fit mb-6 group-hover:scale-110 transition-transform">
+              <Building2 className="h-8 w-8 text-orange-400" />
             </div>
             <h3 className="text-xl font-bold mb-3 text-white">Proyectos 360°</h3>
             <p className="text-slate-300 leading-relaxed">
@@ -93,14 +90,14 @@ const Index = () => {
         {/* CTA Section */}
         <div className="text-center bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-sm rounded-3xl p-12 border border-white/20">
           <Globe className="h-16 w-16 text-blue-400 mx-auto mb-6 animate-pulse" />
-          <h2 className="text-4xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+          <h2 className="text-4xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-orange-400 bg-clip-text text-transparent">
             Revoluciona tu Despacho
           </h2>
           <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
             Únete a la nueva era de la gestión arquitectónica con tecnología de vanguardia
           </p>
-          <Link to="/auth">
-            <Button size="lg" variant="outline" className="px-10 py-4 text-lg border-2 border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-white transition-all duration-300">
+            <Link to="/auth">
+              <Button size="lg" variant="outline" className="px-10 py-4 text-lg border-2 border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white transition-all duration-300">
               <Sparkles className="mr-2 h-5 w-5" />
               Comenzar Ahora
             </Button>

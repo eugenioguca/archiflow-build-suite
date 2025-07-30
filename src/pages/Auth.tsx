@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
-import { Building2 } from 'lucide-react';
+import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
 
 export default function Auth() {
   const { user, signIn, signUp, loading } = useAuth();
@@ -44,7 +45,7 @@ export default function Auth() {
     } else {
       toast({
         title: "Inicio de sesión exitoso",
-        description: "Bienvenido al CRM DOVITA",
+        description: "Bienvenido al sistema de gestión",
       });
     }
 
@@ -79,17 +80,27 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Building2 className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold">DOVITA CRM</span>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-primary/5 to-accent/10 p-4">
+      <Card className="w-full max-w-md shadow-2xl border-0 bg-card/80 backdrop-blur-sm">
+        <CardHeader className="text-center space-y-6">
+          <div className="flex justify-center">
+            <img 
+              src={logoDark} 
+              alt="Dovita Arquitectura" 
+              className="h-16 w-auto dark:hidden"
+            />
+            <img 
+              src={logoLight} 
+              alt="Dovita Arquitectura" 
+              className="h-16 w-auto hidden dark:block"
+            />
           </div>
-          <CardTitle>Sistema de Gestión</CardTitle>
-          <CardDescription>
-            Accede a tu cuenta para gestionar proyectos de arquitectura y construcción
-          </CardDescription>
+          <div className="space-y-2">
+            <CardTitle className="text-2xl font-light">Sistema de Gestión</CardTitle>
+            <CardDescription className="text-sm">
+              Accede a tu cuenta para gestionar proyectos de arquitectura y construcción
+            </CardDescription>
+          </div>
         </CardHeader>
 
         <CardContent>

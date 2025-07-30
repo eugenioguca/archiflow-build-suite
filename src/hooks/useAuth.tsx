@@ -33,10 +33,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             const { data: profile } = await supabase
               .from('profiles')
-              .select('approval_status')
+              .select('approval_status, role')
               .eq('user_id', session.user.id)
               .single();
-            setIsApproved(profile?.approval_status === 'approved');
+            
+            // Admins are automatically approved
+            const isAdmin = profile?.role === 'admin';
+            const isApprovedUser = profile?.approval_status === 'approved';
+            setIsApproved(isAdmin || isApprovedUser);
           } catch (error) {
             console.error('Error checking approval status:', error);
             setIsApproved(false);
@@ -59,10 +63,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             const { data: profile } = await supabase
               .from('profiles')
-              .select('approval_status')
+              .select('approval_status, role')
               .eq('user_id', session.user.id)
               .single();
-            setIsApproved(profile?.approval_status === 'approved');
+            
+            // Admins are automatically approved
+            const isAdmin = profile?.role === 'admin';
+            const isApprovedUser = profile?.approval_status === 'approved';
+            setIsApproved(isAdmin || isApprovedUser);
           } catch (error) {
             console.error('Error checking approval status:', error);
             setIsApproved(false);
