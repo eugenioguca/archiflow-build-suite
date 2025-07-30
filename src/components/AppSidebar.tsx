@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 import {
   Building2,
   Users,
@@ -10,6 +11,7 @@ import {
   LogOut,
   User
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 import {
   Sidebar,
@@ -50,6 +52,25 @@ export function AppSidebar() {
   const { user, signOut } = useAuth();
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (user) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (data && !error) {
+          setUserRole(data.role);
+        }
+      }
+    };
+
+    fetchUserRole();
+  }, [user]);
 
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
@@ -57,8 +78,10 @@ export function AppSidebar() {
       ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md" 
       : "hover:bg-sidebar-accent/80 transition-all duration-200";
 
-  // For now, showing admin items. Later we'll add role-based logic
-  const menuItems = adminItems;
+  // Filter menu items based on user role
+  const menuItems = userRole === 'admin' 
+    ? adminItems 
+    : adminItems.filter(item => item.url !== '/user-management');
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
