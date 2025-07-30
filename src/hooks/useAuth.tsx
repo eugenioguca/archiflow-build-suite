@@ -9,6 +9,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   loading: boolean;
+  isApproved: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -17,21 +18,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isApproved, setIsApproved] = useState(false);
 
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+        
+        // Check approval status when user signs in
+        if (session?.user) {
+          setTimeout(async () => {
+            try {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('approval_status')
+                .eq('user_id', session.user.id)
+                .single();
+              
+              setIsApproved(profile?.approval_status === 'approved');
+            } catch (error) {
+              console.error('Error checking approval status:', error);
+              setIsApproved(false);
+            }
+          }, 0);
+        } else {
+          setIsApproved(false);
+        }
+        
         setLoading(false);
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      
+      // Check approval status for existing session
+      if (session?.user) {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('approval_status')
+            .eq('user_id', session.user.id)
+            .single();
+          
+          setIsApproved(profile?.approval_status === 'approved');
+        } catch (error) {
+          console.error('Error checking approval status:', error);
+          setIsApproved(false);
+        }
+      } else {
+        setIsApproved(false);
+      }
+      
       setLoading(false);
     });
 
@@ -73,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signUp,
     signOut,
     loading,
+    isApproved,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

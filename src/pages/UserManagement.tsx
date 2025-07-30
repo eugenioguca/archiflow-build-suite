@@ -15,6 +15,7 @@ interface User {
   full_name: string;
   email: string;
   role: 'admin' | 'employee' | 'client';
+  approval_status: 'pending' | 'approved' | 'rejected';
   created_at: string;
   permissions?: UserPermission[];
 }
@@ -70,6 +71,7 @@ export default function UserManagement() {
           return {
             ...profile,
             id: profile.id,
+            approval_status: profile.approval_status as 'pending' | 'approved' | 'rejected',
             permissions: permissions || []
           };
         })
@@ -122,6 +124,30 @@ export default function UserManagement() {
       toast({
         title: "Error",
         description: "No se pudo actualizar el rol",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateUserApproval = async (userId: string, approvalStatus: 'approved' | 'rejected') => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ approval_status: approvalStatus })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Éxito",
+        description: `Usuario ${approvalStatus === 'approved' ? 'aprobado' : 'rechazado'} correctamente`,
+      });
+
+      fetchUsers();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado de aprobación",
         variant: "destructive"
       });
     }
@@ -185,6 +211,24 @@ export default function UserManagement() {
     }
   };
 
+  const getApprovalBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'approved': return 'default';
+      case 'pending': return 'secondary';
+      case 'rejected': return 'destructive';
+      default: return 'outline';
+    }
+  };
+
+  const getApprovalLabel = (status: string) => {
+    switch (status) {
+      case 'approved': return 'Aprobado';
+      case 'pending': return 'Pendiente';
+      case 'rejected': return 'Rechazado';
+      default: return status;
+    }
+  };
+
   const getUserPermission = (user: User, module: string, permission: string): boolean => {
     const perm = user.permissions?.find(p => p.module === module)?.[permission as keyof UserPermission];
     return Boolean(perm);
@@ -235,10 +279,15 @@ export default function UserManagement() {
                   <div>
                     <p className="font-medium">{user.full_name}</p>
                     <p className="text-sm text-muted-foreground">{user.email}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant={getRoleBadgeVariant(user.role)}>
+                        {getRoleLabel(user.role)}
+                      </Badge>
+                      <Badge variant={getApprovalBadgeVariant(user.approval_status)}>
+                        {getApprovalLabel(user.approval_status)}
+                      </Badge>
+                    </div>
                   </div>
-                  <Badge variant={getRoleBadgeVariant(user.role)}>
-                    {getRoleLabel(user.role)}
-                  </Badge>
                 </div>
               </div>
             ))}
@@ -277,6 +326,29 @@ export default function UserManagement() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Gestión de Aprobación */}
+              {selectedUser.approval_status !== 'approved' && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Estado de Aprobación</label>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="default"
+                      onClick={() => updateUserApproval(selectedUser.user_id, 'approved')}
+                    >
+                      Aprobar Usuario
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => updateUserApproval(selectedUser.user_id, 'rejected')}
+                    >
+                      Rechazar Usuario
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               <Separator />
 

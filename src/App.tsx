@@ -15,12 +15,13 @@ import Finances from "./pages/Finances";
 import Accounting from "./pages/Accounting";
 import ProgressPhotos from "./pages/ProgressPhotos";
 import UserManagement from "./pages/UserManagement";
+import PendingApproval from "./components/PendingApproval";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, isApproved } = useAuth();
 
   if (loading) {
     return (
@@ -32,6 +33,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Show pending approval screen for non-approved users
+  if (!isApproved) {
+    return <PendingApproval />;
   }
 
   return <>{children}</>;
