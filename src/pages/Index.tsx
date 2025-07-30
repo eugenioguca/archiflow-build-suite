@@ -23,11 +23,11 @@ const Index = () => {
           
           <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
             Gestión Inteligente para 
-            <span className="bg-gradient-to-r from-blue-400 to-orange-400 bg-clip-text text-transparent"> Arquitectos</span>
+            <span className="bg-gradient-to-r from-blue-400 to-orange-400 bg-clip-text text-transparent"> Arquitectos y Constructores</span>
           </h2>
           
           <p className="text-xl text-slate-300 mb-10 max-w-3xl mx-auto leading-relaxed">
-            Plataforma integral diseñada específicamente para despachos de arquitectura. 
+            Sistema integral de gestión empresarial. 
             Optimiza tu workflow, gestiona clientes y proyectos con tecnología de vanguardia.
           </p>
           
@@ -89,10 +89,10 @@ const Index = () => {
         <div className="text-center bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-sm rounded-3xl p-12 border border-white/20">
           <Globe className="h-16 w-16 text-blue-400 mx-auto mb-6 animate-pulse" />
           <h2 className="text-4xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-orange-400 bg-clip-text text-transparent">
-            Revoluciona tu Despacho
+            Sistema Empresarial Avanzado
           </h2>
           <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto">
-            Únete a la nueva era de la gestión arquitectónica con tecnología de vanguardia
+            Accede a herramientas profesionales para la gestión integral de tu empresa
           </p>
             <Link to="/auth">
               <Button size="lg" variant="outline" className="px-10 py-4 text-lg border-2 border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white transition-all duration-300">
