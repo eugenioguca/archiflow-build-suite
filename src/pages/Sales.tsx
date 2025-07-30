@@ -10,11 +10,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Phone, Mail, MessageSquare, Video, Plus, Filter, Edit2, Settings, Bell, AlertCircle, TrendingUp, Users, Target, DollarSign } from "lucide-react";
+import { Calendar, Phone, Mail, MessageSquare, Video, Plus, Filter, Edit2, Settings, Bell, AlertCircle, TrendingUp, Users, Target, DollarSign, Eye, Clock, CheckCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { DatePicker } from "@/components/DatePicker";
 import { EditableCell } from "@/components/EditableCell";
-import { CustomizableTable } from "@/components/CustomizableTable";
 import { CRMNotifications } from "@/components/CRMNotifications";
 import { CRMActivityTimeline } from "@/components/CRMActivityTimeline";
 import { CRMLeadScoring } from "@/components/CRMLeadScoring";
@@ -39,6 +38,9 @@ interface Client {
   location_details: any;
   notes: string;
   assigned_advisor_id?: string;
+  created_at?: string;
+  created_by?: string;
+  advisor_name?: string;
 }
 
 interface Activity {
@@ -91,17 +93,19 @@ const leadSourceConfig = {
 
 export default function Sales() {
   const [clients, setClients] = useState<Client[]>([]);
+  const [closedClients, setClosedClients] = useState<Client[]>([]);
   const [filteredClients, setFilteredClients] = useState<Client[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("potential");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
-  const [showCustomTable, setShowCustomTable] = useState(false);
   const [isNewClientDialogOpen, setIsNewClientDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [activeTab, setActiveTab] = useState("pipeline");
+  const [showReminderDialog, setShowReminderDialog] = useState(false);
+  const [reminderClientId, setReminderClientId] = useState<string>("");
   const { toast } = useToast();
 
   const form = useForm<Client>({
@@ -130,13 +134,25 @@ export default function Sales() {
 
   const fetchData = async () => {
     try {
-      // Fetch clients
+      // Fetch clients with advisor information
       const { data: clientsData, error: clientsError } = await supabase
         .from('clients')
-        .select('*')
+        .select(`
+          *,
+          profiles!clients_assigned_advisor_id_fkey(full_name)
+        `)
         .order('created_at', { ascending: false });
 
       if (clientsError) throw clientsError;
+
+      // Separate potential clients from closed clients
+      const allClients = (clientsData || []).map(client => ({
+        ...client,
+        advisor_name: client.profiles?.full_name || 'Sin asignar'
+      }));
+      
+      const potentialClients = allClients.filter(client => client.status === 'potential');
+      const closedClients = allClients.filter(client => ['existing', 'active', 'completed'].includes(client.status));
 
       // Fetch activities
       const { data: activitiesData, error: activitiesError } = await supabase
@@ -155,7 +171,8 @@ export default function Sales() {
 
       if (remindersError) throw remindersError;
 
-      setClients(clientsData || []);
+      setClients(potentialClients);
+      setClosedClients(closedClients);
       setActivities(activitiesData || []);
       setReminders(remindersData || []);
     } catch (error) {
@@ -200,7 +217,7 @@ export default function Sales() {
       });
 
       // Create follow-up reminder
-      await createReminder({
+      await createReminderFromClient({
         client_id: newClient.id,
         title: `Seguimiento inicial - ${data.full_name}`,
         message: `Contactar a ${data.full_name} para primera reunión`,
@@ -245,7 +262,7 @@ export default function Sales() {
     }
   };
 
-  const createReminder = async (reminder: Omit<Reminder, 'id' | 'is_sent'>) => {
+  const createReminderFromClient = async (reminder: Omit<Reminder, 'id' | 'is_sent'>) => {
     try {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('No authenticated user');
@@ -384,12 +401,9 @@ export default function Sales() {
     if (searchTerm) {
       filtered = filtered.filter(client =>
         client.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client.email.toLowerCase().includes(searchTerm.toLowerCase())
+        client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (client.advisor_name && client.advisor_name.toLowerCase().includes(searchTerm.toLowerCase()))
       );
-    }
-
-    if (statusFilter !== "all") {
-      filtered = filtered.filter(client => client.status === statusFilter);
     }
 
     if (priorityFilter !== "all") {
@@ -407,18 +421,56 @@ export default function Sales() {
   };
 
   const getTotalPipeline = () => {
-    return clients
-      .filter(client => client.status !== 'completed')
-      .reduce((total, client) => total + (client.budget || 0), 0);
+    return clients.reduce((total, client) => total + (client.budget || 0), 0);
+  };
+
+  const getClosedRevenue = () => {
+    return closedClients.reduce((total, client) => total + (client.budget || 0), 0);
   };
 
   const getMetrics = () => {
-    const total = clients.length;
-    const qualified = clients.filter(c => ['existing', 'active'].includes(c.status)).length;
-    const won = clients.filter(c => c.status === 'completed').length;
-    const conversionRate = total > 0 ? Math.round((won / total) * 100) : 0;
+    const totalPotential = clients.length;
+    const totalClosed = closedClients.length;
+    const totalAll = totalPotential + totalClosed;
+    const won = closedClients.filter(c => c.status === 'completed').length;
+    const conversionRate = totalAll > 0 ? Math.round((totalClosed / totalAll) * 100) : 0;
     
-    return { total, qualified, won, conversionRate };
+    return { totalPotential, totalClosed, won, conversionRate, totalAll };
+  };
+
+  const createReminder = async (clientId: string, title: string, message: string, reminderDate: string) => {
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error('No authenticated user');
+
+      const { error } = await supabase
+        .from('crm_reminders')
+        .insert([{
+          client_id: clientId,
+          user_id: user.user.id,
+          title,
+          message,
+          reminder_date: reminderDate,
+          is_sent: false
+        }]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Recordatorio creado",
+        description: "El recordatorio ha sido programado exitosamente",
+      });
+      
+      setShowReminderDialog(false);
+      fetchData();
+    } catch (error) {
+      console.error('Error creating reminder:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo crear el recordatorio",
+        variant: "destructive",
+      });
+    }
   };
 
   const getPendingReminders = () => {
@@ -443,8 +495,8 @@ export default function Sales() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">CRM de Ventas Arquitectura</h1>
-          <p className="text-muted-foreground">Sistema avanzado de gestión de clientes y ventas</p>
+          <h1 className="text-3xl font-bold text-foreground">CRM de Ventas</h1>
+          <p className="text-muted-foreground">Pipeline de clientes potenciales y gestión de ventas</p>
         </div>
         <div className="flex gap-2">
           {pendingReminders.length > 0 && (
@@ -455,14 +507,14 @@ export default function Sales() {
           )}
           <Dialog open={isNewClientDialogOpen} onOpenChange={setIsNewClientDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="glassmorphic-bg enhanced-hover">
                 <Plus className="h-4 w-4 mr-2" />
-                Nuevo Cliente
+                Nuevo Cliente Potencial
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto glassmorphic-bg">
               <DialogHeader>
-                <DialogTitle>Agregar Nuevo Cliente</DialogTitle>
+                <DialogTitle>Agregar Nuevo Cliente Potencial</DialogTitle>
               </DialogHeader>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(createClient)} className="space-y-4">
@@ -680,15 +732,15 @@ export default function Sales() {
         </div>
       </div>
 
-      {/* Métricas Principales */}
+      {/* Métricas de Pipeline Potencial */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card>
+        <Card className="glassmorphic-bg enhanced-hover">
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <DollarSign className="h-8 w-8 text-green-600" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-muted-foreground">Pipeline Total</p>
-                <p className="text-2xl font-bold text-foreground overflow-hidden text-ellipsis whitespace-nowrap">
+                <p className="text-sm text-muted-foreground">Pipeline Potencial</p>
+                <p className="text-lg font-bold text-foreground break-words">
                   {formatCurrency(getTotalPipeline())}
                 </p>
               </div>
@@ -696,50 +748,52 @@ export default function Sales() {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className="glassmorphic-bg enhanced-hover">
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <Users className="h-8 w-8 text-blue-600" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-muted-foreground">Total Clientes</p>
-                <p className="text-2xl font-bold text-foreground overflow-hidden">{metrics.total}</p>
+                <p className="text-sm text-muted-foreground">Clientes Potenciales</p>
+                <p className="text-2xl font-bold text-foreground">{metrics.totalPotential}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="glassmorphic-bg enhanced-hover">
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <Target className="h-8 w-8 text-orange-600" />
+              <CheckCircle className="h-8 w-8 text-green-600" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-muted-foreground">Calificados</p>
-                <p className="text-2xl font-bold text-foreground overflow-hidden">{metrics.qualified}</p>
+                <p className="text-sm text-muted-foreground">Clientes Cerrados</p>
+                <p className="text-2xl font-bold text-foreground">{metrics.totalClosed}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="glassmorphic-bg enhanced-hover">
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <TrendingUp className="h-8 w-8 text-green-600" />
+              <DollarSign className="h-8 w-8 text-purple-600" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-muted-foreground">Ganados</p>
-                <p className="text-2xl font-bold text-foreground overflow-hidden">{metrics.won}</p>
+                <p className="text-sm text-muted-foreground">Ingresos Cerrados</p>
+                <p className="text-lg font-bold text-foreground break-words">
+                  {formatCurrency(getClosedRevenue())}
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="glassmorphic-bg enhanced-hover">
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
-              <AlertCircle className="h-8 w-8 text-purple-600" />
+              <TrendingUp className="h-8 w-8 text-orange-600" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-muted-foreground">Conversión</p>
-                <p className="text-2xl font-bold text-foreground overflow-hidden">
-                  {Math.min(metrics.conversionRate, 100).toFixed(1)}%
+                <p className="text-sm text-muted-foreground">Tasa Conversión</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {metrics.conversionRate}%
                 </p>
               </div>
             </div>
@@ -752,36 +806,25 @@ export default function Sales() {
 
       {/* Tabs de contenido */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="pipeline">Pipeline de Ventas</TabsTrigger>
+        <TabsList className="glassmorphic-bg">
+          <TabsTrigger value="pipeline">Pipeline Potencial</TabsTrigger>
+          <TabsTrigger value="closed">Clientes Cerrados</TabsTrigger>
           <TabsTrigger value="activities">Actividades</TabsTrigger>
           <TabsTrigger value="scoring">Lead Scoring</TabsTrigger>
-          <TabsTrigger value="analytics">Análisis</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pipeline" className="space-y-4">
           {/* Filtros */}
-          <Card>
+          <Card className="glassmorphic-bg">
             <CardContent className="p-4">
               <div className="flex gap-4">
                 <div className="flex-1">
                   <Input
-                    placeholder="Buscar por nombre o email..."
+                    placeholder="Buscar por nombre, email o asesor..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos los estados</SelectItem>
-                    {Object.entries(statusConfig).map(([key, config]) => (
-                      <SelectItem key={key} value={key}>{config.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
                 <Select value={priorityFilter} onValueChange={setPriorityFilter}>
                   <SelectTrigger className="w-48">
                     <SelectValue placeholder="Prioridad" />
@@ -794,21 +837,14 @@ export default function Sales() {
                     <SelectItem value="low">Baja</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowCustomTable(!showCustomTable)}
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  {showCustomTable ? 'Vista Estándar' : 'Vista Personalizable'}
-                </Button>
               </div>
             </CardContent>
           </Card>
 
-          {/* Tabla de Clientes */}
-          <Card>
+          {/* Tabla de Clientes Potenciales */}
+          <Card className="glassmorphic-bg">
             <CardHeader>
-              <CardTitle>Pipeline de Clientes ({filteredClients.length})</CardTitle>
+              <CardTitle>Pipeline de Clientes Potenciales ({filteredClients.length})</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
@@ -816,7 +852,7 @@ export default function Sales() {
                   <TableRow>
                     <TableHead>Cliente</TableHead>
                     <TableHead>Proyecto</TableHead>
-                    <TableHead>Estado</TableHead>
+                    <TableHead>Asesor</TableHead>
                     <TableHead>Prioridad</TableHead>
                     <TableHead>Presupuesto</TableHead>
                     <TableHead>Lead Score</TableHead>
@@ -836,24 +872,12 @@ export default function Sales() {
                       </TableCell>
                       <TableCell>
                         <div className="space-y-1">
-                          <p className="font-medium">{projectTypeConfig[client.project_type || 'other']}</p>
+                          <p className="font-medium">{projectTypeConfig[client.project_type || 'residential']}</p>
                           <p className="text-sm text-muted-foreground">{client.timeline_months} meses</p>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Select
-                          value={client.status}
-                          onValueChange={(value) => updateClientStatus(client.id, value as Client['status'])}
-                        >
-                          <SelectTrigger className="w-36">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(statusConfig).map(([key, config]) => (
-                              <SelectItem key={key} value={key}>{config.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <p className="text-sm font-medium">{client.advisor_name}</p>
                       </TableCell>
                       <TableCell>
                         <Badge variant={client.priority === 'urgent' ? 'destructive' : 
@@ -876,14 +900,38 @@ export default function Sales() {
                         <p className="text-sm">{client.next_contact_date}</p>
                       </TableCell>
                       <TableCell>
-                        <div className="flex space-x-2">
+                        <div className="flex space-x-1">
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => setSelectedClient(client)}
+                            title="Ver detalles"
                           >
-                            <Edit2 className="h-4 w-4" />
+                            <Eye className="h-4 w-4" />
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setReminderClientId(client.id);
+                              setShowReminderDialog(true);
+                            }}
+                            title="Crear recordatorio"
+                          >
+                            <Clock className="h-4 w-4" />
+                          </Button>
+                          <Select
+                            value={client.status}
+                            onValueChange={(value) => updateClientStatus(client.id, value as Client['status'])}
+                          >
+                            <SelectTrigger className="w-24 h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="potential">Potencial</SelectItem>
+                              <SelectItem value="existing">Cerrar</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -894,8 +942,62 @@ export default function Sales() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="closed" className="space-y-4">
+          <Card className="glassmorphic-bg">
+            <CardHeader>
+              <CardTitle>Clientes Cerrados ({closedClients.length})</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Clientes que han pasado de potenciales a existentes, activos o completados
+              </p>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Proyecto</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Asesor</TableHead>
+                    <TableHead>Valor</TableHead>
+                    <TableHead>Fecha Cierre</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {closedClients.map((client) => (
+                    <TableRow key={client.id} className="hover:bg-muted/50">
+                      <TableCell>
+                        <div className="space-y-1">
+                          <p className="font-medium text-foreground">{client.full_name}</p>
+                          <p className="text-sm text-muted-foreground">{client.email}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <p className="font-medium">{projectTypeConfig[client.project_type || 'residential']}</p>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={statusConfig[client.status].color}>
+                          {statusConfig[client.status].label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <p className="text-sm font-medium">{client.advisor_name}</p>
+                      </TableCell>
+                      <TableCell>
+                        <p className="font-medium text-green-600">{formatCurrency(client.budget || 0)}</p>
+                      </TableCell>
+                      <TableCell>
+                        <p className="text-sm">{client.last_contact_date}</p>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="activities">
-          <Card>
+          <Card className="glassmorphic-bg">
             <CardHeader>
               <CardTitle>Gestión de Actividades CRM</CardTitle>
               <p className="text-sm text-muted-foreground">
@@ -908,14 +1010,14 @@ export default function Sales() {
               ) : (
                 <div className="space-y-4">
                   <p className="text-center text-muted-foreground py-8">
-                    Haz clic en el botón "Editar" de cualquier cliente en la tabla del Pipeline para gestionar sus actividades
+                    Haz clic en el botón "Ver detalles" de cualquier cliente en la tabla del Pipeline para gestionar sus actividades
                   </p>
                   {filteredClients.length > 0 && (
                     <div className="grid gap-4">
                       <h3 className="font-semibold">Clientes Disponibles:</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {filteredClients.slice(0, 6).map((client) => (
-                          <Card key={client.id} className="cursor-pointer hover:shadow-md transition-shadow"
+                          <Card key={client.id} className="cursor-pointer hover:shadow-md transition-shadow glassmorphic-bg"
                                 onClick={() => setSelectedClient(client)}>
                             <CardContent className="p-4">
                               <h4 className="font-medium">{client.full_name}</h4>
@@ -936,7 +1038,7 @@ export default function Sales() {
         </TabsContent>
 
         <TabsContent value="scoring">
-          <Card>
+          <Card className="glassmorphic-bg">
             <CardHeader>
               <CardTitle>Lead Scoring Inteligente</CardTitle>
               <p className="text-sm text-muted-foreground">
@@ -964,7 +1066,7 @@ export default function Sales() {
               ) : (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card>
+                    <Card className="glassmorphic-bg">
                       <CardContent className="p-4 text-center">
                         <h3 className="text-2xl font-bold text-green-600">
                           {clients.filter(c => c.lead_score >= 80).length}
@@ -972,7 +1074,7 @@ export default function Sales() {
                         <p className="text-sm text-muted-foreground">Leads Calientes (80+)</p>
                       </CardContent>
                     </Card>
-                    <Card>
+                    <Card className="glassmorphic-bg">
                       <CardContent className="p-4 text-center">
                         <h3 className="text-2xl font-bold text-orange-600">
                           {clients.filter(c => c.lead_score >= 60 && c.lead_score < 80).length}
@@ -980,7 +1082,7 @@ export default function Sales() {
                         <p className="text-sm text-muted-foreground">Leads Tibios (60-79)</p>
                       </CardContent>
                     </Card>
-                    <Card>
+                    <Card className="glassmorphic-bg">
                       <CardContent className="p-4 text-center">
                         <h3 className="text-2xl font-bold text-blue-600">
                           {clients.filter(c => c.lead_score >= 40 && c.lead_score < 60).length}
@@ -988,7 +1090,7 @@ export default function Sales() {
                         <p className="text-sm text-muted-foreground">Leads Fríos (40-59)</p>
                       </CardContent>
                     </Card>
-                    <Card>
+                    <Card className="glassmorphic-bg">
                       <CardContent className="p-4 text-center">
                         <h3 className="text-2xl font-bold text-gray-600">
                           {clients.filter(c => c.lead_score < 40).length}
@@ -1005,7 +1107,7 @@ export default function Sales() {
                         .sort((a, b) => b.lead_score - a.lead_score)
                         .slice(0, 5)
                         .map((client) => (
-                          <div key={client.id} className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-muted/50"
+                          <div key={client.id} className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-muted/50 glassmorphic-bg enhanced-hover"
                                onClick={() => setSelectedClient(client)}>
                             <div>
                               <p className="font-medium">{client.full_name}</p>
@@ -1078,6 +1180,45 @@ export default function Sales() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Dialog para crear recordatorios */}
+      <Dialog open={showReminderDialog} onOpenChange={setShowReminderDialog}>
+        <DialogContent className="glassmorphic-bg">
+          <DialogHeader>
+            <DialogTitle>Crear Recordatorio</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Título</label>
+              <Input placeholder="Título del recordatorio" id="reminder-title" />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Mensaje</label>
+              <Textarea placeholder="Descripción del recordatorio" id="reminder-message" />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Fecha y Hora</label>
+              <Input type="datetime-local" id="reminder-date" />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowReminderDialog(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={() => {
+                const title = (document.getElementById('reminder-title') as HTMLInputElement)?.value;
+                const message = (document.getElementById('reminder-message') as HTMLTextAreaElement)?.value;
+                const date = (document.getElementById('reminder-date') as HTMLInputElement)?.value;
+                
+                if (title && message && date) {
+                  createReminder(reminderClientId, title, message, new Date(date).toISOString());
+                }
+              }}>
+                Crear Recordatorio
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
