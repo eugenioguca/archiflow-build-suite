@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Building2, DollarSign, Camera, TrendingUp, AlertCircle, Calendar, FileText, BarChart3 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
@@ -27,6 +28,7 @@ interface RecentActivity {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     totalClients: 0,
     activeClients: 0,
@@ -256,7 +258,7 @@ export default function Dashboard() {
 
       {/* Métricas de Ventas y Avances de Proyectos */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="card-hover border-0 bg-gradient-to-br from-green-100/50 to-green-50/50 border-l-4 border-l-green-500 cursor-pointer glassmorphic-bg enhanced-hover" onClick={() => window.location.href = '/sales'}>
+        <Card className="card-hover border-0 bg-gradient-to-br from-green-100/50 to-green-50/50 border-l-4 border-l-green-500 cursor-pointer glassmorphic-bg enhanced-hover" onClick={() => navigate('/sales')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pipeline de Ventas</CardTitle>
             <div className="p-2 bg-green-500/20 rounded-lg">
@@ -271,7 +273,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="card-hover border-0 bg-gradient-to-br from-blue-100/50 to-blue-50/50 border-l-4 border-l-blue-500 cursor-pointer glassmorphic-bg enhanced-hover" onClick={() => window.location.href = '/progress-overview'}>
+        <Card className="card-hover border-0 bg-gradient-to-br from-blue-100/50 to-blue-50/50 border-l-4 border-l-blue-500 cursor-pointer glassmorphic-bg enhanced-hover" onClick={() => navigate('/progress-overview')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Proyectos Activos</CardTitle>
             <div className="p-2 bg-blue-500/20 rounded-lg">
@@ -286,7 +288,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="card-hover border-0 bg-gradient-to-br from-purple-100/50 to-purple-50/50 border-l-4 border-l-purple-500 cursor-pointer glassmorphic-bg enhanced-hover" onClick={() => window.location.href = '/sales'}>
+        <Card className="card-hover border-0 bg-gradient-to-br from-purple-100/50 to-purple-50/50 border-l-4 border-l-purple-500 cursor-pointer glassmorphic-bg enhanced-hover" onClick={() => navigate('/sales')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Clientes Potenciales</CardTitle>
             <div className="p-2 bg-purple-500/20 rounded-lg">
