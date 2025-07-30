@@ -38,20 +38,38 @@ interface ProjectOverview {
 }
 
 const phaseConfig = {
-  not_started: { label: "No ha empezado", color: "bg-gray-100", textColor: "text-gray-600", value: 0 },
-  planning: { label: "En planeación", color: "bg-blue-100", textColor: "text-blue-600", value: 1 },
-  in_progress: { label: "En progreso", color: "bg-yellow-100", textColor: "text-yellow-600", value: 5 },
-  on_hold: { label: "Detenido", color: "bg-red-100", textColor: "text-red-600", value: 5 },
-  completed: { label: "Hecho", color: "bg-green-100", textColor: "text-green-600", value: 10 },
+  not_started: { label: "No iniciado", color: "bg-gray-100", textColor: "text-gray-600", value: 0 },
+  planning: { label: "Planeación", color: "bg-blue-100", textColor: "text-blue-600", value: 1 },
+  permits: { label: "Permisos", color: "bg-orange-100", textColor: "text-orange-600", value: 2 },
+  design: { label: "Diseño", color: "bg-purple-100", textColor: "text-purple-600", value: 3 },
+  construction: { label: "Construcción", color: "bg-yellow-100", textColor: "text-yellow-600", value: 4 },
+  finishing: { label: "Acabados", color: "bg-pink-100", textColor: "text-pink-600", value: 5 },
+  on_hold: { label: "En pausa", color: "bg-red-100", textColor: "text-red-600", value: 6 },
+  completed: { label: "Completado", color: "bg-green-100", textColor: "text-green-600", value: 10 },
 };
 
 export default function ProgressOverview() {
   const [activeProjects, setActiveProjects] = useState<ProjectOverview[]>([]);
   const [completedProjects, setCompletedProjects] = useState<ProjectOverview[]>([]);
+  const [selectedProject, setSelectedProject] = useState<ProjectOverview | null>(null);
+  const [editingTeam, setEditingTeam] = useState<string | null>(null);
+  const [editingPhases, setEditingPhases] = useState<string | null>(null);
+  const [newColumnName, setNewColumnName] = useState("");
+  const [customPhases, setCustomPhases] = useState<string[]>([
+    "Planeación", "Permisos", "Diseño", "Construcción", "Acabados", "Entrega"
+  ]);
   const [loading, setLoading] = useState(true);
   const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<ProjectOverview | null>(null);
   const { toast } = useToast();
+
+  // Mock team members data
+  const availableTeamMembers = [
+    { id: '1', name: 'Ana García', initials: 'AG', avatar_url: null },
+    { id: '2', name: 'Carlos López', initials: 'CL', avatar_url: null },
+    { id: '3', name: 'María Rodríguez', initials: 'MR', avatar_url: null },
+    { id: '4', name: 'David Torres', initials: 'DT', avatar_url: null },
+    { id: '5', name: 'Laura Martín', initials: 'LM', avatar_url: null },
+  ];
 
   useEffect(() => {
     fetchProjects();
@@ -280,7 +298,7 @@ export default function ProgressOverview() {
       />
 
       {/* Proyectos Activos */}
-      <Card>
+      <Card className="glass-card enhanced-hover">
         <CardHeader>
           <CardTitle className="text-2xl text-foreground">Proyectos Activos</CardTitle>
         </CardHeader>
@@ -403,14 +421,18 @@ export default function ProgressOverview() {
 
       {/* Proyectos Completados */}
       {completedProjects.length > 0 && (
-        <Card>
+        <Card className="glass-card enhanced-hover">
           <CardHeader>
             <CardTitle className="text-2xl text-foreground">Proyectos Completados</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {completedProjects.map((project) => (
-                <Card key={project.id} className="border border-border bg-green-50">
+                <Card 
+                  key={project.id} 
+                  className="border border-border bg-green-50 cursor-pointer glass-card enhanced-hover"
+                  onClick={() => setSelectedProject(project)}
+                >
                   <CardContent className="p-4">
                     <div className="flex justify-between items-center">
                       <div>
@@ -427,6 +449,78 @@ export default function ProgressOverview() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Diálogo de detalles del proyecto */}
+      {selectedProject && (
+        <Dialog open={!!selectedProject} onOpenChange={() => setSelectedProject(null)}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto glass-card">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold">
+                {selectedProject.name}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="font-semibold mb-2">Información del Proyecto</h3>
+                  <div className="space-y-2 text-sm">
+                    <p><strong>Descripción:</strong> {selectedProject.description}</p>
+                    <p><strong>Ubicación:</strong> {selectedProject.location}</p>
+                    <p><strong>Estado:</strong> {getStatusBadge(selectedProject.status)}</p>
+                    <p><strong>Progreso:</strong> {selectedProject.progress_percentage}%</p>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-2">Equipo Asignado</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProject.assigned_team.map((member, index) => (
+                      <div key={index} className="flex items-center gap-2 bg-muted p-2 rounded-lg">
+                        <UserAvatar 
+                          user={{ 
+                            full_name: member.name, 
+                            avatar_url: member.avatar_url 
+                          }}
+                          size="sm"
+                        />
+                        <span className="text-sm">{member.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold mb-4">Fases del Proyecto</h3>
+                <div className="space-y-3">
+                  {selectedProject.phases.map((phase, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <span className="font-medium">{phase.name}</span>
+                        {getStatusBadge(phase.status)}
+                      </div>
+                      <span className="text-sm text-muted-foreground">{phase.value} puntos</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold mb-4">Cronograma</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {selectedProject.estimated_dates.map((dateInfo, index) => (
+                    <div key={index} className="flex justify-between p-2 bg-muted/30 rounded">
+                      <span className="font-medium">{dateInfo.phase}</span>
+                      <span className="text-muted-foreground">
+                        {new Date(dateInfo.date).toLocaleDateString('es-MX')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

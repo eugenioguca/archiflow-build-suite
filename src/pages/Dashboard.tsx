@@ -256,7 +256,7 @@ export default function Dashboard() {
 
       {/* Métricas de Ventas y Avances de Proyectos */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="card-hover border-0 bg-gradient-to-br from-green-100/50 to-green-50/50 border-l-4 border-l-green-500 cursor-pointer glass-card floating-effect" onClick={() => window.location.href = '/sales'}>
+        <Card className="card-hover border-0 bg-gradient-to-br from-green-100/50 to-green-50/50 border-l-4 border-l-green-500 cursor-pointer glassmorphic-bg enhanced-hover" onClick={() => window.location.href = '/sales'}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pipeline de Ventas</CardTitle>
             <div className="p-2 bg-green-500/20 rounded-lg">
@@ -271,7 +271,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="card-hover border-0 bg-gradient-to-br from-blue-100/50 to-blue-50/50 border-l-4 border-l-blue-500 cursor-pointer glass-card floating-effect" onClick={() => window.location.href = '/progress-overview'}>
+        <Card className="card-hover border-0 bg-gradient-to-br from-blue-100/50 to-blue-50/50 border-l-4 border-l-blue-500 cursor-pointer glassmorphic-bg enhanced-hover" onClick={() => window.location.href = '/progress-overview'}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Proyectos Activos</CardTitle>
             <div className="p-2 bg-blue-500/20 rounded-lg">
@@ -286,7 +286,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="card-hover border-0 bg-gradient-to-br from-purple-100/50 to-purple-50/50 border-l-4 border-l-purple-500 cursor-pointer glass-card floating-effect" onClick={() => window.location.href = '/sales'}>
+        <Card className="card-hover border-0 bg-gradient-to-br from-purple-100/50 to-purple-50/50 border-l-4 border-l-purple-500 cursor-pointer glassmorphic-bg enhanced-hover" onClick={() => window.location.href = '/sales'}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Clientes Potenciales</CardTitle>
             <div className="p-2 bg-purple-500/20 rounded-lg">
@@ -301,7 +301,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="card-hover border-0 bg-gradient-to-br from-orange-100/50 to-orange-50/50 border-l-4 border-l-orange-500 glass-card floating-effect">
+        <Card className="card-hover border-0 bg-gradient-to-br from-orange-100/50 to-orange-50/50 border-l-4 border-l-orange-500 glassmorphic-bg enhanced-hover">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Tasa de Conversión</CardTitle>
             <div className="p-2 bg-orange-500/20 rounded-lg">
@@ -319,7 +319,7 @@ export default function Dashboard() {
 
       {/* Secciones de información detallada */}
       <div className="grid gap-8 lg:grid-cols-2">
-        <Card className="card-hover border-0 shadow-lg glass-card">
+        <Card className="card-hover border-0 shadow-lg glassmorphic-bg enhanced-hover">
           <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-t-lg">
             <CardTitle className="flex items-center gap-3 text-xl">
               <div className="p-2 bg-primary/20 rounded-lg">
@@ -375,7 +375,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="card-hover border-0 shadow-lg glass-card">
+        <Card className="card-hover border-0 shadow-lg glassmorphic-bg enhanced-hover">
           <CardHeader className="bg-gradient-to-r from-purple/5 to-pink/5 rounded-t-lg">
             <CardTitle className="flex items-center gap-3 text-xl">
               <div className="p-2 bg-purple/20 rounded-lg">

@@ -5,18 +5,18 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:scale-[1.02] active:scale-[0.98]",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium ring-offset-background transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-xl hover:shadow-2xl backdrop-blur-sm",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-md hover:shadow-lg",
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-xl hover:shadow-2xl backdrop-blur-sm",
         outline:
-          "border border-input bg-background/60 backdrop-blur-sm hover:bg-accent/80 hover:text-accent-foreground shadow-sm hover:shadow-md",
+          "border border-white/30 bg-background/10 backdrop-blur-lg hover:bg-accent/80 hover:text-accent-foreground shadow-lg hover:shadow-xl hover:border-white/50",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-sm hover:shadow-md",
-        ghost: "hover:bg-accent/60 hover:text-accent-foreground backdrop-blur-sm",
+          "bg-secondary/80 backdrop-blur-lg text-secondary-foreground hover:bg-secondary shadow-lg hover:shadow-xl",
+        ghost: "hover:bg-accent/60 hover:text-accent-foreground backdrop-blur-sm hover:shadow-lg",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
