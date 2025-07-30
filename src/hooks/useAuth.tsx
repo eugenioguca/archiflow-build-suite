@@ -30,17 +30,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         // Only check approval for authenticated users
         if (session?.user) {
+          console.log('Checking approval for user:', session.user.id);
           try {
-            const { data: profile } = await supabase
+            const { data: profile, error: profileError } = await supabase
               .from('profiles')
               .select('approval_status, role')
               .eq('user_id', session.user.id)
               .single();
             
+            console.log('User profile:', profile);
+            console.log('Profile error:', profileError);
+            
             // Admins are automatically approved
             const isAdmin = profile?.role === 'admin';
             const isApprovedUser = profile?.approval_status === 'approved';
-            setIsApproved(isAdmin || isApprovedUser);
+            const shouldBeApproved = isAdmin || isApprovedUser;
+            
+            console.log('Is admin:', isAdmin);
+            console.log('Is approved user:', isApprovedUser);
+            console.log('Should be approved:', shouldBeApproved);
+            
+            setIsApproved(shouldBeApproved);
           } catch (error) {
             console.error('Error checking approval status:', error);
             setIsApproved(false);
@@ -55,26 +65,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
+        console.log('Auth state change:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          try {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('approval_status, role')
-              .eq('user_id', session.user.id)
-              .single();
-            
-            // Admins are automatically approved
-            const isAdmin = profile?.role === 'admin';
-            const isApprovedUser = profile?.approval_status === 'approved';
-            setIsApproved(isAdmin || isApprovedUser);
-          } catch (error) {
-            console.error('Error checking approval status:', error);
-            setIsApproved(false);
-          }
+          // Use setTimeout to avoid blocking the auth callback
+          setTimeout(async () => {
+            try {
+              const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('approval_status, role')
+                .eq('user_id', session.user.id)
+                .single();
+              
+              console.log('Auth listener - User profile:', profile);
+              console.log('Auth listener - Profile error:', profileError);
+              
+              // Admins are automatically approved
+              const isAdmin = profile?.role === 'admin';
+              const isApprovedUser = profile?.approval_status === 'approved';
+              const shouldBeApproved = isAdmin || isApprovedUser;
+              
+              console.log('Auth listener - Should be approved:', shouldBeApproved);
+              setIsApproved(shouldBeApproved);
+            } catch (error) {
+              console.error('Error checking approval status in listener:', error);
+              setIsApproved(false);
+            }
+          }, 0);
         } else {
           setIsApproved(false);
         }
@@ -109,7 +129,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    console.log('Signing out...');
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error signing out:', error);
+    } else {
+      console.log('Successfully signed out');
+    }
   };
 
   const value = {
