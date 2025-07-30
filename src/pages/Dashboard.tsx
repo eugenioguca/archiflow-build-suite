@@ -46,52 +46,33 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchDashboardData();
+    
+    // Configurar actualización automática cada 30 segundos
+    const interval = setInterval(fetchDashboardData, 30000);
+    
+    // Limpiar interval al desmontar el componente
+    return () => clearInterval(interval);
   }, []);
 
   const fetchDashboardData = async () => {
     try {
-      // Mock data para demostración - mezclando datos reales con mock
+      setLoading(true);
       
-      // Datos de ventas (mock)
-      const mockSalesData = {
-        totalPipeline: 3700000,
-        activeLeads: 8,
-        negotiating: 3,
-        conversionRate: 68,
-        recentLeads: [
-          { name: "Empresa ABC", status: "interested", value: 500000, probability: 70 },
-          { name: "Construcciones XYZ", status: "proposal_sent", value: 1200000, probability: 85 },
-          { name: "Desarrollos Inmobiliarios", status: "negotiating", value: 2000000, probability: 90 }
-        ]
-      };
-
-      // Datos de proyectos (mock)
-      const mockProjectsData = {
-        activeProjects: 5,
-        completedThisMonth: 2,
-        totalProgress: 78,
-        projects: [
-          { name: "Casa Moderna Satelite", progress: 75, location: "Naucalpan" },
-          { name: "Oficinas Corporativas", progress: 45, location: "Polanco" },
-          { name: "Residencial Los Pinos", progress: 90, location: "Santa Fe" }
-        ]
-      };
-
-      // Fetch clients data (real)
+      // Fetch real clients data
       const { data: clients } = await supabase.from('clients').select('status');
-      const totalClients = clients?.length || 15; // mock fallback
-      const activeClients = clients?.filter(c => c.status === 'active').length || 10;
-      const potentialClients = clients?.filter(c => c.status === 'potential').length || mockSalesData.activeLeads;
+      const totalClients = clients?.length || 0;
+      const activeClients = clients?.filter(c => c.status === 'active').length || 0;
+      const potentialClients = clients?.filter(c => c.status === 'potential').length || 0;
 
-      // Fetch projects data (real)
-      const { data: projects } = await supabase.from('projects').select('status, name, created_at');
-      const totalProjects = projects?.length || mockProjectsData.activeProjects + 3;
-      const activeProjects = projects?.filter(p => ['construction', 'design', 'permits'].includes(p.status)).length || mockProjectsData.activeProjects;
-      const completedProjects = projects?.filter(p => p.status === 'completed').length || 3;
+      // Fetch real projects data
+      const { data: projects } = await supabase.from('projects').select('status, name, created_at, progress_percentage');
+      const totalProjects = projects?.length || 0;
+      const activeProjects = projects?.filter(p => ['construction', 'design', 'permits', 'planning'].includes(p.status)).length || 0;
+      const completedProjects = projects?.filter(p => p.status === 'completed').length || 0;
 
-      // Fetch expenses data (real)
+      // Fetch real expenses data
       const { data: expenses } = await supabase.from('expenses').select('amount, created_at, description');
-      const totalExpenses = expenses?.reduce((sum, e) => sum + e.amount, 0) || 250000;
+      const totalExpenses = expenses?.reduce((sum, e) => sum + Number(e.amount), 0) || 0;
       
       // Monthly expenses (current month)
       const currentMonth = new Date().getMonth();
@@ -99,16 +80,26 @@ export default function Dashboard() {
       const monthlyExpenses = expenses?.filter(e => {
         const expenseDate = new Date(e.created_at);
         return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
-      }).reduce((sum, e) => sum + e.amount, 0) || 45000;
+      }).reduce((sum, e) => sum + Number(e.amount), 0) || 0;
 
-      // Fetch photos data (real)
+      // Fetch real photos data
       const { data: photos } = await supabase.from('progress_photos').select('taken_at');
-      const totalPhotos = photos?.length || 120;
+      const totalPhotos = photos?.length || 0;
       
       // Recent photos (last 7 days)
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const recentPhotos = photos?.filter(p => new Date(p.taken_at) > sevenDaysAgo).length || 15;
+      const recentPhotos = photos?.filter(p => new Date(p.taken_at) > sevenDaysAgo).length || 0;
+
+      // Fetch real CRM activities for recent activity
+      const { data: activities } = await supabase
+        .from('crm_activities')
+        .select('title, activity_type, created_at')
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      // Fetch real income data
+      const { data: incomes } = await supabase.from('incomes').select('amount, description, created_at');
 
       setStats({
         totalClients,
@@ -123,63 +114,55 @@ export default function Dashboard() {
         recentPhotos,
       });
 
-      // Create recent activity from different sources (mock + real)
-      const activity: RecentActivity[] = [
-        {
-          id: 'sales-1',
-          type: 'client',
-          description: 'Nueva propuesta enviada a Empresa ABC',
-          date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-          amount: 500000,
-        },
-        {
-          id: 'project-1',
-          type: 'project',
-          description: 'Fase de acabados iniciada - Casa Moderna Satelite',
-          date: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
-        },
-        {
-          id: 'sales-2',
-          type: 'client',
-          description: 'Llamada de seguimiento con Construcciones XYZ',
-          date: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), // 6 hours ago
-        },
-        {
-          id: 'project-2',
-          type: 'project',
-          description: 'Progreso del 90% en Residencial Los Pinos',
-          date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-        },
-        {
-          id: 'expense-1',
-          type: 'expense',
-          description: 'Compra de materiales para construcción',
-          date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
-          amount: 25000,
-        }
-      ];
+      // Create recent activity from real data only
+      const activity: RecentActivity[] = [];
+
+      // Add real activities if available
+      if (activities && activities.length > 0) {
+        activities.forEach((activity_item, index) => {
+          activity.push({
+            id: `activity-${index}`,
+            type: 'client',
+            description: activity_item.title,
+            date: activity_item.created_at,
+          });
+        });
+      }
 
       // Add real projects if available
-      if (projects) {
+      if (projects && projects.length > 0) {
         projects.slice(0, 2).forEach((project, index) => {
           activity.push({
-            id: `real-project-${index}`,
+            id: `project-${index}`,
             type: 'project',
-            description: `Actualización de proyecto: ${project.name}`,
+            description: `Proyecto: ${project.name}`,
             date: project.created_at,
           });
         });
       }
 
       // Add real expenses if available
-      if (expenses) {
+      if (expenses && expenses.length > 0) {
         expenses.slice(0, 2).forEach((expense, index) => {
           activity.push({
-            id: `real-expense-${index}`,
+            id: `expense-${index}`,
             type: 'expense',
-            description: `Gasto registrado: ${expense.description}`,
+            description: `Gasto: ${expense.description}`,
             date: expense.created_at,
-            amount: expense.amount,
+            amount: Number(expense.amount),
+          });
+        });
+      }
+
+      // Add real incomes if available
+      if (incomes && incomes.length > 0) {
+        incomes.slice(0, 2).forEach((income, index) => {
+          activity.push({
+            id: `income-${index}`,
+            type: 'expense', // Using same icon for financial activity
+            description: `Ingreso: ${income.description}`,
+            date: income.created_at,
+            amount: Number(income.amount),
           });
         });
       }
@@ -190,6 +173,20 @@ export default function Dashboard() {
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      // Reset to empty state on error
+      setStats({
+        totalClients: 0,
+        activeClients: 0,
+        potentialClients: 0,
+        totalProjects: 0,
+        activeProjects: 0,
+        completedProjects: 0,
+        totalExpenses: 0,
+        monthlyExpenses: 0,
+        totalPhotos: 0,
+        recentPhotos: 0,
+      });
+      setRecentActivity([]);
     } finally {
       setLoading(false);
     }
@@ -266,9 +263,11 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600">$3.7M</div>
+            <div className="text-3xl font-bold text-green-600">
+              {formatCurrency(stats.potentialClients * 500000)} 
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
-              <span className="text-green-600 font-medium">+22%</span> este mes
+              {stats.potentialClients} clientes potenciales
             </p>
           </CardContent>
         </Card>
@@ -283,7 +282,7 @@ export default function Dashboard() {
           <CardContent>
             <div className="text-3xl font-bold text-blue-600">{stats.activeProjects}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              <span className="text-blue-600 font-medium">78%</span> progreso promedio
+              {stats.totalProjects > 0 ? `${stats.totalProjects} total` : 'Sin proyectos aún'}
             </p>
           </CardContent>
         </Card>
@@ -298,7 +297,7 @@ export default function Dashboard() {
           <CardContent>
             <div className="text-3xl font-bold text-purple-600">{stats.potentialClients}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              <span className="text-purple-600 font-medium">85%</span> probabilidad promedio
+              {stats.totalClients > 0 ? 'En pipeline' : 'Sin clientes aún'}
             </p>
           </CardContent>
         </Card>
@@ -311,9 +310,11 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-orange-600">68%</div>
+            <div className="text-3xl font-bold text-orange-600">
+              {stats.totalClients > 0 ? Math.round((stats.activeClients / stats.totalClients) * 100) : 0}%
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
-              <span className="text-orange-600 font-medium">+5%</span> vs mes anterior
+              Conversión de clientes
             </p>
           </CardContent>
         </Card>
