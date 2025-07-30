@@ -393,7 +393,7 @@ export function CRMActivityTimeline({ clientId }: CRMActivityTimelineProps) {
                       {activity.scheduled_date && (
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          {new Date(activity.scheduled_date).toLocaleDateString('es-MX')}
+                          {activity.scheduled_date ? new Date(activity.scheduled_date).toLocaleDateString('es-MX') : 'Sin fecha'}
                         </span>
                       )}
                     </div>
@@ -404,7 +404,7 @@ export function CRMActivityTimeline({ clientId }: CRMActivityTimelineProps) {
                           <strong>Próxima acción:</strong> {activity.next_action}
                           {activity.next_action_date && (
                             <span className="block text-xs text-orange-600 mt-1">
-                              {new Date(activity.next_action_date).toLocaleString('es-MX')}
+                              {activity.next_action_date ? new Date(activity.next_action_date).toLocaleString('es-MX') : 'Sin fecha'}
                             </span>
                           )}
                         </p>

@@ -83,6 +83,7 @@ export default function Dashboard() {
       const currentMonth = new Date().getMonth();
       const currentYear = new Date().getFullYear();
       const monthlyExpenses = expenses?.filter(e => {
+        if (!e.created_at) return false;
         const expenseDate = new Date(e.created_at);
         return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
       }).reduce((sum, e) => sum + Number(e.amount), 0) || 0;
@@ -94,7 +95,7 @@ export default function Dashboard() {
       // Recent photos (last 7 days)
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const recentPhotos = photos?.filter(p => new Date(p.taken_at) > sevenDaysAgo).length || 0;
+      const recentPhotos = photos?.filter(p => p.taken_at && new Date(p.taken_at) > sevenDaysAgo).length || 0;
 
       // Fetch real CRM activities for recent activity
       const { data: activities } = await supabase
@@ -186,7 +187,10 @@ export default function Dashboard() {
       }
 
       // Sort by date and take latest 6
-      activity.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      activity.sort((a, b) => {
+        if (!a.date || !b.date) return 0;
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      });
       setRecentActivity(activity.slice(0, 6));
 
     } catch (error) {
@@ -219,6 +223,7 @@ export default function Dashboard() {
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return 'Sin fecha';
     return new Date(dateString).toLocaleDateString('es-MX', {
       month: 'short',
       day: 'numeric',

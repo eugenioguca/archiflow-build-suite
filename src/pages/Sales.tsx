@@ -955,7 +955,7 @@ export default function Sales() {
                          <td className="p-3">
                            <div className="space-y-2">
                              <EditableField
-                               value={client.project_type}
+                               value={client.project_type || 'residential'}
                                onSave={(value) => updateClient(client.id, { project_type: value as any })}
                                type="select"
                                options={[
@@ -977,7 +977,7 @@ export default function Sales() {
                                displayTransform={(value) => `$${Number(value).toLocaleString('es-MX')}`}
                              />
                              <EditableField
-                               value={client.priority}
+                               value={client.priority || 'medium'}
                                onSave={(value) => updateClient(client.id, { priority: value as any })}
                                type="select"
                                options={[
