@@ -219,9 +219,15 @@ export default function Dashboard() {
     }
   };
 
-  // Calculate conversion rate
-  const conversionRate = stats.totalClients > 0 ? (stats.activeClients / stats.totalClients) * 100 : 0;
-  const projectCompletionRate = stats.totalProjects > 0 ? (stats.completedProjects / stats.totalProjects) * 100 : 0;
+  // Calculate conversion rate (cap at 100%)
+  const conversionRate = Math.min(
+    stats.totalClients > 0 ? (stats.activeClients / stats.totalClients) * 100 : 0,
+    100
+  );
+  const projectCompletionRate = Math.min(
+    stats.totalProjects > 0 ? (stats.completedProjects / stats.totalProjects) * 100 : 0,
+    100
+  );
 
   if (loading) {
     return (
@@ -333,10 +339,8 @@ export default function Dashboard() {
                   <span className="text-2xl font-bold text-orange">{conversionRate.toFixed(1)}%</span>
                 </div>
               </div>
-              <div className="relative">
+              <div className="relative overflow-hidden">
                 <Progress value={conversionRate} className="h-3" />
-                <div className="absolute inset-0 bg-gradient-to-r from-orange/20 to-orange/40 rounded-full" 
-                     style={{ width: `${conversionRate}%` }}></div>
               </div>
               <p className="text-sm text-muted-foreground">
                 <span className="font-medium text-orange">{stats.activeClients}</span> de {stats.totalClients} clientes convertidos
@@ -350,10 +354,8 @@ export default function Dashboard() {
                   <span className="text-2xl font-bold text-success">{projectCompletionRate.toFixed(1)}%</span>
                 </div>
               </div>
-              <div className="relative">
+              <div className="relative overflow-hidden">
                 <Progress value={projectCompletionRate} className="h-3" />
-                <div className="absolute inset-0 bg-gradient-to-r from-success/20 to-success/40 rounded-full" 
-                     style={{ width: `${projectCompletionRate}%` }}></div>
               </div>
               <p className="text-sm text-muted-foreground">
                 <span className="font-medium text-success">{stats.completedProjects}</span> de {stats.totalProjects} proyectos finalizados

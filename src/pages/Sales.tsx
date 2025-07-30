@@ -654,9 +654,9 @@ export default function Sales() {
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <DollarSign className="h-8 w-8 text-green-600" />
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="text-sm text-muted-foreground">Pipeline Total</p>
-                <p className="text-2xl font-bold text-foreground">
+                <p className="text-2xl font-bold text-foreground overflow-hidden text-ellipsis whitespace-nowrap">
                   {formatCurrency(getTotalPipeline())}
                 </p>
               </div>
@@ -668,9 +668,9 @@ export default function Sales() {
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <Users className="h-8 w-8 text-blue-600" />
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="text-sm text-muted-foreground">Total Clientes</p>
-                <p className="text-2xl font-bold text-foreground">{metrics.total}</p>
+                <p className="text-2xl font-bold text-foreground overflow-hidden">{metrics.total}</p>
               </div>
             </div>
           </CardContent>
@@ -680,9 +680,9 @@ export default function Sales() {
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <Target className="h-8 w-8 text-orange-600" />
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="text-sm text-muted-foreground">Calificados</p>
-                <p className="text-2xl font-bold text-foreground">{metrics.qualified}</p>
+                <p className="text-2xl font-bold text-foreground overflow-hidden">{metrics.qualified}</p>
               </div>
             </div>
           </CardContent>
@@ -692,9 +692,9 @@ export default function Sales() {
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <TrendingUp className="h-8 w-8 text-green-600" />
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="text-sm text-muted-foreground">Ganados</p>
-                <p className="text-2xl font-bold text-foreground">{metrics.won}</p>
+                <p className="text-2xl font-bold text-foreground overflow-hidden">{metrics.won}</p>
               </div>
             </div>
           </CardContent>
@@ -704,9 +704,11 @@ export default function Sales() {
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <AlertCircle className="h-8 w-8 text-purple-600" />
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="text-sm text-muted-foreground">Conversión</p>
-                <p className="text-2xl font-bold text-foreground">{metrics.conversionRate}%</p>
+                <p className="text-2xl font-bold text-foreground overflow-hidden">
+                  {Math.min(metrics.conversionRate, 100).toFixed(1)}%
+                </p>
               </div>
             </div>
           </CardContent>
@@ -861,41 +863,134 @@ export default function Sales() {
         </TabsContent>
 
         <TabsContent value="activities">
-          {selectedClient && (
-            <CRMActivityTimeline 
-              clientId={selectedClient.id}
-            />
-          )}
-          {!selectedClient && (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <p className="text-muted-foreground">Selecciona un cliente para ver sus actividades</p>
-              </CardContent>
-            </Card>
-          )}
+          <Card>
+            <CardHeader>
+              <CardTitle>Gestión de Actividades CRM</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {selectedClient ? `Actividades para: ${selectedClient.full_name}` : 'Selecciona un cliente desde la tabla para ver actividades específicas'}
+              </p>
+            </CardHeader>
+            <CardContent>
+              {selectedClient ? (
+                <CRMActivityTimeline clientId={selectedClient.id} />
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-center text-muted-foreground py-8">
+                    Haz clic en el botón "Editar" de cualquier cliente en la tabla del Pipeline para gestionar sus actividades
+                  </p>
+                  {filteredClients.length > 0 && (
+                    <div className="grid gap-4">
+                      <h3 className="font-semibold">Clientes Disponibles:</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filteredClients.slice(0, 6).map((client) => (
+                          <Card key={client.id} className="cursor-pointer hover:shadow-md transition-shadow"
+                                onClick={() => setSelectedClient(client)}>
+                            <CardContent className="p-4">
+                              <h4 className="font-medium">{client.full_name}</h4>
+                              <p className="text-sm text-muted-foreground">{client.email}</p>
+                              <Badge variant="outline" className="mt-2">
+                                {statusConfig[client.status].label}
+                              </Badge>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="scoring">
-          {selectedClient && (
-            <CRMLeadScoring 
-              client={{
-                id: selectedClient.id,
-                lead_score: selectedClient.lead_score,
-                budget: selectedClient.budget,
-                project_type: selectedClient.project_type,
-                priority: selectedClient.priority,
-                last_contact_date: selectedClient.last_contact_date,
-                created_at: new Date().toISOString()
-              }}
-            />
-          )}
-          {!selectedClient && (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <p className="text-muted-foreground">Selecciona un cliente para ver su scoring</p>
-              </CardContent>
-            </Card>
-          )}
+          <Card>
+            <CardHeader>
+              <CardTitle>Lead Scoring Inteligente</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {selectedClient ? `Análisis de scoring para: ${selectedClient.full_name}` : 'Análisis general de lead scoring'}
+              </p>
+            </CardHeader>
+            <CardContent>
+              {selectedClient ? (
+                <CRMLeadScoring 
+                  client={{
+                    id: selectedClient.id,
+                    lead_score: selectedClient.lead_score,
+                    budget: selectedClient.budget,
+                    project_type: selectedClient.project_type,
+                    priority: selectedClient.priority,
+                    last_contact_date: selectedClient.last_contact_date,
+                    created_at: new Date().toISOString()
+                  }}
+                  onScoreUpdate={(newScore) => {
+                    setClients(clients.map(c => 
+                      c.id === selectedClient.id ? { ...c, lead_score: newScore } : c
+                    ));
+                  }}
+                />
+              ) : (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <h3 className="text-2xl font-bold text-green-600">
+                          {clients.filter(c => c.lead_score >= 80).length}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">Leads Calientes (80+)</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <h3 className="text-2xl font-bold text-orange-600">
+                          {clients.filter(c => c.lead_score >= 60 && c.lead_score < 80).length}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">Leads Tibios (60-79)</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <h3 className="text-2xl font-bold text-blue-600">
+                          {clients.filter(c => c.lead_score >= 40 && c.lead_score < 60).length}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">Leads Fríos (40-59)</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <h3 className="text-2xl font-bold text-gray-600">
+                          {clients.filter(c => c.lead_score < 40).length}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">Leads Bajos (&lt;40)</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold mb-4">Top Leads por Scoring</h3>
+                    <div className="space-y-2">
+                      {clients
+                        .sort((a, b) => b.lead_score - a.lead_score)
+                        .slice(0, 5)
+                        .map((client) => (
+                          <div key={client.id} className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-muted/50"
+                               onClick={() => setSelectedClient(client)}>
+                            <div>
+                              <p className="font-medium">{client.full_name}</p>
+                              <p className="text-sm text-muted-foreground">{client.email}</p>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <Progress value={client.lead_score} className="w-20 h-2" />
+                              <span className="font-bold text-lg">{client.lead_score}</span>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="analytics">
