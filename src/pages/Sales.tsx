@@ -934,19 +934,19 @@ export default function Sales() {
                          <td className="p-3">
                            <div className="space-y-1">
                              <EditableField
-                               value={client.full_name}
-                               onSave={(value) => updateClient(client.id, { full_name: value.toString() })}
+                                value={client.full_name || ''}
+                                onSave={(value) => updateClient(client.id, { full_name: (value || '').toString() })}
                                className="font-medium text-foreground"
                              />
                              <EditableField
                                value={client.email || ''}
-                               onSave={(value) => updateClient(client.id, { email: value.toString() })}
+                               onSave={(value) => updateClient(client.id, { email: (value || '').toString() })}
                                type="email"
                                className="text-sm text-muted-foreground"
                              />
                              <EditableField
                                value={client.phone || ''}
-                               onSave={(value) => updateClient(client.id, { phone: value.toString() })}
+                               onSave={(value) => updateClient(client.id, { phone: (value || '').toString() })}
                                type="phone"
                                className="text-xs text-muted-foreground"
                              />

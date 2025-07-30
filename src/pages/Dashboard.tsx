@@ -63,8 +63,8 @@ export default function Dashboard() {
         setLoading(true);
       }
       
-      // Fetch real clients data
-      const { data: clients } = await supabase.from('clients').select('status');
+      // Fetch real clients data with budget for pipeline calculation
+      const { data: clients } = await supabase.from('clients').select('status, budget');
       const totalClients = clients?.length || 0;
       const activeClients = clients?.filter(c => c.status === 'active').length || 0;
       const potentialClients = clients?.filter(c => c.status === 'potential').length || 0;
@@ -106,9 +106,17 @@ export default function Dashboard() {
       // Fetch real income data  
       const { data: incomes } = await supabase.from('incomes').select('amount, description, created_at');
 
-      // Calculate pipeline value from potential projects' budgets
+      // Calculate real pipeline value from potential clients' budgets
+      const realPipelineValue = clients?.filter(c => c.status === 'potential').reduce((sum, c) => sum + (Number(c.budget) || 0), 0) || 0;
       const potentialProjectsBudgets = projects?.filter(p => p.status === 'planning').reduce((sum, p) => sum + (Number(p.budget) || 0), 0) || 0;
-      const pipelineValue = potentialProjectsBudgets + (potentialClients * 250000); // Valor estimado por cliente potencial
+      const pipelineValue = realPipelineValue + potentialProjectsBudgets;
+      
+      console.log('Dashboard Pipeline Debug:', {
+        potentialClients: clients?.filter(c => c.status === 'potential'),
+        realPipelineValue,
+        potentialProjectsBudgets,
+        totalPipelineValue: pipelineValue
+      });
 
       setStats({
         totalClients,

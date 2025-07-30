@@ -22,7 +22,7 @@ export function EditableField({
   displayTransform
 }: EditableFieldProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(value.toString());
+  const [editValue, setEditValue] = useState((value || '').toString());
 
   const handleSave = () => {
     const finalValue = type === 'number' ? parseFloat(editValue) || 0 : editValue;
@@ -31,11 +31,11 @@ export function EditableField({
   };
 
   const handleCancel = () => {
-    setEditValue(value.toString());
+    setEditValue((value || '').toString());
     setIsEditing(false);
   };
 
-  const displayValue = displayTransform ? displayTransform(value) : value.toString();
+  const displayValue = displayTransform ? displayTransform(value) : (value || '').toString();
 
   if (!isEditing) {
     return (
