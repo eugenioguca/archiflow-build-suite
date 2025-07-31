@@ -124,6 +124,131 @@ export type Database = {
           },
         ]
       }
+      cfdi_documents: {
+        Row: {
+          client_id: string | null
+          conceptos: Json | null
+          created_at: string
+          created_by: string
+          expense_id: string | null
+          fecha_emision: string
+          file_path: string
+          folio: string | null
+          forma_pago: string | null
+          id: string
+          ieps: number | null
+          impuestos: Json | null
+          income_id: string | null
+          isr: number | null
+          iva: number | null
+          metodo_pago: string | null
+          rfc_emisor: string
+          rfc_receptor: string
+          serie: string | null
+          status: string | null
+          subtotal: number
+          supplier_id: string | null
+          tipo_comprobante: string
+          total: number
+          updated_at: string
+          uso_cfdi: string | null
+          uuid_fiscal: string
+          validation_status: string | null
+          xml_content: string
+        }
+        Insert: {
+          client_id?: string | null
+          conceptos?: Json | null
+          created_at?: string
+          created_by: string
+          expense_id?: string | null
+          fecha_emision: string
+          file_path: string
+          folio?: string | null
+          forma_pago?: string | null
+          id?: string
+          ieps?: number | null
+          impuestos?: Json | null
+          income_id?: string | null
+          isr?: number | null
+          iva?: number | null
+          metodo_pago?: string | null
+          rfc_emisor: string
+          rfc_receptor: string
+          serie?: string | null
+          status?: string | null
+          subtotal: number
+          supplier_id?: string | null
+          tipo_comprobante: string
+          total: number
+          updated_at?: string
+          uso_cfdi?: string | null
+          uuid_fiscal: string
+          validation_status?: string | null
+          xml_content: string
+        }
+        Update: {
+          client_id?: string | null
+          conceptos?: Json | null
+          created_at?: string
+          created_by?: string
+          expense_id?: string | null
+          fecha_emision?: string
+          file_path?: string
+          folio?: string | null
+          forma_pago?: string | null
+          id?: string
+          ieps?: number | null
+          impuestos?: Json | null
+          income_id?: string | null
+          isr?: number | null
+          iva?: number | null
+          metodo_pago?: string | null
+          rfc_emisor?: string
+          rfc_receptor?: string
+          serie?: string | null
+          status?: string | null
+          subtotal?: number
+          supplier_id?: string | null
+          tipo_comprobante?: string
+          total?: number
+          updated_at?: string
+          uso_cfdi?: string | null
+          uuid_fiscal?: string
+          validation_status?: string | null
+          xml_content?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cfdi_documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cfdi_documents_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cfdi_documents_income_id_fkey"
+            columns: ["income_id"]
+            isOneToOne: false
+            referencedRelation: "incomes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cfdi_documents_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_portal_settings: {
         Row: {
           can_view_documents: boolean | null
@@ -299,6 +424,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      company_fiscal_config: {
+        Row: {
+          certificado_cer: string | null
+          created_at: string
+          domicilio_fiscal: Json
+          id: string
+          llave_privada_key: string | null
+          pac_config: Json | null
+          pac_provider: string | null
+          password_sat: string | null
+          razon_social: string
+          regimen_fiscal: string
+          rfc: string
+          updated_at: string
+        }
+        Insert: {
+          certificado_cer?: string | null
+          created_at?: string
+          domicilio_fiscal: Json
+          id?: string
+          llave_privada_key?: string | null
+          pac_config?: Json | null
+          pac_provider?: string | null
+          password_sat?: string | null
+          razon_social: string
+          regimen_fiscal: string
+          rfc: string
+          updated_at?: string
+        }
+        Update: {
+          certificado_cer?: string | null
+          created_at?: string
+          domicilio_fiscal?: Json
+          id?: string
+          llave_privada_key?: string | null
+          pac_config?: Json | null
+          pac_provider?: string | null
+          password_sat?: string | null
+          razon_social?: string
+          regimen_fiscal?: string
+          rfc?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       crm_activities: {
         Row: {
@@ -602,50 +772,87 @@ export type Database = {
       expenses: {
         Row: {
           amount: number
+          bank_account: string | null
           category: Database["public"]["Enums"]["expense_category"]
+          cfdi_document_id: string | null
           client_id: string | null
+          complement_received: boolean | null
           created_at: string
           created_by: string
           description: string
+          forma_pago: string | null
           id: string
           invoice_date: string | null
           invoice_number: string | null
+          payment_method: string | null
           project_id: string | null
+          reference_number: string | null
+          requires_complement: boolean | null
+          rfc_emisor: string | null
+          status_cfdi: string | null
           supplier_id: string | null
           tax_amount: number | null
           updated_at: string
+          uuid_fiscal: string | null
         }
         Insert: {
           amount: number
+          bank_account?: string | null
           category: Database["public"]["Enums"]["expense_category"]
+          cfdi_document_id?: string | null
           client_id?: string | null
+          complement_received?: boolean | null
           created_at?: string
           created_by: string
           description: string
+          forma_pago?: string | null
           id?: string
           invoice_date?: string | null
           invoice_number?: string | null
+          payment_method?: string | null
           project_id?: string | null
+          reference_number?: string | null
+          requires_complement?: boolean | null
+          rfc_emisor?: string | null
+          status_cfdi?: string | null
           supplier_id?: string | null
           tax_amount?: number | null
           updated_at?: string
+          uuid_fiscal?: string | null
         }
         Update: {
           amount?: number
+          bank_account?: string | null
           category?: Database["public"]["Enums"]["expense_category"]
+          cfdi_document_id?: string | null
           client_id?: string | null
+          complement_received?: boolean | null
           created_at?: string
           created_by?: string
           description?: string
+          forma_pago?: string | null
           id?: string
           invoice_date?: string | null
           invoice_number?: string | null
+          payment_method?: string | null
           project_id?: string | null
+          reference_number?: string | null
+          requires_complement?: boolean | null
+          rfc_emisor?: string | null
+          status_cfdi?: string | null
           supplier_id?: string | null
           tax_amount?: number | null
           updated_at?: string
+          uuid_fiscal?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "expenses_cfdi_document_id_fkey"
+            columns: ["cfdi_document_id"]
+            isOneToOne: false
+            referencedRelation: "cfdi_documents"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "expenses_client_id_fkey"
             columns: ["client_id"]
@@ -676,14 +883,56 @@ export type Database = {
           },
         ]
       }
+      fiscal_reports: {
+        Row: {
+          created_at: string
+          created_by: string
+          data: Json
+          file_path: string | null
+          id: string
+          period_end: string
+          period_start: string
+          report_type: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          data: Json
+          file_path?: string | null
+          id?: string
+          period_end: string
+          period_start: string
+          report_type: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          data?: Json
+          file_path?: string | null
+          id?: string
+          period_end?: string
+          period_start?: string
+          report_type?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       incomes: {
         Row: {
           amount: number
           category: Database["public"]["Enums"]["income_category"]
+          cfdi_document_id: string | null
           client_id: string | null
+          complement_sent: boolean | null
           created_at: string
           created_by: string
           description: string
+          forma_pago: string | null
           id: string
           invoice_date: string | null
           invoice_number: string | null
@@ -692,16 +941,24 @@ export type Database = {
             | Database["public"]["Enums"]["income_payment_status"]
             | null
           project_id: string | null
+          requires_complement: boolean | null
+          rfc_receptor: string | null
+          status_cfdi: string | null
           tax_amount: number | null
           updated_at: string
+          uso_cfdi: string | null
+          uuid_fiscal: string | null
         }
         Insert: {
           amount: number
           category: Database["public"]["Enums"]["income_category"]
+          cfdi_document_id?: string | null
           client_id?: string | null
+          complement_sent?: boolean | null
           created_at?: string
           created_by: string
           description: string
+          forma_pago?: string | null
           id?: string
           invoice_date?: string | null
           invoice_number?: string | null
@@ -710,16 +967,24 @@ export type Database = {
             | Database["public"]["Enums"]["income_payment_status"]
             | null
           project_id?: string | null
+          requires_complement?: boolean | null
+          rfc_receptor?: string | null
+          status_cfdi?: string | null
           tax_amount?: number | null
           updated_at?: string
+          uso_cfdi?: string | null
+          uuid_fiscal?: string | null
         }
         Update: {
           amount?: number
           category?: Database["public"]["Enums"]["income_category"]
+          cfdi_document_id?: string | null
           client_id?: string | null
+          complement_sent?: boolean | null
           created_at?: string
           created_by?: string
           description?: string
+          forma_pago?: string | null
           id?: string
           invoice_date?: string | null
           invoice_number?: string | null
@@ -728,10 +993,22 @@ export type Database = {
             | Database["public"]["Enums"]["income_payment_status"]
             | null
           project_id?: string | null
+          requires_complement?: boolean | null
+          rfc_receptor?: string | null
+          status_cfdi?: string | null
           tax_amount?: number | null
           updated_at?: string
+          uso_cfdi?: string | null
+          uuid_fiscal?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "incomes_cfdi_document_id_fkey"
+            columns: ["cfdi_document_id"]
+            isOneToOne: false
+            referencedRelation: "cfdi_documents"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "incomes_client_id_fkey"
             columns: ["client_id"]
@@ -744,6 +1021,62 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_complements: {
+        Row: {
+          cfdi_document_id: string
+          complement_uuid: string
+          created_at: string
+          fecha_pago: string
+          file_path: string
+          forma_pago: string
+          id: string
+          moneda: string | null
+          monto_pago: number
+          received_date: string | null
+          status: string | null
+          updated_at: string
+          xml_content: string
+        }
+        Insert: {
+          cfdi_document_id: string
+          complement_uuid: string
+          created_at?: string
+          fecha_pago: string
+          file_path: string
+          forma_pago: string
+          id?: string
+          moneda?: string | null
+          monto_pago: number
+          received_date?: string | null
+          status?: string | null
+          updated_at?: string
+          xml_content: string
+        }
+        Update: {
+          cfdi_document_id?: string
+          complement_uuid?: string
+          created_at?: string
+          fecha_pago?: string
+          file_path?: string
+          forma_pago?: string
+          id?: string
+          moneda?: string | null
+          monto_pago?: number
+          received_date?: string | null
+          status?: string | null
+          updated_at?: string
+          xml_content?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_complements_cfdi_document_id_fkey"
+            columns: ["cfdi_document_id"]
+            isOneToOne: false
+            referencedRelation: "cfdi_documents"
             referencedColumns: ["id"]
           },
         ]
@@ -1080,12 +1413,96 @@ export type Database = {
           },
         ]
       }
+      supplier_payments: {
+        Row: {
+          accounts_payable_id: string | null
+          amount: number
+          bank_account: string | null
+          cfdi_complement_id: string | null
+          created_at: string
+          created_by: string
+          expense_id: string | null
+          id: string
+          notes: string | null
+          payment_date: string
+          payment_method: string
+          reference_number: string | null
+          status: string | null
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          accounts_payable_id?: string | null
+          amount: number
+          bank_account?: string | null
+          cfdi_complement_id?: string | null
+          created_at?: string
+          created_by: string
+          expense_id?: string | null
+          id?: string
+          notes?: string | null
+          payment_date: string
+          payment_method: string
+          reference_number?: string | null
+          status?: string | null
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          accounts_payable_id?: string | null
+          amount?: number
+          bank_account?: string | null
+          cfdi_complement_id?: string | null
+          created_at?: string
+          created_by?: string
+          expense_id?: string | null
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string
+          reference_number?: string | null
+          status?: string | null
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_payments_accounts_payable_id_fkey"
+            columns: ["accounts_payable_id"]
+            isOneToOne: false
+            referencedRelation: "accounts_payable"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_payments_cfdi_complement_id_fkey"
+            columns: ["cfdi_complement_id"]
+            isOneToOne: false
+            referencedRelation: "payment_complements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_payments_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_payments_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           address: string | null
           bank_account: string | null
           bank_name: string | null
           city: string | null
+          codigo_postal: string | null
           company_name: string
           contact_name: string | null
           country: string | null
@@ -1093,18 +1510,24 @@ export type Database = {
           created_by: string
           credit_limit: number | null
           current_balance: number | null
+          dias_credito: number | null
           email: string | null
           id: string
+          limite_credito: number | null
           notes: string | null
           payment_terms: number | null
           phone: string | null
           postal_code: string | null
           rating: number | null
+          regimen_fiscal: string | null
+          rfc: string | null
+          saldo_actual: number | null
           state: string | null
           status: Database["public"]["Enums"]["supplier_status"]
           supplier_category: Database["public"]["Enums"]["supplier_category"]
           tax_id: string | null
           updated_at: string
+          uso_cfdi_default: string | null
           website: string | null
         }
         Insert: {
@@ -1112,6 +1535,7 @@ export type Database = {
           bank_account?: string | null
           bank_name?: string | null
           city?: string | null
+          codigo_postal?: string | null
           company_name: string
           contact_name?: string | null
           country?: string | null
@@ -1119,18 +1543,24 @@ export type Database = {
           created_by: string
           credit_limit?: number | null
           current_balance?: number | null
+          dias_credito?: number | null
           email?: string | null
           id?: string
+          limite_credito?: number | null
           notes?: string | null
           payment_terms?: number | null
           phone?: string | null
           postal_code?: string | null
           rating?: number | null
+          regimen_fiscal?: string | null
+          rfc?: string | null
+          saldo_actual?: number | null
           state?: string | null
           status?: Database["public"]["Enums"]["supplier_status"]
           supplier_category?: Database["public"]["Enums"]["supplier_category"]
           tax_id?: string | null
           updated_at?: string
+          uso_cfdi_default?: string | null
           website?: string | null
         }
         Update: {
@@ -1138,6 +1568,7 @@ export type Database = {
           bank_account?: string | null
           bank_name?: string | null
           city?: string | null
+          codigo_postal?: string | null
           company_name?: string
           contact_name?: string | null
           country?: string | null
@@ -1145,18 +1576,24 @@ export type Database = {
           created_by?: string
           credit_limit?: number | null
           current_balance?: number | null
+          dias_credito?: number | null
           email?: string | null
           id?: string
+          limite_credito?: number | null
           notes?: string | null
           payment_terms?: number | null
           phone?: string | null
           postal_code?: string | null
           rating?: number | null
+          regimen_fiscal?: string | null
+          rfc?: string | null
+          saldo_actual?: number | null
           state?: string | null
           status?: Database["public"]["Enums"]["supplier_status"]
           supplier_category?: Database["public"]["Enums"]["supplier_category"]
           tax_id?: string | null
           updated_at?: string
+          uso_cfdi_default?: string | null
           website?: string | null
         }
         Relationships: []
