@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -22,8 +24,8 @@ import {
   Clock, 
   CheckCircle, 
   Eye, 
-  Calendar, 
-  Phone, 
+  Calendar as CalendarLucide, 
+  Phone,
   Mail, 
   MessageSquare,
   DollarSign,
@@ -138,6 +140,11 @@ export default function Sales() {
   const [showActivities, setShowActivities] = useState(false);
   const [editingClient, setEditingClient] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+  const [scheduleClientId, setScheduleClientId] = useState<string>("");
+  const [scheduleDate, setScheduleDate] = useState<Date | undefined>();
+  const [actionType, setActionType] = useState<string>("call");
+  const [actionDescription, setActionDescription] = useState<string>("");
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -245,11 +252,16 @@ export default function Sales() {
         .from('clients')
         .insert([{
           ...data,
+          profile_id: (await supabase.from('profiles').select('id').eq('user_id', user.id).single()).data?.id,
           lead_score: calculateLeadScore(data),
           last_contact_date: new Date().toISOString().split('T')[0],
           next_contact_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
         }])
-        .select()
+        .select(`
+          *,
+          assigned_advisor: profiles!clients_assigned_advisor_id_fkey(id, full_name),
+          created_by_profile: profiles!clients_profile_id_fkey(id, full_name)
+        `)
         .single();
 
       if (error) throw error;
@@ -464,14 +476,11 @@ export default function Sales() {
 
       if (error) throw error;
 
+      // Refetch data to ensure UI is updated correctly
+      await fetchData();
+
       const advisor = advisorId ? employees.find(e => e.id === advisorId) : null;
       const client = clients.find(c => c.id === clientId);
-
-      setClients(clients.map(c => 
-        c.id === clientId 
-          ? { ...c, assigned_advisor_id: advisorId, advisor_name: advisor?.full_name || 'Sin asignar' }
-          : c
-      ));
 
       if (client) {
         const activityTitle = advisor 
@@ -626,6 +635,61 @@ export default function Sales() {
       toast({
         title: "Error",
         description: "No se pudo crear el recordatorio",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const scheduleAction = async (clientId: string, clientName: string) => {
+    setScheduleClientId(clientId);
+    setShowScheduleDialog(true);
+    setScheduleDate(undefined);
+    setActionType("call");
+    setActionDescription("");
+  };
+
+  const handleScheduleAction = async () => {
+    if (!scheduleDate || !actionDescription) {
+      toast({
+        title: "Error",
+        description: "Por favor selecciona una fecha y descripción",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const client = clients.find(c => c.id === scheduleClientId);
+      
+      // Create activity
+      await createActivity({
+        title: `${actionType === 'call' ? 'Llamada programada' : actionType === 'meeting' ? 'Reunión programada' : 'Email programado'}`,
+        activity_type: actionType as any,
+        description: actionDescription,
+        scheduled_date: scheduleDate.toISOString(),
+        is_completed: false,
+        client_id: scheduleClientId
+      });
+
+      // Create reminder
+      await createReminderFromClient({
+        client_id: scheduleClientId,
+        title: `${actionType === 'call' ? 'Llamada' : actionType === 'meeting' ? 'Reunión' : 'Email'} - ${client?.full_name}`,
+        message: actionDescription,
+        reminder_date: scheduleDate.toISOString()
+      });
+
+      toast({
+        title: "Acción programada",
+        description: `Se programó la acción para ${format(scheduleDate, "dd/MM/yyyy HH:mm")}`,
+      });
+
+      setShowScheduleDialog(false);
+    } catch (error) {
+      console.error('Error scheduling action:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo programar la acción",
         variant: "destructive",
       });
     }
@@ -1215,16 +1279,26 @@ export default function Sales() {
                                   <SelectItem value="completed">Completado</SelectItem>
                                 </SelectContent>
                               </Select>
-                             
-                             <Button
-                               variant="outline"
-                               size="sm"
-                               onClick={() => scheduleReminder(client.id, client.full_name)}
-                               className="h-8 w-8 p-0"
-                               title="Programar recordatorio"
-                             >
-                               <Bell className="h-4 w-4" />
-                             </Button>
+                              
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => scheduleAction(client.id, client.full_name)}
+                                className="h-8 w-8 p-0"
+                                title="Programar acción"
+                              >
+                                <CalendarLucide className="h-4 w-4" />
+                              </Button>
+
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => scheduleReminder(client.id, client.full_name)}
+                                className="h-8 w-8 p-0"
+                                title="Programar recordatorio"
+                              >
+                                <Bell className="h-4 w-4" />
+                              </Button>
                            </div>
                          </td>
                       </tr>
@@ -1553,6 +1627,99 @@ export default function Sales() {
                   <CRMActivityTimeline clientId={client.id} />
                 </div>
               ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo para Programar Acciones */}
+      <Dialog open={showScheduleDialog} onOpenChange={setShowScheduleDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Programar Acción</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Tipo de Acción</label>
+              <Select value={actionType} onValueChange={setActionType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="call">Llamada</SelectItem>
+                  <SelectItem value="meeting">Reunión</SelectItem>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="follow_up">Seguimiento</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Fecha y Hora</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !scheduleDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarLucide className="mr-2 h-4 w-4" />
+                    {scheduleDate ? format(scheduleDate, "PPP HH:mm") : "Seleccionar fecha y hora"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={scheduleDate}
+                    onSelect={setScheduleDate}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                  {scheduleDate && (
+                    <div className="p-3 border-t">
+                      <input
+                        type="time"
+                        value={scheduleDate ? format(scheduleDate, "HH:mm") : ""}
+                        onChange={(e) => {
+                          if (scheduleDate && e.target.value) {
+                            const [hours, minutes] = e.target.value.split(':');
+                            const newDate = new Date(scheduleDate);
+                            newDate.setHours(parseInt(hours), parseInt(minutes));
+                            setScheduleDate(newDate);
+                          }
+                        }}
+                        className="w-full px-3 py-2 border border-border/50 rounded-md bg-background"
+                      />
+                    </div>
+                  )}
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Descripción</label>
+              <Textarea
+                value={actionDescription}
+                onChange={(e) => setActionDescription(e.target.value)}
+                placeholder="Descripción de la acción a realizar..."
+                rows={3}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setShowScheduleDialog(false)}
+              >
+                Cancelar
+              </Button>
+              <Button onClick={handleScheduleAction}>
+                Programar
+              </Button>
             </div>
           </div>
         </DialogContent>
