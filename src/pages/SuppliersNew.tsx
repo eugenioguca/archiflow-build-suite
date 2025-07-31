@@ -811,7 +811,7 @@ export default function SuppliersNew() {
                   </div>
                   <div>
                     <Label htmlFor="supplier_category">Categoría</Label>
-                    <Select value={supplierFormData.supplier_category} onValueChange={(value) => setSupplierFormData({...supplierFormData, supplier_category: value})}>
+                    <Select value={supplierFormData.supplier_category} onValueChange={(value) => setSupplierFormData({...supplierFormData, supplier_category: value as "materials" | "equipment" | "services" | "subcontractor" | "utilities" | "other"})}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
