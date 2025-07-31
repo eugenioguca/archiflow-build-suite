@@ -740,6 +740,9 @@ export default function ProgressOverview() {
       { name: 'Entrega Final', description: 'Inspección final y entrega del proyecto', value: 2 }
     ];
 
+    // Obtener el equipo del proyecto para asignarlo a las fases
+    const projectTeam = generateTeamForProject(projectId);
+
     return basePhases.map((phase, index) => ({
       id: `${projectId}-phase-${index}`,
       name: phase.name,
@@ -754,7 +757,7 @@ export default function ProgressOverview() {
       budget_allocated: Math.floor(Math.random() * 500000) + 100000,
       actual_cost: index < 3 ? Math.floor(Math.random() * 500000) + 100000 : null,
       dependencies: index > 0 ? [`${projectId}-phase-${index - 1}`] : [],
-      assigned_team: [],
+      assigned_team: projectTeam.slice(0, 3).map(member => member.id), // Asignar los IDs del equipo del proyecto
       milestones: [],
       notes: `Notas para ${phase.name}`
     }));
