@@ -116,6 +116,7 @@ export default function ProgressOverview() {
   const [selectedProject, setSelectedProject] = useState<ProjectOverview | null>(null);
   const [editingPhase, setEditingPhase] = useState<string | null>(null);
   const [editingProject, setEditingProject] = useState<string | null>(null);
+  const [editingProjectInModal, setEditingProjectInModal] = useState(false);
   const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('active');
@@ -1243,7 +1244,10 @@ export default function ProgressOverview() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => setEditingProject(project.id === editingProject ? null : project.id)}
+                              onClick={() => {
+                                setSelectedProject(project);
+                                setEditingProjectInModal(true);
+                              }}
                             >
                               <Edit2 className="h-4 w-4" />
                             </Button>
@@ -1311,7 +1315,38 @@ export default function ProgressOverview() {
       <Dialog open={!!selectedProject} onOpenChange={() => setSelectedProject(null)}>
         <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Detalles del Proyecto: {selectedProject?.name}</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Detalles del Proyecto: {selectedProject?.name}</DialogTitle>
+              <div className="flex gap-2">
+                <Button
+                  variant={editingProjectInModal ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setEditingProjectInModal(!editingProjectInModal)}
+                >
+                  {editingProjectInModal ? (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Guardar
+                    </>
+                  ) : (
+                    <>
+                      <Edit2 className="h-4 w-4 mr-2" />
+                      Editar
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedProject(null);
+                    setEditingProjectInModal(false);
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </DialogHeader>
           
           {selectedProject && (
@@ -1334,16 +1369,67 @@ export default function ProgressOverview() {
                       </CardHeader>
                       <CardContent className="space-y-3">
                         <div>
+                          <p className="text-sm text-muted-foreground">Nombre del Proyecto</p>
+                          {editingProjectInModal ? (
+                            <Input
+                              value={selectedProject.name}
+                              onChange={(e) => setSelectedProject(prev => prev ? {...prev, name: e.target.value} : null)}
+                              className="font-medium"
+                            />
+                          ) : (
+                            <p className="font-medium">{selectedProject.name}</p>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Descripción</p>
+                          {editingProjectInModal ? (
+                            <Textarea
+                              value={selectedProject.description}
+                              onChange={(e) => setSelectedProject(prev => prev ? {...prev, description: e.target.value} : null)}
+                              className="font-medium"
+                            />
+                          ) : (
+                            <p className="font-medium">{selectedProject.description}</p>
+                          )}
+                        </div>
+                        <div>
                           <p className="text-sm text-muted-foreground">Cliente</p>
                           <p className="font-medium">{selectedProject.client.full_name}</p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Estado</p>
-                          {getProjectStatusBadge(selectedProject.status)}
+                          {editingProjectInModal ? (
+                            <Select
+                              value={selectedProject.status}
+                              onValueChange={(value) => setSelectedProject(prev => prev ? {...prev, status: value as any} : null)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="planning">Planeación</SelectItem>
+                                <SelectItem value="design">Diseño</SelectItem>
+                                <SelectItem value="permits">Permisos</SelectItem>
+                                <SelectItem value="construction">Construcción</SelectItem>
+                                <SelectItem value="completed">Completado</SelectItem>
+                                <SelectItem value="cancelled">Cancelado</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            getProjectStatusBadge(selectedProject.status)
+                          )}
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Ubicación</p>
-                          <p className="font-medium">{selectedProject.location || 'No especificada'}</p>
+                          {editingProjectInModal ? (
+                            <Input
+                              value={selectedProject.location || ''}
+                              onChange={(e) => setSelectedProject(prev => prev ? {...prev, location: e.target.value} : null)}
+                              placeholder="Ubicación del proyecto"
+                            />
+                          ) : (
+                            <p className="font-medium">{selectedProject.location || 'No especificada'}</p>
+                          )}
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Progreso General</p>
@@ -1364,11 +1450,29 @@ export default function ProgressOverview() {
                       <CardContent className="space-y-3">
                         <div>
                           <p className="text-sm text-muted-foreground">Presupuesto Total</p>
-                          <p className="font-medium text-lg">{formatCurrency(selectedProject.budget)}</p>
+                          {editingProjectInModal ? (
+                            <Input
+                              type="number"
+                              value={selectedProject.budget || ''}
+                              onChange={(e) => setSelectedProject(prev => prev ? {...prev, budget: parseFloat(e.target.value) || null} : null)}
+                              className="font-medium text-lg"
+                            />
+                          ) : (
+                            <p className="font-medium text-lg">{formatCurrency(selectedProject.budget)}</p>
+                          )}
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Gastado Actual</p>
-                          <p className="font-medium text-lg">{formatCurrency(selectedProject.total_cost)}</p>
+                          {editingProjectInModal ? (
+                            <Input
+                              type="number"
+                              value={selectedProject.total_cost || ''}
+                              onChange={(e) => setSelectedProject(prev => prev ? {...prev, total_cost: parseFloat(e.target.value) || null} : null)}
+                              className="font-medium text-lg"
+                            />
+                          ) : (
+                            <p className="font-medium text-lg">{formatCurrency(selectedProject.total_cost)}</p>
+                          )}
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Restante</p>
@@ -1398,11 +1502,27 @@ export default function ProgressOverview() {
                       <CardContent className="space-y-3">
                         <div>
                           <p className="text-sm text-muted-foreground">Fecha de Inicio</p>
-                          <p className="font-medium">{formatDate(selectedProject.start_date)}</p>
+                          {editingProjectInModal ? (
+                            <Input
+                              type="date"
+                              value={selectedProject.start_date || ''}
+                              onChange={(e) => setSelectedProject(prev => prev ? {...prev, start_date: e.target.value} : null)}
+                            />
+                          ) : (
+                            <p className="font-medium">{formatDate(selectedProject.start_date)}</p>
+                          )}
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Fecha Estimada</p>
-                          <p className="font-medium">{formatDate(selectedProject.estimated_completion)}</p>
+                          {editingProjectInModal ? (
+                            <Input
+                              type="date"
+                              value={selectedProject.estimated_completion || ''}
+                              onChange={(e) => setSelectedProject(prev => prev ? {...prev, estimated_completion: e.target.value} : null)}
+                            />
+                          ) : (
+                            <p className="font-medium">{formatDate(selectedProject.estimated_completion)}</p>
+                          )}
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Días Transcurridos</p>
@@ -1434,18 +1554,88 @@ export default function ProgressOverview() {
                         <CardContent className="p-6">
                           <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                              <div className="space-y-1">
+                              <div className="space-y-1 flex-1">
                                 <div className="flex items-center gap-3">
-                                  <h4 className="font-semibold text-lg">{phase.name}</h4>
-                                  {getStatusBadge(phase.status)}
+                                  {editingProjectInModal ? (
+                                    <Input
+                                      value={phase.name}
+                                      onChange={(e) => {
+                                        const updatedPhases = selectedProject.phases.map(p => 
+                                          p.id === phase.id ? {...p, name: e.target.value} : p
+                                        );
+                                        setSelectedProject(prev => prev ? {...prev, phases: updatedPhases} : null);
+                                      }}
+                                      className="font-semibold text-lg"
+                                    />
+                                  ) : (
+                                    <h4 className="font-semibold text-lg">{phase.name}</h4>
+                                  )}
+                                  
+                                  {editingProjectInModal ? (
+                                    <Select
+                                      value={phase.status}
+                                      onValueChange={(value) => {
+                                        const updatedPhases = selectedProject.phases.map(p => 
+                                          p.id === phase.id ? {...p, status: value as any} : p
+                                        );
+                                        setSelectedProject(prev => prev ? {...prev, phases: updatedPhases} : null);
+                                      }}
+                                    >
+                                      <SelectTrigger className="w-40">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="not_started">No iniciado</SelectItem>
+                                        <SelectItem value="planning">Planeando</SelectItem>
+                                        <SelectItem value="in_progress">En progreso</SelectItem>
+                                        <SelectItem value="on_hold">En pausa</SelectItem>
+                                        <SelectItem value="completed">Completado</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    getStatusBadge(phase.status)
+                                  )}
+                                  
                                   <Badge variant="outline" className="text-xs">
                                     {phase.value} puntos
                                   </Badge>
                                 </div>
-                                <p className="text-sm text-muted-foreground">{phase.description}</p>
+                                {editingProjectInModal ? (
+                                  <Textarea
+                                    value={phase.description}
+                                    onChange={(e) => {
+                                      const updatedPhases = selectedProject.phases.map(p => 
+                                        p.id === phase.id ? {...p, description: e.target.value} : p
+                                      );
+                                      setSelectedProject(prev => prev ? {...prev, phases: updatedPhases} : null);
+                                    }}
+                                    className="text-sm"
+                                  />
+                                ) : (
+                                  <p className="text-sm text-muted-foreground">{phase.description}</p>
+                                )}
                               </div>
                               <div className="text-right space-y-1">
-                                <p className="text-2xl font-bold">{phase.progress_percentage}%</p>
+                                {editingProjectInModal ? (
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      max="100"
+                                      value={phase.progress_percentage}
+                                      onChange={(e) => {
+                                        const updatedPhases = selectedProject.phases.map(p => 
+                                          p.id === phase.id ? {...p, progress_percentage: parseInt(e.target.value) || 0} : p
+                                        );
+                                        setSelectedProject(prev => prev ? {...prev, phases: updatedPhases} : null);
+                                      }}
+                                      className="w-16 text-center"
+                                    />
+                                    <span>%</span>
+                                  </div>
+                                ) : (
+                                  <p className="text-2xl font-bold">{phase.progress_percentage}%</p>
+                                )}
                                 <Progress value={phase.progress_percentage} className="h-3 w-32" />
                               </div>
                             </div>
@@ -1453,15 +1643,60 @@ export default function ProgressOverview() {
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                               <div>
                                 <p className="text-muted-foreground">Duración Estimada</p>
-                                <p className="font-medium">{phase.estimated_duration_days} días</p>
+                                {editingProjectInModal ? (
+                                  <div className="flex items-center gap-1">
+                                    <Input
+                                      type="number"
+                                      value={phase.estimated_duration_days}
+                                      onChange={(e) => {
+                                        const updatedPhases = selectedProject.phases.map(p => 
+                                          p.id === phase.id ? {...p, estimated_duration_days: parseInt(e.target.value) || 0} : p
+                                        );
+                                        setSelectedProject(prev => prev ? {...prev, phases: updatedPhases} : null);
+                                      }}
+                                      className="w-20"
+                                    />
+                                    <span className="text-xs">días</span>
+                                  </div>
+                                ) : (
+                                  <p className="font-medium">{phase.estimated_duration_days} días</p>
+                                )}
                               </div>
                               <div>
                                 <p className="text-muted-foreground">Presupuesto Asignado</p>
-                                <p className="font-medium">{formatCurrency(phase.budget_allocated)}</p>
+                                {editingProjectInModal ? (
+                                  <Input
+                                    type="number"
+                                    value={phase.budget_allocated || ''}
+                                    onChange={(e) => {
+                                      const updatedPhases = selectedProject.phases.map(p => 
+                                        p.id === phase.id ? {...p, budget_allocated: parseFloat(e.target.value) || null} : p
+                                      );
+                                      setSelectedProject(prev => prev ? {...prev, phases: updatedPhases} : null);
+                                    }}
+                                    className="font-medium"
+                                  />
+                                ) : (
+                                  <p className="font-medium">{formatCurrency(phase.budget_allocated)}</p>
+                                )}
                               </div>
                               <div>
                                 <p className="text-muted-foreground">Costo Actual</p>
-                                <p className="font-medium">{formatCurrency(phase.actual_cost)}</p>
+                                {editingProjectInModal ? (
+                                  <Input
+                                    type="number"
+                                    value={phase.actual_cost || ''}
+                                    onChange={(e) => {
+                                      const updatedPhases = selectedProject.phases.map(p => 
+                                        p.id === phase.id ? {...p, actual_cost: parseFloat(e.target.value) || null} : p
+                                      );
+                                      setSelectedProject(prev => prev ? {...prev, phases: updatedPhases} : null);
+                                    }}
+                                    className="font-medium"
+                                  />
+                                ) : (
+                                  <p className="font-medium">{formatCurrency(phase.actual_cost)}</p>
+                                )}
                               </div>
                               <div>
                                 <p className="text-muted-foreground">Equipo Asignado</p>
@@ -1507,7 +1742,20 @@ export default function ProgressOverview() {
                             {phase.notes && (
                               <div className="bg-muted/50 p-3 rounded-lg">
                                 <p className="text-sm text-muted-foreground font-medium mb-1">Notas:</p>
-                                <p className="text-sm">{phase.notes}</p>
+                                {editingProjectInModal ? (
+                                  <Textarea
+                                    value={phase.notes}
+                                    onChange={(e) => {
+                                      const updatedPhases = selectedProject.phases.map(p => 
+                                        p.id === phase.id ? {...p, notes: e.target.value} : p
+                                      );
+                                      setSelectedProject(prev => prev ? {...prev, phases: updatedPhases} : null);
+                                    }}
+                                    className="text-sm"
+                                  />
+                                ) : (
+                                  <p className="text-sm">{phase.notes}</p>
+                                )}
                               </div>
                             )}
                           </div>
@@ -1529,25 +1777,132 @@ export default function ProgressOverview() {
                                 {member.initials}
                               </AvatarFallback>
                             </Avatar>
-                            <div className="space-y-1">
-                              <p className="font-semibold">{member.name}</p>
-                              <p className="text-sm text-muted-foreground">{member.role}</p>
-                              <p className="text-xs text-muted-foreground">{member.specialization}</p>
+                            <div className="space-y-1 flex-1">
+                              {editingProjectInModal ? (
+                                <>
+                                  <Input
+                                    value={member.name}
+                                    onChange={(e) => {
+                                      const updatedTeam = selectedProject.assigned_team.map(m => 
+                                        m.id === member.id ? {...m, name: e.target.value} : m
+                                      );
+                                      setSelectedProject(prev => prev ? {...prev, assigned_team: updatedTeam} : null);
+                                    }}
+                                    className="font-semibold"
+                                  />
+                                  <Input
+                                    value={member.role}
+                                    onChange={(e) => {
+                                      const updatedTeam = selectedProject.assigned_team.map(m => 
+                                        m.id === member.id ? {...m, role: e.target.value} : m
+                                      );
+                                      setSelectedProject(prev => prev ? {...prev, assigned_team: updatedTeam} : null);
+                                    }}
+                                    className="text-sm"
+                                  />
+                                  <Input
+                                    value={member.specialization}
+                                    onChange={(e) => {
+                                      const updatedTeam = selectedProject.assigned_team.map(m => 
+                                        m.id === member.id ? {...m, specialization: e.target.value} : m
+                                      );
+                                      setSelectedProject(prev => prev ? {...prev, assigned_team: updatedTeam} : null);
+                                    }}
+                                    className="text-xs"
+                                  />
+                                </>
+                              ) : (
+                                <>
+                                  <p className="font-semibold">{member.name}</p>
+                                  <p className="text-sm text-muted-foreground">{member.role}</p>
+                                  <p className="text-xs text-muted-foreground">{member.specialization}</p>
+                                </>
+                              )}
                             </div>
+                            {editingProjectInModal && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  const updatedTeam = selectedProject.assigned_team.filter(m => m.id !== member.id);
+                                  setSelectedProject(prev => prev ? {...prev, assigned_team: updatedTeam} : null);
+                                }}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                           <div className="mt-3 space-y-2 text-xs text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <Mail className="h-3 w-3" />
-                              {member.email}
+                              {editingProjectInModal ? (
+                                <Input
+                                  type="email"
+                                  value={member.email}
+                                  onChange={(e) => {
+                                    const updatedTeam = selectedProject.assigned_team.map(m => 
+                                      m.id === member.id ? {...m, email: e.target.value} : m
+                                    );
+                                    setSelectedProject(prev => prev ? {...prev, assigned_team: updatedTeam} : null);
+                                  }}
+                                  className="text-xs h-6"
+                                />
+                              ) : (
+                                member.email
+                              )}
                             </div>
                             <div className="flex items-center gap-1">
                               <Phone className="h-3 w-3" />
-                              {member.phone}
+                              {editingProjectInModal ? (
+                                <Input
+                                  type="tel"
+                                  value={member.phone}
+                                  onChange={(e) => {
+                                    const updatedTeam = selectedProject.assigned_team.map(m => 
+                                      m.id === member.id ? {...m, phone: e.target.value} : m
+                                    );
+                                    setSelectedProject(prev => prev ? {...prev, assigned_team: updatedTeam} : null);
+                                  }}
+                                  className="text-xs h-6"
+                                />
+                              ) : (
+                                member.phone
+                              )}
                             </div>
                           </div>
                         </CardContent>
                       </Card>
                     ))}
+                    {editingProjectInModal && (
+                      <Card className="border-dashed border-2 border-muted-foreground/25">
+                        <CardContent className="p-4">
+                          <div className="flex flex-col items-center justify-center min-h-[140px] gap-3">
+                            <Plus className="h-8 w-8 text-muted-foreground" />
+                            <Button
+                              variant="ghost"
+                              onClick={() => {
+                                const newMember: TeamMember = {
+                                  id: Date.now().toString(),
+                                  name: 'Nuevo Miembro',
+                                  initials: 'NM',
+                                  role: 'Rol',
+                                  email: 'email@ejemplo.com',
+                                  phone: '+52 55 0000 0000',
+                                  specialization: 'Especialización',
+                                  avatar_url: null
+                                };
+                                const updatedTeam = [...selectedProject.assigned_team, newMember];
+                                setSelectedProject(prev => prev ? {...prev, assigned_team: updatedTeam} : null);
+                              }}
+                              className="text-muted-foreground"
+                            >
+                              Agregar Miembro
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
                   </div>
                 </TabsContent>
                 
@@ -1630,11 +1985,26 @@ export default function ProgressOverview() {
                       Los documentos y archivos del proyecto se mostrarán aquí
                     </p>
                     <div className="flex gap-2 justify-center">
-                      <Button>
+                      <Button
+                        onClick={() => {
+                          toast({
+                            title: "Agregar Documento",
+                            description: "Funcionalidad de documentos próximamente disponible",
+                          });
+                        }}
+                      >
                         <Plus className="h-4 w-4 mr-2" />
                         Agregar Documento
                       </Button>
-                      <Button variant="outline">
+                      <Button 
+                        variant="outline"
+                        onClick={() => {
+                          toast({
+                            title: "Fotos de Progreso",
+                            description: "Funcionalidad de fotos próximamente disponible",
+                          });
+                        }}
+                      >
                         <Camera className="h-4 w-4 mr-2" />
                         Fotos de Progreso
                       </Button>
