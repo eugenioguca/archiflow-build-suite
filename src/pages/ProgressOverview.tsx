@@ -2555,6 +2555,15 @@ function PhotoUploadForm({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuario no autenticado');
 
+      // Get user profile ID
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile) throw new Error('Perfil no encontrado');
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${projectId}/${Date.now()}.${fileExt}`;
 
@@ -2574,8 +2583,8 @@ function PhotoUploadForm({
           title,
           description,
           file_path: fileName,
-          photo_url: fileName, // Usar el mismo path para photo_url
-          taken_by: user.id,
+          photo_url: fileName,
+          taken_by: profile.id, // Usar profile.id en lugar de user.id
           uploaded_by_temp: user.id,
         });
 
