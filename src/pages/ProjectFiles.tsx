@@ -261,7 +261,44 @@ export default function ProjectFiles() {
 
   const handleView = async (file: ProjectFile) => {
     try {
-      const { url } = await getFileUrl(file.file_path, 'project-documents', true);
+      console.log('Viewing file:', file.name, 'Path:', file.file_path, 'Category:', file.file_category);
+      
+      let url: string;
+      
+      // Check if file_path is already a complete URL
+      if (file.file_path.startsWith('http://') || file.file_path.startsWith('https://')) {
+        url = file.file_path;
+        console.log('Using direct URL:', url);
+      } else {
+        // Determine the correct bucket based on file path pattern or category
+        let bucket = 'project-documents';
+        
+        // Check if it's from progress photos (migrated data)
+        if (file.file_path.includes('progress-photos/') || 
+            file.category === 'progress') {
+          bucket = 'progress-photos';
+        }
+        // Check if path doesn't include projects/ prefix (legacy format)
+        else if (!file.file_path.startsWith('projects/') && !file.file_path.startsWith('clients/')) {
+          // This might be a legacy file path, try project-documents first
+          bucket = 'project-documents';
+        }
+        
+        console.log('Getting URL from bucket:', bucket, 'for path:', file.file_path);
+        
+        try {
+          const result = await getFileUrl(file.file_path, bucket, true);
+          url = result.url;
+          console.log('Generated URL:', url);
+        } catch (bucketError) {
+          console.log('Failed with bucket:', bucket, 'trying alternative bucket');
+          // If it fails, try the other bucket
+          const alternateBucket = bucket === 'project-documents' ? 'progress-photos' : 'project-documents';
+          const result = await getFileUrl(file.file_path, alternateBucket, true);
+          url = result.url;
+          console.log('Success with alternate bucket:', alternateBucket, 'URL:', url);
+        }
+      }
       
       if (file.file_category === 'photo') {
         // Abrir galería de fotos para imágenes
