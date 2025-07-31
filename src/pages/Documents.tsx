@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Upload, FileText, Download, Trash2, Filter, FolderOpen } from 'lucide-react';
+import { Plus, Search, Upload, FileText, Download, Trash2, Filter, FolderOpen, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { DocumentViewer } from '@/components/DocumentViewer';
 
 interface Document {
   id: string;
@@ -71,6 +72,12 @@ export default function Documents() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [viewerState, setViewerState] = useState({
+    isOpen: false,
+    documentUrl: "",
+    documentName: "",
+    fileType: ""
+  });
 
   useEffect(() => {
     fetchDocuments();
@@ -257,6 +264,34 @@ export default function Documents() {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
+    });
+  };
+
+  const handleDownload = (doc: Document) => {
+    try {
+      const link = window.document.createElement('a');
+      link.href = doc.file_path;
+      link.download = doc.name;
+      link.target = '_blank';
+      window.document.body.appendChild(link);
+      link.click();
+      window.document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo descargar el archivo",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleView = (doc: Document) => {
+    setViewerState({
+      isOpen: true,
+      documentUrl: doc.file_path,
+      documentName: doc.name,
+      fileType: doc.file_type || ''
     });
   };
 
@@ -461,7 +496,19 @@ export default function Documents() {
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleView(document)}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Ver
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleDownload(document)}
+                  >
                     <Download className="h-4 w-4 mr-2" />
                     Descargar
                   </Button>
@@ -488,6 +535,15 @@ export default function Documents() {
           </Card>
         )}
       </div>
+
+      {/* Document Viewer */}
+      <DocumentViewer
+        isOpen={viewerState.isOpen}
+        onClose={() => setViewerState({ ...viewerState, isOpen: false })}
+        documentUrl={viewerState.documentUrl}
+        documentName={viewerState.documentName}
+        fileType={viewerState.fileType}
+      />
     </div>
   );
 }

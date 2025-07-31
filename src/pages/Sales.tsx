@@ -124,6 +124,7 @@ export default function Sales() {
   const [filteredClients, setFilteredClients] = useState<Client[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("potential");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
@@ -153,16 +154,33 @@ export default function Sales() {
       timeline_months: 6,
       preferred_contact_method: "email",
       notes: "",
+      assigned_advisor_id: "",
     }
   });
 
   useEffect(() => {
     fetchData();
+    fetchEmployees();
   }, []);
 
   useEffect(() => {
     filterClients();
   }, [clients, searchTerm, statusFilter, priorityFilter]);
+
+  const fetchEmployees = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, role')
+        .in('role', ['admin', 'employee'])
+        .order('full_name');
+
+      if (error) throw error;
+      setEmployees(data || []);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -376,6 +394,105 @@ export default function Sales() {
       toast({
         title: "Error",
         description: "No se pudo actualizar el cliente",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Nueva función para cerrar clientes directamente desde ventas
+  const closeClient = async (clientId: string, newStatus: 'existing' | 'active' | 'completed', conversionNotes?: string) => {
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({ 
+          status: newStatus,
+          conversion_date: new Date().toISOString().split('T')[0],
+          conversion_notes: conversionNotes || '',
+          sales_pipeline_stage: 'closed',
+          last_contact_date: new Date().toISOString().split('T')[0]
+        })
+        .eq('id', clientId);
+
+      if (error) throw error;
+
+      // Mover cliente de potencial a cerrado
+      const clientToMove = clients.find(c => c.id === clientId);
+      if (clientToMove) {
+        const updatedClient = { 
+          ...clientToMove, 
+          status: newStatus,
+          conversion_date: new Date().toISOString().split('T')[0],
+          conversion_notes: conversionNotes || '',
+          sales_pipeline_stage: 'closed'
+        };
+        
+        setClients(clients.filter(c => c.id !== clientId));
+        setClosedClients([updatedClient, ...closedClients]);
+
+        // Crear actividad de conversión
+        await createActivity({
+          title: `Cliente convertido a ${statusConfig[newStatus].label}`,
+          activity_type: "negotiation",
+          description: `Cliente ${clientToMove.full_name} convertido exitosamente. ${conversionNotes || ''}`,
+          scheduled_date: new Date().toISOString(),
+          is_completed: true,
+          client_id: clientId
+        });
+
+        toast({
+          title: "Cliente convertido",
+          description: `${clientToMove.full_name} ha sido convertido a ${statusConfig[newStatus].label}`,
+        });
+      }
+    } catch (error) {
+      console.error('Error closing client:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo convertir el cliente",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Nueva función para asignar/cambiar asesores
+  const assignAdvisor = async (clientId: string, advisorId: string) => {
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({ assigned_advisor_id: advisorId })
+        .eq('id', clientId);
+
+      if (error) throw error;
+
+      const advisor = employees.find(e => e.id === advisorId);
+      const client = clients.find(c => c.id === clientId);
+
+      setClients(clients.map(c => 
+        c.id === clientId 
+          ? { ...c, assigned_advisor_id: advisorId, advisor_name: advisor?.full_name || 'Sin asignar' }
+          : c
+      ));
+
+      if (client && advisor) {
+        await createActivity({
+          title: `Asesor asignado: ${advisor.full_name}`,
+          activity_type: "follow_up",
+          description: `Se asignó a ${advisor.full_name} como asesor del cliente ${client.full_name}`,
+          scheduled_date: new Date().toISOString(),
+          is_completed: true,
+          client_id: clientId
+        });
+      }
+
+      toast({
+        title: "Asesor asignado",
+        description: `Se asignó correctamente a ${advisor?.full_name}`,
+      });
+    } catch (error) {
+      console.error('Error assigning advisor:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo asignar el asesor",
         variant: "destructive",
       });
     }
@@ -776,25 +893,48 @@ export default function Sales() {
                         </FormItem>
                       )}
                     />
-                  </div>
+                   </div>
 
-                  <FormField
-                    control={form.control}
-                    name="notes"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Notas</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Información adicional sobre el cliente y proyecto..."
-                            className="min-h-[100px]"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                   {/* Campo de Asesor Asignado */}
+                   <div className="grid grid-cols-2 gap-4">
+                     <div>
+                       <label className="text-sm font-medium">Asesor Asignado</label>
+                       <Select 
+                         value={form.watch('assigned_advisor_id') || ''} 
+                         onValueChange={(value) => form.setValue('assigned_advisor_id', value)}
+                       >
+                         <SelectTrigger>
+                           <SelectValue placeholder="Seleccionar asesor" />
+                         </SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="">Sin asignar</SelectItem>
+                           {employees.map((employee) => (
+                             <SelectItem key={employee.id} value={employee.id}>
+                               {employee.full_name}
+                             </SelectItem>
+                           ))}
+                         </SelectContent>
+                       </Select>
+                     </div>
+                   </div>
+
+                   <FormField
+                     control={form.control}
+                     name="notes"
+                     render={({ field }) => (
+                       <FormItem>
+                         <FormLabel>Notas</FormLabel>
+                         <FormControl>
+                           <Textarea 
+                             placeholder="Información adicional sobre el cliente y proyecto..."
+                             className="min-h-[100px]"
+                             {...field}
+                           />
+                         </FormControl>
+                         <FormMessage />
+                       </FormItem>
+                     )}
+                   />
 
                   <div className="flex justify-end gap-2">
                     <Button
@@ -1016,41 +1156,60 @@ export default function Sales() {
                             </span>
                           </div>
                         </td>
-                        <td className="p-3">
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => viewClientDetails(client)}
-                              className="h-8 w-8 p-0"
-                              title="Ver notas y detalles"
-                            >
-                              <StickyNote className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => scheduleReminder(client.id, client.full_name)}
-                              className="h-8 w-8 p-0"
-                              title="Programar recordatorio"
-                            >
-                              <Bell className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedClient(client);
-                                setReminderClientId(client.id);
-                                setShowReminderDialog(true);
-                              }}
-                              className="h-8 w-8 p-0"
-                              title="Recordatorio personalizado"
-                            >
-                              <Calendar className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
+                         <td className="p-3">
+                           <div className="flex gap-1">
+                             <Button
+                               variant="outline"
+                               size="sm"
+                               onClick={() => viewClientDetails(client)}
+                               className="h-8 w-8 p-0"
+                               title="Ver notas y detalles"
+                             >
+                               <StickyNote className="h-4 w-4" />
+                             </Button>
+                             
+                             {/* Asignar Asesor */}
+                             <Select value={client.assigned_advisor_id || ''} onValueChange={(value) => assignAdvisor(client.id, value)}>
+                               <SelectTrigger className="h-8 w-24">
+                                 <SelectValue placeholder="Asesor" />
+                               </SelectTrigger>
+                               <SelectContent>
+                                 <SelectItem value="">Sin asignar</SelectItem>
+                                 {employees.map((employee) => (
+                                   <SelectItem key={employee.id} value={employee.id}>
+                                     {employee.full_name}
+                                   </SelectItem>
+                                 ))}
+                               </SelectContent>
+                             </Select>
+
+                             {/* Cerrar Cliente */}
+                             <Select onValueChange={(value) => {
+                               if (value === 'existing' || value === 'active' || value === 'completed') {
+                                 closeClient(client.id, value);
+                               }
+                             }}>
+                               <SelectTrigger className="h-8 w-20">
+                                 <SelectValue placeholder="Cerrar" />
+                               </SelectTrigger>
+                               <SelectContent>
+                                 <SelectItem value="existing">Cliente</SelectItem>
+                                 <SelectItem value="active">Activo</SelectItem>
+                                 <SelectItem value="completed">Completado</SelectItem>
+                               </SelectContent>
+                             </Select>
+                             
+                             <Button
+                               variant="outline"
+                               size="sm"
+                               onClick={() => scheduleReminder(client.id, client.full_name)}
+                               className="h-8 w-8 p-0"
+                               title="Programar recordatorio"
+                             >
+                               <Bell className="h-4 w-4" />
+                             </Button>
+                           </div>
+                         </td>
                       </tr>
                     ))}
                   </tbody>
