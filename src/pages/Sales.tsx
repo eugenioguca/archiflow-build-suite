@@ -19,7 +19,7 @@ import { CRMLeadScoring } from "@/components/CRMLeadScoring";
 import { EditableField } from "@/components/EditableField";
 import { useForm } from "react-hook-form";
 import { cn } from "@/lib/utils";
-import { 
+import {
   Users, 
   TrendingUp, 
   Clock, 
