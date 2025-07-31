@@ -116,16 +116,26 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
-            <Route 
-              path="/accounting" 
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Accounting />
-                  </Layout>
-                </ProtectedRoute>
-              } 
-            />
+          <Route
+            path="/accounting"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Accounting />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/suppliers"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Suppliers />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
             <Route 
               path="/progress-overview" 
               element={
@@ -152,16 +162,6 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <UserManagement />
-                  </Layout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/suppliers" 
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Suppliers />
                   </Layout>
                 </ProtectedRoute>
               } 

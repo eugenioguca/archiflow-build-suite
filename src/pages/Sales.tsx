@@ -1168,36 +1168,36 @@ export default function Sales() {
                                <StickyNote className="h-4 w-4" />
                              </Button>
                              
-                             {/* Asignar Asesor */}
-                             <Select value={client.assigned_advisor_id || ''} onValueChange={(value) => assignAdvisor(client.id, value)}>
-                               <SelectTrigger className="h-8 w-24">
-                                 <SelectValue placeholder="Asesor" />
-                               </SelectTrigger>
-                               <SelectContent>
-                                 <SelectItem value="">Sin asignar</SelectItem>
-                                 {employees.map((employee) => (
-                                   <SelectItem key={employee.id} value={employee.id}>
-                                     {employee.full_name}
-                                   </SelectItem>
-                                 ))}
-                               </SelectContent>
-                             </Select>
+                              {/* Asignar Asesor */}
+                              <Select value={client.assigned_advisor_id || "none"} onValueChange={(value) => assignAdvisor(client.id, value === "none" ? null : value)}>
+                                <SelectTrigger className="h-8 w-24">
+                                  <SelectValue placeholder="Asesor" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">Sin asignar</SelectItem>
+                                  {employees.map((employee) => (
+                                    <SelectItem key={employee.id} value={employee.id}>
+                                      {employee.full_name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
 
-                             {/* Cerrar Cliente */}
-                             <Select onValueChange={(value) => {
-                               if (value === 'existing' || value === 'active' || value === 'completed') {
-                                 closeClient(client.id, value);
-                               }
-                             }}>
-                               <SelectTrigger className="h-8 w-20">
-                                 <SelectValue placeholder="Cerrar" />
-                               </SelectTrigger>
-                               <SelectContent>
-                                 <SelectItem value="existing">Cliente</SelectItem>
-                                 <SelectItem value="active">Activo</SelectItem>
-                                 <SelectItem value="completed">Completado</SelectItem>
-                               </SelectContent>
-                             </Select>
+                              {/* Cerrar Cliente */}
+                              <Select value="" onValueChange={(value) => {
+                                if (value === 'existing' || value === 'active' || value === 'completed') {
+                                  closeClient(client.id, value);
+                                }
+                              }}>
+                                <SelectTrigger className="h-8 w-20">
+                                  <SelectValue placeholder="Cerrar" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="existing">Cliente</SelectItem>
+                                  <SelectItem value="active">Activo</SelectItem>
+                                  <SelectItem value="completed">Completado</SelectItem>
+                                </SelectContent>
+                              </Select>
                              
                              <Button
                                variant="outline"

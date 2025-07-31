@@ -11,7 +11,8 @@ import {
   LogOut,
   User,
   TrendingUp,
-  Activity
+  Activity,
+  Truck
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -32,16 +33,17 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 
 const adminItems = [
-  { title: "Dashboard", url: "/dashboard", icon: BarChart3, color: "text-blue-600" },
-  { title: "Clientes", url: "/clients", icon: Users, color: "text-blue-600" },
-  { title: "Ventas", url: "/sales", icon: TrendingUp, color: "text-green-600" },
-  { title: "Proyectos", url: "/projects", icon: Building2, color: "text-blue-600" },
-  { title: "Avances de Proyectos", url: "/progress-overview", icon: Activity, color: "text-purple-600" },
-  { title: "Documentos", url: "/documents", icon: FolderOpen, color: "text-blue-600" },
-  { title: "Finanzas", url: "/finances", icon: DollarSign, color: "text-blue-600" },
-  { title: "Contabilidad", url: "/accounting", icon: Calculator, color: "text-blue-600" },
-  { title: "Fotos de Avance", url: "/progress-photos", icon: Camera, color: "text-blue-600" },
-  { title: "Gestión de Usuarios", url: "/user-management", icon: User, color: "text-blue-600" },
+  { title: "Dashboard", url: "/dashboard", icon: BarChart3, color: "text-primary" },
+  { title: "Clientes", url: "/clients", icon: Users, color: "text-primary" },
+  { title: "Ventas", url: "/sales", icon: TrendingUp, color: "text-success" },
+  { title: "Proyectos", url: "/projects", icon: Building2, color: "text-primary" },
+  { title: "Avances de Proyectos", url: "/progress-overview", icon: Activity, color: "text-purple" },
+  { title: "Documentos", url: "/documents", icon: FolderOpen, color: "text-primary" },
+  { title: "Proveedores", url: "/suppliers", icon: Truck, color: "text-orange" },
+  { title: "Finanzas", url: "/finances", icon: DollarSign, color: "text-primary" },
+  { title: "Contabilidad", url: "/accounting", icon: Calculator, color: "text-primary" },
+  { title: "Fotos de Avance", url: "/progress-photos", icon: Camera, color: "text-primary" },
+  { title: "Gestión de Usuarios", url: "/user-management", icon: User, color: "text-primary" },
 ];
 
 const clientItems = [
