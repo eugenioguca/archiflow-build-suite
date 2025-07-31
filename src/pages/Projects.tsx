@@ -466,6 +466,52 @@ export default function Projects() {
                   Nuevo Proyecto
                 </Button>
               </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>{editingProject ? 'Editar Proyecto' : 'Nuevo Proyecto'}</DialogTitle>
+                  <DialogDescription>
+                    {editingProject ? 'Modifica los datos del proyecto seleccionado' : 'Completa la información para crear un nuevo proyecto'}
+                  </DialogDescription>
+                </DialogHeader>
+                {/* Dialog content will be added here */}
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Nombre del Proyecto *</Label>
+                      <Input
+                        id="name"
+                        name="name"
+                        defaultValue={editingProject?.name || ''}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="client_id">Cliente *</Label>
+                      <Select name="client_id" required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar cliente" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {clients.map(client => (
+                            <SelectItem key={client.id} value={client.id}>
+                              {client.full_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button type="submit">
+                      {editingProject ? 'Actualizar' : 'Crear'} Proyecto
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
             </Dialog>
           </div>
         </div>
