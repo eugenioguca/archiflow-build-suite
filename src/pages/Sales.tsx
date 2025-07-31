@@ -899,22 +899,22 @@ export default function Sales() {
                    <div className="grid grid-cols-2 gap-4">
                      <div>
                        <label className="text-sm font-medium">Asesor Asignado</label>
-                       <Select 
-                         value={form.watch('assigned_advisor_id') || ''} 
-                         onValueChange={(value) => form.setValue('assigned_advisor_id', value)}
-                       >
-                         <SelectTrigger>
-                           <SelectValue placeholder="Seleccionar asesor" />
-                         </SelectTrigger>
-                         <SelectContent>
-                           <SelectItem value="">Sin asignar</SelectItem>
-                           {employees.map((employee) => (
-                             <SelectItem key={employee.id} value={employee.id}>
-                               {employee.full_name}
-                             </SelectItem>
-                           ))}
-                         </SelectContent>
-                       </Select>
+                        <Select 
+                          value={form.watch('assigned_advisor_id') || 'none'} 
+                          onValueChange={(value) => form.setValue('assigned_advisor_id', value === 'none' ? null : value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar asesor" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Sin asignar</SelectItem>
+                            {employees.map((employee) => (
+                              <SelectItem key={employee.id} value={employee.id}>
+                                {employee.full_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                      </div>
                    </div>
 
