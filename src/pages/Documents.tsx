@@ -179,11 +179,18 @@ export default function Documents() {
 
       if (!profile) throw new Error('Perfil no encontrado');
 
-      // Subir archivo a Supabase Storage
+      // Subir archivo a Supabase Storage con la misma estructura que los otros módulos
       const fileExt = file.name.split('.').pop();
       const timestamp = Date.now();
       const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const fileName = `documents/${userData.user.id}/${timestamp}_${sanitizedFileName}`;
+      
+      // Usar la misma estructura que en otros módulos: user_id/project_id/timestamp.ext
+      let fileName: string;
+      if (projectId) {
+        fileName = `${userData.user.id}/${projectId}/${timestamp}.${fileExt}`;
+      } else {
+        fileName = `${userData.user.id}/${timestamp}_${sanitizedFileName}`;
+      }
 
       const { error: uploadError } = await supabase.storage
         .from('project-documents')
@@ -324,10 +331,13 @@ export default function Documents() {
       
       // Si el archivo está en Storage, obtener la URL correcta
       if (!doc.file_path.startsWith('http')) {
+        console.log('Getting URL for file:', doc.file_path);
         const { url } = await getFileUrl(doc.file_path, 'project-documents', true);
+        console.log('Generated URL:', url);
         viewUrl = url;
       }
       
+      console.log('Opening viewer with URL:', viewUrl, 'File type:', doc.file_type);
       setViewerState({
         isOpen: true,
         documentUrl: viewUrl,
