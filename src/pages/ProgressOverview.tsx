@@ -740,8 +740,9 @@ export default function ProgressOverview() {
       if (project.id === projectId) {
         const updatedPhases = project.phases.map(phase => {
           if (phase.id === phaseId) {
-            const newStatus = newProgress === 100 ? 'completed' :
-                            newProgress > 0 ? 'in_progress' : 'not_started';
+            const newStatus: 'not_started' | 'planning' | 'in_progress' | 'on_hold' | 'completed' = 
+              newProgress === 100 ? 'completed' :
+              newProgress > 0 ? 'in_progress' : 'not_started';
             return { ...phase, progress_percentage: newProgress, status: newStatus };
           }
           return phase;
