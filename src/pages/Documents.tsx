@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { DocumentViewer } from '@/components/DocumentViewer';
+import { getFileUrl } from '@/lib/fileUtils';
 
 interface Document {
   id: string;
@@ -317,23 +318,30 @@ export default function Documents() {
     }
   };
 
-  const handleView = (doc: Document) => {
-    let viewUrl = doc.file_path;
-    
-    // Si el archivo está en Storage, obtener la URL pública
-    if (!doc.file_path.startsWith('http')) {
-      const { data } = supabase.storage
-        .from('project-documents')
-        .getPublicUrl(doc.file_path);
-      viewUrl = data.publicUrl;
+  const handleView = async (doc: Document) => {
+    try {
+      let viewUrl = doc.file_path;
+      
+      // Si el archivo está en Storage, obtener la URL correcta
+      if (!doc.file_path.startsWith('http')) {
+        const { url } = await getFileUrl(doc.file_path, 'project-documents', true);
+        viewUrl = url;
+      }
+      
+      setViewerState({
+        isOpen: true,
+        documentUrl: viewUrl,
+        documentName: doc.name,
+        fileType: doc.file_type || ''
+      });
+    } catch (error) {
+      console.error('Error getting file URL:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo cargar el documento",
+        variant: "destructive",
+      });
     }
-    
-    setViewerState({
-      isOpen: true,
-      documentUrl: viewUrl,
-      documentName: doc.name,
-      fileType: doc.file_type || ''
-    });
   };
 
   if (loading) {
