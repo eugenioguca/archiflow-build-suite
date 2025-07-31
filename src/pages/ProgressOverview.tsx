@@ -702,8 +702,29 @@ export default function ProgressOverview() {
 
   const generateTeamForProject = (projectId: string): TeamMember[] => {
     // Generar equipo basado en el ID del proyecto para consistencia
-    const teamSize = Math.floor(Math.random() * 3) + 3; // 3-5 miembros
-    const shuffled = [...availableTeamMembers].sort(() => 0.5 - Math.random());
+    // Usar hash simple del projectId como semilla para generar siempre el mismo equipo
+    let hash = 0;
+    for (let i = 0; i < projectId.length; i++) {
+      const char = projectId.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convertir a 32-bit integer
+    }
+    
+    // Usar el hash para generar números pseudo-aleatorios determinísticos
+    const seededRandom = (seed: number) => {
+      const x = Math.sin(seed) * 10000;
+      return x - Math.floor(x);
+    };
+    
+    const teamSize = Math.floor(seededRandom(hash) * 3) + 3; // 3-5 miembros
+    
+    // Crear una copia y ordenar de manera determinística
+    const shuffled = [...availableTeamMembers].sort((a, b) => {
+      const hashA = hash + a.id.charCodeAt(0);
+      const hashB = hash + b.id.charCodeAt(0);
+      return seededRandom(hashA) - seededRandom(hashB);
+    });
+    
     return shuffled.slice(0, teamSize);
   };
 
