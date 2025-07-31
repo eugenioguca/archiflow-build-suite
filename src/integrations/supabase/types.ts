@@ -14,6 +14,65 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounts_payable: {
+        Row: {
+          amount_due: number
+          amount_paid: number | null
+          created_at: string
+          due_date: string
+          expense_id: string | null
+          id: string
+          invoice_date: string | null
+          invoice_number: string | null
+          notes: string | null
+          payment_date: string | null
+          payment_reference: string | null
+          payment_status: Database["public"]["Enums"]["payable_status"] | null
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_due: number
+          amount_paid?: number | null
+          created_at?: string
+          due_date: string
+          expense_id?: string | null
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_reference?: string | null
+          payment_status?: Database["public"]["Enums"]["payable_status"] | null
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_due?: number
+          amount_paid?: number | null
+          created_at?: string
+          due_date?: string
+          expense_id?: string | null
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string | null
+          notes?: string | null
+          payment_date?: string | null
+          payment_reference?: string | null
+          payment_status?: Database["public"]["Enums"]["payable_status"] | null
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_payable_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accounts_receivable: {
         Row: {
           amount_due: number
@@ -475,6 +534,7 @@ export type Database = {
           invoice_date: string | null
           invoice_number: string | null
           project_id: string | null
+          supplier_id: string | null
           tax_amount: number | null
           updated_at: string
         }
@@ -489,6 +549,7 @@ export type Database = {
           invoice_date?: string | null
           invoice_number?: string | null
           project_id?: string | null
+          supplier_id?: string | null
           tax_amount?: number | null
           updated_at?: string
         }
@@ -503,6 +564,7 @@ export type Database = {
           invoice_date?: string | null
           invoice_number?: string | null
           project_id?: string | null
+          supplier_id?: string | null
           tax_amount?: number | null
           updated_at?: string
         }
@@ -526,6 +588,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
@@ -763,6 +832,87 @@ export type Database = {
           },
         ]
       }
+      suppliers: {
+        Row: {
+          address: string | null
+          bank_account: string | null
+          bank_name: string | null
+          city: string | null
+          company_name: string
+          contact_name: string | null
+          country: string | null
+          created_at: string
+          created_by: string
+          credit_limit: number | null
+          current_balance: number | null
+          email: string | null
+          id: string
+          notes: string | null
+          payment_terms: number | null
+          phone: string | null
+          postal_code: string | null
+          rating: number | null
+          state: string | null
+          status: Database["public"]["Enums"]["supplier_status"]
+          supplier_category: Database["public"]["Enums"]["supplier_category"]
+          tax_id: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          bank_account?: string | null
+          bank_name?: string | null
+          city?: string | null
+          company_name: string
+          contact_name?: string | null
+          country?: string | null
+          created_at?: string
+          created_by: string
+          credit_limit?: number | null
+          current_balance?: number | null
+          email?: string | null
+          id?: string
+          notes?: string | null
+          payment_terms?: number | null
+          phone?: string | null
+          postal_code?: string | null
+          rating?: number | null
+          state?: string | null
+          status?: Database["public"]["Enums"]["supplier_status"]
+          supplier_category?: Database["public"]["Enums"]["supplier_category"]
+          tax_id?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          bank_account?: string | null
+          bank_name?: string | null
+          city?: string | null
+          company_name?: string
+          contact_name?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string
+          credit_limit?: number | null
+          current_balance?: number | null
+          email?: string | null
+          id?: string
+          notes?: string | null
+          payment_terms?: number | null
+          phone?: string | null
+          postal_code?: string | null
+          rating?: number | null
+          state?: string | null
+          status?: Database["public"]["Enums"]["supplier_status"]
+          supplier_category?: Database["public"]["Enums"]["supplier_category"]
+          tax_id?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       user_permissions: {
         Row: {
           can_create: boolean
@@ -863,6 +1013,7 @@ export type Database = {
         | "finances"
         | "accounting"
         | "progress_photos"
+      payable_status: "pending" | "partial" | "paid" | "overdue" | "cancelled"
       priority_level: "low" | "medium" | "high" | "urgent"
       project_status:
         | "planning"
@@ -879,6 +1030,14 @@ export type Database = {
         | "landscape"
         | "interior_design"
       receivable_status: "pending" | "partial" | "paid" | "overdue"
+      supplier_category:
+        | "materials"
+        | "equipment"
+        | "services"
+        | "subcontractor"
+        | "utilities"
+        | "other"
+      supplier_status: "active" | "inactive" | "blocked" | "pending_approval"
       user_role: "admin" | "employee" | "client"
     }
     CompositeTypes: {
@@ -1058,6 +1217,7 @@ export const Constants = {
         "accounting",
         "progress_photos",
       ],
+      payable_status: ["pending", "partial", "paid", "overdue", "cancelled"],
       priority_level: ["low", "medium", "high", "urgent"],
       project_status: [
         "planning",
@@ -1076,6 +1236,15 @@ export const Constants = {
         "interior_design",
       ],
       receivable_status: ["pending", "partial", "paid", "overdue"],
+      supplier_category: [
+        "materials",
+        "equipment",
+        "services",
+        "subcontractor",
+        "utilities",
+        "other",
+      ],
+      supplier_status: ["active", "inactive", "blocked", "pending_approval"],
       user_role: ["admin", "employee", "client"],
     },
   },
