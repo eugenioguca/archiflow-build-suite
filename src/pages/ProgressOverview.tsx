@@ -11,13 +11,13 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { 
   MapPin, User, Plus, Calendar, Clock, TrendingUp, AlertCircle, CheckCircle2,
   Camera, FileText, BarChart3, Target, Building2, Users, Edit2, Save, X,
-  PlayCircle, PauseCircle, RotateCcw, ArrowRight, Activity, Eye, Mail, Phone
+  PlayCircle, PauseCircle, RotateCcw, ArrowRight, Activity, Eye, Mail, Phone, Upload
 } from "lucide-react";
 import { DatePicker } from "@/components/DatePicker";
 import { EditableCell } from "@/components/EditableCell";
 import { UserAvatar } from "@/components/UserAvatar";
 import { ProjectFormDialog } from "@/components/ProjectFormDialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -118,6 +118,8 @@ export default function ProgressOverview() {
   const [editingProject, setEditingProject] = useState<string | null>(null);
   const [editingProjectInModal, setEditingProjectInModal] = useState(false);
   const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
+  const [isDocumentDialogOpen, setIsDocumentDialogOpen] = useState(false);
+  const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('active');
   const [viewMode, setViewMode] = useState<'detailed' | 'compact' | 'timeline'>('detailed');
@@ -1985,26 +1987,11 @@ export default function ProgressOverview() {
                       Los documentos y archivos del proyecto se mostrarán aquí
                     </p>
                     <div className="flex gap-2 justify-center">
-                      <Button
-                        onClick={() => {
-                          toast({
-                            title: "Agregar Documento",
-                            description: "Funcionalidad de documentos próximamente disponible",
-                          });
-                        }}
-                      >
+                      <Button onClick={() => setIsDocumentDialogOpen(true)}>
                         <Plus className="h-4 w-4 mr-2" />
                         Agregar Documento
                       </Button>
-                      <Button 
-                        variant="outline"
-                        onClick={() => {
-                          toast({
-                            title: "Fotos de Progreso",
-                            description: "Funcionalidad de fotos próximamente disponible",
-                          });
-                        }}
-                      >
+                      <Button variant="outline" onClick={() => setIsPhotoDialogOpen(true)}>
                         <Camera className="h-4 w-4 mr-2" />
                         Fotos de Progreso
                       </Button>
@@ -2016,6 +2003,305 @@ export default function ProgressOverview() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Diálogo para agregar documentos */}
+      <Dialog open={isDocumentDialogOpen} onOpenChange={setIsDocumentDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Agregar Documento</DialogTitle>
+            <DialogDescription>
+              Sube un documento relacionado con el proyecto
+            </DialogDescription>
+          </DialogHeader>
+          <DocumentUploadForm 
+            projectId={selectedProject?.id || ''}
+            onSuccess={() => {
+              setIsDocumentDialogOpen(false);
+              toast({
+                title: "Documento agregado",
+                description: "El documento se ha subido correctamente",
+              });
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo para agregar fotos de progreso */}
+      <Dialog open={isPhotoDialogOpen} onOpenChange={setIsPhotoDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Agregar Foto de Progreso</DialogTitle>
+            <DialogDescription>
+              Sube una foto del progreso del proyecto
+            </DialogDescription>
+          </DialogHeader>
+          <PhotoUploadForm 
+            projectId={selectedProject?.id || ''}
+            phases={selectedProject?.phases || []}
+            onSuccess={() => {
+              setIsPhotoDialogOpen(false);
+              toast({
+                title: "Foto agregada",
+                description: "La foto se ha subido correctamente",
+              });
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// Componente para subir documentos
+function DocumentUploadForm({ projectId, onSuccess }: { projectId: string; onSuccess: () => void }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const { toast } = useToast();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      if (!name) {
+        setName(selectedFile.name);
+      }
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file || !name || !projectId) return;
+
+    setUploading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuario no autenticado');
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${projectId}/${Date.now()}.${fileExt}`;
+
+      // Subir archivo a Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('project-documents')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Guardar metadata en la base de datos
+      const { error: dbError } = await supabase
+        .from('project_documents')
+        .insert({
+          project_id: projectId,
+          name,
+          description,
+          file_path: fileName,
+          file_type: file.type,
+          file_size: file.size,
+          uploaded_by: user.id,
+        });
+
+      if (dbError) throw dbError;
+
+      onSuccess();
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      toast({
+        title: "Error",
+        description: "Error al subir el documento",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label htmlFor="document-file">Archivo</Label>
+        <Input
+          id="document-file"
+          type="file"
+          onChange={handleFileChange}
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png"
+        />
+      </div>
+      <div>
+        <Label htmlFor="document-name">Nombre del documento</Label>
+        <Input
+          id="document-name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Nombre del documento"
+        />
+      </div>
+      <div>
+        <Label htmlFor="document-description">Descripción (opcional)</Label>
+        <Textarea
+          id="document-description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Descripción del documento"
+        />
+      </div>
+      <Button 
+        onClick={handleUpload} 
+        disabled={!file || !name || uploading}
+        className="w-full"
+      >
+        {uploading ? (
+          <>
+            <Upload className="h-4 w-4 mr-2 animate-spin" />
+            Subiendo...
+          </>
+        ) : (
+          <>
+            <Upload className="h-4 w-4 mr-2" />
+            Subir Documento
+          </>
+        )}
+      </Button>
+    </div>
+  );
+}
+
+// Componente para subir fotos de progreso
+function PhotoUploadForm({ 
+  projectId, 
+  phases, 
+  onSuccess 
+}: { 
+  projectId: string; 
+  phases: ProjectPhase[]; 
+  onSuccess: () => void 
+}) {
+  const [file, setFile] = useState<File | null>(null);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [selectedPhase, setSelectedPhase] = useState<string>('');
+  const [uploading, setUploading] = useState(false);
+  const { toast } = useToast();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      if (!title) {
+        setTitle(`Foto de progreso - ${new Date().toLocaleDateString()}`);
+      }
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file || !title || !projectId) return;
+
+    setUploading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuario no autenticado');
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${projectId}/${Date.now()}.${fileExt}`;
+
+      // Subir archivo a Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('progress-photos')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Guardar metadata en la base de datos
+      const { error: dbError } = await supabase
+        .from('progress_photos')
+        .insert({
+          project_id: projectId,
+          phase_id: selectedPhase || null,
+          title,
+          description,
+          file_path: fileName,
+          photo_url: fileName, // Usar el mismo path para photo_url
+          taken_by: user.id,
+          uploaded_by_temp: user.id,
+        });
+
+      if (dbError) throw dbError;
+
+      onSuccess();
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      toast({
+        title: "Error",
+        description: "Error al subir la foto",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label htmlFor="photo-file">Foto</Label>
+        <Input
+          id="photo-file"
+          type="file"
+          onChange={handleFileChange}
+          accept="image/*"
+        />
+      </div>
+      <div>
+        <Label htmlFor="photo-title">Título</Label>
+        <Input
+          id="photo-title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Título de la foto"
+        />
+      </div>
+      <div>
+        <Label htmlFor="photo-phase">Fase del proyecto (opcional)</Label>
+        <Select value={selectedPhase} onValueChange={setSelectedPhase}>
+          <SelectTrigger id="photo-phase">
+            <SelectValue placeholder="Seleccionar fase" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Foto general del proyecto</SelectItem>
+            {phases.map((phase) => (
+              <SelectItem key={phase.id} value={phase.id}>
+                {phase.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label htmlFor="photo-description">Descripción (opcional)</Label>
+        <Textarea
+          id="photo-description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Descripción de la foto"
+        />
+      </div>
+      <Button 
+        onClick={handleUpload} 
+        disabled={!file || !title || uploading}
+        className="w-full"
+      >
+        {uploading ? (
+          <>
+            <Upload className="h-4 w-4 mr-2 animate-spin" />
+            Subiendo...
+          </>
+        ) : (
+          <>
+            <Camera className="h-4 w-4 mr-2" />
+            Subir Foto
+          </>
+        )}
+      </Button>
     </div>
   );
 }

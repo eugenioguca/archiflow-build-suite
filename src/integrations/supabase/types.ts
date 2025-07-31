@@ -814,27 +814,42 @@ export type Database = {
       progress_photos: {
         Row: {
           description: string | null
+          file_path: string | null
           id: string
+          phase_id: string | null
           photo_url: string
           project_id: string
           taken_at: string
           taken_by: string
+          taken_date: string | null
+          title: string | null
+          uploaded_by_temp: string | null
         }
         Insert: {
           description?: string | null
+          file_path?: string | null
           id?: string
+          phase_id?: string | null
           photo_url: string
           project_id: string
           taken_at?: string
           taken_by: string
+          taken_date?: string | null
+          title?: string | null
+          uploaded_by_temp?: string | null
         }
         Update: {
           description?: string | null
+          file_path?: string | null
           id?: string
+          phase_id?: string | null
           photo_url?: string
           project_id?: string
           taken_at?: string
           taken_by?: string
+          taken_date?: string | null
+          title?: string | null
+          uploaded_by_temp?: string | null
         }
         Relationships: [
           {
@@ -849,6 +864,53 @@ export type Database = {
             columns: ["taken_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_documents: {
+        Row: {
+          created_at: string
+          description: string | null
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          name: string
+          project_id: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          file_path: string
+          file_size: number
+          file_type: string
+          id?: string
+          name: string
+          project_id: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          name?: string
+          project_id?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
