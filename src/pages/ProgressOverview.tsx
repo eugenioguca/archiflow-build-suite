@@ -277,26 +277,23 @@ export default function ProgressOverview() {
 
       if (photosError) throw photosError;
 
-      // Para documentos subidos desde el módulo de progreso, obtener URLs desde Storage
+      // Obtener URLs públicas para documentos
       const documentsWithUrls = await Promise.all(
         (documentsData || []).map(async (doc) => {
-          // Si el documento tiene un file_path que parece ser de Storage, obtener URL pública
-          if (doc.file_path && doc.file_path.includes('/')) {
+          let publicUrl = doc.file_path;
+          
+          // Si el archivo está en Storage (no empieza con http), obtener URL pública
+          if (doc.file_path && !doc.file_path.startsWith('http')) {
             const { data } = supabase.storage
               .from('project-documents')
               .getPublicUrl(doc.file_path);
-            
-            return {
-              ...doc,
-              public_url: data.publicUrl
-            };
-          } else {
-            // Para documentos legacy o externos, usar el file_path directamente
-            return {
-              ...doc,
-              public_url: doc.file_path
-            };
+            publicUrl = data.publicUrl;
           }
+            
+          return {
+            ...doc,
+            public_url: publicUrl
+          };
         })
       );
 

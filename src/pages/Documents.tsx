@@ -178,20 +178,29 @@ export default function Documents() {
 
       if (!profile) throw new Error('Perfil no encontrado');
 
-      // Upload file to storage (for now, we'll store a placeholder path)
-      const fileName = `${Date.now()}_${file.name}`;
-      const filePath = `documents/${fileName}`;
+      // Subir archivo a Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const timestamp = Date.now();
+      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const fileName = `documents/${userData.user.id}/${timestamp}_${sanitizedFileName}`;
 
-      // Create document record
+      const { error: uploadError } = await supabase.storage
+        .from('project-documents')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Create document record with Storage path
       const documentData = {
         name: name || file.name,
         description: description || null,
-        file_path: filePath,
+        file_path: fileName, // Ruta en Storage
         file_type: file.type,
         category,
         project_id: projectId || null,
         client_id: clientId || null,
         uploaded_by: profile.id,
+        file_size: file.size,
       };
 
       const { error } = await supabase
@@ -208,6 +217,7 @@ export default function Documents() {
       setIsDialogOpen(false);
       fetchDocuments();
     } catch (error) {
+      console.error('Upload error:', error);
       toast({
         title: "Error",
         description: "No se pudo subir el documento",
@@ -267,15 +277,36 @@ export default function Documents() {
     });
   };
 
-  const handleDownload = (doc: Document) => {
+  const handleDownload = async (doc: Document) => {
     try {
-      const link = window.document.createElement('a');
-      link.href = doc.file_path;
+      let downloadUrl = doc.file_path;
+      
+      // Si el archivo está en Storage, obtener la URL pública
+      if (!doc.file_path.startsWith('http')) {
+        const { data } = supabase.storage
+          .from('project-documents')
+          .getPublicUrl(doc.file_path);
+        downloadUrl = data.publicUrl;
+      }
+
+      // Descargar preservando el tipo de archivo
+      const response = await fetch(downloadUrl);
+      if (!response.ok) throw new Error('Error al obtener el archivo');
+      
+      const blob = await response.blob();
+      const link = document.createElement('a');
+      const objectUrl = URL.createObjectURL(blob);
+      
+      link.href = objectUrl;
       link.download = doc.name;
-      link.target = '_blank';
-      window.document.body.appendChild(link);
+      link.style.display = 'none';
+      
+      document.body.appendChild(link);
       link.click();
-      window.document.body.removeChild(link);
+      document.body.removeChild(link);
+      
+      // Limpiar el objeto URL
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 100);
     } catch (error) {
       console.error('Error downloading file:', error);
       toast({
@@ -287,9 +318,19 @@ export default function Documents() {
   };
 
   const handleView = (doc: Document) => {
+    let viewUrl = doc.file_path;
+    
+    // Si el archivo está en Storage, obtener la URL pública
+    if (!doc.file_path.startsWith('http')) {
+      const { data } = supabase.storage
+        .from('project-documents')
+        .getPublicUrl(doc.file_path);
+      viewUrl = data.publicUrl;
+    }
+    
     setViewerState({
       isOpen: true,
-      documentUrl: doc.file_path,
+      documentUrl: viewUrl,
       documentName: doc.name,
       fileType: doc.file_type || ''
     });

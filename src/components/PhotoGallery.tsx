@@ -51,13 +51,41 @@ export function PhotoGallery({ photos, isOpen, onClose, initialPhotoIndex = 0 }:
     setRotation(0);
   };
 
-  const handleDownload = () => {
-    const link = document.createElement('a');
-    link.href = currentPhoto.photo_url;
-    link.download = `foto-${currentPhoto.id}.jpg`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownload = async () => {
+    try {
+      // Descargar preservando el tipo de archivo original
+      const response = await fetch(currentPhoto.photo_url);
+      if (!response.ok) throw new Error('Error al obtener la imagen');
+      
+      const blob = await response.blob();
+      const link = document.createElement('a');
+      const objectUrl = URL.createObjectURL(blob);
+      
+      // Detectar extensión de la imagen
+      const extension = currentPhoto.photo_url.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileName = `foto-${currentPhoto.id}.${extension}`;
+      
+      link.href = objectUrl;
+      link.download = fileName;
+      link.style.display = 'none';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Limpiar el objeto URL
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 100);
+    } catch (error) {
+      console.error('Error downloading photo:', error);
+      // Fallback al método tradicional
+      const link = document.createElement('a');
+      link.href = currentPhoto.photo_url;
+      link.download = `foto-${currentPhoto.id}.jpg`;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const handleZoomIn = () => setZoom(zoom * 1.2);

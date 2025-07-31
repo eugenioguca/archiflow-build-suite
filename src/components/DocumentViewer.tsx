@@ -15,22 +15,58 @@ export function DocumentViewer({ isOpen, onClose, documentUrl, documentName, fil
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
 
-  const handleDownload = () => {
-    const link = document.createElement('a');
-    link.href = documentUrl;
-    link.download = documentName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownload = async () => {
+    try {
+      // Descargar preservando el tipo de archivo original
+      const response = await fetch(documentUrl);
+      if (!response.ok) throw new Error('Error al obtener el archivo');
+      
+      const blob = await response.blob();
+      const link = document.createElement('a');
+      const objectUrl = URL.createObjectURL(blob);
+      
+      link.href = objectUrl;
+      link.download = documentName;
+      link.style.display = 'none';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Limpiar el objeto URL
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 100);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      // Fallback al método tradicional
+      const link = document.createElement('a');
+      link.href = documentUrl;
+      link.download = documentName;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const handleZoomIn = () => setZoom(zoom * 1.2);
   const handleZoomOut = () => setZoom(zoom / 1.2);
   const handleRotate = () => setRotation((rotation + 90) % 360);
 
-  const isPDF = fileType?.toLowerCase() === 'pdf' || documentUrl.includes('.pdf');
-  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(fileType?.toLowerCase()) || 
-                  /\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(documentUrl);
+  const getFileTypeFromUrl = (url: string) => {
+    const extension = url.split('.').pop()?.toLowerCase() || '';
+    return extension;
+  };
+
+  const detectedExtension = getFileTypeFromUrl(documentUrl);
+  const actualFileType = fileType?.toLowerCase() || detectedExtension;
+  
+  const isPDF = actualFileType === 'pdf' || detectedExtension === 'pdf';
+  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(actualFileType) || 
+                  ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(detectedExtension);
+  const isText = ['txt', 'csv', 'json', 'xml'].includes(actualFileType) || 
+                 ['txt', 'csv', 'json', 'xml'].includes(detectedExtension);
+  const isDocument = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(actualFileType) || 
+                     ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(detectedExtension);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -75,6 +111,9 @@ export function DocumentViewer({ isOpen, onClose, documentUrl, documentName, fil
                 height="100%"
                 className="rounded-lg border"
                 title={documentName}
+                onError={() => {
+                  console.error('Error loading PDF in iframe');
+                }}
               />
             </div>
           ) : isImage ? (
@@ -90,10 +129,11 @@ export function DocumentViewer({ isOpen, onClose, documentUrl, documentName, fil
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.src = '/placeholder.svg';
+                  console.error('Error loading image:', documentUrl);
                 }}
               />
             </div>
-          ) : fileType?.toLowerCase() === 'txt' ? (
+          ) : isText ? (
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <iframe
                 src={documentUrl}
@@ -101,7 +141,23 @@ export function DocumentViewer({ isOpen, onClose, documentUrl, documentName, fil
                 height="500px"
                 className="border rounded"
                 title={documentName}
+                onError={() => {
+                  console.error('Error loading text file in iframe');
+                }}
               />
+            </div>
+          ) : isDocument ? (
+            <div className="flex flex-col items-center justify-center h-60 bg-white rounded-lg shadow-sm">
+              <div className="text-6xl mb-4">📊</div>
+              <h3 className="text-lg font-medium mb-2">Documento de Office</h3>
+              <p className="text-muted-foreground text-center mb-4">
+                Este tipo de documento se abrirá en una aplicación externa.<br />
+                Haz clic en "Descargar" para abrir el archivo.
+              </p>
+              <Button onClick={handleDownload}>
+                <Download className="h-4 w-4 mr-2" />
+                Abrir {documentName}
+              </Button>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-60 bg-white rounded-lg shadow-sm">
