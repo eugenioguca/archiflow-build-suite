@@ -1445,9 +1445,6 @@ export default function ProgressOverview() {
                                     onDateChange={(date) => date && updateEstimatedDate(project.id, index, date)}
                                     className="h-6 text-xs px-2"
                                   />
-                                  {dateInfo.is_critical && (
-                                    <AlertCircle className="h-3 w-3 text-red-500" />
-                                  )}
                                 </div>
                               ))}
                               {project.estimated_dates.length > 4 && (
