@@ -123,6 +123,9 @@ export default function ProgressOverview() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('active');
   const [viewMode, setViewMode] = useState<'detailed' | 'compact' | 'timeline'>('detailed');
+  const [projectDocuments, setProjectDocuments] = useState<any[]>([]);
+  const [projectPhotos, setProjectPhotos] = useState<any[]>([]);
+  const [loadingFiles, setLoadingFiles] = useState(false);
   const { toast } = useToast();
 
   // Mock team members data expandido
@@ -193,6 +196,13 @@ export default function ProgressOverview() {
     fetchProjectsFromSupabase();
   }, []);
 
+  // Cargar documentos y fotos cuando se selecciona un proyecto
+  useEffect(() => {
+    if (selectedProject) {
+      fetchProjectFiles(selectedProject.id);
+    }
+  }, [selectedProject]);
+
   const fetchProjectsFromSupabase = async () => {
     try {
       setLoading(true);
@@ -243,6 +253,68 @@ export default function ProgressOverview() {
       loadLocalProjects();
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProjectFiles = async (projectId: string) => {
+    setLoadingFiles(true);
+    try {
+      // Cargar documentos del proyecto
+      const { data: documentsData, error: documentsError } = await supabase
+        .from('project_documents')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false });
+
+      if (documentsError) throw documentsError;
+
+      // Cargar fotos de progreso del proyecto
+      const { data: photosData, error: photosError } = await supabase
+        .from('progress_photos')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('taken_at', { ascending: false });
+
+      if (photosError) throw photosError;
+
+      // Obtener URLs públicas de los archivos
+      const documentsWithUrls = await Promise.all(
+        (documentsData || []).map(async (doc) => {
+          const { data } = supabase.storage
+            .from('project-documents')
+            .getPublicUrl(doc.file_path);
+          
+          return {
+            ...doc,
+            public_url: data.publicUrl
+          };
+        })
+      );
+
+      const photosWithUrls = await Promise.all(
+        (photosData || []).map(async (photo) => {
+          const { data } = supabase.storage
+            .from('progress-photos')
+            .getPublicUrl(photo.file_path);
+          
+          return {
+            ...photo,
+            public_url: data.publicUrl
+          };
+        })
+      );
+
+      setProjectDocuments(documentsWithUrls);
+      setProjectPhotos(photosWithUrls);
+    } catch (error) {
+      console.error('Error loading project files:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los archivos del proyecto",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingFiles(false);
     }
   };
 
@@ -1981,22 +2053,125 @@ export default function ProgressOverview() {
                 </TabsContent>
                 
                 <TabsContent value="files" className="space-y-4">
-                  <div className="text-center py-8">
-                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground mb-4">
-                      Los documentos y archivos del proyecto se mostrarán aquí
-                    </p>
-                    <div className="flex gap-2 justify-center">
-                      <Button onClick={() => setIsDocumentDialogOpen(true)}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Agregar Documento
-                      </Button>
-                      <Button variant="outline" onClick={() => setIsPhotoDialogOpen(true)}>
-                        <Camera className="h-4 w-4 mr-2" />
-                        Fotos de Progreso
-                      </Button>
-                    </div>
+                  <div className="flex gap-2 mb-4">
+                    <Button onClick={() => setIsDocumentDialogOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Agregar Documento
+                    </Button>
+                    <Button variant="outline" onClick={() => setIsPhotoDialogOpen(true)}>
+                      <Camera className="h-4 w-4 mr-2" />
+                      Fotos de Progreso
+                    </Button>
                   </div>
+
+                  {loadingFiles ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Documentos */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <FileText className="h-5 w-5" />
+                            Documentos ({projectDocuments.length})
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          {projectDocuments.length > 0 ? (
+                            projectDocuments.map((doc) => (
+                              <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
+                                <div className="flex items-center gap-3 flex-1">
+                                  <FileText className="h-8 w-8 text-muted-foreground" />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium truncate">{doc.name}</p>
+                                    {doc.description && (
+                                      <p className="text-sm text-muted-foreground truncate">{doc.description}</p>
+                                    )}
+                                    <p className="text-xs text-muted-foreground">
+                                      {new Date(doc.created_at).toLocaleDateString('es-MX')} • {Math.round(doc.file_size / 1024)} KB
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => window.open(doc.public_url, '_blank')}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      const link = document.createElement('a');
+                                      link.href = doc.public_url;
+                                      link.download = doc.name;
+                                      link.click();
+                                    }}
+                                  >
+                                    <FileText className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-center py-6 text-muted-foreground">
+                              <FileText className="h-8 w-8 mx-auto mb-2" />
+                              <p>No hay documentos para este proyecto</p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+
+                      {/* Fotos de Progreso */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Camera className="h-5 w-5" />
+                            Fotos de Progreso ({projectPhotos.length})
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {projectPhotos.length > 0 ? (
+                            <div className="grid grid-cols-2 gap-3">
+                              {projectPhotos.slice(0, 6).map((photo) => (
+                                <div key={photo.id} className="relative aspect-square">
+                                  <img
+                                    src={photo.public_url}
+                                    alt={photo.title || 'Foto de progreso'}
+                                    className="w-full h-full object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => window.open(photo.public_url, '_blank')}
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.src = '/placeholder.svg';
+                                    }}
+                                  />
+                                  {photo.title && (
+                                    <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-2 rounded-b-lg">
+                                      {photo.title}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                              {projectPhotos.length > 6 && (
+                                <div className="aspect-square bg-muted rounded-lg flex items-center justify-center text-sm text-muted-foreground">
+                                  +{projectPhotos.length - 6} más
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-center py-6 text-muted-foreground">
+                              <Camera className="h-8 w-8 mx-auto mb-2" />
+                              <p>No hay fotos para este proyecto</p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
                 </TabsContent>
               </Tabs>
             </div>
@@ -2022,6 +2197,11 @@ export default function ProgressOverview() {
                 description: "El documento se ha subido correctamente",
               });
             }}
+            onFileUploaded={() => {
+              if (selectedProject) {
+                fetchProjectFiles(selectedProject.id);
+              }
+            }}
           />
         </DialogContent>
       </Dialog>
@@ -2045,6 +2225,11 @@ export default function ProgressOverview() {
                 description: "La foto se ha subido correctamente",
               });
             }}
+            onFileUploaded={() => {
+              if (selectedProject) {
+                fetchProjectFiles(selectedProject.id);
+              }
+            }}
           />
         </DialogContent>
       </Dialog>
@@ -2053,7 +2238,7 @@ export default function ProgressOverview() {
 }
 
 // Componente para subir documentos
-function DocumentUploadForm({ projectId, onSuccess }: { projectId: string; onSuccess: () => void }) {
+function DocumentUploadForm({ projectId, onSuccess, onFileUploaded }: { projectId: string; onSuccess: () => void; onFileUploaded?: () => void }) {
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -2104,6 +2289,10 @@ function DocumentUploadForm({ projectId, onSuccess }: { projectId: string; onSuc
       if (dbError) throw dbError;
 
       onSuccess();
+      // Llamar callback opcional para recargar archivos
+      if (onFileUploaded) {
+        onFileUploaded();
+      }
     } catch (error) {
       console.error('Error uploading document:', error);
       toast({
@@ -2170,11 +2359,13 @@ function DocumentUploadForm({ projectId, onSuccess }: { projectId: string; onSuc
 function PhotoUploadForm({ 
   projectId, 
   phases, 
-  onSuccess 
+  onSuccess,
+  onFileUploaded
 }: { 
   projectId: string; 
   phases: ProjectPhase[]; 
-  onSuccess: () => void 
+  onSuccess: () => void;
+  onFileUploaded?: () => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
@@ -2228,6 +2419,10 @@ function PhotoUploadForm({
       if (dbError) throw dbError;
 
       onSuccess();
+      // Llamar callback opcional para recargar archivos
+      if (onFileUploaded) {
+        onFileUploaded();
+      }
     } catch (error) {
       console.error('Error uploading photo:', error);
       toast({
