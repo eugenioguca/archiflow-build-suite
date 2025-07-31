@@ -124,18 +124,66 @@ export type Database = {
           },
         ]
       }
+      client_portal_settings: {
+        Row: {
+          can_view_documents: boolean | null
+          can_view_finances: boolean | null
+          can_view_photos: boolean | null
+          can_view_progress: boolean | null
+          client_id: string
+          created_at: string
+          custom_settings: Json | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          can_view_documents?: boolean | null
+          can_view_finances?: boolean | null
+          can_view_photos?: boolean | null
+          can_view_progress?: boolean | null
+          client_id: string
+          created_at?: string
+          custom_settings?: Json | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          can_view_documents?: boolean | null
+          can_view_finances?: boolean | null
+          can_view_photos?: boolean | null
+          can_view_progress?: boolean | null
+          client_id?: string
+          created_at?: string
+          custom_settings?: Json | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_settings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
           assigned_advisor_id: string | null
           budget: number | null
           company_size: string | null
+          conversion_date: string | null
+          conversion_notes: string | null
           created_at: string
           decision_maker_name: string | null
           decision_maker_role: string | null
           email: string | null
+          estimated_value: number | null
           full_name: string
           id: string
+          last_activity_date: string | null
           last_contact_date: string | null
           lead_score: number | null
           lead_source: Database["public"]["Enums"]["lead_source"] | null
@@ -147,9 +195,11 @@ export type Database = {
             | Database["public"]["Enums"]["contact_method"]
             | null
           priority: Database["public"]["Enums"]["priority_level"] | null
+          probability_percentage: number | null
           profile_id: string | null
           project_size: string | null
           project_type: Database["public"]["Enums"]["project_type"] | null
+          sales_pipeline_stage: string | null
           social_media: Json | null
           status: Database["public"]["Enums"]["client_status"]
           tags: string[] | null
@@ -162,12 +212,16 @@ export type Database = {
           assigned_advisor_id?: string | null
           budget?: number | null
           company_size?: string | null
+          conversion_date?: string | null
+          conversion_notes?: string | null
           created_at?: string
           decision_maker_name?: string | null
           decision_maker_role?: string | null
           email?: string | null
+          estimated_value?: number | null
           full_name: string
           id?: string
+          last_activity_date?: string | null
           last_contact_date?: string | null
           lead_score?: number | null
           lead_source?: Database["public"]["Enums"]["lead_source"] | null
@@ -179,9 +233,11 @@ export type Database = {
             | Database["public"]["Enums"]["contact_method"]
             | null
           priority?: Database["public"]["Enums"]["priority_level"] | null
+          probability_percentage?: number | null
           profile_id?: string | null
           project_size?: string | null
           project_type?: Database["public"]["Enums"]["project_type"] | null
+          sales_pipeline_stage?: string | null
           social_media?: Json | null
           status?: Database["public"]["Enums"]["client_status"]
           tags?: string[] | null
@@ -194,12 +250,16 @@ export type Database = {
           assigned_advisor_id?: string | null
           budget?: number | null
           company_size?: string | null
+          conversion_date?: string | null
+          conversion_notes?: string | null
           created_at?: string
           decision_maker_name?: string | null
           decision_maker_role?: string | null
           email?: string | null
+          estimated_value?: number | null
           full_name?: string
           id?: string
+          last_activity_date?: string | null
           last_contact_date?: string | null
           lead_score?: number | null
           lead_source?: Database["public"]["Enums"]["lead_source"] | null
@@ -211,9 +271,11 @@ export type Database = {
             | Database["public"]["Enums"]["contact_method"]
             | null
           priority?: Database["public"]["Enums"]["priority_level"] | null
+          probability_percentage?: number | null
           profile_id?: string | null
           project_size?: string | null
           project_type?: Database["public"]["Enums"]["project_type"] | null
+          sales_pipeline_stage?: string | null
           social_media?: Json | null
           status?: Database["public"]["Enums"]["client_status"]
           tags?: string[] | null
@@ -463,40 +525,55 @@ export type Database = {
       }
       documents: {
         Row: {
+          access_level: string | null
           category: string | null
           client_id: string | null
           created_at: string
           description: string | null
+          document_status: string | null
           file_path: string
+          file_size: number | null
           file_type: string | null
           id: string
           name: string
           project_id: string | null
+          tags: string[] | null
           uploaded_by: string
+          version: number | null
         }
         Insert: {
+          access_level?: string | null
           category?: string | null
           client_id?: string | null
           created_at?: string
           description?: string | null
+          document_status?: string | null
           file_path: string
+          file_size?: number | null
           file_type?: string | null
           id?: string
           name: string
           project_id?: string | null
+          tags?: string[] | null
           uploaded_by: string
+          version?: number | null
         }
         Update: {
+          access_level?: string | null
           category?: string | null
           client_id?: string | null
           created_at?: string
           description?: string | null
+          document_status?: string | null
           file_path?: string
+          file_size?: number | null
           file_type?: string | null
           id?: string
           name?: string
           project_id?: string | null
+          tags?: string[] | null
           uploaded_by?: string
+          version?: number | null
         }
         Relationships: [
           {
@@ -782,13 +859,18 @@ export type Database = {
           budget: number | null
           client_id: string
           created_at: string
+          custom_fields: Json | null
           description: string | null
           estimated_completion: string | null
           id: string
+          location: string | null
           name: string
+          phases: Json | null
           progress_percentage: number | null
+          project_type: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["project_status"]
+          team_members: Json | null
           total_cost: number | null
           updated_at: string
         }
@@ -797,13 +879,18 @@ export type Database = {
           budget?: number | null
           client_id: string
           created_at?: string
+          custom_fields?: Json | null
           description?: string | null
           estimated_completion?: string | null
           id?: string
+          location?: string | null
           name: string
+          phases?: Json | null
           progress_percentage?: number | null
+          project_type?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
+          team_members?: Json | null
           total_cost?: number | null
           updated_at?: string
         }
@@ -812,19 +899,80 @@ export type Database = {
           budget?: number | null
           client_id?: string
           created_at?: string
+          custom_fields?: Json | null
           description?: string | null
           estimated_completion?: string | null
           id?: string
+          location?: string | null
           name?: string
+          phases?: Json | null
           progress_percentage?: number | null
+          project_type?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["project_status"]
+          team_members?: Json | null
           total_cost?: number | null
           updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_activities: {
+        Row: {
+          activity_type: string
+          client_id: string
+          completed_date: string | null
+          created_at: string
+          description: string | null
+          id: string
+          next_action: string | null
+          outcome: string | null
+          scheduled_date: string | null
+          status: string | null
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          client_id: string
+          completed_date?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          next_action?: string | null
+          outcome?: string | null
+          scheduled_date?: string | null
+          status?: string | null
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          client_id?: string
+          completed_date?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          next_action?: string | null
+          outcome?: string | null
+          scheduled_date?: string | null
+          status?: string | null
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_activities_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"

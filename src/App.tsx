@@ -17,6 +17,7 @@ import ProgressPhotos from "./pages/ProgressPhotos";
 import ProgressOverview from "./pages/ProgressOverview";
 import Sales from "./pages/Sales";
 import UserManagement from "./pages/UserManagement";
+import Suppliers from "./pages/Suppliers";
 import PendingApproval from "./components/PendingApproval";
 import NotFound from "./pages/NotFound";
 
@@ -151,6 +152,16 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <UserManagement />
+                  </Layout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/suppliers" 
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Suppliers />
                   </Layout>
                 </ProtectedRoute>
               } 
