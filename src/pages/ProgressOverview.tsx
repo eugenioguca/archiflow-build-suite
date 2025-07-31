@@ -2267,7 +2267,7 @@ function PhotoUploadForm({
             <SelectValue placeholder="Seleccionar fase" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Foto general del proyecto</SelectItem>
+            <SelectItem value="general">Foto general del proyecto</SelectItem>
             {phases.map((phase) => (
               <SelectItem key={phase.id} value={phase.id}>
                 {phase.name}
