@@ -455,7 +455,7 @@ export default function Sales() {
   };
 
   // Nueva función para asignar/cambiar asesores
-  const assignAdvisor = async (clientId: string, advisorId: string) => {
+  const assignAdvisor = async (clientId: string, advisorId: string | null) => {
     try {
       const { error } = await supabase
         .from('clients')
@@ -464,7 +464,7 @@ export default function Sales() {
 
       if (error) throw error;
 
-      const advisor = employees.find(e => e.id === advisorId);
+      const advisor = advisorId ? employees.find(e => e.id === advisorId) : null;
       const client = clients.find(c => c.id === clientId);
 
       setClients(clients.map(c => 
@@ -473,11 +473,19 @@ export default function Sales() {
           : c
       ));
 
-      if (client && advisor) {
+      if (client) {
+        const activityTitle = advisor 
+          ? `Asesor asignado: ${advisor.full_name}`
+          : 'Asesor removido';
+        
+        const activityDescription = advisor
+          ? `Se asignó a ${advisor.full_name} como asesor del cliente ${client.full_name}`
+          : `Se removió el asesor del cliente ${client.full_name}`;
+
         await createActivity({
-          title: `Asesor asignado: ${advisor.full_name}`,
+          title: activityTitle,
           activity_type: "follow_up",
-          description: `Se asignó a ${advisor.full_name} como asesor del cliente ${client.full_name}`,
+          description: activityDescription,
           scheduled_date: new Date().toISOString(),
           is_completed: true,
           client_id: clientId
@@ -485,8 +493,10 @@ export default function Sales() {
       }
 
       toast({
-        title: "Asesor asignado",
-        description: `Se asignó correctamente a ${advisor?.full_name}`,
+        title: advisor ? "Asesor asignado" : "Asesor removido",
+        description: advisor 
+          ? `${advisor.full_name} ha sido asignado correctamente`
+          : "Se removió el asesor del cliente",
       });
     } catch (error) {
       console.error('Error assigning advisor:', error);
@@ -1168,23 +1178,30 @@ export default function Sales() {
                                <StickyNote className="h-4 w-4" />
                              </Button>
                              
-                              {/* Asignar Asesor */}
-                              <Select value={client.assigned_advisor_id || "none"} onValueChange={(value) => assignAdvisor(client.id, value === "none" ? null : value)}>
-                                <SelectTrigger className="h-8 w-24">
-                                  <SelectValue placeholder="Asesor" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="none">Sin asignar</SelectItem>
-                                  {employees.map((employee) => (
-                                    <SelectItem key={employee.id} value={employee.id}>
-                                      {employee.full_name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                               {/* Asignar Asesor */}
+                               <Select 
+                                 value={client.assigned_advisor_id || "none"} 
+                                 onValueChange={(value) => {
+                                   console.log('Asignando asesor:', value, 'a cliente:', client.id);
+                                   assignAdvisor(client.id, value === "none" ? null : value);
+                                 }}
+                               >
+                                 <SelectTrigger className="h-8 w-24">
+                                   <SelectValue placeholder="Asesor" />
+                                 </SelectTrigger>
+                                 <SelectContent>
+                                   <SelectItem value="none">Sin asignar</SelectItem>
+                                   {employees.map((employee) => (
+                                     <SelectItem key={employee.id} value={employee.id}>
+                                       {employee.full_name}
+                                     </SelectItem>
+                                   ))}
+                                 </SelectContent>
+                               </Select>
 
                               {/* Cerrar Cliente */}
                               <Select value="" onValueChange={(value) => {
+                                console.log('Cerrando cliente:', client.id, 'con estado:', value);
                                 if (value === 'existing' || value === 'active' || value === 'completed') {
                                   closeClient(client.id, value);
                                 }
