@@ -259,9 +259,9 @@ export default function ProgressOverview() {
   const fetchProjectFiles = async (projectId: string) => {
     setLoadingFiles(true);
     try {
-      // Cargar documentos del proyecto
+      // Cargar documentos del proyecto (usando la tabla documents para consistencia)
       const { data: documentsData, error: documentsError } = await supabase
-        .from('project_documents')
+        .from('documents')
         .select('*')
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
@@ -277,20 +277,30 @@ export default function ProgressOverview() {
 
       if (photosError) throw photosError;
 
-      // Obtener URLs públicas de los archivos
+      // Para documentos subidos desde el módulo de progreso, obtener URLs desde Storage
       const documentsWithUrls = await Promise.all(
         (documentsData || []).map(async (doc) => {
-          const { data } = supabase.storage
-            .from('project-documents')
-            .getPublicUrl(doc.file_path);
-          
-          return {
-            ...doc,
-            public_url: data.publicUrl
-          };
+          // Si el documento tiene un file_path que parece ser de Storage, obtener URL pública
+          if (doc.file_path && doc.file_path.includes('/')) {
+            const { data } = supabase.storage
+              .from('project-documents')
+              .getPublicUrl(doc.file_path);
+            
+            return {
+              ...doc,
+              public_url: data.publicUrl
+            };
+          } else {
+            // Para documentos legacy o externos, usar el file_path directamente
+            return {
+              ...doc,
+              public_url: doc.file_path
+            };
+          }
         })
       );
 
+      // Obtener URLs públicas de las fotos desde Storage
       const photosWithUrls = await Promise.all(
         (photosData || []).map(async (photo) => {
           const { data } = supabase.storage
@@ -2263,27 +2273,37 @@ function DocumentUploadForm({ projectId, onSuccess, onFileUploaded }: { projectI
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuario no autenticado');
 
+      // Obtener el perfil del usuario
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile) throw new Error('Perfil no encontrado');
+
+      // Subir archivo a Supabase Storage
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${projectId}/${Date.now()}.${fileExt}`;
 
-      // Subir archivo a Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('project-documents')
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
-      // Guardar metadata en la base de datos
+      // Guardar metadata en la tabla documents para consistencia
       const { error: dbError } = await supabase
-        .from('project_documents')
+        .from('documents')
         .insert({
           project_id: projectId,
           name,
-          description,
-          file_path: fileName,
+          description: description || null,
+          file_path: fileName, // Esto se actualizará para mostrar la URL pública
           file_type: file.type,
           file_size: file.size,
-          uploaded_by: user.id,
+          category: 'project',
+          uploaded_by: profile.id,
         });
 
       if (dbError) throw dbError;
