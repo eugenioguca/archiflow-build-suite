@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   Plus, Search, Building2, Calendar, DollarSign, MoreHorizontal, Edit, Trash2, 
   Users, Settings, Eye, TrendingUp, AlertCircle, CheckCircle2, Clock, 
-  FileText, Camera, BarChart3, Target, MapPin, Phone, Mail
+  FileText, Camera, BarChart3, Target, MapPin, Phone, Mail, Save, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,6 +23,7 @@ import { CustomizableTable } from '@/components/CustomizableTable';
 import { UserAvatar } from '@/components/UserAvatar';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
+import { EditableField } from '@/components/EditableField';
 
 interface Project {
   id: string;
@@ -124,6 +125,7 @@ export default function Projects() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [viewMode, setViewMode] = useState<'cards' | 'table' | 'timeline'>('cards');
   const [showCustomTable, setShowCustomTable] = useState(false);
+  const [isEditingDetails, setIsEditingDetails] = useState(false);
   const { user } = useAuth();
 
   // Columnas predefinidas para la tabla personalizable
@@ -349,6 +351,58 @@ export default function Projects() {
     setIsDialogOpen(false);
   };
 
+  const handleSaveProjectDetail = async (field: string, value: string | number) => {
+    if (!selectedProject) return;
+
+    try {
+      const updateData: any = {};
+      updateData[field] = value;
+
+      const { error } = await supabase
+        .from('projects')
+        .update(updateData)
+        .eq('id', selectedProject.id);
+
+      if (error) throw error;
+
+      // Actualizar el proyecto seleccionado
+      setSelectedProject({
+        ...selectedProject,
+        [field]: value
+      });
+
+      // Actualizar la lista de proyectos
+      setProjects(prev => prev.map(p => 
+        p.id === selectedProject.id ? { ...p, [field]: value } : p
+      ));
+
+      toast({
+        title: "Campo actualizado",
+        description: "El cambio se ha guardado exitosamente",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el campo",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddDocument = () => {
+    toast({
+      title: "Agregar Documento",
+      description: "Funcionalidad de documentos se implementará próximamente",
+    });
+  };
+
+  const handleAddPhoto = () => {
+    toast({
+      title: "Agregar Foto",
+      description: "Funcionalidad de fotos se implementará próximamente",
+    });
+  };
+
   const filteredProjects = projects.filter(project => {
     const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          project.client.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -475,30 +529,143 @@ export default function Projects() {
                 </DialogHeader>
                 {/* Dialog content will be added here */}
                 <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Nombre del Proyecto *</Label>
-                      <Input
-                        id="name"
-                        name="name"
-                        defaultValue={editingProject?.name || ''}
-                        required
-                      />
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-4 gap-4">
+                      <div>
+                        <Label htmlFor="name">Nombre del Proyecto *</Label>
+                        <Input
+                          id="name"
+                          name="name"
+                          defaultValue={editingProject?.name || ''}
+                          required
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="client_id">Cliente *</Label>
+                        <Select name="client_id" defaultValue={editingProject?.client.id || ''} required>
+                          <SelectTrigger className="bg-background">
+                            <SelectValue placeholder="Seleccionar cliente" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background border z-50">
+                            {clients.map((client) => (
+                              <SelectItem key={client.id} value={client.id} className="hover:bg-accent">
+                                {client.full_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="status">Estado</Label>
+                        <Select name="status" defaultValue={editingProject?.status || 'planning'}>
+                          <SelectTrigger className="bg-background">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background border z-50">
+                            {Object.entries(statusLabels).map(([key, label]) => (
+                              <SelectItem key={key} value={key} className="hover:bg-accent">{label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="project_type">Tipo de Proyecto</Label>
+                        <Select name="project_type" defaultValue={editingProject?.project_type || ''}>
+                          <SelectTrigger className="bg-background">
+                            <SelectValue placeholder="Seleccionar tipo" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background border z-50">
+                            <SelectItem value="residential" className="hover:bg-accent">Residencial</SelectItem>
+                            <SelectItem value="commercial" className="hover:bg-accent">Comercial</SelectItem>
+                            <SelectItem value="industrial" className="hover:bg-accent">Industrial</SelectItem>
+                            <SelectItem value="renovation" className="hover:bg-accent">Renovación</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="client_id">Cliente *</Label>
-                      <Select name="client_id" required>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar cliente" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {clients.map(client => (
-                            <SelectItem key={client.id} value={client.id}>
-                              {client.full_name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="budget">Presupuesto</Label>
+                        <Input
+                          id="budget"
+                          name="budget"
+                          type="number"
+                          step="0.01"
+                          defaultValue={editingProject?.budget || ''}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="start_date">Fecha de Inicio</Label>
+                        <Input
+                          id="start_date"
+                          name="start_date"
+                          type="date"
+                          defaultValue={editingProject?.start_date || ''}
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="estimated_completion">Fecha Estimada</Label>
+                        <Input
+                          id="estimated_completion"
+                          name="estimated_completion"
+                          type="date"
+                          defaultValue={editingProject?.estimated_completion || ''}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="location">Ubicación</Label>
+                        <Input
+                          id="location"
+                          name="location"
+                          defaultValue={editingProject?.location || ''}
+                          placeholder="Dirección del proyecto"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="progress_percentage">Progreso (%)</Label>
+                        <Input
+                          id="progress_percentage"
+                          name="progress_percentage"
+                          type="number"
+                          min="0"
+                          max="100"
+                          defaultValue={editingProject?.progress_percentage || 0}
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="total_cost">Costo Actual</Label>
+                        <Input
+                          id="total_cost"
+                          name="total_cost"
+                          type="number"
+                          step="0.01"
+                          defaultValue={editingProject?.total_cost || ''}
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="description">Descripción</Label>
+                      <Textarea
+                        id="description"
+                        name="description"
+                        defaultValue={editingProject?.description || ''}
+                        placeholder="Descripción detallada del proyecto"
+                        rows={3}
+                      />
                     </div>
                   </div>
                   
@@ -907,10 +1074,30 @@ export default function Projects() {
         <Dialog open={!!selectedProject} onOpenChange={() => setSelectedProject(null)}>
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Detalles del Proyecto: {selectedProject?.name}</DialogTitle>
-            <DialogDescription>
-              Información completa y seguimiento del proyecto
-            </DialogDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle>Detalles del Proyecto: {selectedProject?.name}</DialogTitle>
+                <DialogDescription>
+                  Información completa y seguimiento del proyecto
+                </DialogDescription>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditingDetails(!isEditingDetails)}
+              >
+                {isEditingDetails ? (
+                  <>
+                    <X className="h-4 w-4 mr-2" />
+                    Cancelar
+                  </>
+                ) : (
+                  <>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar
+                  </>
+                )}
+              </Button>
+            </div>
           </DialogHeader>
           
           {selectedProject && (
@@ -937,17 +1124,51 @@ export default function Projects() {
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Tipo de Proyecto</p>
-                          <p className="font-medium">{selectedProject.project_type || 'No especificado'}</p>
+                          {isEditingDetails ? (
+                            <EditableField
+                              value={selectedProject.project_type || ''}
+                              onSave={(value) => handleSaveProjectDetail('project_type', value)}
+                              type="select"
+                              options={[
+                                { value: 'residential', label: 'Residencial' },
+                                { value: 'commercial', label: 'Comercial' },
+                                { value: 'industrial', label: 'Industrial' },
+                                { value: 'renovation', label: 'Renovación' }
+                              ]}
+                            />
+                          ) : (
+                            <p className="font-medium">{selectedProject.project_type || 'No especificado'}</p>
+                          )}
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Estado</p>
-                          <Badge className={statusColors[selectedProject.status]}>
-                            {statusLabels[selectedProject.status]}
-                          </Badge>
+                          {isEditingDetails ? (
+                            <EditableField
+                              value={selectedProject.status}
+                              onSave={(value) => handleSaveProjectDetail('status', value)}
+                              type="select"
+                              options={Object.entries(statusLabels).map(([key, label]) => ({
+                                value: key,
+                                label: label
+                              }))}
+                            />
+                          ) : (
+                            <Badge className={statusColors[selectedProject.status]}>
+                              {statusLabels[selectedProject.status]}
+                            </Badge>
+                          )}
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Ubicación</p>
-                          <p className="font-medium">{selectedProject.location || 'No especificada'}</p>
+                          {isEditingDetails ? (
+                            <EditableField
+                              value={selectedProject.location || ''}
+                              onSave={(value) => handleSaveProjectDetail('location', value)}
+                              type="text"
+                            />
+                          ) : (
+                            <p className="font-medium">{selectedProject.location || 'No especificada'}</p>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -959,17 +1180,44 @@ export default function Projects() {
                       <CardContent className="space-y-3">
                         <div>
                           <p className="text-sm text-muted-foreground">Presupuesto</p>
-                          <p className="font-medium">{formatCurrency(selectedProject.budget)}</p>
+                          {isEditingDetails ? (
+                            <EditableField
+                              value={selectedProject.budget || 0}
+                              onSave={(value) => handleSaveProjectDetail('budget', value)}
+                              type="number"
+                              displayTransform={(val) => formatCurrency(Number(val))}
+                            />
+                          ) : (
+                            <p className="font-medium">{formatCurrency(selectedProject.budget)}</p>
+                          )}
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Costo Actual</p>
-                          <p className="font-medium">{formatCurrency(selectedProject.total_cost)}</p>
+                          {isEditingDetails ? (
+                            <EditableField
+                              value={selectedProject.total_cost || 0}
+                              onSave={(value) => handleSaveProjectDetail('total_cost', value)}
+                              type="number"
+                              displayTransform={(val) => formatCurrency(Number(val))}
+                            />
+                          ) : (
+                            <p className="font-medium">{formatCurrency(selectedProject.total_cost)}</p>
+                          )}
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Progreso</p>
                           <div className="space-y-1">
                             <div className="flex justify-between text-sm">
-                              <span>{selectedProject.progress_percentage}%</span>
+                              {isEditingDetails ? (
+                                <EditableField
+                                  value={selectedProject.progress_percentage}
+                                  onSave={(value) => handleSaveProjectDetail('progress_percentage', value)}
+                                  type="number"
+                                  displayTransform={(val) => `${val}%`}
+                                />
+                              ) : (
+                                <span>{selectedProject.progress_percentage}%</span>
+                              )}
                             </div>
                             <Progress value={selectedProject.progress_percentage} className="h-2" />
                           </div>
@@ -986,15 +1234,42 @@ export default function Projects() {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                           <p className="text-sm text-muted-foreground">Fecha de Inicio</p>
-                          <p className="font-medium">{formatDate(selectedProject.start_date)}</p>
+                          {isEditingDetails ? (
+                            <EditableField
+                              value={selectedProject.start_date || ''}
+                              onSave={(value) => handleSaveProjectDetail('start_date', value)}
+                              type="text"
+                              displayTransform={(val) => formatDate(val as string)}
+                            />
+                          ) : (
+                            <p className="font-medium">{formatDate(selectedProject.start_date)}</p>
+                          )}
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Fecha Estimada</p>
-                          <p className="font-medium">{formatDate(selectedProject.estimated_completion)}</p>
+                          {isEditingDetails ? (
+                            <EditableField
+                              value={selectedProject.estimated_completion || ''}
+                              onSave={(value) => handleSaveProjectDetail('estimated_completion', value)}
+                              type="text"
+                              displayTransform={(val) => formatDate(val as string)}
+                            />
+                          ) : (
+                            <p className="font-medium">{formatDate(selectedProject.estimated_completion)}</p>
+                          )}
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Fecha Real</p>
-                          <p className="font-medium">{formatDate(selectedProject.actual_completion)}</p>
+                          {isEditingDetails ? (
+                            <EditableField
+                              value={selectedProject.actual_completion || ''}
+                              onSave={(value) => handleSaveProjectDetail('actual_completion', value)}
+                              type="text"
+                              displayTransform={(val) => formatDate(val as string)}
+                            />
+                          ) : (
+                            <p className="font-medium">{formatDate(selectedProject.actual_completion)}</p>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -1064,7 +1339,7 @@ export default function Projects() {
                   <div className="text-center py-8">
                     <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <p className="text-muted-foreground">Los documentos del proyecto se mostrarán aquí</p>
-                    <Button className="mt-4">
+                    <Button className="mt-4" onClick={handleAddDocument}>
                       <Plus className="h-4 w-4 mr-2" />
                       Agregar Documento
                     </Button>
@@ -1075,7 +1350,7 @@ export default function Projects() {
                   <div className="text-center py-8">
                     <Camera className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <p className="text-muted-foreground">Las fotos de progreso se mostrarán aquí</p>
-                    <Button className="mt-4">
+                    <Button className="mt-4" onClick={handleAddPhoto}>
                       <Plus className="h-4 w-4 mr-2" />
                       Agregar Foto
                     </Button>
