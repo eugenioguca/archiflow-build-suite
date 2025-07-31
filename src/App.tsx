@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import Projects from "./pages/Projects";
 import Documents from "./pages/Documents";
+import ProjectFiles from "./pages/ProjectFiles";
 import Finances from "./pages/Finances";
 import Accounting from "./pages/Accounting";
 import ProgressPhotos from "./pages/ProgressPhotos";
@@ -91,7 +92,7 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <Documents />
+                    <ProjectFiles />
                   </Layout>
                 </ProtectedRoute>
               } 

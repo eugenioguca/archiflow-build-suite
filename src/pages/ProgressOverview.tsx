@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadFileToStorage, getFileUrl, getFileType } from '@/lib/fileUtils';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { DocumentViewer } from "@/components/DocumentViewer";
 import { PhotoGallery } from "@/components/PhotoGallery";
-import { uploadFileToStorage, getFileUrl, getFileType } from "@/lib/fileUtils";
+
 
 interface ProjectOverview {
   id: string;
@@ -2564,28 +2565,32 @@ function PhotoUploadForm({
 
       if (!profile) throw new Error('Perfil no encontrado');
 
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${projectId}/${Date.now()}.${fileExt}`;
+      // Upload to storage using fileUtils
+      const { filePath, publicUrl } = await uploadFileToStorage(file, {
+        bucket: 'project-documents',
+        folder: `projects/${projectId}`,
+        generatePublicUrl: true
+      });
 
-      // Subir archivo a Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('progress-photos')
-        .upload(fileName, file);
+      // Determine file category
+      const { type: detectedType } = getFileType(file.name);
+      const fileCategory = detectedType === 'image' ? 'photo' : 'document';
 
-      if (uploadError) throw uploadError;
-
-      // Guardar metadata en la base de datos
+      // Insert into project_files table
       const { error: dbError } = await supabase
-        .from('progress_photos')
+        .from('project_files')
         .insert({
-          project_id: projectId,
-          phase_id: selectedPhase || null,
-          title,
+          name: title,
           description,
-          file_path: fileName,
-          photo_url: fileName,
-          taken_by: profile.id, // Usar profile.id en lugar de user.id
-          uploaded_by_temp: user.id,
+          file_path: filePath,
+          file_type: file.type,
+          file_category: fileCategory,
+          category: fileCategory === 'photo' ? 'progress' : 'project',
+          project_id: projectId,
+          uploaded_by: profile.id,
+          file_size: file.size,
+          access_level: 'internal',
+          metadata: selectedPhase ? { phase_id: selectedPhase } : {}
         });
 
       if (dbError) throw dbError;

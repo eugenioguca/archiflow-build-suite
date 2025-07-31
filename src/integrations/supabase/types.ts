@@ -868,49 +868,87 @@ export type Database = {
           },
         ]
       }
-      project_documents: {
+      project_files: {
         Row: {
+          access_level: string | null
+          category: string | null
+          client_id: string | null
           created_at: string
           description: string | null
+          document_status: string | null
+          file_category: string
           file_path: string
-          file_size: number
+          file_size: number | null
           file_type: string
           id: string
+          metadata: Json | null
           name: string
-          project_id: string
+          project_id: string | null
+          tags: string[] | null
           updated_at: string
-          uploaded_by: string | null
+          uploaded_by: string
+          version: number | null
         }
         Insert: {
+          access_level?: string | null
+          category?: string | null
+          client_id?: string | null
           created_at?: string
           description?: string | null
+          document_status?: string | null
+          file_category: string
           file_path: string
-          file_size: number
+          file_size?: number | null
           file_type: string
           id?: string
+          metadata?: Json | null
           name: string
-          project_id: string
+          project_id?: string | null
+          tags?: string[] | null
           updated_at?: string
-          uploaded_by?: string | null
+          uploaded_by: string
+          version?: number | null
         }
         Update: {
+          access_level?: string | null
+          category?: string | null
+          client_id?: string | null
           created_at?: string
           description?: string | null
+          document_status?: string | null
+          file_category?: string
           file_path?: string
-          file_size?: number
+          file_size?: number | null
           file_type?: string
           id?: string
+          metadata?: Json | null
           name?: string
-          project_id?: string
+          project_id?: string | null
+          tags?: string[] | null
           updated_at?: string
-          uploaded_by?: string | null
+          uploaded_by?: string
+          version?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "project_documents_project_id_fkey"
+            foreignKeyName: "project_files_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_files_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_files_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
