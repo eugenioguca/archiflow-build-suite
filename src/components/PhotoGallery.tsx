@@ -53,8 +53,13 @@ export function PhotoGallery({ photos, isOpen, onClose, initialPhotoIndex = 0 }:
 
   const handleDownload = async () => {
     try {
+      // Construir URL completa si es necesario
+      const photoUrl = currentPhoto.photo_url.startsWith('http') 
+        ? currentPhoto.photo_url 
+        : `https://ycbflvptfgrjclzzlxci.supabase.co/storage/v1/object/public/progress-photos/${currentPhoto.photo_url}`;
+      
       // Descargar preservando el tipo de archivo original
-      const response = await fetch(currentPhoto.photo_url);
+      const response = await fetch(photoUrl);
       if (!response.ok) throw new Error('Error al obtener la imagen');
       
       const blob = await response.blob();
@@ -154,7 +159,10 @@ export function PhotoGallery({ photos, isOpen, onClose, initialPhotoIndex = 0 }:
 
             <div className="max-w-full max-h-full overflow-auto p-4">
               <img
-                src={currentPhoto.photo_url}
+                src={currentPhoto.photo_url.startsWith('http') 
+                  ? currentPhoto.photo_url 
+                  : `https://ycbflvptfgrjclzzlxci.supabase.co/storage/v1/object/public/progress-photos/${currentPhoto.photo_url}`
+                }
                 alt={currentPhoto.description || "Foto del proyecto"}
                 className="max-w-full max-h-full object-contain transition-transform duration-200"
                 style={{
@@ -231,7 +239,10 @@ export function PhotoGallery({ photos, isOpen, onClose, initialPhotoIndex = 0 }:
                       }`}
                     >
                       <img
-                        src={photo.photo_url}
+                        src={photo.photo_url.startsWith('http') 
+                          ? photo.photo_url 
+                          : `https://ycbflvptfgrjclzzlxci.supabase.co/storage/v1/object/public/progress-photos/${photo.photo_url}`
+                        }
                         alt={photo.description || "Miniatura"}
                         className="w-full h-full object-cover"
                         onError={(e) => {

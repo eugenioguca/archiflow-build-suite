@@ -387,7 +387,10 @@ export default function ProgressPhotos() {
                       }}
                     >
                       <img
-                        src={photo.photo_url}
+                        src={photo.photo_url.startsWith('http') 
+                          ? photo.photo_url 
+                          : `https://ycbflvptfgrjclzzlxci.supabase.co/storage/v1/object/public/progress-photos/${photo.photo_url}`
+                        }
                         alt={photo.description || "Foto de avance"}
                         className="w-full h-full object-cover transition-transform group-hover:scale-105"
                         onError={(e) => {
@@ -421,7 +424,9 @@ export default function ProgressPhotos() {
                               e.stopPropagation();
                               const fileName = `foto_${photo.project?.name}_${photo.id}.jpg`;
                               const link = document.createElement('a');
-                              link.href = photo.photo_url;
+                              link.href = photo.photo_url.startsWith('http') 
+                                ? photo.photo_url 
+                                : `https://ycbflvptfgrjclzzlxci.supabase.co/storage/v1/object/public/progress-photos/${photo.photo_url}`;
                               link.download = fileName;
                               link.target = '_blank';
                               document.body.appendChild(link);
