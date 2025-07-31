@@ -291,12 +291,27 @@ export default function ProjectFiles() {
           url = result.url;
           console.log('Generated URL:', url);
         } catch (bucketError) {
-          console.log('Failed with bucket:', bucket, 'trying alternative bucket');
-          // If it fails, try the other bucket
-          const alternateBucket = bucket === 'project-documents' ? 'progress-photos' : 'project-documents';
-          const result = await getFileUrl(file.file_path, alternateBucket, true);
-          url = result.url;
-          console.log('Success with alternate bucket:', alternateBucket, 'URL:', url);
+          console.log('Failed with bucket:', bucket, 'trying all buckets');
+          // If it fails, try all available buckets in order
+          const buckets = ['project-documents', 'progress-photos'];
+          let success = false;
+          
+          for (const tryBucket of buckets) {
+            if (tryBucket === bucket) continue; // Already tried this one
+            try {
+              const result = await getFileUrl(file.file_path, tryBucket, true);
+              url = result.url;
+              console.log('Success with bucket:', tryBucket, 'URL:', url);
+              success = true;
+              break;
+            } catch (e) {
+              console.log('Failed with bucket:', tryBucket);
+            }
+          }
+          
+          if (!success) {
+            throw bucketError; // Re-throw original error if all buckets fail
+          }
         }
       }
       
@@ -335,7 +350,38 @@ export default function ProjectFiles() {
 
   const handleDownload = async (file: ProjectFile) => {
     try {
-      const { url } = await getFileUrl(file.file_path, 'project-documents', true);
+      // Use the same logic as handleView for bucket selection
+      let bucket = 'project-documents';
+      if (file.file_path.includes('progress-photos/') || file.category === 'progress') {
+        bucket = 'progress-photos';
+      }
+      
+      let url: string;
+      try {
+        const result = await getFileUrl(file.file_path, bucket, true);
+        url = result.url;
+      } catch (bucketError) {
+        // Try all buckets if the first one fails
+        const buckets = ['project-documents', 'progress-photos'];
+        let success = false;
+        
+        for (const tryBucket of buckets) {
+          if (tryBucket === bucket) continue;
+          try {
+            const result = await getFileUrl(file.file_path, tryBucket, true);
+            url = result.url;
+            success = true;
+            break;
+          } catch (e) {
+            // Continue to next bucket
+          }
+        }
+        
+        if (!success) {
+          throw bucketError;
+        }
+      }
+      
       await downloadFile(url, file.name);
     } catch (error) {
       console.error('Error downloading file:', error);
