@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   Plus, Search, Building2, Calendar, DollarSign, MoreHorizontal, Edit, Trash2, 
   Users, Settings, Eye, TrendingUp, AlertCircle, CheckCircle2, Clock, 
-  FileText, Camera, BarChart3, Target, MapPin, Phone, Mail, Save, X
+  FileText, Camera, BarChart3, Target, MapPin, Phone, Mail, Save, X, Upload, UserPlus, UserMinus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -126,6 +126,11 @@ export default function Projects() {
   const [viewMode, setViewMode] = useState<'cards' | 'table' | 'timeline'>('cards');
   const [showCustomTable, setShowCustomTable] = useState(false);
   const [isEditingDetails, setIsEditingDetails] = useState(false);
+  const [editingPhase, setEditingPhase] = useState<string | null>(null);
+  const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false);
+  const [editingTeamMember, setEditingTeamMember] = useState<TeamMember | null>(null);
+  const [isDocumentDialogOpen, setIsDocumentDialogOpen] = useState(false);
+  const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
   const { user } = useAuth();
 
   // Columnas predefinidas para la tabla personalizable
@@ -389,18 +394,110 @@ export default function Projects() {
     }
   };
 
-  const handleAddDocument = () => {
+  const handleSavePhase = async (phaseId: string, field: string, value: string | number) => {
+    if (!selectedProject) return;
+
+    // Actualizar la fase en el proyecto seleccionado
+    const updatedPhases = selectedProject.phases.map(phase =>
+      phase.id === phaseId ? { ...phase, [field]: value } : phase
+    );
+
+    setSelectedProject({
+      ...selectedProject,
+      phases: updatedPhases
+    });
+
+    // Actualizar en la lista de proyectos
+    setProjects(prev => prev.map(p => 
+      p.id === selectedProject.id ? { ...p, phases: updatedPhases } : p
+    ));
+
     toast({
-      title: "Agregar Documento",
-      description: "Funcionalidad de documentos se implementará próximamente",
+      title: "Fase actualizada",
+      description: "Los cambios se han guardado exitosamente",
     });
   };
 
-  const handleAddPhoto = () => {
-    toast({
-      title: "Agregar Foto",
-      description: "Funcionalidad de fotos se implementará próximamente",
+  const handleSaveTeamMember = async (memberData: Partial<TeamMember>) => {
+    if (!selectedProject) return;
+
+    let updatedTeam;
+    if (editingTeamMember) {
+      // Editar miembro existente
+      updatedTeam = selectedProject.team_members.map(member =>
+        member.id === editingTeamMember.id ? { ...member, ...memberData } : member
+      );
+    } else {
+      // Agregar nuevo miembro
+      const newMember: TeamMember = {
+        id: `member-${Date.now()}`,
+        name: memberData.name || '',
+        role: memberData.role || '',
+        email: memberData.email || '',
+        phone: memberData.phone || '',
+        avatar_url: null
+      };
+      updatedTeam = [...selectedProject.team_members, newMember];
+    }
+
+    setSelectedProject({
+      ...selectedProject,
+      team_members: updatedTeam
     });
+
+    setProjects(prev => prev.map(p => 
+      p.id === selectedProject.id ? { ...p, team_members: updatedTeam } : p
+    ));
+
+    setIsTeamDialogOpen(false);
+    setEditingTeamMember(null);
+
+    toast({
+      title: editingTeamMember ? "Miembro actualizado" : "Miembro agregado",
+      description: "Los cambios se han guardado exitosamente",
+    });
+  };
+
+  const handleRemoveTeamMember = async (memberId: string) => {
+    if (!selectedProject) return;
+
+    const updatedTeam = selectedProject.team_members.filter(member => member.id !== memberId);
+
+    setSelectedProject({
+      ...selectedProject,
+      team_members: updatedTeam
+    });
+
+    setProjects(prev => prev.map(p => 
+      p.id === selectedProject.id ? { ...p, team_members: updatedTeam } : p
+    ));
+
+    toast({
+      title: "Miembro eliminado",
+      description: "El miembro del equipo ha sido eliminado",
+    });
+  };
+
+  const handleAddDocument = () => {
+    setIsDocumentDialogOpen(true);
+  };
+
+  const handleAddPhoto = () => {
+    setIsPhotoDialogOpen(true);
+  };
+
+  const handleFileUpload = (type: 'document' | 'photo') => {
+    // Simular subida de archivo
+    toast({
+      title: type === 'document' ? "Documento subido" : "Foto subida",
+      description: `El ${type === 'document' ? 'documento' : 'foto'} se ha subido exitosamente`,
+    });
+    
+    if (type === 'document') {
+      setIsDocumentDialogOpen(false);
+    } else {
+      setIsPhotoDialogOpen(false);
+    }
   };
 
   const filteredProjects = projects.filter(project => {
@@ -573,17 +670,18 @@ export default function Projects() {
                       
                       <div>
                         <Label htmlFor="project_type">Tipo de Proyecto</Label>
-                        <Select name="project_type" defaultValue={editingProject?.project_type || ''}>
-                          <SelectTrigger className="bg-background">
-                            <SelectValue placeholder="Seleccionar tipo" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-background border z-50">
-                            <SelectItem value="residential" className="hover:bg-accent">Residencial</SelectItem>
-                            <SelectItem value="commercial" className="hover:bg-accent">Comercial</SelectItem>
-                            <SelectItem value="industrial" className="hover:bg-accent">Industrial</SelectItem>
-                            <SelectItem value="renovation" className="hover:bg-accent">Renovación</SelectItem>
-                          </SelectContent>
-                        </Select>
+                         <Select name="project_type" defaultValue={editingProject?.project_type || ''}>
+                           <SelectTrigger className="bg-background">
+                             <SelectValue placeholder="Seleccionar tipo" />
+                           </SelectTrigger>
+                           <SelectContent className="bg-background border z-50">
+                             <SelectItem value="construccion" className="hover:bg-accent">Construcción</SelectItem>
+                             <SelectItem value="residencial" className="hover:bg-accent">Residencial</SelectItem>
+                             <SelectItem value="comercial" className="hover:bg-accent">Comercial</SelectItem>
+                             <SelectItem value="industrial" className="hover:bg-accent">Industrial</SelectItem>
+                             <SelectItem value="renovacion" className="hover:bg-accent">Renovación</SelectItem>
+                           </SelectContent>
+                         </Select>
                       </div>
                     </div>
 
@@ -777,13 +875,14 @@ export default function Projects() {
               <SelectTrigger className="w-full md:w-48">
                 <SelectValue placeholder="Filtrar por tipo" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los tipos</SelectItem>
-                <SelectItem value="residential">Residencial</SelectItem>
-                <SelectItem value="commercial">Comercial</SelectItem>
-                <SelectItem value="industrial">Industrial</SelectItem>
-                <SelectItem value="renovation">Renovación</SelectItem>
-              </SelectContent>
+                           <SelectContent>
+                             <SelectItem value="all">Todos los tipos</SelectItem>
+                             <SelectItem value="construccion">Construcción</SelectItem>
+                             <SelectItem value="residencial">Residencial</SelectItem>
+                             <SelectItem value="comercial">Comercial</SelectItem>
+                             <SelectItem value="industrial">Industrial</SelectItem>
+                             <SelectItem value="renovacion">Renovación</SelectItem>
+                           </SelectContent>
             </Select>
 
             <div className="flex gap-2">
@@ -1128,13 +1227,14 @@ export default function Projects() {
                             <EditableField
                               value={selectedProject.project_type || ''}
                               onSave={(value) => handleSaveProjectDetail('project_type', value)}
-                              type="select"
-                              options={[
-                                { value: 'residential', label: 'Residencial' },
-                                { value: 'commercial', label: 'Comercial' },
-                                { value: 'industrial', label: 'Industrial' },
-                                { value: 'renovation', label: 'Renovación' }
-                              ]}
+                               type="select"
+                               options={[
+                                 { value: 'construccion', label: 'Construcción' },
+                                 { value: 'residencial', label: 'Residencial' },
+                                 { value: 'comercial', label: 'Comercial' },
+                                 { value: 'industrial', label: 'Industrial' },
+                                 { value: 'renovacion', label: 'Renovación' }
+                               ]}
                             />
                           ) : (
                             <p className="font-medium">{selectedProject.project_type || 'No especificado'}</p>
@@ -1282,17 +1382,94 @@ export default function Projects() {
                       <Card key={index}>
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
-                            <div className="space-y-1">
+                            <div className="flex-1 space-y-3">
                               <div className="flex items-center gap-2">
-                                <h4 className="font-medium">{phase.name}</h4>
-                                <Badge className={phaseStatusColors[phase.status]}>
-                                  {phaseStatusLabels[phase.status]}
-                                </Badge>
+                                {editingPhase === phase.id ? (
+                                  <EditableField
+                                    value={phase.name}
+                                    onSave={(value) => handleSavePhase(phase.id, 'name', value)}
+                                    type="text"
+                                  />
+                                ) : (
+                                  <h4 className="font-medium">{phase.name}</h4>
+                                )}
+                                
+                                {editingPhase === phase.id ? (
+                                  <EditableField
+                                    value={phase.status}
+                                    onSave={(value) => handleSavePhase(phase.id, 'status', value)}
+                                    type="select"
+                                    options={Object.entries(phaseStatusLabels).map(([key, label]) => ({
+                                      value: key,
+                                      label: label
+                                    }))}
+                                  />
+                                ) : (
+                                  <Badge className={phaseStatusColors[phase.status]}>
+                                    {phaseStatusLabels[phase.status]}
+                                  </Badge>
+                                )}
+                                
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => setEditingPhase(editingPhase === phase.id ? null : phase.id)}
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
                               </div>
-                              <p className="text-sm text-muted-foreground">{phase.description}</p>
+                              
+                              {editingPhase === phase.id ? (
+                                <EditableField
+                                  value={phase.description}
+                                  onSave={(value) => handleSavePhase(phase.id, 'description', value)}
+                                  type="text"
+                                />
+                              ) : (
+                                <p className="text-sm text-muted-foreground">{phase.description}</p>
+                              )}
+                              
+                              <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                  <p className="text-muted-foreground">Duración estimada</p>
+                                  {editingPhase === phase.id ? (
+                                    <EditableField
+                                      value={phase.estimated_duration_days}
+                                      onSave={(value) => handleSavePhase(phase.id, 'estimated_duration_days', value)}
+                                      type="number"
+                                      displayTransform={(val) => `${val} días`}
+                                    />
+                                  ) : (
+                                    <p className="font-medium">{phase.estimated_duration_days} días</p>
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">Presupuesto asignado</p>
+                                  {editingPhase === phase.id ? (
+                                    <EditableField
+                                      value={phase.budget_allocated || 0}
+                                      onSave={(value) => handleSavePhase(phase.id, 'budget_allocated', value)}
+                                      type="number"
+                                      displayTransform={(val) => formatCurrency(Number(val))}
+                                    />
+                                  ) : (
+                                    <p className="font-medium">{formatCurrency(phase.budget_allocated)}</p>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                            <div className="text-right space-y-1">
-                              <p className="text-sm font-medium">{phase.progress_percentage}%</p>
+                            
+                            <div className="text-right space-y-1 ml-4">
+                              {editingPhase === phase.id ? (
+                                <EditableField
+                                  value={phase.progress_percentage}
+                                  onSave={(value) => handleSavePhase(phase.id, 'progress_percentage', value)}
+                                  type="number"
+                                  displayTransform={(val) => `${val}%`}
+                                />
+                              ) : (
+                                <p className="text-sm font-medium">{phase.progress_percentage}%</p>
+                              )}
                               <Progress value={phase.progress_percentage} className="h-2 w-24" />
                             </div>
                           </div>
@@ -1303,30 +1480,63 @@ export default function Projects() {
                 </TabsContent>
                 
                 <TabsContent value="team" className="space-y-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium">Equipo del Proyecto</h3>
+                    <Button onClick={() => {
+                      setEditingTeamMember(null);
+                      setIsTeamDialogOpen(true);
+                    }}>
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Agregar Miembro
+                    </Button>
+                  </div>
+                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {selectedProject.team_members.map((member, index) => (
                       <Card key={index}>
                         <CardContent className="p-4">
-                          <div className="flex items-center gap-3">
-                            <Avatar>
-                              <AvatarImage src={member.avatar_url || undefined} />
-                              <AvatarFallback>
-                                {member.name.split(' ').map(n => n[0]).join('')}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="font-medium">{member.name}</p>
-                              <p className="text-sm text-muted-foreground">{member.role}</p>
-                              <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
-                                <span className="flex items-center gap-1">
-                                  <Mail className="h-3 w-3" />
-                                  {member.email}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Phone className="h-3 w-3" />
-                                  {member.phone}
-                                </span>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <Avatar>
+                                <AvatarImage src={member.avatar_url || undefined} />
+                                <AvatarFallback>
+                                  {member.name.split(' ').map(n => n[0]).join('')}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-medium">{member.name}</p>
+                                <p className="text-sm text-muted-foreground">{member.role}</p>
+                                <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
+                                  <span className="flex items-center gap-1">
+                                    <Mail className="h-3 w-3" />
+                                    {member.email}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Phone className="h-3 w-3" />
+                                    {member.phone}
+                                  </span>
+                                </div>
                               </div>
+                            </div>
+                            
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setEditingTeamMember(member);
+                                  setIsTeamDialogOpen(true);
+                                }}
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleRemoveTeamMember(member.id)}
+                              >
+                                <UserMinus className="h-3 w-3" />
+                              </Button>
                             </div>
                           </div>
                         </CardContent>
@@ -1362,6 +1572,184 @@ export default function Projects() {
         </DialogContent>
         </Dialog>
       )}
+
+      {/* Diálogo para agregar/editar miembro del equipo */}
+      <Dialog open={isTeamDialogOpen} onOpenChange={setIsTeamDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingTeamMember ? 'Editar Miembro del Equipo' : 'Agregar Miembro del Equipo'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.currentTarget);
+            handleSaveTeamMember({
+              name: formData.get('name') as string,
+              role: formData.get('role') as string,
+              email: formData.get('email') as string,
+              phone: formData.get('phone') as string,
+            });
+          }} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="name">Nombre completo *</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  defaultValue={editingTeamMember?.name || ''}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="role">Cargo/Rol *</Label>
+                <Input
+                  id="role"
+                  name="role"
+                  defaultValue={editingTeamMember?.role || ''}
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  defaultValue={editingTeamMember?.email || ''}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="phone">Teléfono</Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  defaultValue={editingTeamMember?.phone || ''}
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsTeamDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit">
+                {editingTeamMember ? 'Actualizar' : 'Agregar'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo para subir documentos */}
+      <Dialog open={isDocumentDialogOpen} onOpenChange={setIsDocumentDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Agregar Documento</DialogTitle>
+            <DialogDescription>
+              Sube un documento relacionado con el proyecto
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="document-file">Seleccionar archivo</Label>
+              <Input
+                id="document-file"
+                type="file"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                className="mt-2"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="document-name">Nombre del documento</Label>
+              <Input
+                id="document-name"
+                placeholder="Ej: Planos arquitectónicos"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="document-category">Categoría</Label>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="planos">Planos</SelectItem>
+                  <SelectItem value="permisos">Permisos</SelectItem>
+                  <SelectItem value="contratos">Contratos</SelectItem>
+                  <SelectItem value="facturas">Facturas</SelectItem>
+                  <SelectItem value="reportes">Reportes</SelectItem>
+                  <SelectItem value="otros">Otros</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsDocumentDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={() => handleFileUpload('document')}>
+                <Upload className="h-4 w-4 mr-2" />
+                Subir Documento
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo para subir fotos */}
+      <Dialog open={isPhotoDialogOpen} onOpenChange={setIsPhotoDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Agregar Foto de Progreso</DialogTitle>
+            <DialogDescription>
+              Sube fotos del progreso del proyecto
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="photo-file">Seleccionar fotos</Label>
+              <Input
+                id="photo-file"
+                type="file"
+                accept="image/*"
+                multiple
+                className="mt-2"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="photo-description">Descripción</Label>
+              <Textarea
+                id="photo-description"
+                placeholder="Describe lo que muestra la foto..."
+                rows={3}
+              />
+            </div>
+            
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsPhotoDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={() => handleFileUpload('photo')}>
+                <Camera className="h-4 w-4 mr-2" />
+                Subir Fotos
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
