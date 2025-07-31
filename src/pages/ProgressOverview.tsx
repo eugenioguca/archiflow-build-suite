@@ -23,6 +23,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { DocumentViewer } from "@/components/DocumentViewer";
+import { PhotoGallery } from "@/components/PhotoGallery";
+import { uploadFileToStorage, getFileUrl, getFileType } from "@/lib/fileUtils";
 
 interface ProjectOverview {
   id: string;
@@ -126,6 +129,11 @@ export default function ProgressOverview() {
   const [projectDocuments, setProjectDocuments] = useState<any[]>([]);
   const [projectPhotos, setProjectPhotos] = useState<any[]>([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
+  const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<any>(null);
+  const [isPhotoGalleryOpen, setIsPhotoGalleryOpen] = useState(false);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const { toast } = useToast();
 
   // Mock team members data expandido
@@ -280,19 +288,23 @@ export default function ProgressOverview() {
       // Obtener URLs públicas para documentos
       const documentsWithUrls = await Promise.all(
         (documentsData || []).map(async (doc) => {
-          let publicUrl = doc.file_path;
-          
-          // Si el archivo está en Storage (no empieza con http), obtener URL pública
-          if (doc.file_path && !doc.file_path.startsWith('http')) {
-            const { data } = supabase.storage
-              .from('project-documents')
-              .getPublicUrl(doc.file_path);
-            publicUrl = data.publicUrl;
+          if (!doc.file_path) {
+            return { ...doc, public_url: null };
           }
+          
+          // Si ya es una URL completa, usarla directamente
+          if (doc.file_path.startsWith('http')) {
+            return { ...doc, public_url: doc.file_path };
+          }
+          
+          // Obtener URL pública del Storage
+          const { data } = supabase.storage
+            .from('project-documents')
+            .getPublicUrl(doc.file_path);
             
           return {
             ...doc,
-            public_url: publicUrl
+            public_url: data.publicUrl
           };
         })
       );
@@ -300,6 +312,15 @@ export default function ProgressOverview() {
       // Obtener URLs públicas de las fotos desde Storage
       const photosWithUrls = await Promise.all(
         (photosData || []).map(async (photo) => {
+          if (!photo.file_path) {
+            return { ...photo, public_url: photo.photo_url };
+          }
+          
+          // Si ya es una URL completa, usarla directamente
+          if (photo.file_path?.startsWith('http')) {
+            return { ...photo, public_url: photo.file_path };
+          }
+          
           const { data } = supabase.storage
             .from('progress-photos')
             .getPublicUrl(photo.file_path);
@@ -970,6 +991,130 @@ export default function ProgressOverview() {
     }, 0);
     
     return totalValue > 0 ? Math.round((completedValue / totalValue) * 100) : 0;
+  };
+
+  const handleViewDocument = (document: any) => {
+    setSelectedDocument(document);
+    setIsDocumentViewerOpen(true);
+  };
+
+  const handleViewPhoto = (photoIndex: number) => {
+    setSelectedPhotoIndex(photoIndex);
+    setIsPhotoGalleryOpen(true);
+  };
+
+  const handleAddDocument = () => {
+    setIsDocumentDialogOpen(true);
+  };
+
+  const handleAddPhoto = () => {
+    setIsPhotoDialogOpen(true);
+  };
+
+  const handleFileUpload = async (e: React.FormEvent<HTMLFormElement>, type: 'document' | 'photo') => {
+    e.preventDefault();
+    if (!selectedProject) return;
+    
+    setUploadingFile(true);
+    
+    const formData = new FormData(e.currentTarget);
+    const file = formData.get('file') as File;
+    const description = formData.get('description') as string;
+    
+    if (!file) {
+      toast({
+        title: "Error",
+        description: "Selecciona un archivo para subir",
+        variant: "destructive",
+      });
+      setUploadingFile(false);
+      return;
+    }
+
+    try {
+      // Get current user
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) throw new Error('Usuario no autenticado');
+
+      // Get user profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', userData.user.id)
+        .single();
+
+      if (!profile) throw new Error('Perfil no encontrado');
+
+      if (type === 'document') {
+        // Subir documento
+        const { filePath, publicUrl } = await uploadFileToStorage(file, {
+          bucket: 'project-documents',
+          folder: 'projects',
+          generatePublicUrl: true
+        });
+
+        const fileTypeInfo = getFileType(file.name);
+
+        const documentData = {
+          project_id: selectedProject.id,
+          name: file.name,
+          description: description || null,
+          file_path: filePath,
+          file_type: fileTypeInfo.extension,
+          category: fileTypeInfo.type,
+          uploaded_by: profile.id,
+          file_size: file.size
+        };
+
+        const { error } = await supabase
+          .from('documents')
+          .insert([documentData]);
+
+        if (error) throw error;
+        
+        setIsDocumentDialogOpen(false);
+        fetchProjectFiles(selectedProject.id);
+      } else {
+        // Subir foto
+        const { filePath, publicUrl } = await uploadFileToStorage(file, {
+          bucket: 'progress-photos',
+          folder: 'projects',
+          generatePublicUrl: true
+        });
+
+        const photoData = {
+          project_id: selectedProject.id,
+          photo_url: publicUrl!,
+          file_path: filePath,
+          description: description || null,
+          taken_by: profile.id,
+          taken_at: new Date().toISOString(),
+        };
+
+        const { error } = await supabase
+          .from('progress_photos')
+          .insert([photoData]);
+
+        if (error) throw error;
+        
+        setIsPhotoDialogOpen(false);
+        fetchProjectFiles(selectedProject.id);
+      }
+
+      toast({
+        title: type === 'document' ? "Documento subido" : "Foto subida",
+        description: `El ${type === 'document' ? 'documento' : 'foto'} se ha subido exitosamente`,
+      });
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast({
+        title: "Error",
+        description: `No se pudo subir el ${type === 'document' ? 'documento' : 'foto'}`,
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingFile(false);
+    }
   };
 
   const getProjectStats = () => {
@@ -2086,9 +2231,10 @@ export default function ProgressOverview() {
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                          {projectDocuments.length > 0 ? (
+                           {projectDocuments.length > 0 ? (
                             projectDocuments.map((doc) => (
-                              <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
+                              <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-muted/50"
+                                   onClick={() => handleViewDocument(doc)}>
                                 <div className="flex items-center gap-3 flex-1">
                                   <FileText className="h-8 w-8 text-muted-foreground" />
                                   <div className="flex-1 min-w-0">
@@ -2144,13 +2290,13 @@ export default function ProgressOverview() {
                         <CardContent>
                           {projectPhotos.length > 0 ? (
                             <div className="grid grid-cols-2 gap-3">
-                              {projectPhotos.slice(0, 6).map((photo) => (
+                              {projectPhotos.slice(0, 6).map((photo, index) => (
                                 <div key={photo.id} className="relative aspect-square">
                                   <img
                                     src={photo.public_url}
-                                    alt={photo.title || 'Foto de progreso'}
+                                    alt={photo.description || 'Foto de progreso'}
                                     className="w-full h-full object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-                                    onClick={() => window.open(photo.public_url, '_blank')}
+                                    onClick={() => handleViewPhoto(index)}
                                     onError={(e) => {
                                       const target = e.target as HTMLImageElement;
                                       target.src = '/placeholder.svg';

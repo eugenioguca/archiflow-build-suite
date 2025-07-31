@@ -10,21 +10,24 @@ import { Textarea } from '@/components/ui/textarea';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { PhotoGallery } from '@/components/PhotoGallery';
+import { uploadFileToStorage, getFileUrl } from '@/lib/fileUtils';
 
 interface ProgressPhoto {
   id: string;
   photo_url: string;
   description: string | null;
   taken_at: string;
-  project: {
+  project_id: string;
+  taken_by: string;
+  project?: {
     id: string;
     name: string;
     client: {
       full_name: string;
     };
   };
-  taken_by: {
-    id: string;
+  profile?: {
     full_name: string;
   };
 }
@@ -45,6 +48,8 @@ export default function ProgressPhotos() {
   const [projectFilter, setProjectFilter] = useState<string>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
 
   useEffect(() => {
     fetchPhotos();
@@ -62,7 +67,7 @@ export default function ProgressPhotos() {
             name,
             client:clients(full_name)
           ),
-          taken_by:profiles!progress_photos_taken_by_fkey(id, full_name)
+          profile:profiles!progress_photos_taken_by_fkey(full_name)
         `)
         .order('taken_at', { ascending: false });
 
@@ -141,14 +146,18 @@ export default function ProgressPhotos() {
 
       if (!profile) throw new Error('Perfil no encontrado');
 
-      // For now, we'll store a placeholder path (in a real app, you'd upload to storage)
-      const fileName = `${Date.now()}_${file.name}`;
-      const photoUrl = `progress_photos/${fileName}`;
+      // Subir archivo real a Storage
+      const { filePath, publicUrl } = await uploadFileToStorage(file, {
+        bucket: 'progress-photos',
+        folder: 'projects',
+        generatePublicUrl: true
+      });
 
       // Create photo record
       const photoData = {
         project_id: projectId,
-        photo_url: photoUrl,
+        photo_url: publicUrl!,
+        file_path: filePath,
         description: description || null,
         taken_by: profile.id,
         taken_at: new Date().toISOString(),
@@ -369,10 +378,24 @@ export default function ProgressPhotos() {
             <CardContent>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {photos.map((photo) => (
-                  <Card key={photo.id} className="overflow-hidden">
-                    <div className="aspect-video bg-muted flex items-center justify-center">
-                      <Camera className="h-12 w-12 text-muted-foreground" />
-                      <span className="sr-only">Foto de avance</span>
+                  <Card key={photo.id} className="overflow-hidden cursor-pointer">
+                    <div 
+                      className="aspect-video bg-muted overflow-hidden relative group"
+                      onClick={() => {
+                        setSelectedPhotoIndex(photos.findIndex(p => p.id === photo.id));
+                        setIsGalleryOpen(true);
+                      }}
+                    >
+                      <img
+                        src={photo.photo_url}
+                        alt={photo.description || "Foto de avance"}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = '/placeholder.svg';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
                     </div>
                     <CardContent className="p-4">
                       <div className="space-y-2">
@@ -387,11 +410,25 @@ export default function ProgressPhotos() {
                         
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <User className="h-3 w-3" />
-                          {photo.taken_by.full_name}
+                          {photo.profile?.full_name || 'Usuario desconocido'}
                         </div>
                         
                         <div className="flex items-center justify-between pt-2">
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const fileName = `foto_${photo.project?.name}_${photo.id}.jpg`;
+                              const link = document.createElement('a');
+                              link.href = photo.photo_url;
+                              link.download = fileName;
+                              link.target = '_blank';
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            }}
+                          >
                             <Download className="h-3 w-3 mr-1" />
                             Descargar
                           </Button>
@@ -432,6 +469,14 @@ export default function ProgressPhotos() {
           </Card>
         )}
       </div>
+
+      {/* Galería de fotos */}
+      <PhotoGallery
+        photos={filteredPhotos}
+        isOpen={isGalleryOpen}
+        onClose={() => setIsGalleryOpen(false)}
+        initialPhotoIndex={selectedPhotoIndex}
+      />
     </div>
   );
 }
