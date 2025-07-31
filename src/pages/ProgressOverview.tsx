@@ -134,6 +134,7 @@ export default function ProgressOverview() {
   const [selectedDocument, setSelectedDocument] = useState<any>(null);
   const [isPhotoGalleryOpen, setIsPhotoGalleryOpen] = useState(false);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
+  const [expandedEstimatedDates, setExpandedEstimatedDates] = useState<Set<string>>(new Set());
   const [uploadingFile, setUploadingFile] = useState(false);
   const { toast } = useToast();
 
@@ -1437,7 +1438,7 @@ export default function ProgressOverview() {
                         {viewMode === 'detailed' && (
                           <TableCell>
                             <div className="space-y-2 min-w-[150px]">
-                              {project.estimated_dates.slice(0, 4).map((dateInfo, index) => (
+                              {(expandedEstimatedDates.has(project.id) ? project.estimated_dates : project.estimated_dates.slice(0, 4)).map((dateInfo, index) => (
                                 <div key={index} className="flex items-center gap-2">
                                   <span className="text-xs text-muted-foreground w-20 truncate">{dateInfo.phase}</span>
                                   <DatePicker
@@ -1448,9 +1449,23 @@ export default function ProgressOverview() {
                                 </div>
                               ))}
                               {project.estimated_dates.length > 4 && (
-                                <span className="text-xs text-muted-foreground">
-                                  +{project.estimated_dates.length - 4} más
-                                </span>
+                                <button
+                                  onClick={() => {
+                                    const newExpanded = new Set(expandedEstimatedDates);
+                                    if (expandedEstimatedDates.has(project.id)) {
+                                      newExpanded.delete(project.id);
+                                    } else {
+                                      newExpanded.add(project.id);
+                                    }
+                                    setExpandedEstimatedDates(newExpanded);
+                                  }}
+                                  className="text-xs text-primary hover:text-primary/80 cursor-pointer"
+                                >
+                                  {expandedEstimatedDates.has(project.id) 
+                                    ? "Ver menos" 
+                                    : `+${project.estimated_dates.length - 4} más`
+                                  }
+                                </button>
                               )}
                             </div>
                           </TableCell>
