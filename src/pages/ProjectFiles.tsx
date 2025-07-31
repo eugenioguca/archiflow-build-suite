@@ -36,6 +36,7 @@ interface ProjectFile {
   project?: { id: string; name: string };
   client?: { id: string; full_name: string };
   uploaded_by_profile?: { id: string; full_name: string };
+  public_url?: string; // Pre-generated public URL
 }
 
 interface Client {
@@ -153,7 +154,38 @@ export default function ProjectFiles() {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    setFiles((data as ProjectFile[]) || []);
+
+    // Pre-generate public URLs for all files (same as ProgressOverview)
+    const filesWithUrls = await Promise.all(
+      (data || []).map(async (file) => {
+        if (!file.file_path) {
+          return { ...file, public_url: null };
+        }
+        
+        // If already a complete URL, use it directly
+        if (file.file_path.startsWith('http')) {
+          return { ...file, public_url: file.file_path };
+        }
+        
+        // Determine bucket based on file path and category
+        let bucket = 'project-documents';
+        if (file.file_path.includes('progress-photos/') || file.category === 'progress') {
+          bucket = 'progress-photos';
+        }
+        
+        // Get public URL from Storage
+        const { data: urlData } = supabase.storage
+          .from(bucket)
+          .getPublicUrl(file.file_path);
+          
+        return {
+          ...file,
+          public_url: urlData.publicUrl
+        };
+      })
+    );
+
+    setFiles(filesWithUrls as ProjectFile[]);
   };
 
   const fetchClients = async () => {
@@ -261,59 +293,10 @@ export default function ProjectFiles() {
 
   const handleView = async (file: ProjectFile) => {
     try {
-      console.log('Viewing file:', file.name, 'Path:', file.file_path, 'Category:', file.file_category);
+      console.log('Viewing file:', file.name, 'Using pre-generated URL:', file.public_url);
       
-      let url: string;
-      
-      // Check if file_path is already a complete URL
-      if (file.file_path.startsWith('http://') || file.file_path.startsWith('https://')) {
-        url = file.file_path;
-        console.log('Using direct URL:', url);
-      } else {
-        // Determine the correct bucket based on file path pattern or category
-        let bucket = 'project-documents';
-        
-        // Check if it's from progress photos (migrated data)
-        if (file.file_path.includes('progress-photos/') || 
-            file.category === 'progress') {
-          bucket = 'progress-photos';
-        }
-        // Check if path doesn't include projects/ prefix (legacy format)
-        else if (!file.file_path.startsWith('projects/') && !file.file_path.startsWith('clients/')) {
-          // This might be a legacy file path, try project-documents first
-          bucket = 'project-documents';
-        }
-        
-        console.log('Getting URL from bucket:', bucket, 'for path:', file.file_path);
-        
-        try {
-          const result = await getFileUrl(file.file_path, bucket, true);
-          url = result.url;
-          console.log('Generated URL:', url);
-        } catch (bucketError) {
-          console.log('Failed with bucket:', bucket, 'trying all buckets');
-          // If it fails, try all available buckets in order
-          const buckets = ['project-documents', 'progress-photos'];
-          let success = false;
-          
-          for (const tryBucket of buckets) {
-            if (tryBucket === bucket) continue; // Already tried this one
-            try {
-              const result = await getFileUrl(file.file_path, tryBucket, true);
-              url = result.url;
-              console.log('Success with bucket:', tryBucket, 'URL:', url);
-              success = true;
-              break;
-            } catch (e) {
-              console.log('Failed with bucket:', tryBucket);
-            }
-          }
-          
-          if (!success) {
-            throw bucketError; // Re-throw original error if all buckets fail
-          }
-        }
-      }
+      // Use pre-generated public URL (same as ProgressOverview)
+      const url = file.public_url || file.file_path;
       
       if (file.file_category === 'photo') {
         // Abrir galería de fotos para imágenes
@@ -339,7 +322,7 @@ export default function ProjectFiles() {
         });
       }
     } catch (error) {
-      console.error('Error getting file URL:', error);
+      console.error('Error viewing file:', error);
       toast({
         title: "Error",
         description: "No se pudo cargar el archivo",
@@ -350,38 +333,8 @@ export default function ProjectFiles() {
 
   const handleDownload = async (file: ProjectFile) => {
     try {
-      // Use the same logic as handleView for bucket selection
-      let bucket = 'project-documents';
-      if (file.file_path.includes('progress-photos/') || file.category === 'progress') {
-        bucket = 'progress-photos';
-      }
-      
-      let url: string;
-      try {
-        const result = await getFileUrl(file.file_path, bucket, true);
-        url = result.url;
-      } catch (bucketError) {
-        // Try all buckets if the first one fails
-        const buckets = ['project-documents', 'progress-photos'];
-        let success = false;
-        
-        for (const tryBucket of buckets) {
-          if (tryBucket === bucket) continue;
-          try {
-            const result = await getFileUrl(file.file_path, tryBucket, true);
-            url = result.url;
-            success = true;
-            break;
-          } catch (e) {
-            // Continue to next bucket
-          }
-        }
-        
-        if (!success) {
-          throw bucketError;
-        }
-      }
-      
+      // Use pre-generated public URL (same as ProgressOverview)
+      const url = file.public_url || file.file_path;
       await downloadFile(url, file.name);
     } catch (error) {
       console.error('Error downloading file:', error);
