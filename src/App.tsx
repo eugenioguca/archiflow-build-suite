@@ -117,6 +117,16 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Layout>
+                    <Documents />
+                  </Layout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/project-files" 
+              element={
+                <ProtectedRoute>
+                  <Layout>
                     <ProjectFiles />
                   </Layout>
                 </ProtectedRoute>
