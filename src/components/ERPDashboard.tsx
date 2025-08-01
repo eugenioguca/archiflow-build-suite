@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { DatePicker } from '@/components/DatePicker';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -18,7 +19,7 @@ import {
   Users,
   PieChart
 } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear } from 'date-fns';
+import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, startOfQuarter, endOfQuarter, subQuarters } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 interface ERPMetrics {
@@ -77,11 +78,13 @@ const ERPDashboard: React.FC = () => {
   const [topSuppliers, setTopSuppliers] = useState<TopSuppliers[]>([]);
   const [topClients, setTopClients] = useState<TopClients[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'quarter' | 'year'>('month');
+  const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'quarter' | 'year' | 'custom'>('month');
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
     fetchERPData();
-  }, [selectedPeriod]);
+  }, [selectedPeriod, customStartDate, customEndDate]);
 
   const fetchERPData = async () => {
     try {
@@ -117,10 +120,47 @@ const ERPDashboard: React.FC = () => {
     }
   };
 
-  const fetchDashboardMetrics = async (): Promise<ERPMetrics> => {
+  const getPeriodDates = () => {
     const currentDate = new Date();
-    const startDate = startOfMonth(currentDate);
-    const endDate = endOfMonth(currentDate);
+    
+    switch (selectedPeriod) {
+      case 'month':
+        return {
+          start: startOfMonth(currentDate),
+          end: endOfMonth(currentDate)
+        };
+      case 'quarter':
+        return {
+          start: startOfQuarter(currentDate),
+          end: endOfQuarter(currentDate)
+        };
+      case 'year':
+        return {
+          start: startOfYear(currentDate),
+          end: endOfYear(currentDate)
+        };
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          return {
+            start: customStartDate,
+            end: customEndDate
+          };
+        }
+        // Fallback to current month if custom dates not set
+        return {
+          start: startOfMonth(currentDate),
+          end: endOfMonth(currentDate)
+        };
+      default:
+        return {
+          start: startOfMonth(currentDate),
+          end: endOfMonth(currentDate)
+        };
+    }
+  };
+
+  const fetchDashboardMetrics = async (): Promise<ERPMetrics> => {
+    const { start: startDate, end: endDate } = getPeriodDates();
 
     const [
       cashResult,
@@ -169,10 +209,9 @@ const ERPDashboard: React.FC = () => {
     const periods = [];
     const currentDate = new Date();
     
-    for (let i = 5; i >= 0; i--) {
-      const periodDate = subMonths(currentDate, i);
-      const startDate = startOfMonth(periodDate);
-      const endDate = endOfMonth(periodDate);
+    if (selectedPeriod === 'custom' && customStartDate && customEndDate) {
+      // For custom periods, show the selected range
+      const { start: startDate, end: endDate } = getPeriodDates();
       
       const [incomeResult, expenseResult] = await Promise.all([
         supabase.from('incomes').select('amount')
@@ -187,20 +226,62 @@ const ERPDashboard: React.FC = () => {
       const expenses = (expenseResult.data || []).reduce((sum, item) => sum + (item.amount || 0), 0);
 
       periods.push({
-        period: format(periodDate, 'MMM yyyy', { locale: es }),
+        period: `${format(startDate, 'dd MMM', { locale: es })} - ${format(endDate, 'dd MMM yyyy', { locale: es })}`,
         income,
         expenses,
         netFlow: income - expenses
       });
+    } else {
+      // For predefined periods, show historical data
+      for (let i = 5; i >= 0; i--) {
+        let periodDate, startDate, endDate, periodLabel;
+        
+        switch (selectedPeriod) {
+          case 'quarter':
+            periodDate = subQuarters(currentDate, i);
+            startDate = startOfQuarter(periodDate);
+            endDate = endOfQuarter(periodDate);
+            periodLabel = `Q${Math.floor(periodDate.getMonth() / 3) + 1} ${format(periodDate, 'yyyy')}`;
+            break;
+          case 'year':
+            periodDate = new Date(currentDate.getFullYear() - i, 0, 1);
+            startDate = startOfYear(periodDate);
+            endDate = endOfYear(periodDate);
+            periodLabel = format(periodDate, 'yyyy');
+            break;
+          default: // month
+            periodDate = subMonths(currentDate, i);
+            startDate = startOfMonth(periodDate);
+            endDate = endOfMonth(periodDate);
+            periodLabel = format(periodDate, 'MMM yyyy', { locale: es });
+        }
+      
+        const [incomeResult, expenseResult] = await Promise.all([
+          supabase.from('incomes').select('amount')
+            .gte('created_at', startDate.toISOString())
+            .lte('created_at', endDate.toISOString()),
+          supabase.from('expenses').select('amount')
+            .gte('created_at', startDate.toISOString())
+            .lte('created_at', endDate.toISOString())
+        ]);
+
+        const income = (incomeResult.data || []).reduce((sum, item) => sum + (item.amount || 0), 0);
+        const expenses = (expenseResult.data || []).reduce((sum, item) => sum + (item.amount || 0), 0);
+
+        periods.push({
+          period: periodLabel,
+          income,
+          expenses,
+          netFlow: income - expenses
+        });
+      }
     }
 
     return periods;
   };
 
   const fetchExpenseBreakdown = async (): Promise<ExpenseBreakdown[]> => {
-    const currentDate = new Date();
-    const startDate = startOfMonth(currentDate);
-    const endDate = endOfMonth(currentDate);
+    const { start: startDate, end: endDate } = getPeriodDates();
 
     const { data: expenses } = await supabase
       .from('expenses')
@@ -234,9 +315,7 @@ const ERPDashboard: React.FC = () => {
   };
 
   const fetchIncomeBreakdown = async (): Promise<IncomeBreakdown[]> => {
-    const currentDate = new Date();
-    const startDate = startOfMonth(currentDate);
-    const endDate = endOfMonth(currentDate);
+    const { start: startDate, end: endDate } = getPeriodDates();
 
     const { data: incomes } = await supabase
       .from('incomes')
@@ -270,9 +349,7 @@ const ERPDashboard: React.FC = () => {
   };
 
   const fetchTopSuppliers = async (): Promise<TopSuppliers[]> => {
-    const currentDate = new Date();
-    const startDate = startOfMonth(currentDate);
-    const endDate = endOfMonth(currentDate);
+    const { start: startDate, end: endDate } = getPeriodDates();
 
     const { data: expenses } = await supabase
       .from('expenses')
@@ -307,9 +384,7 @@ const ERPDashboard: React.FC = () => {
   };
 
   const fetchTopClients = async (): Promise<TopClients[]> => {
-    const currentDate = new Date();
-    const startDate = startOfMonth(currentDate);
-    const endDate = endOfMonth(currentDate);
+    const { start: startDate, end: endDate } = getPeriodDates();
 
     const { data: incomes } = await supabase
       .from('incomes')
@@ -370,27 +445,62 @@ const ERPDashboard: React.FC = () => {
           <h1 className="text-3xl font-bold tracking-tight">Dashboard ERP</h1>
           <p className="text-muted-foreground">
             Panel de control ejecutivo - {format(new Date(), 'dd MMMM yyyy', { locale: es })}
+            {selectedPeriod === 'custom' && customStartDate && customEndDate && (
+              <span className="block text-sm">
+                Período personalizado: {format(customStartDate, 'dd/MM/yyyy')} - {format(customEndDate, 'dd/MM/yyyy')}
+              </span>
+            )}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant={selectedPeriod === 'month' ? 'default' : 'outline'}
-            onClick={() => setSelectedPeriod('month')}
-          >
-            Mes
-          </Button>
-          <Button
-            variant={selectedPeriod === 'quarter' ? 'default' : 'outline'}
-            onClick={() => setSelectedPeriod('quarter')}
-          >
-            Trimestre
-          </Button>
-          <Button
-            variant={selectedPeriod === 'year' ? 'default' : 'outline'}
-            onClick={() => setSelectedPeriod('year')}
-          >
-            Año
-          </Button>
+        <div className="flex flex-col gap-4">
+          <div className="flex gap-2">
+            <Button
+              variant={selectedPeriod === 'month' ? 'default' : 'outline'}
+              onClick={() => setSelectedPeriod('month')}
+            >
+              Mes
+            </Button>
+            <Button
+              variant={selectedPeriod === 'quarter' ? 'default' : 'outline'}
+              onClick={() => setSelectedPeriod('quarter')}
+            >
+              Trimestre
+            </Button>
+            <Button
+              variant={selectedPeriod === 'year' ? 'default' : 'outline'}
+              onClick={() => setSelectedPeriod('year')}
+            >
+              Año
+            </Button>
+            <Button
+              variant={selectedPeriod === 'custom' ? 'default' : 'outline'}
+              onClick={() => setSelectedPeriod('custom')}
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Personalizado
+            </Button>
+          </div>
+          
+          {selectedPeriod === 'custom' && (
+            <div className="flex gap-2 items-center">
+              <DatePicker
+                date={customStartDate}
+                onDateChange={setCustomStartDate}
+                placeholder="Fecha inicio"
+                className="w-40"
+              />
+              <span className="text-muted-foreground">hasta</span>
+              <DatePicker
+                date={customEndDate}
+                onDateChange={setCustomEndDate}
+                placeholder="Fecha fin"
+                className="w-40"
+              />
+              {customStartDate && customEndDate && customStartDate > customEndDate && (
+                <span className="text-sm text-red-500">La fecha de inicio debe ser anterior a la fecha de fin</span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
