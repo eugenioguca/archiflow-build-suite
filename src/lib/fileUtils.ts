@@ -166,3 +166,137 @@ export const formatFileSize = (bytes: number): string => {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
+
+/**
+ * Path Builder para el sistema de documentos hereditarios
+ */
+export class PathBuilder {
+  /**
+   * Construye path para documentos de cliente (fase lead)
+   */
+  static buildClientPath(clientName: string, clientId: string, documentType: string, fileName: string): string {
+    const timestamp = Date.now();
+    const sanitizedName = clientName.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const folder = this.getClientDocumentFolder(documentType);
+    
+    return `cliente_${sanitizedName}_${timestamp}/${folder}/${fileName}`;
+  }
+
+  /**
+   * Construye path para documentos de proyecto
+   */
+  static buildProjectPath(projectId: string, department: string, fileName: string, isInherited: boolean = false): string {
+    const folder = isInherited ? 'inherited' : department;
+    const subfolder = isInherited ? this.getInheritedSubfolder(fileName) : '';
+    
+    return `proyecto_${projectId}/${folder}${subfolder ? '/' + subfolder : ''}/${fileName}`;
+  }
+
+  /**
+   * Determina la carpeta según el tipo de documento de cliente
+   */
+  private static getClientDocumentFolder(documentType: string): string {
+    const fiscalTypes = ['curp', 'rfc', 'constancia_fiscal', 'identificacion', 'cedula_fiscal'];
+    return fiscalTypes.includes(documentType.toLowerCase()) ? 'fiscal' : 'legal';
+  }
+
+  /**
+   * Determina la subcarpeta para documentos heredados
+   */
+  private static getInheritedSubfolder(fileName: string): string {
+    const lowerFileName = fileName.toLowerCase();
+    if (lowerFileName.includes('curp') || lowerFileName.includes('rfc') || 
+        lowerFileName.includes('fiscal') || lowerFileName.includes('identificacion')) {
+      return 'fiscal';
+    }
+    return 'legal';
+  }
+
+  /**
+   * Construye path para búsqueda de documentos por cliente
+   */
+  static buildClientSearchPattern(clientName: string): string {
+    const sanitizedName = clientName.replace(/[^a-zA-Z0-9._-]/g, '_');
+    return `cliente_${sanitizedName}_*`;
+  }
+}
+
+/**
+ * Funciones para manejo de herencia de documentos
+ */
+
+/**
+ * Sube un documento de cliente (fase lead) al bucket privado
+ */
+export const uploadClientDocument = async (
+  file: File,
+  clientId: string,
+  clientName: string,
+  documentType: string
+): Promise<{ filePath: string; publicUrl?: string }> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Usuario no autenticado');
+
+  const fileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const filePath = PathBuilder.buildClientPath(clientName, clientId, documentType, fileName);
+
+  // Subir al bucket privado client-documents
+  const { data, error: uploadError } = await supabase.storage
+    .from('client-documents')
+    .upload(filePath, file);
+
+  if (uploadError) throw uploadError;
+
+  return { filePath };
+};
+
+/**
+ * Sube un documento de proyecto al bucket público
+ */
+export const uploadProjectDocument = async (
+  file: File,
+  projectId: string,
+  department: string
+): Promise<{ filePath: string; publicUrl?: string }> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Usuario no autenticado');
+
+  const fileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const filePath = PathBuilder.buildProjectPath(projectId, department, fileName);
+
+  // Subir al bucket público project-documents
+  const { data, error: uploadError } = await supabase.storage
+    .from('project-documents')
+    .upload(filePath, file);
+
+  if (uploadError) throw uploadError;
+
+  // Generar URL pública
+  const { data: urlData } = supabase.storage
+    .from('project-documents')
+    .getPublicUrl(filePath);
+
+  return {
+    filePath,
+    publicUrl: urlData.publicUrl
+  };
+};
+
+/**
+ * Lista documentos de cliente desde bucket privado
+ */
+export const listClientDocuments = async (clientId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('client_documents')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error listing client documents:', error);
+    return [];
+  }
+};

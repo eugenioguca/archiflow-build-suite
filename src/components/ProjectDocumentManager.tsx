@@ -21,7 +21,9 @@ interface ProjectDocument {
   file_type: string;
   file_size: number;
   description: string;
-  uploader_name: string;
+  uploader_name?: string;
+  inherited_from_client?: boolean;
+  original_client_document_id?: string;
 }
 
 interface ProjectDocumentManagerProps {
@@ -185,7 +187,9 @@ export function ProjectDocumentManager({ clientId, clientName, currentDepartment
 
   const handleDownloadDocument = async (document: ProjectDocument) => {
     try {
-      const { url } = await getFileUrl(document.file_path, 'project-documents');
+      // Use correct bucket based on document origin
+      const bucket = document.inherited_from_client ? 'client-documents' : 'project-documents';
+      const { url } = await getFileUrl(document.file_path, bucket);
       await downloadFile(url, document.name);
       toast.success('Descarga iniciada');
     } catch (error) {
@@ -196,7 +200,9 @@ export function ProjectDocumentManager({ clientId, clientName, currentDepartment
 
   const handleViewDocument = async (document: ProjectDocument) => {
     try {
-      const { url } = await getFileUrl(document.file_path, 'project-documents');
+      // Use correct bucket based on document origin
+      const bucket = document.inherited_from_client ? 'client-documents' : 'project-documents';
+      const { url } = await getFileUrl(document.file_path, bucket);
       setSelectedDocument({
         url,
         name: document.name,
@@ -209,7 +215,11 @@ export function ProjectDocumentManager({ clientId, clientName, currentDepartment
   };
 
   const getDocumentsByDepartment = (department: string) => {
-    return documents.filter(doc => doc.department === department);
+    return documents.filter(doc => doc.department === department && !doc.inherited_from_client);
+  };
+
+  const getInheritedDocuments = () => {
+    return documents.filter(doc => doc.inherited_from_client);
   };
 
   const canUploadToDepartment = (department: string) => {
@@ -266,6 +276,50 @@ export function ProjectDocumentManager({ clientId, clientName, currentDepartment
           </p>
         </CardHeader>
         <CardContent>
+          {/* Inherited Documents Section */}
+          {getInheritedDocuments().length > 0 && (
+            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <h3 className="font-medium text-amber-800 mb-3 flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Documentos Heredados del Cliente
+              </h3>
+              <p className="text-sm text-amber-700 mb-3">
+                Estos documentos fueron subidos durante la fase de lead y se heredaron automáticamente al proyecto.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {getInheritedDocuments().map((document) => (
+                  <div key={document.id} className="flex items-center justify-between p-3 bg-white border border-amber-200 rounded">
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-4 w-4 text-amber-600" />
+                      <div>
+                        <h4 className="font-medium text-sm">{document.name}</h4>
+                        <p className="text-xs text-muted-foreground">
+                          Heredado • {new Date(document.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleViewDocument(document)}
+                      >
+                        <Eye className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDownloadDocument(document)}
+                      >
+                        <Download className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <Tabs defaultValue="clients" className="w-full">
             <TabsList className="grid w-full grid-cols-5">
               {Object.entries(DEPARTMENT_CONFIG).map(([key, config]) => {
