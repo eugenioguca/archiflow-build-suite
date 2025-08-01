@@ -25,10 +25,10 @@ interface CashAccount {
   created_at: string;
   project?: {
     name: string;
-  };
+  } | null;
   responsible_user?: {
     full_name: string;
-  };
+  } | null;
 }
 
 interface Project {
@@ -92,7 +92,11 @@ export function CashAccountManager() {
       if (projectsResult.error) throw projectsResult.error;
       if (usersResult.error) throw usersResult.error;
 
-      setAccounts(accountsResult.data || []);
+      setAccounts((accountsResult.data || []).map(account => ({
+        ...account,
+        project: (account.project && typeof account.project === 'object' && !('error' in account.project)) ? account.project as { name: string } : null,
+        responsible_user: (account.responsible_user && typeof account.responsible_user === 'object' && !('error' in account.responsible_user)) ? account.responsible_user as { full_name: string } : null
+      })));
       setProjects(projectsResult.data || []);
       setUsers(usersResult.data || []);
     } catch (error) {

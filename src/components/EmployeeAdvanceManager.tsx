@@ -28,7 +28,7 @@ interface EmployeeAdvance {
   created_at: string;
   project?: {
     name: string;
-  };
+  } | null;
 }
 
 interface AdvanceJustification {
@@ -107,7 +107,10 @@ export function EmployeeAdvanceManager() {
       if (justificationsResult.error) throw justificationsResult.error;
       if (projectsResult.error) throw projectsResult.error;
 
-      setAdvances(advancesResult.data || []);
+      setAdvances((advancesResult.data || []).map(advance => ({
+        ...advance,
+        project: (advance.project && typeof advance.project === 'object' && !('error' in advance.project)) ? advance.project as { name: string } : null
+      })));
       setJustifications(justificationsResult.data || []);
       setProjects(projectsResult.data || []);
     } catch (error) {

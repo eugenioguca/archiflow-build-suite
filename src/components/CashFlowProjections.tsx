@@ -29,7 +29,7 @@ interface CashFlowProjection {
   created_at: string;
   project?: {
     name: string;
-  };
+  } | null;
 }
 
 interface Project {
@@ -80,7 +80,10 @@ export function CashFlowProjections() {
       if (projectionsResult.error) throw projectionsResult.error;
       if (projectsResult.error) throw projectsResult.error;
 
-      setProjections(projectionsResult.data || []);
+      setProjections((projectionsResult.data || []).map(projection => ({
+        ...projection,
+        project: (projection.project && typeof projection.project === 'object' && !('error' in projection.project)) ? projection.project as { name: string } : null
+      })));
       setProjects(projectsResult.data || []);
     } catch (error) {
       console.error('Error fetching data:', error);

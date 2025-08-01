@@ -15,7 +15,7 @@ interface CashAccount {
   responsible_user_id: string;
   project?: {
     name: string;
-  };
+  } | null;
 }
 
 interface CashTransaction {
@@ -83,7 +83,10 @@ export function TreasuryDashboard() {
       if (transactionsResult.error) throw transactionsResult.error;
       if (advancesResult.error) throw advancesResult.error;
 
-      setCashAccounts(accountsResult.data || []);
+      setCashAccounts((accountsResult.data || []).map(account => ({
+        ...account,
+        project: (account.project && typeof account.project === 'object' && !('error' in account.project)) ? account.project as { name: string } : null
+      })));
       setRecentTransactions(transactionsResult.data || []);
       setPendingAdvances(advancesResult.data || []);
     } catch (error) {
