@@ -21,6 +21,7 @@ import ProgressOverview from "./pages/ProgressOverview";
 import Sales from "./pages/Sales";
 import UserManagement from "./pages/UserManagement";
 import SuppliersNew from "./pages/SuppliersNew";
+import ClientPortal from "./pages/ClientPortal";
 import PendingApproval from "./components/PendingApproval";
 import NotFound from "./pages/NotFound";
 
@@ -42,6 +43,28 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   // Show pending approval screen for non-approved users
+  if (!isApproved) {
+    return <PendingApproval />;
+  }
+
+  return <>{children}</>;
+}
+
+function ClientProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading, isApproved } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
   if (!isApproved) {
     return <PendingApproval />;
   }
@@ -168,9 +191,17 @@ const App = () => (
                   </Layout>
                 </ProtectedRoute>
               } 
-            />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
+             />
+             <Route 
+               path="/client-portal" 
+               element={
+                 <ClientProtectedRoute>
+                   <ClientPortal />
+                 </ClientProtectedRoute>
+               } 
+             />
+             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
