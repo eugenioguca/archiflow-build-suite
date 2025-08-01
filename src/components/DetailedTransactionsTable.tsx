@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DatePicker } from '@/components/DatePicker';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
@@ -47,10 +48,12 @@ const DetailedTransactionsTable: React.FC = () => {
     period: 'month',
     searchTerm: '',
   });
+  const [customStartDate, setCustomStartDate] = useState<Date | null>(null);
+  const [customEndDate, setCustomEndDate] = useState<Date | null>(null);
 
   useEffect(() => {
     fetchTransactions();
-  }, [filters.period, filters.startDate, filters.endDate]);
+  }, [filters.period, customStartDate, customEndDate]);
 
   useEffect(() => {
     applyFilters();
@@ -162,8 +165,8 @@ const DetailedTransactionsTable: React.FC = () => {
         return { startDate: yearStart, endDate: new Date(now.getFullYear(), 11, 31) };
       case 'custom':
         return { 
-          startDate: filters.startDate || startOfMonth(now), 
-          endDate: filters.endDate || endOfMonth(now) 
+          startDate: customStartDate || startOfMonth(now), 
+          endDate: customEndDate || endOfMonth(now) 
         };
       default:
         return { startDate: startOfMonth(now), endDate: endOfMonth(now) };
@@ -360,7 +363,7 @@ const DetailedTransactionsTable: React.FC = () => {
               <label className="text-sm font-medium mb-2 block">Período</label>
               <Select
                 value={filters.period}
-                onValueChange={(value: 'month' | 'quarter' | 'year') =>
+                onValueChange={(value: 'month' | 'quarter' | 'year' | 'custom') =>
                   setFilters(prev => ({ ...prev, period: value }))
                 }
               >
@@ -371,6 +374,7 @@ const DetailedTransactionsTable: React.FC = () => {
                   <SelectItem value="month">Este mes</SelectItem>
                   <SelectItem value="quarter">Este trimestre</SelectItem>
                   <SelectItem value="year">Este año</SelectItem>
+                  <SelectItem value="custom">Personalizado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -391,6 +395,28 @@ const DetailedTransactionsTable: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Custom Date Range - only show when period is 'custom' */}
+          {filters.period === 'custom' && (
+            <div className="grid gap-4 md:grid-cols-2 mt-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Fecha de inicio</label>
+                <DatePicker
+                  date={customStartDate}
+                  onDateChange={setCustomStartDate}
+                  placeholder="Seleccionar fecha inicio"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Fecha de fin</label>
+                <DatePicker
+                  date={customEndDate}
+                  onDateChange={setCustomEndDate}
+                  placeholder="Seleccionar fecha fin"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Amount Filters */}
           <div className="grid gap-4 md:grid-cols-3 mt-4">
