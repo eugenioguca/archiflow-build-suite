@@ -687,7 +687,10 @@ export default function Sales() {
 
               {/* Lead scoring */}
               <CRMLeadScoring 
-                client={selectedClient}
+                client={{
+                  ...selectedClient,
+                  created_at: selectedClient.created_at || new Date().toISOString()
+                }}
                 onScoreUpdate={(score) => {
                   setSelectedClient({...selectedClient, lead_score: score});
                 }}
