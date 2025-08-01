@@ -30,11 +30,13 @@ export function InvoicePreview({ isOpen, onClose, template }: InvoicePreviewProp
     footer_config = {}
   } = template;
 
-  // Modern color palette with gradients
-  const primaryColor = colors_config.primary_color || '#3B82F6';
-  const secondaryColor = colors_config.secondary_color || '#64748B';
-  const accentColor = colors_config.accent_color || '#F97316';
-  const textColor = colors_config.text_color || '#1F2937';
+  // Modern blue color palette
+  const primaryColor = colors_config.primary_color || '#2563EB'; // Blue-600
+  const secondaryColor = colors_config.secondary_color || '#3B82F6'; // Blue-500  
+  const accentColor = colors_config.accent_color || '#1E40AF'; // Blue-700
+  const lightBlue = '#EFF6FF'; // Blue-50
+  const mediumBlue = '#DBEAFE'; // Blue-100
+  const textColor = colors_config.text_color || '#1E293B';
   const backgroundColor = colors_config.background_color || '#FFFFFF';
 
   const sampleData = {
@@ -196,33 +198,33 @@ export function InvoicePreview({ isOpen, onClose, template }: InvoicePreviewProp
                   </CardContent>
                 </Card>
                 
-                <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-50 to-white">
+                <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-25">
                   <CardContent className="p-6">
                     <div className="flex items-center space-x-3 mb-4">
-                      <div className="p-2 bg-orange-100 rounded-lg">
-                        <FileText className="h-5 w-5 text-orange-600" />
+                      <div className="p-2 bg-blue-200 rounded-lg">
+                        <FileText className="h-5 w-5 text-blue-700" />
                       </div>
-                      <h3 className="text-lg font-bold text-orange-900">Información Fiscal</h3>
+                      <h3 className="text-lg font-bold text-blue-900">Información Fiscal</h3>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-sm font-medium text-orange-700">Fecha de Emisión</p>
+                        <p className="text-sm font-medium text-blue-700">Fecha de Emisión</p>
                         <div className="flex items-center space-x-2">
-                          <Calendar className="h-4 w-4 text-orange-600" />
+                          <Calendar className="h-4 w-4 text-blue-600" />
                           <p className="font-semibold text-gray-900">{sampleData.fecha}</p>
                         </div>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-orange-700">Serie y Folio</p>
+                        <p className="text-sm font-medium text-blue-700">Serie y Folio</p>
                         <p className="font-mono font-semibold text-gray-900">{sampleData.folio}</p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-orange-700">Método de Pago</p>
-                        <Badge variant="outline" className="mt-1">PUE - Pago en una sola exhibición</Badge>
+                        <p className="text-sm font-medium text-blue-700">Método de Pago</p>
+                        <Badge variant="outline" className="mt-1 border-blue-300 text-blue-700">PUE - Pago en una sola exhibición</Badge>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-orange-700">Forma de Pago</p>
-                        <Badge variant="outline" className="mt-1">03 - Transferencia electrónica</Badge>
+                        <p className="text-sm font-medium text-blue-700">Forma de Pago</p>
+                        <Badge variant="outline" className="mt-1 border-blue-300 text-blue-700">03 - Transferencia electrónica</Badge>
                       </div>
                     </div>
                   </CardContent>
@@ -313,7 +315,7 @@ export function InvoicePreview({ isOpen, onClose, template }: InvoicePreviewProp
               </div>
 
               {/* QR Code and Fiscal Data */}
-              <Card className="border-0 shadow-lg bg-gradient-to-r from-blue-50 via-white to-orange-50">
+              <Card className="border-0 shadow-lg bg-gradient-to-r from-blue-50 via-blue-25 to-blue-50">
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start space-x-8">
                     <div className="flex items-center space-x-4">
