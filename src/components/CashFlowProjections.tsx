@@ -80,10 +80,14 @@ export function CashFlowProjections() {
       if (projectionsResult.error) throw projectionsResult.error;
       if (projectsResult.error) throw projectsResult.error;
 
-      setProjections((projectionsResult.data || []).map(projection => ({
+      const processedProjections: CashFlowProjection[] = (projectionsResult.data || []).map(projection => ({
         ...projection,
-        project: (projection.project && typeof projection.project === 'object' && !('error' in projection.project)) ? projection.project as { name: string } : null
-      })));
+        project: (projection.project && typeof projection.project === 'object' && 'name' in projection.project) 
+          ? { name: (projection.project as any).name } 
+          : null
+      }));
+      
+      setProjections(processedProjections);
       setProjects(projectsResult.data || []);
     } catch (error) {
       console.error('Error fetching data:', error);

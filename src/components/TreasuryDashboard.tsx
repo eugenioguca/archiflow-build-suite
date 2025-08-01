@@ -83,10 +83,14 @@ export function TreasuryDashboard() {
       if (transactionsResult.error) throw transactionsResult.error;
       if (advancesResult.error) throw advancesResult.error;
 
-      setCashAccounts((accountsResult.data || []).map(account => ({
+      const processedAccounts: CashAccount[] = (accountsResult.data || []).map(account => ({
         ...account,
-        project: (account.project && typeof account.project === 'object' && !('error' in account.project)) ? account.project as { name: string } : null
-      })));
+        project: (account.project && typeof account.project === 'object' && 'name' in account.project) 
+          ? { name: (account.project as any).name } 
+          : null
+      }));
+      
+      setCashAccounts(processedAccounts);
       setRecentTransactions(transactionsResult.data || []);
       setPendingAdvances(advancesResult.data || []);
     } catch (error) {

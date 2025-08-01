@@ -107,10 +107,14 @@ export function EmployeeAdvanceManager() {
       if (justificationsResult.error) throw justificationsResult.error;
       if (projectsResult.error) throw projectsResult.error;
 
-      setAdvances((advancesResult.data || []).map(advance => ({
+      const processedAdvances: EmployeeAdvance[] = (advancesResult.data || []).map(advance => ({
         ...advance,
-        project: (advance.project && typeof advance.project === 'object' && !('error' in advance.project)) ? advance.project as { name: string } : null
-      })));
+        project: (advance.project && typeof advance.project === 'object' && 'name' in advance.project) 
+          ? { name: (advance.project as any).name } 
+          : null
+      }));
+      
+      setAdvances(processedAdvances);
       setJustifications(justificationsResult.data || []);
       setProjects(projectsResult.data || []);
     } catch (error) {

@@ -92,11 +92,17 @@ export function CashAccountManager() {
       if (projectsResult.error) throw projectsResult.error;
       if (usersResult.error) throw usersResult.error;
 
-      setAccounts((accountsResult.data || []).map(account => ({
+      const processedAccounts: CashAccount[] = (accountsResult.data || []).map(account => ({
         ...account,
-        project: (account.project && typeof account.project === 'object' && !('error' in account.project)) ? account.project as { name: string } : null,
-        responsible_user: (account.responsible_user && typeof account.responsible_user === 'object' && !('error' in account.responsible_user)) ? account.responsible_user as { full_name: string } : null
-      })));
+        project: (account.project && typeof account.project === 'object' && 'name' in account.project) 
+          ? { name: (account.project as any).name } 
+          : null,
+        responsible_user: (account.responsible_user && typeof account.responsible_user === 'object' && 'full_name' in account.responsible_user)
+          ? { full_name: (account.responsible_user as any).full_name }
+          : null
+      }));
+      
+      setAccounts(processedAccounts);
       setProjects(projectsResult.data || []);
       setUsers(usersResult.data || []);
     } catch (error) {
