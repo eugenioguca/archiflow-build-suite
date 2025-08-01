@@ -20,7 +20,7 @@ interface Client {
   budget: number | null;
   notes: string | null;
   created_at: string;
-  state_id?: string;
+  state_name?: string;
   branch_office_id?: string;
   land_square_meters?: number;
   lead_source?: 'website' | 'facebook' | 'instagram' | 'commercial_alliance' | 'referral' | 'other';
@@ -95,7 +95,7 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
     status: 'potential' as 'potential' | 'existing' | 'active' | 'completed',
     budget: '',
     notes: '',
-    state_id: '',
+    state_name: '',
     branch_office_id: '',
     land_square_meters: '',
     lead_source: '' as '' | 'website' | 'facebook' | 'instagram' | 'commercial_alliance' | 'referral' | 'other',
@@ -118,7 +118,7 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
         status: client.status,
         budget: client.budget?.toString() || '',
         notes: client.notes || '',
-        state_id: client.state_id || '',
+        state_name: client.state_name || '',
         branch_office_id: client.branch_office_id || '',
         land_square_meters: client.land_square_meters?.toString() || '',
         lead_source: client.lead_source || '',
@@ -135,7 +135,7 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
         status: 'potential',
         budget: '',
         notes: '',
-        state_id: '',
+        state_name: '',
         branch_office_id: '',
         land_square_meters: '',
         lead_source: '',
@@ -188,7 +188,7 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
         status: formData.status,
         budget: formData.budget ? parseFloat(formData.budget) : null,
         notes: formData.notes || null,
-        state_id: formData.state_id || null,
+        state_name: formData.state_name || null,
         branch_office_id: formData.branch_office_id || null,
         land_square_meters: formData.land_square_meters ? parseFloat(formData.land_square_meters) : null,
         lead_source: formData.lead_source ? formData.lead_source as any : null,
@@ -319,10 +319,9 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
                 <Label htmlFor="state">Estado de la República *</Label>
                 <Combobox
                   items={mexicanStates.map(state => ({ value: state.name, label: state.name }))}
-                  value={mexicanStates.find(state => state.id === formData.state_id)?.name || ''}
+                  value={formData.state_name || ''}
                   onValueChange={(value) => {
-                    const selectedState = mexicanStates.find(state => state.name === value);
-                    handleInputChange('state_id', selectedState?.id || '');
+                    handleInputChange('state_name', value);
                   }}
                   placeholder="Buscar estado..."
                   emptyText="No se encontró el estado"
