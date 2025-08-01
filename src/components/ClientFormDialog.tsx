@@ -92,7 +92,7 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
     email: '',
     phone: '',
     address: '',
-    status: 'potential' as 'potential' | 'existing' | 'active' | 'completed',
+    status: 'nuevo_lead' as 'nuevo_lead' | 'potential' | 'existing' | 'active' | 'completed',
     budget: '',
     notes: '',
     state_name: '',
@@ -132,7 +132,7 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
         email: '',
         phone: '',
         address: '',
-        status: 'potential',
+        status: 'nuevo_lead',
         budget: '',
         notes: '',
         state_name: '',
@@ -300,6 +300,7 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="nuevo_lead">Nuevo Lead</SelectItem>
                     <SelectItem value="potential">Potencial</SelectItem>
                     <SelectItem value="existing">Existente</SelectItem>
                     <SelectItem value="active">Activo</SelectItem>
