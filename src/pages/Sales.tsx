@@ -11,7 +11,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ClientNotesDialog } from "@/components/ClientNotesDialog";
 import { CRMActivityTimeline } from "@/components/CRMActivityTimeline";
-import { CRMLeadScoring } from "@/components/CRMLeadScoring";
 import { EditableField } from "@/components/EditableField";
 import { PaymentPlanManager } from "@/components/PaymentPlanManager";
 import { ProjectDocumentManager } from "@/components/ProjectDocumentManager";
@@ -21,7 +20,6 @@ import { LeadLossDialog } from "@/components/LeadLossDialog";
 import { SalesExecutiveDashboard } from "@/components/SalesExecutiveDashboard";
 import { ContractTemplateManager } from "@/components/ContractTemplateManager";
 import { SalesDocumentValidator } from "@/components/SalesDocumentValidator";
-import { ClientInvoiceCreator } from "@/components/ClientInvoiceCreator";
 import {
   Users, 
   TrendingUp, 
@@ -680,22 +678,6 @@ export default function Sales() {
                     }}
                   />
 
-                  <div className="bg-white p-6 rounded-lg border">
-                    <h4 className="text-lg font-semibold mb-4">Acciones</h4>
-                    <div className="space-y-3">
-                      <ClientInvoiceCreator
-                        clientId={selectedClient.id}
-                        clientName={selectedClient.full_name}
-                        paymentPlan={selectedClient.payment_plan}
-                        onInvoiceCreated={() => {
-                          toast({
-                            title: "Factura creada",
-                            description: "La factura se ha creado correctamente",
-                          });
-                        }}
-                      />
-                    </div>
-                  </div>
                 </div>
 
                 <div className="space-y-6">
@@ -724,17 +706,6 @@ export default function Sales() {
 
               {/* Timeline de actividades */}
               <CRMActivityTimeline clientId={selectedClient.id} />
-
-              {/* Lead scoring */}
-              <CRMLeadScoring 
-                client={{
-                  ...selectedClient,
-                  created_at: selectedClient.created_at || new Date().toISOString()
-                }}
-                onScoreUpdate={(score) => {
-                  setSelectedClient({...selectedClient, lead_score: score});
-                }}
-              />
             </div>
           )}
         </DialogContent>
