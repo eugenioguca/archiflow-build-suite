@@ -192,6 +192,7 @@ export default function Finances() {
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{type: 'expense' | 'income', id: string} | null>(null);
+  const [showExpenseForm, setShowExpenseForm] = useState(false);
 
   useEffect(() => {
     fetchData();
