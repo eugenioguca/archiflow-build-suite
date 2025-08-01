@@ -107,7 +107,7 @@ const CommercialAlliancesManager: React.FC = () => {
       } else {
         const { error } = await supabase
           .from("commercial_alliances")
-          .insert([{ ...formData, created_by: profile?.id }]);
+          .insert([{ ...formData, created_by: profile?.user_id }]);
 
         if (error) throw error;
         toast.success("Alianza comercial creada");
