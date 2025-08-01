@@ -78,7 +78,6 @@ interface IncomeWithTax {
   };
   client?: {
     full_name: string;
-    rfc?: string;
   };
   cfdi_document?: {
     id: string;
@@ -201,7 +200,7 @@ export default function Accounting() {
           project:projects(name),
           client:clients(full_name),
           supplier:suppliers(company_name, rfc),
-          cfdi_document:cfdi_documents(*)
+          cfdi_document:cfdi_documents!expenses_cfdi_document_id_fkey(*)
         `)
         .order('created_at', { ascending: false });
 
@@ -235,8 +234,8 @@ export default function Accounting() {
         .select(`
           *,
           project:projects(name),
-          client:clients(full_name, rfc),
-          cfdi_document:cfdi_documents(*)
+          client:clients(full_name),
+          cfdi_document:cfdi_documents!incomes_cfdi_document_id_fkey(*)
         `)
         .order('created_at', { ascending: false });
 
@@ -257,12 +256,7 @@ export default function Accounting() {
       const { data, error } = await query;
 
       if (error) throw error;
-      // Fix typing issue by ensuring proper client data structure
-      const incomesWithFixedTypes = (data || []).map(income => ({
-        ...income,
-        client: income.client ? { full_name: income.client.full_name || '', rfc: income.client.rfc } : undefined
-      }));
-      setIncomes(incomesWithFixedTypes);
+      setIncomes(data || []);
     } catch (error) {
       console.error('Error fetching incomes:', error);
     }
