@@ -269,6 +269,110 @@ export type Database = {
         }
         Relationships: []
       }
+      branch_offices: {
+        Row: {
+          active: boolean | null
+          address: string | null
+          city: string | null
+          created_at: string
+          email: string | null
+          id: string
+          manager_id: string | null
+          name: string
+          phone: string | null
+          state_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean | null
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          manager_id?: string | null
+          name: string
+          phone?: string | null
+          state_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean | null
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          manager_id?: string | null
+          name?: string
+          phone?: string | null
+          state_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "branch_offices_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "branch_offices_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "mexican_states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      budget_items: {
+        Row: {
+          budget_id: string
+          created_at: string
+          description: string | null
+          id: string
+          item_name: string
+          item_order: number
+          quantity: number | null
+          total_price: number
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          budget_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_name: string
+          item_order: number
+          quantity?: number | null
+          total_price: number
+          unit_price: number
+          updated_at?: string
+        }
+        Update: {
+          budget_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_name?: string
+          item_order?: number
+          quantity?: number | null
+          total_price?: number
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_items_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "project_budgets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_accounts: {
         Row: {
           account_type: string
@@ -651,6 +755,54 @@ export type Database = {
           },
         ]
       }
+      client_documents: {
+        Row: {
+          client_id: string
+          created_at: string
+          document_name: string
+          document_type: string
+          file_path: string
+          id: string
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          document_name: string
+          document_type: string
+          file_path: string
+          id?: string
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          document_name?: string
+          document_type?: string
+          file_path?: string
+          id?: string
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_payments: {
         Row: {
           amount_paid: number
@@ -747,19 +899,23 @@ export type Database = {
         Row: {
           address: string | null
           assigned_advisor_id: string | null
+          branch_office_id: string | null
           budget: number | null
           company_size: string | null
           conversion_date: string | null
           conversion_notes: string | null
           created_at: string
+          curp: string | null
           decision_maker_name: string | null
           decision_maker_role: string | null
           email: string | null
           estimated_value: number | null
           full_name: string
           id: string
+          land_square_meters: number | null
           last_activity_date: string | null
           last_contact_date: string | null
+          lead_referral_details: string | null
           lead_score: number | null
           lead_source: Database["public"]["Enums"]["lead_source"] | null
           location_details: Json | null
@@ -776,6 +932,7 @@ export type Database = {
           project_type: Database["public"]["Enums"]["project_type"] | null
           sales_pipeline_stage: string | null
           social_media: Json | null
+          state_id: string | null
           status: Database["public"]["Enums"]["client_status"]
           tags: string[] | null
           timeline_months: number | null
@@ -785,19 +942,23 @@ export type Database = {
         Insert: {
           address?: string | null
           assigned_advisor_id?: string | null
+          branch_office_id?: string | null
           budget?: number | null
           company_size?: string | null
           conversion_date?: string | null
           conversion_notes?: string | null
           created_at?: string
+          curp?: string | null
           decision_maker_name?: string | null
           decision_maker_role?: string | null
           email?: string | null
           estimated_value?: number | null
           full_name: string
           id?: string
+          land_square_meters?: number | null
           last_activity_date?: string | null
           last_contact_date?: string | null
+          lead_referral_details?: string | null
           lead_score?: number | null
           lead_source?: Database["public"]["Enums"]["lead_source"] | null
           location_details?: Json | null
@@ -814,6 +975,7 @@ export type Database = {
           project_type?: Database["public"]["Enums"]["project_type"] | null
           sales_pipeline_stage?: string | null
           social_media?: Json | null
+          state_id?: string | null
           status?: Database["public"]["Enums"]["client_status"]
           tags?: string[] | null
           timeline_months?: number | null
@@ -823,19 +985,23 @@ export type Database = {
         Update: {
           address?: string | null
           assigned_advisor_id?: string | null
+          branch_office_id?: string | null
           budget?: number | null
           company_size?: string | null
           conversion_date?: string | null
           conversion_notes?: string | null
           created_at?: string
+          curp?: string | null
           decision_maker_name?: string | null
           decision_maker_role?: string | null
           email?: string | null
           estimated_value?: number | null
           full_name?: string
           id?: string
+          land_square_meters?: number | null
           last_activity_date?: string | null
           last_contact_date?: string | null
+          lead_referral_details?: string | null
           lead_score?: number | null
           lead_source?: Database["public"]["Enums"]["lead_source"] | null
           location_details?: Json | null
@@ -852,6 +1018,7 @@ export type Database = {
           project_type?: Database["public"]["Enums"]["project_type"] | null
           sales_pipeline_stage?: string | null
           social_media?: Json | null
+          state_id?: string | null
           status?: Database["public"]["Enums"]["client_status"]
           tags?: string[] | null
           timeline_months?: number | null
@@ -867,10 +1034,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "clients_branch_office_id_fkey"
+            columns: ["branch_office_id"]
+            isOneToOne: false
+            referencedRelation: "branch_offices"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "clients_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_state_id_fkey"
+            columns: ["state_id"]
+            isOneToOne: false
+            referencedRelation: "mexican_states"
             referencedColumns: ["id"]
           },
         ]
@@ -997,6 +1178,47 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      contract_templates: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean | null
+          name: string
+          template_type: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          template_type: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          template_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       crm_activities: {
         Row: {
@@ -1217,6 +1439,120 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      design_appointments: {
+        Row: {
+          appointment_date: string
+          attendees: string[]
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          project_id: string
+          status: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          appointment_date: string
+          attendees: string[]
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          project_id: string
+          status?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          appointment_date?: string
+          attendees?: string[]
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          project_id?: string
+          status?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "design_appointments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "design_appointments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      design_phases: {
+        Row: {
+          actual_completion_date: string | null
+          created_at: string
+          created_by: string
+          days_elapsed: number | null
+          estimated_delivery_date: string | null
+          id: string
+          notes: string | null
+          phase_name: string
+          phase_order: number
+          project_id: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_completion_date?: string | null
+          created_at?: string
+          created_by: string
+          days_elapsed?: number | null
+          estimated_delivery_date?: string | null
+          id?: string
+          notes?: string | null
+          phase_name: string
+          phase_order: number
+          project_id: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_completion_date?: string | null
+          created_at?: string
+          created_by?: string
+          days_elapsed?: number | null
+          estimated_delivery_date?: string | null
+          id?: string
+          notes?: string | null
+          phase_name?: string
+          phase_order?: number
+          project_id?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "design_phases_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "design_phases_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -1958,6 +2294,27 @@ export type Database = {
         }
         Relationships: []
       }
+      mexican_states: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       pac_configurations: {
         Row: {
           activo: boolean | null
@@ -2305,37 +2662,49 @@ export type Database = {
       profiles: {
         Row: {
           approval_status: string | null
+          availability_status: string | null
           avatar_url: string | null
           created_at: string
+          department: string | null
           email: string
           full_name: string
           id: string
           phone: string | null
+          position: string | null
           role: Database["public"]["Enums"]["user_role"]
+          skills: string[] | null
           updated_at: string
           user_id: string
         }
         Insert: {
           approval_status?: string | null
+          availability_status?: string | null
           avatar_url?: string | null
           created_at?: string
+          department?: string | null
           email: string
           full_name: string
           id?: string
           phone?: string | null
+          position?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          skills?: string[] | null
           updated_at?: string
           user_id: string
         }
         Update: {
           approval_status?: string | null
+          availability_status?: string | null
           avatar_url?: string | null
           created_at?: string
+          department?: string | null
           email?: string
           full_name?: string
           id?: string
           phone?: string | null
+          position?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          skills?: string[] | null
           updated_at?: string
           user_id?: string
         }
@@ -2394,6 +2763,67 @@ export type Database = {
             columns: ["taken_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_budgets: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          budget_name: string
+          created_at: string
+          created_by: string
+          id: string
+          project_id: string
+          status: string | null
+          total_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          budget_name?: string
+          created_at?: string
+          created_by: string
+          id?: string
+          project_id: string
+          status?: string | null
+          total_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          budget_name?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          project_id?: string
+          status?: string | null
+          total_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_budgets_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_budgets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_budgets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -2477,6 +2907,54 @@ export type Database = {
           {
             foreignKeyName: "project_files_uploaded_by_fkey"
             columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_team_members: {
+        Row: {
+          assigned_date: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          project_id: string
+          responsibilities: string | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          assigned_date?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          project_id: string
+          responsibilities?: string | null
+          role: string
+          user_id: string
+        }
+        Update: {
+          assigned_date?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          project_id?: string
+          responsibilities?: string | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_team_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_team_members_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -2982,6 +3460,10 @@ export type Database = {
           _permission: string
         }
         Returns: boolean
+      }
+      insert_default_budget_items: {
+        Args: { budget_id_param: string }
+        Returns: undefined
       }
       is_admin: {
         Args: { _user_id: string }
