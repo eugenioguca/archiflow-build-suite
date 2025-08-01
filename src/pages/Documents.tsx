@@ -329,12 +329,12 @@ export default function Documents() {
     try {
       let viewUrl = doc.file_path;
       
-      // Si el archivo está en Storage, obtener la URL correcta
+      // Si el archivo está en Storage, obtener la URL pública directamente (igual que en ProjectFiles)
       if (!doc.file_path.startsWith('http')) {
-        console.log('Getting URL for file:', doc.file_path);
-        const { url } = await getFileUrl(doc.file_path, 'project-documents', true);
-        console.log('Generated URL:', url);
-        viewUrl = url;
+        const { data } = supabase.storage
+          .from('project-documents')
+          .getPublicUrl(doc.file_path);
+        viewUrl = data.publicUrl;
       }
       
       console.log('Opening viewer with URL:', viewUrl, 'File type:', doc.file_type);
