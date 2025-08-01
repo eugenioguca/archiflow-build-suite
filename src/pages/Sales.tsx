@@ -4,12 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,8 +13,12 @@ import { ClientNotesDialog } from "@/components/ClientNotesDialog";
 import { CRMActivityTimeline } from "@/components/CRMActivityTimeline";
 import { CRMLeadScoring } from "@/components/CRMLeadScoring";
 import { EditableField } from "@/components/EditableField";
-import { useForm } from "react-hook-form";
-import { cn } from "@/lib/utils";
+import { PaymentPlanManager } from "@/components/PaymentPlanManager";
+import { ClientDocumentManager } from "@/components/ClientDocumentManager";
+import { SalesDesignCalendar } from "@/components/SalesDesignCalendar";
+import { SalesPhaseManager } from "@/components/SalesPhaseManager";
+import { LeadLossDialog } from "@/components/LeadLossDialog";
+import { SalesExecutiveDashboard } from "@/components/SalesExecutiveDashboard";
 import {
   Users, 
   TrendingUp, 
@@ -34,18 +34,16 @@ import {
   Award,
   Search,
   Filter,
-  AlertCircle,
+  AlertTriangle,
   Bell,
   StickyNote,
   UserCheck,
-  Plus,
-  Video,
-  Edit2,
-  Settings
+  FileText,
+  Settings,
+  BarChart3
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { DatePicker } from "@/components/DatePicker";
 
 // Interfaces
 interface Client {
@@ -53,7 +51,7 @@ interface Client {
   full_name: string;
   email: string;
   phone: string;
-  status: 'potential' | 'existing' | 'active' | 'completed' | 'nuevo_lead' | 'en_contacto' | 'lead_perdido' | 'cliente_cerrado';
+  status: any; // Allow all status types for backward compatibility
   lead_source: 'website' | 'referral' | 'social_media' | 'event' | 'advertisement' | 'cold_call' | 'partner' | 'commercial_alliance';
   project_type: 'residential' | 'commercial' | 'industrial' | 'renovation' | 'landscape' | 'interior_design';
   budget: number;
@@ -75,37 +73,12 @@ interface Client {
   curp?: string;
   payment_plan?: any;
   service_type?: string;
-}
-
-interface Activity {
-  id: string;
-  title: string;
-  activity_type: 'call' | 'email' | 'meeting' | 'follow_up' | 'site_visit' | 'proposal_sent' | 'contract_review' | 'negotiation';
-  description: string;
-  scheduled_date: string;
-  is_completed: boolean;
-  client_id: string;
-  outcome?: string;
-  next_action?: string;
-  next_action_date?: string;
-}
-
-interface Reminder {
-  id: string;
-  client_id: string;
-  title: string;
-  message: string;
-  reminder_date: string;
-  is_sent: boolean;
+  conversion_notes?: string;
 }
 
 const statusConfig = {
-  potential: { label: "Potencial", color: "bg-gray-100 text-gray-700", progress: 10 },
-  existing: { label: "Existente", color: "bg-blue-100 text-blue-700", progress: 40 },
-  active: { label: "Activo", color: "bg-green-100 text-green-700", progress: 70 },
-  completed: { label: "Completado", color: "bg-purple-100 text-purple-700", progress: 100 },
   nuevo_lead: { label: "Nuevo Lead", color: "bg-yellow-100 text-yellow-700", progress: 5 },
-  en_contacto: { label: "En Contacto", color: "bg-orange-100 text-orange-700", progress: 25 },
+  en_contacto: { label: "En Contacto", color: "bg-blue-100 text-blue-700", progress: 50 },
   lead_perdido: { label: "Lead Perdido", color: "bg-red-100 text-red-700", progress: 0 },
   cliente_cerrado: { label: "Cliente Cerrado", color: "bg-green-100 text-green-700", progress: 100 },
 };
@@ -126,53 +99,28 @@ const leadSourceConfig = {
   event: "Evento",
   advertisement: "Publicidad",
   cold_call: "Llamada Fría",
-  partner: "Socio"
+  partner: "Socio",
+  commercial_alliance: "Alianza Comercial"
 };
 
 export default function Sales() {
   const [clients, setClients] = useState<Client[]>([]);
   const [closedClients, setClosedClients] = useState<Client[]>([]);
+  const [lostLeads, setLostLeads] = useState<Client[]>([]);
   const [filteredClients, setFilteredClients] = useState<Client[]>([]);
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [reminders, setReminders] = useState<Reminder[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("nuevo_lead");
-  const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
-  const [isNewClientDialogOpen, setIsNewClientDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [activeTab, setActiveTab] = useState("pipeline");
-  const [showReminderDialog, setShowReminderDialog] = useState(false);
-  const [reminderClientId, setReminderClientId] = useState<string>("");
   const [notesDialog, setNotesDialog] = useState({ open: false, clientId: "", clientName: "" });
   const [showActivities, setShowActivities] = useState(false);
   const [editingClient, setEditingClient] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
-  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
-  const [scheduleClientId, setScheduleClientId] = useState<string>("");
-  const [scheduleDate, setScheduleDate] = useState<Date | undefined>();
-  const [actionType, setActionType] = useState<string>("call");
-  const [actionDescription, setActionDescription] = useState<string>("");
+  const [lossDialog, setLossDialog] = useState({ open: false, clientId: "", clientName: "" });
   const { toast } = useToast();
   const { user } = useAuth();
-
-  const form = useForm<Client>({
-    defaultValues: {
-      full_name: "",
-      email: "",
-      phone: "",
-      status: "nuevo_lead",
-      lead_source: "website",
-      project_type: "residential",
-      budget: 0,
-      priority: "medium",
-      timeline_months: 6,
-      preferred_contact_method: "email",
-      notes: "",
-      assigned_advisor_id: "",
-    }
-  });
 
   useEffect(() => {
     fetchData();
@@ -181,7 +129,7 @@ export default function Sales() {
 
   useEffect(() => {
     filterClients();
-  }, [clients, searchTerm, statusFilter, priorityFilter]);
+  }, [clients, searchTerm, statusFilter]);
 
   const fetchEmployees = async () => {
     try {
@@ -212,40 +160,25 @@ export default function Sales() {
 
       if (clientsError) throw clientsError;
 
-      // Separate potential clients from closed clients
+      // Separate clients by status
       const allClients = (clientsData || []).map(client => ({
         ...client,
         advisor_name: client.assigned_advisor?.full_name || 'Sin asignar'
       }));
       
-      const potentialClients = allClients.filter(client => 
-        ['potential', 'nuevo_lead', 'en_contacto'].includes(client.status)
+      const activeClients = allClients.filter(client => 
+        ['nuevo_lead', 'en_contacto'].includes(client.status)
       );
       const closedClientsData = allClients.filter(client => 
-        ['existing', 'active', 'completed', 'cliente_cerrado', 'lead_perdido'].includes(client.status)
+        client.status === 'cliente_cerrado'
+      );
+      const lostLeadsData = allClients.filter(client => 
+        client.status === 'lead_perdido'
       );
 
-      // Fetch activities
-      const { data: activitiesData, error: activitiesError } = await supabase
-        .from('crm_activities')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (activitiesError) throw activitiesError;
-
-      // Fetch reminders
-      const { data: remindersData, error: remindersError } = await supabase
-        .from('crm_reminders')
-        .select('*')
-        .eq('is_sent', false)
-        .order('reminder_date', { ascending: true });
-
-      if (remindersError) throw remindersError;
-
-      setClients(potentialClients);
+      setClients(activeClients);
       setClosedClients(closedClientsData);
-      setActivities(activitiesData || []);
-      setReminders(remindersData || []);
+      setLostLeads(lostLeadsData);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
@@ -258,138 +191,49 @@ export default function Sales() {
     }
   };
 
+  const filterClients = () => {
+    let filtered = clients;
 
-  const createClient = async (data: Client) => {
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(client => client.status === statusFilter);
+    }
+
+    if (searchTerm) {
+      filtered = filtered.filter(client =>
+        client.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        client.phone?.includes(searchTerm)
+      );
+    }
+
+    setFilteredClients(filtered);
+  };
+
+  const assignAdvisor = async (clientId: string, advisorId: string | null) => {
     try {
-      const { data: newClient, error } = await supabase
+      const { error } = await supabase
         .from('clients')
-        .insert([{
-          ...data,
-          profile_id: (await supabase.from('profiles').select('id').eq('user_id', user.id).single()).data?.id,
-          lead_score: calculateLeadScore(data),
-          last_contact_date: new Date().toISOString().split('T')[0],
-          next_contact_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-        }])
-        .select(`
-          *,
-          assigned_advisor: profiles!clients_assigned_advisor_id_fkey(id, full_name),
-          created_by_profile: profiles!clients_profile_id_fkey(id, full_name)
-        `)
-        .single();
+        .update({ assigned_advisor_id: advisorId })
+        .eq('id', clientId);
 
       if (error) throw error;
 
-      setClients([newClient, ...clients]);
-      setIsNewClientDialogOpen(false);
-      form.reset();
+      await fetchData();
 
-      // Create initial activity
-      await createActivity({
-        title: "Cliente agregado al sistema",
-        activity_type: "follow_up",
-        description: `Nuevo cliente potencial agregado: ${data.full_name}`,
-        scheduled_date: new Date().toISOString(),
-        is_completed: true,
-        client_id: newClient.id
-      });
-
-      // Create follow-up reminder
-      await createReminderFromClient({
-        client_id: newClient.id,
-        title: `Seguimiento inicial - ${data.full_name}`,
-        message: `Contactar a ${data.full_name} para primera reunión`,
-        reminder_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-      });
-
+      const advisor = advisorId ? employees.find(e => e.id === advisorId) : null;
+      
       toast({
-        title: "Cliente creado",
-        description: "El nuevo cliente ha sido agregado exitosamente",
+        title: "Asesor asignado",
+        description: advisor ? `${advisor.full_name} asignado correctamente` : 'Asesor removido',
       });
     } catch (error) {
-      console.error('Error creating client:', error);
+      console.error('Error assigning advisor:', error);
       toast({
         title: "Error",
-        description: "No se pudo crear el cliente",
+        description: "No se pudo asignar el asesor",
         variant: "destructive",
       });
     }
-  };
-
-  const createActivity = async (activity: Omit<Activity, 'id'>) => {
-    try {
-      if (!user?.id) throw new Error('No authenticated user');
-
-      const { data: newActivity, error } = await supabase
-        .from('crm_activities')
-        .insert([{
-          ...activity,
-          user_id: user.id
-        }])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setActivities([newActivity, ...activities]);
-      return newActivity;
-    } catch (error) {
-      console.error('Error creating activity:', error);
-      throw error;
-    }
-  };
-
-  const createReminderFromClient = async (reminder: Omit<Reminder, 'id' | 'is_sent'>) => {
-    try {
-      if (!user?.id) throw new Error('No authenticated user');
-
-      const { data: newReminder, error } = await supabase
-        .from('crm_reminders')
-        .insert([{
-          ...reminder,
-          user_id: user.id,
-          is_sent: false
-        }])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setReminders([...reminders, newReminder]);
-      return newReminder;
-    } catch (error) {
-      console.error('Error creating reminder:', error);
-      throw error;
-    }
-  };
-
-  const calculateLeadScore = (client: Partial<Client>): number => {
-    let score = 0;
-    
-    // Budget score (40% weight)
-    if (client.budget && client.budget > 2000000) score += 40;
-    else if (client.budget && client.budget > 1000000) score += 30;
-    else if (client.budget && client.budget > 500000) score += 20;
-    else score += 10;
-
-    // Project type score (20% weight)
-    if (client.project_type === 'commercial') score += 20;
-    else if (client.project_type === 'industrial') score += 18;
-    else if (client.project_type === 'residential') score += 15;
-    else score += 10;
-
-    // Timeline score (20% weight)
-    if (client.timeline_months && client.timeline_months <= 3) score += 20;
-    else if (client.timeline_months && client.timeline_months <= 6) score += 15;
-    else if (client.timeline_months && client.timeline_months <= 12) score += 10;
-    else score += 5;
-
-    // Lead source score (20% weight)
-    if (client.lead_source === 'referral') score += 20;
-    else if (client.lead_source === 'website') score += 15;
-    else if (client.lead_source === 'social_media') score += 10;
-    else score += 5;
-
-    return Math.min(score, 100);
   };
 
   const updateClient = async (clientId: string, updates: Partial<Client>) => {
@@ -404,11 +248,7 @@ export default function Sales() {
 
       if (error) throw error;
 
-      setClients(clients.map(client => 
-        client.id === clientId 
-          ? { ...client, ...updates, last_contact_date: new Date().toISOString().split('T')[0] }
-          : client
-      ));
+      await fetchData();
 
       toast({
         title: "Cliente actualizado",
@@ -424,1385 +264,455 @@ export default function Sales() {
     }
   };
 
-  // Nueva función para cerrar clientes directamente desde ventas
-  const closeClient = async (clientId: string, newStatus: 'existing' | 'active' | 'completed', conversionNotes?: string) => {
-    try {
-      const { error } = await supabase
-        .from('clients')
-        .update({ 
-          status: newStatus,
-          conversion_date: new Date().toISOString().split('T')[0],
-          conversion_notes: conversionNotes || '',
-          sales_pipeline_stage: 'closed',
-          last_contact_date: new Date().toISOString().split('T')[0]
-        })
-        .eq('id', clientId);
-
-      if (error) throw error;
-
-      // Mover cliente de potencial a cerrado
-      const clientToMove = clients.find(c => c.id === clientId);
-      if (clientToMove) {
-        const updatedClient = { 
-          ...clientToMove, 
-          status: newStatus,
-          conversion_date: new Date().toISOString().split('T')[0],
-          conversion_notes: conversionNotes || '',
-          sales_pipeline_stage: 'closed'
-        };
-        
-        setClients(clients.filter(c => c.id !== clientId));
-        setClosedClients([updatedClient, ...closedClients]);
-
-        // Crear actividad de conversión
-        await createActivity({
-          title: `Cliente convertido a ${statusConfig[newStatus].label}`,
-          activity_type: "negotiation",
-          description: `Cliente ${clientToMove.full_name} convertido exitosamente. ${conversionNotes || ''}`,
-          scheduled_date: new Date().toISOString(),
-          is_completed: true,
-          client_id: clientId
-        });
-
-        toast({
-          title: "Cliente convertido",
-          description: `${clientToMove.full_name} ha sido convertido a ${statusConfig[newStatus].label}`,
-        });
-      }
-    } catch (error) {
-      console.error('Error closing client:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo convertir el cliente",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Nueva función para asignar/cambiar asesores
-  const assignAdvisor = async (clientId: string, advisorId: string | null) => {
-    try {
-      const { error } = await supabase
-        .from('clients')
-        .update({ assigned_advisor_id: advisorId })
-        .eq('id', clientId);
-
-      if (error) throw error;
-
-      // Refetch data to ensure UI is updated correctly
-      await fetchData();
-
-      const advisor = advisorId ? employees.find(e => e.id === advisorId) : null;
-      const client = clients.find(c => c.id === clientId);
-
-      if (client) {
-        const activityTitle = advisor 
-          ? `Asesor asignado: ${advisor.full_name}`
-          : 'Asesor removido';
-        
-        const activityDescription = advisor
-          ? `Se asignó a ${advisor.full_name} como asesor del cliente ${client.full_name}`
-          : `Se removió el asesor del cliente ${client.full_name}`;
-
-        await createActivity({
-          title: activityTitle,
-          activity_type: "follow_up",
-          description: activityDescription,
-          scheduled_date: new Date().toISOString(),
-          is_completed: true,
-          client_id: clientId
-        });
-      }
-
-      toast({
-        title: advisor ? "Asesor asignado" : "Asesor removido",
-        description: advisor 
-          ? `${advisor.full_name} ha sido asignado correctamente`
-          : "Se removió el asesor del cliente",
-      });
-    } catch (error) {
-      console.error('Error assigning advisor:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo asignar el asesor",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const updateClientStatus = async (clientId: string, newStatus: Client['status']) => {
-    try {
-      const config = statusConfig[newStatus];
-      const { error } = await supabase
-        .from('clients')
-        .update({ 
-          status: newStatus,
-          last_contact_date: new Date().toISOString().split('T')[0]
-        })
-        .eq('id', clientId);
-
-      if (error) throw error;
-
-      setClients(clients.map(client => 
-        client.id === clientId 
-          ? { ...client, status: newStatus, last_contact_date: new Date().toISOString().split('T')[0] }
-          : client
-      ));
-
-      // Create activity for status change
-      const client = clients.find(c => c.id === clientId);
-      if (client) {
-        await createActivity({
-          title: `Estado cambiado a ${config.label}`,
-          activity_type: "follow_up",
-          description: `El estado del cliente ${client.full_name} cambió a ${config.label}`,
-          scheduled_date: new Date().toISOString(),
-          is_completed: true,
-          client_id: clientId
-        });
-      }
-
-      toast({
-        title: "Estado actualizado",
-        description: `Estado cambiado a ${config.label}`,
-      });
-    } catch (error) {
-      console.error('Error updating status:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el estado",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const filterClients = () => {
-    let filtered = clients;
-
-    if (searchTerm) {
-      filtered = filtered.filter(client =>
-        client.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (client.advisor_name && client.advisor_name.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
-
-    if (priorityFilter !== "all") {
-      filtered = filtered.filter(client => client.priority === priorityFilter);
-    }
-
-    setFilteredClients(filtered);
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN'
-    }).format(amount);
-  };
-
-  const getTotalPipeline = () => {
-    return clients.reduce((total, client) => total + (client.budget || 0), 0);
-  };
-
-  const getClosedRevenue = () => {
-    return closedClients.reduce((total, client) => total + (client.budget || 0), 0);
-  };
-
-  const getMetrics = () => {
-    const totalPotential = clients.length;
-    const totalClosed = closedClients.length;
-    const totalAll = totalPotential + totalClosed;
-    const won = closedClients.filter(c => c.status === 'completed').length;
-    const conversionRate = totalAll > 0 ? Math.round((totalClosed / totalAll) * 100) : 0;
-    
-    return { totalPotential, totalClosed, won, conversionRate, totalAll };
-  };
-
-  const createReminder = async (clientId: string, title: string, message: string, reminderDate: string) => {
-    try {
-      if (!user?.id) throw new Error('No authenticated user');
-
-      const { error } = await supabase
-        .from('crm_reminders')
-        .insert([{
-          client_id: clientId,
-          user_id: user.id,
-          title,
-          message,
-          reminder_date: reminderDate,
-          is_sent: false
-        }]);
-
-      if (error) throw error;
-
-      toast({
-        title: "Recordatorio creado",
-        description: "El recordatorio ha sido programado exitosamente",
-      });
-      
-      setShowReminderDialog(false);
-      fetchData();
-    } catch (error) {
-      console.error('Error creating reminder:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo crear el recordatorio",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const scheduleAction = async (clientId: string, clientName: string) => {
-    setScheduleClientId(clientId);
-    setShowScheduleDialog(true);
-    setScheduleDate(undefined);
-    setActionType("call");
-    setActionDescription("");
-  };
-
-  const handleScheduleAction = async () => {
-    if (!scheduleDate || !actionDescription) {
-      toast({
-        title: "Error",
-        description: "Por favor selecciona una fecha y descripción",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const client = clients.find(c => c.id === scheduleClientId);
-      
-      // Create activity
-      await createActivity({
-        title: `${actionType === 'call' ? 'Llamada programada' : actionType === 'meeting' ? 'Reunión programada' : 'Email programado'}`,
-        activity_type: actionType as any,
-        description: actionDescription,
-        scheduled_date: scheduleDate.toISOString(),
-        is_completed: false,
-        client_id: scheduleClientId
-      });
-
-      // Create reminder
-      await createReminderFromClient({
-        client_id: scheduleClientId,
-        title: `${actionType === 'call' ? 'Llamada' : actionType === 'meeting' ? 'Reunión' : 'Email'} - ${client?.full_name}`,
-        message: actionDescription,
-        reminder_date: scheduleDate.toISOString()
-      });
-
-      toast({
-        title: "Acción programada",
-        description: `Se programó la acción para ${format(scheduleDate, "dd/MM/yyyy HH:mm")}`,
-      });
-
-      setShowScheduleDialog(false);
-    } catch (error) {
-      console.error('Error scheduling action:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo programar la acción",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const scheduleReminder = async (clientId: string, clientName: string) => {
-    try {
-      const reminderDate = new Date();
-      reminderDate.setMinutes(reminderDate.getMinutes() + 15); // 15 minutos
-
-      const { error } = await supabase
-        .from('crm_reminders')
-        .insert({
-          client_id: clientId,
-          user_id: user?.id,
-          title: 'Recordatorio de seguimiento',
-          message: `Realizar seguimiento con el cliente ${clientName}`,
-          reminder_date: reminderDate.toISOString(),
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Recordatorio programado",
-        description: `Se programó un recordatorio para ${clientName} en 15 minutos`,
-      });
-    } catch (error) {
-      console.error('Error scheduling reminder:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo programar el recordatorio",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const viewClientDetails = (client: any) => {
-    setNotesDialog({
-      open: true,
-      clientId: client.id,
-      clientName: client.full_name
-    });
-  };
-
-  const getPendingReminders = () => {
-    return reminders.filter(r => 
-      new Date(r.reminder_date) <= new Date() && !r.is_sent
-    );
-  };
-
-  // Calculate metrics
-  const totalPipelineValue = getTotalPipeline();
-  const potentialCount = clients.length;
-  const closedCount = closedClients.length;
-  const conversionRate = (potentialCount + closedCount) > 0 ? Math.round((closedCount / (potentialCount + closedCount)) * 100) : 0;
-  const averageValue = potentialCount > 0 ? Math.round(totalPipelineValue / potentialCount) : 0;
-  const closedRevenue = getClosedRevenue();
-  const closedAverageValue = closedCount > 0 ? Math.round(closedRevenue / closedCount) : 0;
-  const averageClosingTime = 30; // Placeholder
-  const metrics = getMetrics();
-  const pendingReminders = getPendingReminders();
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      <div className="space-y-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-32 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
+  const getPhaseStats = (phase: string) => {
+    switch (phase) {
+      case 'nuevo_lead':
+        return clients.filter(c => c.status === 'nuevo_lead').length;
+      case 'en_contacto':
+        return clients.filter(c => c.status === 'en_contacto').length;
+      case 'lead_perdido':
+        return lostLeads.length;
+      case 'cliente_cerrado':
+        return closedClients.length;
+      default:
+        return 0;
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">CRM de Ventas</h1>
-          <p className="text-muted-foreground">Pipeline de clientes potenciales y gestión de ventas</p>
-        </div>
-        <div className="flex gap-2">
-          {pendingReminders.length > 0 && (
-            <Badge 
-              variant="destructive" 
-              className="animate-pulse cursor-pointer hover:bg-red-700 transition-colors"
-              onClick={() => setShowActivities(true)}
-            >
-              <Bell className="h-4 w-4 mr-1" />
-              {pendingReminders.length} recordatorios
-            </Badge>
-          )}
-          <Dialog open={isNewClientDialogOpen} onOpenChange={setIsNewClientDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-blue-600 to-orange-600 hover:from-blue-700 hover:to-orange-700 text-white">
-                <Plus className="h-4 w-4 mr-2" />
-                Nuevo Cliente Potencial
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background/95 backdrop-blur-xl border border-border/50">
-              <DialogHeader>
-                <DialogTitle>Agregar Nuevo Cliente Potencial</DialogTitle>
-              </DialogHeader>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(createClient)} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="full_name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Nombre Completo</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Nombre del cliente" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input type="email" placeholder="cliente@email.com" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Teléfono</FormLabel>
-                          <FormControl>
-                            <Input placeholder="+52 55 1234 5678" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="preferred_contact_method"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Método de Contacto Preferido</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Seleccionar método" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="email">Email</SelectItem>
-                              <SelectItem value="phone">Teléfono</SelectItem>
-                              <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                              <SelectItem value="video_call">Videollamada</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="project_type"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Tipo de Proyecto</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Tipo de proyecto" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {Object.entries(projectTypeConfig).map(([key, label]) => (
-                                <SelectItem key={key} value={key}>{label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="lead_source"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Fuente del Lead</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Fuente" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {Object.entries(leadSourceConfig).map(([key, label]) => (
-                                <SelectItem key={key} value={key}>{label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="priority"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Prioridad</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Prioridad" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="low">Baja</SelectItem>
-                              <SelectItem value="medium">Media</SelectItem>
-                              <SelectItem value="high">Alta</SelectItem>
-                              <SelectItem value="urgent">Urgente</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="budget"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Presupuesto Estimado (MXN)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number" 
-                              placeholder="500000" 
-                              {...field}
-                              onChange={(e) => field.onChange(Number(e.target.value))}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="timeline_months"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Timeline (meses)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number" 
-                              placeholder="6" 
-                              {...field}
-                              onChange={(e) => field.onChange(Number(e.target.value))}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                   </div>
-
-                   {/* Campo de Asesor Asignado */}
-                   <div className="grid grid-cols-2 gap-4">
-                     <div>
-                       <label className="text-sm font-medium">Asesor Asignado</label>
-                        <Select 
-                          value={form.watch('assigned_advisor_id') || 'none'} 
-                          onValueChange={(value) => form.setValue('assigned_advisor_id', value === 'none' ? null : value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar asesor" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Sin asignar</SelectItem>
-                            {employees.map((employee) => (
-                              <SelectItem key={employee.id} value={employee.id}>
-                                {employee.full_name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                     </div>
-                   </div>
-
-                   <FormField
-                     control={form.control}
-                     name="notes"
-                     render={({ field }) => (
-                       <FormItem>
-                         <FormLabel>Notas</FormLabel>
-                         <FormControl>
-                           <Textarea 
-                             placeholder="Información adicional sobre el cliente y proyecto..."
-                             className="min-h-[100px]"
-                             {...field}
-                           />
-                         </FormControl>
-                         <FormMessage />
-                       </FormItem>
-                     )}
-                   />
-
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setIsNewClientDialogOpen(false)}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button type="submit">
-                      Crear Cliente
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
+          <h1 className="text-3xl font-bold">Módulo de Ventas CRM</h1>
+          <p className="text-gray-600">Gestión completa del pipeline de ventas con 4 fases</p>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="bg-background/60 backdrop-blur-xl border border-border/50">
-          <TabsTrigger value="pipeline">Pipeline Potencial</TabsTrigger>
+      {/* Métricas por fase */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Nuevos Leads</p>
+                <p className="text-2xl font-bold">{getPhaseStats('nuevo_lead')}</p>
+              </div>
+              <Clock className="h-8 w-8 text-yellow-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">En Contacto</p>
+                <p className="text-2xl font-bold">{getPhaseStats('en_contacto')}</p>
+              </div>
+              <Users className="h-8 w-8 text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Clientes Cerrados</p>
+                <p className="text-2xl font-bold">{getPhaseStats('cliente_cerrado')}</p>
+              </div>
+              <CheckCircle className="h-8 w-8 text-green-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Leads Perdidos</p>
+                <p className="text-2xl font-bold">{getPhaseStats('lead_perdido')}</p>
+              </div>
+              <AlertTriangle className="h-8 w-8 text-red-600" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tabs principales */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid grid-cols-5 w-full">
+          <TabsTrigger value="pipeline">Pipeline Activo</TabsTrigger>
           <TabsTrigger value="closed">Clientes Cerrados</TabsTrigger>
-          <TabsTrigger value="activities">Actividades</TabsTrigger>
-          <TabsTrigger value="scoring">Lead Scoring</TabsTrigger>
+          <TabsTrigger value="lost">Leads Perdidos</TabsTrigger>
+          <TabsTrigger value="calendar">Calendario Diseño</TabsTrigger>
+          <TabsTrigger value="dashboard">Dashboard Ejecutivo</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="pipeline" className="space-y-6">
-          {/* Métricas del Pipeline */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="bg-gradient-to-br from-blue-50/80 to-white/60 backdrop-blur-xl border border-blue-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-blue-700">Pipeline Total</CardTitle>
-                <DollarSign className="h-4 w-4 text-blue-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-lg lg:text-2xl font-bold text-blue-900 break-words">
-                  ${totalPipelineValue.toLocaleString('es-MX')}
+        {/* Pipeline Activo */}
+        <TabsContent value="pipeline">
+          <div className="space-y-6">
+            {/* Filtros */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex gap-4 items-center">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Buscar clientes..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="max-w-sm"
+                    />
+                  </div>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Filtrar por fase" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas las fases</SelectItem>
+                      <SelectItem value="nuevo_lead">Nuevos Leads</SelectItem>
+                      <SelectItem value="en_contacto">En Contacto</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <p className="text-xs text-blue-600 mt-1">
-                  En oportunidades potenciales
-                </p>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-green-50/80 to-white/60 backdrop-blur-xl border border-green-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-green-700">Clientes Potenciales</CardTitle>
-                <Users className="h-4 w-4 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-lg lg:text-2xl font-bold text-green-900">{potentialCount}</div>
-                <p className="text-xs text-green-600 mt-1">
-                  Activos en pipeline
-                </p>
-              </CardContent>
-            </Card>
+            {/* Lista de clientes */}
+            <div className="space-y-4">
+              {filteredClients.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <h3 className="text-lg font-medium text-gray-900">No hay clientes</h3>
+                    <p className="text-gray-500">
+                      {searchTerm || statusFilter !== 'all' 
+                        ? 'No se encontraron clientes con los filtros aplicados'
+                        : 'Los nuevos clientes capturados en el módulo de Clientes aparecerán aquí'
+                      }
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                filteredClients.map((client) => (
+                  <Card key={client.id}>
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold">{client.full_name}</h3>
+                            <SalesPhaseManager 
+                              client={client}
+                              employees={employees}
+                              onClientUpdate={fetchData}
+                            />
+                          </div>
 
-            <Card className="bg-gradient-to-br from-orange-50/80 to-white/60 backdrop-blur-xl border border-orange-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-orange-700">Tasa de Conversión</CardTitle>
-                <TrendingUp className="h-4 w-4 text-orange-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-lg lg:text-2xl font-bold text-orange-900">{conversionRate}%</div>
-                <p className="text-xs text-orange-600 mt-1">
-                  Potenciales a cerrados
-                </p>
-              </CardContent>
-            </Card>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div>
+                              <p className="text-sm text-gray-600">Contacto</p>
+                              <p className="font-medium">{client.email}</p>
+                              <p className="text-sm">{client.phone}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-600">Proyecto</p>
+                              <p className="font-medium">{projectTypeConfig[client.project_type] || client.project_type}</p>
+                              <p className="text-sm">${client.budget?.toLocaleString() || '0'}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-600">Asesor</p>
+                              <div className="flex items-center gap-2">
+                                <Select
+                                  value={client.assigned_advisor_id || 'unassigned'}
+                                  onValueChange={(value) => assignAdvisor(client.id, value === 'unassigned' ? null : value)}
+                                >
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="unassigned">Sin asignar</SelectItem>
+                                    {employees.map((employee) => (
+                                      <SelectItem key={employee.id} value={employee.id}>
+                                        {employee.full_name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          </div>
 
-            <Card className="bg-gradient-to-br from-purple-50/80 to-white/60 backdrop-blur-xl border border-purple-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-purple-700">Valor Promedio</CardTitle>
-                <Target className="h-4 w-4 text-purple-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-base lg:text-2xl font-bold text-purple-900 break-words">
-                  ${averageValue.toLocaleString('es-MX')}
-                </div>
-                <p className="text-xs text-purple-600 mt-1">
-                  Por oportunidad
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Filtros */}
-          <Card className="bg-background/60 backdrop-blur-xl border border-border/50">
-            <CardContent className="p-4">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
-                  <Input
-                    placeholder="Buscar por nombre, email o asesor..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-                <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                  <SelectTrigger className="w-full sm:w-48">
-                    <SelectValue placeholder="Prioridad" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas las prioridades</SelectItem>
-                    <SelectItem value="urgent">Urgente</SelectItem>
-                    <SelectItem value="high">Alta</SelectItem>
-                    <SelectItem value="medium">Media</SelectItem>
-                    <SelectItem value="low">Baja</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Tabla de Clientes Potenciales */}
-          <div className="bg-background/60 backdrop-blur-xl border border-border/50 rounded-lg">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Pipeline de Clientes Potenciales ({filteredClients.length})</h3>
-              
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border/50">
-                      <th className="text-left p-3 font-medium">Cliente</th>
-                      <th className="text-left p-3 font-medium">Proyecto</th>
-                      <th className="text-left p-3 font-medium">Score</th>
-                      <th className="text-left p-3 font-medium">Asesor</th>
-                      <th className="text-left p-3 font-medium">Registrado por</th>
-                      <th className="text-left p-3 font-medium">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredClients.map((client) => (
-                      <tr key={client.id} className="border-b border-border/30 hover:bg-muted/50">
-                         <td className="p-3">
-                           <div className="space-y-1">
-                             <EditableField
-                                value={client.full_name || ''}
-                                onSave={(value) => updateClient(client.id, { full_name: (value || '').toString() })}
-                               className="font-medium text-foreground"
-                             />
-                             <EditableField
-                               value={client.email || ''}
-                               onSave={(value) => updateClient(client.id, { email: (value || '').toString() })}
-                               type="email"
-                               className="text-sm text-muted-foreground"
-                             />
-                             <EditableField
-                               value={client.phone || ''}
-                               onSave={(value) => updateClient(client.id, { phone: (value || '').toString() })}
-                               type="phone"
-                               className="text-xs text-muted-foreground"
-                             />
-                           </div>
-                         </td>
-                         <td className="p-3">
-                           <div className="space-y-2">
-                             <EditableField
-                               value={client.project_type || 'residential'}
-                               onSave={(value) => updateClient(client.id, { project_type: value as any })}
-                               type="select"
-                               options={[
-                                 { value: 'residential', label: 'Residencial' },
-                                 { value: 'commercial', label: 'Comercial' },
-                                 { value: 'industrial', label: 'Industrial' },
-                                 { value: 'renovation', label: 'Remodelación' },
-                                 { value: 'landscape', label: 'Paisajismo' },
-                                 { value: 'interior_design', label: 'Diseño Interior' }
-                               ]}
-                               className="font-medium capitalize"
-                               displayTransform={(value) => projectTypeConfig[value as keyof typeof projectTypeConfig] || 'No especificado'}
-                             />
-                             <EditableField
-                               value={client.budget || 0}
-                               onSave={(value) => updateClient(client.id, { budget: Number(value) })}
-                               type="number"
-                               className="text-sm text-muted-foreground"
-                               displayTransform={(value) => `$${Number(value).toLocaleString('es-MX')}`}
-                             />
-                             <EditableField
-                               value={client.priority || 'medium'}
-                               onSave={(value) => updateClient(client.id, { priority: value as any })}
-                               type="select"
-                               options={[
-                                 { value: 'low', label: 'Baja' },
-                                 { value: 'medium', label: 'Media' },
-                                 { value: 'high', label: 'Alta' },
-                                 { value: 'urgent', label: 'Urgente' }
-                               ]}
-                               className="text-xs"
-                               displayTransform={(value) => {
-                                 const label = value === 'urgent' ? 'Urgente' :
-                                              value === 'high' ? 'Alta' :
-                                              value === 'medium' ? 'Media' : 'Baja';
-                                 return label;
-                               }}
-                             />
-                           </div>
-                         </td>
-                         <td className="p-3">
-                           <div className="flex items-center space-x-2">
-                             <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-green-500 flex items-center justify-center text-foreground text-xs font-bold">
-                               {client.lead_score || calculateLeadScore(client)}
-                             </div>
-                           </div>
-                         </td>
-                        <td className="p-3">
-                          <span className="text-sm text-muted-foreground">
-                            {client.assigned_advisor?.full_name || 'Sin asignar'}
-                          </span>
-                        </td>
-                        <td className="p-3">
                           <div className="flex items-center gap-2">
-                            <UserCheck className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground">
-                              {client.created_by_profile?.full_name || 'Sistema'}
-                            </span>
+                            <Badge variant="outline">
+                              {leadSourceConfig[client.lead_source] || client.lead_source}
+                            </Badge>
+                            <Badge variant="outline">
+                              Score: {client.lead_score}
+                            </Badge>
+                            <Badge variant={client.priority === 'high' ? 'destructive' : 'secondary'}>
+                              {client.priority}
+                            </Badge>
                           </div>
-                        </td>
-                         <td className="p-3">
-                           <div className="flex gap-1">
-                             <Button
-                               variant="outline"
-                               size="sm"
-                               onClick={() => viewClientDetails(client)}
-                               className="h-8 w-8 p-0"
-                               title="Ver notas y detalles"
-                             >
-                               <StickyNote className="h-4 w-4" />
-                             </Button>
-                             
-                               {/* Asignar Asesor */}
-                               <Select 
-                                 value={client.assigned_advisor_id || "none"} 
-                                 onValueChange={(value) => {
-                                   console.log('Asignando asesor:', value, 'a cliente:', client.id);
-                                   assignAdvisor(client.id, value === "none" ? null : value);
-                                 }}
-                               >
-                                 <SelectTrigger className="h-8 w-24">
-                                   <SelectValue placeholder="Asesor" />
-                                 </SelectTrigger>
-                                 <SelectContent>
-                                   <SelectItem value="none">Sin asignar</SelectItem>
-                                   {employees.map((employee) => (
-                                     <SelectItem key={employee.id} value={employee.id}>
-                                       {employee.full_name}
-                                     </SelectItem>
-                                   ))}
-                                 </SelectContent>
-                               </Select>
+                        </div>
 
-                              {/* Cerrar Cliente */}
-                              <Select value="" onValueChange={(value) => {
-                                console.log('Cerrando cliente:', client.id, 'con estado:', value);
-                                if (value === 'existing' || value === 'active' || value === 'completed') {
-                                  closeClient(client.id, value);
-                                }
-                              }}>
-                                <SelectTrigger className="h-8 w-20">
-                                  <SelectValue placeholder="Cerrar" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="existing">Cliente</SelectItem>
-                                  <SelectItem value="active">Activo</SelectItem>
-                                  <SelectItem value="completed">Completado</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => scheduleAction(client.id, client.full_name)}
-                                className="h-8 w-8 p-0"
-                                title="Programar acción"
-                              >
-                                <CalendarLucide className="h-4 w-4" />
-                              </Button>
-
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => scheduleReminder(client.id, client.full_name)}
-                                className="h-8 w-8 p-0"
-                                title="Programar recordatorio"
-                              >
-                                <Bell className="h-4 w-4" />
-                              </Button>
-                           </div>
-                         </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              
-              {filteredClients.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  No hay clientes potenciales que coincidan con los filtros
-                </div>
-              )}
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="closed" className="space-y-6">
-          {/* Métricas de Clientes Cerrados */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="bg-gradient-to-br from-emerald-50/80 to-white/60 backdrop-blur-xl border border-emerald-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-emerald-700">Ingresos Generados</CardTitle>
-                <DollarSign className="h-4 w-4 text-emerald-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-base lg:text-2xl font-bold text-emerald-900 break-words">
-                  ${closedRevenue.toLocaleString('es-MX')}
-                </div>
-                <p className="text-xs text-emerald-600 mt-1">
-                  De clientes cerrados
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-blue-50/80 to-white/60 backdrop-blur-xl border border-blue-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-blue-700">Clientes Cerrados</CardTitle>
-                <CheckCircle className="h-4 w-4 text-blue-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-lg lg:text-2xl font-bold text-blue-900">{closedCount}</div>
-                <p className="text-xs text-blue-600 mt-1">
-                  Activos y completados
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-amber-50/80 to-white/60 backdrop-blur-xl border border-amber-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-amber-700">Ticket Promedio</CardTitle>
-                <Award className="h-4 w-4 text-amber-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-base lg:text-2xl font-bold text-amber-900 break-words">
-                  ${closedAverageValue.toLocaleString('es-MX')}
-                </div>
-                <p className="text-xs text-amber-600 mt-1">
-                  Por cliente cerrado
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-indigo-50/80 to-white/60 backdrop-blur-xl border border-indigo-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-indigo-700">Tiempo Promedio</CardTitle>
-                <Clock className="h-4 w-4 text-indigo-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-lg lg:text-2xl font-bold text-indigo-900">
-                  {Math.round(averageClosingTime)} días
-                </div>
-                <p className="text-xs text-indigo-600 mt-1">
-                  Para cerrar venta
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Tabla de Clientes Cerrados */}
-          <div className="bg-background/60 backdrop-blur-xl border border-border/50 rounded-lg">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Clientes Cerrados ({closedClients.length})</h3>
-              
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border/50">
-                      <th className="text-left p-3 font-medium">Cliente</th>
-                      <th className="text-left p-3 font-medium">Estado</th>
-                      <th className="text-left p-3 font-medium">Valor del Proyecto</th>
-                      <th className="text-left p-3 font-medium">Tipo</th>
-                      <th className="text-left p-3 font-medium">Asesor</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {closedClients.map((client) => (
-                      <tr key={client.id} className="border-b border-border/30 hover:bg-muted/50">
-                        <td className="p-3">
-                          <div className="space-y-1">
-                            <p className="font-medium text-foreground">{client.full_name}</p>
-                            <p className="text-sm text-muted-foreground">{client.email}</p>
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <Badge variant={client.status === 'completed' ? 'default' : 'secondary'}>
-                            {client.status === 'completed' ? 'Completado' : 'Activo'}
-                          </Badge>
-                        </td>
-                        <td className="p-3">
-                          <span className="font-medium text-green-600">
-                            ${(client.budget || 0).toLocaleString('es-MX')}
-                          </span>
-                        </td>
-                        <td className="p-3">
-                          <span className="capitalize">{projectTypeConfig[client.project_type] || 'No especificado'}</span>
-                        </td>
-                        <td className="p-3">
-                          <span className="text-sm text-muted-foreground">
-                            {client.assigned_advisor?.full_name || 'Sin asignar'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              
-              {closedClients.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  No hay clientes cerrados registrados
-                </div>
-              )}
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="activities" className="space-y-6">
-          <Card className="bg-background/60 backdrop-blur-xl border border-border/50">
-            <CardHeader>
-              <CardTitle>Timeline de Actividades y Recordatorios</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Recordatorios Pendientes */}
-                <div className="bg-yellow-50/50 border border-yellow-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-yellow-800 mb-3">Recordatorios Pendientes ({pendingReminders.length})</h4>
-                  {pendingReminders.length > 0 ? (
-                    <div className="space-y-2">
-                      {pendingReminders.map((reminder) => (
-                        <div key={reminder.id} className="flex items-center justify-between bg-white p-3 rounded border">
-                          <div>
-                            <p className="font-medium text-gray-900">{reminder.title}</p>
-                            <p className="text-sm text-gray-600">{reminder.message}</p>
-                            <p className="text-xs text-gray-500">
-                              {format(new Date(reminder.reminder_date), 'PPpp', { locale: es })}
-                            </p>
-                          </div>
+                        <div className="flex gap-2">
                           <Button
+                            variant="outline"
                             size="sm"
-                            onClick={async () => {
-                              try {
-                                await supabase
-                                  .from('crm_reminders')
-                                  .update({ is_sent: true })
-                                  .eq('id', reminder.id);
-                                fetchData();
-                                toast({
-                                  title: "Recordatorio marcado como atendido",
-                                  description: "El recordatorio ha sido procesado",
-                                });
-                              } catch (error) {
-                                console.error('Error updating reminder:', error);
-                              }
-                            }}
+                            onClick={() => setSelectedClient(client)}
                           >
-                            Marcar como atendido
+                            <Eye className="h-4 w-4 mr-2" />
+                            Ver Detalles
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setNotesDialog({ 
+                              open: true, 
+                              clientId: client.id, 
+                              clientName: client.full_name 
+                            })}
+                          >
+                            <StickyNote className="h-4 w-4 mr-2" />
+                            Notas
                           </Button>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-yellow-700">No hay recordatorios pendientes</p>
-                  )}
-                </div>
-
-                {/* Activities Timeline for all clients */}
-                <div className="space-y-6">
-                  {filteredClients.map((client) => (
-                    <div key={client.id} className="border border-border/50 rounded-lg p-4">
-                      <h4 className="font-semibold mb-3 text-foreground">Actividades - {client.full_name}</h4>
-                      <CRMActivityTimeline clientId={client.id} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </div>
         </TabsContent>
 
-        <TabsContent value="scoring" className="space-y-6">
-          <div className="grid gap-6">
-            {filteredClients.map((client) => (
-              <CRMLeadScoring 
-                key={client.id}
-                client={{
-                  id: client.id,
-                  lead_score: client.lead_score || calculateLeadScore(client),
-                  budget: client.budget || 0,
-                  project_type: client.project_type || 'residential',
-                  priority: client.priority || 'medium',
-                  last_contact_date: client.last_contact_date || new Date().toISOString().split('T')[0],
-                  created_at: client.created_at || new Date().toISOString()
-                }}
-                onScoreUpdate={(newScore) => {
-                  updateClient(client.id, { lead_score: newScore });
-                }}
-              />
-            ))}
+        {/* Clientes Cerrados */}
+        <TabsContent value="closed">
+          <div className="space-y-4">
+            {closedClients.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <CheckCircle className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-medium text-gray-900">No hay clientes cerrados</h3>
+                  <p className="text-gray-500">Los clientes convertidos aparecerán aquí</p>
+                </CardContent>
+              </Card>
+            ) : (
+              closedClients.map((client) => (
+                <Card key={client.id}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-green-700">{client.full_name}</h3>
+                        <p className="text-sm text-gray-600">{client.email} • {client.phone}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge className="bg-green-100 text-green-700">Cliente Cerrado</Badge>
+                          <Badge variant="outline">{client.advisor_name}</Badge>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedClient(client)}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Ver Detalles
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
+        </TabsContent>
+
+        {/* Leads Perdidos */}
+        <TabsContent value="lost">
+          <div className="space-y-4">
+            {lostLeads.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-medium text-gray-900">No hay leads perdidos</h3>
+                  <p className="text-gray-500">Los leads que no se pudieron convertir aparecerán aquí</p>
+                </CardContent>
+              </Card>
+            ) : (
+              lostLeads.map((client) => (
+                <Card key={client.id}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-red-700">{client.full_name}</h3>
+                        <p className="text-sm text-gray-600">{client.email} • {client.phone}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge className="bg-red-100 text-red-700">Lead Perdido</Badge>
+                          <Badge variant="outline">{client.advisor_name}</Badge>
+                        </div>
+                        {client.conversion_notes && (
+                          <p className="text-xs text-gray-500 mt-1">{client.conversion_notes}</p>
+                        )}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedClient(client)}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Ver Detalles
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Calendario de Diseño */}
+        <TabsContent value="calendar">
+          <SalesDesignCalendar showNotifications={true} />
+        </TabsContent>
+
+        {/* Dashboard Ejecutivo */}
+        <TabsContent value="dashboard">
+          <SalesExecutiveDashboard />
         </TabsContent>
       </Tabs>
 
-      {/* Dialog para recordatorios personalizados */}
-      <Dialog open={showReminderDialog} onOpenChange={setShowReminderDialog}>
-        <DialogContent className="bg-background/95 backdrop-blur-xl border border-border/50">
+      {/* Dialog de detalles del cliente */}
+      <Dialog open={!!selectedClient} onOpenChange={() => setSelectedClient(null)}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              Crear Recordatorio - {selectedClient?.full_name}
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Expediente Completo: {selectedClient?.full_name}
             </DialogTitle>
           </DialogHeader>
           
-          <ReminderForm 
-            clientId={reminderClientId}
-            clientName={selectedClient?.full_name || ""}
-            onSave={createReminder}
-            onCancel={() => setShowReminderDialog(false)}
-          />
+          {selectedClient && (
+            <div className="space-y-6">
+              {/* Información básica */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Información del Cliente</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <p className="text-sm text-gray-600">Nombre completo</p>
+                      <p className="font-medium">{selectedClient.full_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Contacto</p>
+                      <p className="font-medium">{selectedClient.email}</p>
+                      <p className="text-sm">{selectedClient.phone}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">CURP</p>
+                      <p className="font-medium">{selectedClient.curp || 'No registrado'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Asesor asignado</p>
+                      <p className="font-medium">{selectedClient.advisor_name}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Detalles del Proyecto</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <p className="text-sm text-gray-600">Tipo de proyecto</p>
+                      <p className="font-medium">{projectTypeConfig[selectedClient.project_type]}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Presupuesto</p>
+                      <p className="font-medium">${selectedClient.budget?.toLocaleString() || '0'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Timeline</p>
+                      <p className="font-medium">{selectedClient.timeline_months} meses</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Origen del lead</p>
+                      <p className="font-medium">{leadSourceConfig[selectedClient.lead_source]}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Plan de pagos */}
+              {selectedClient.status === 'cliente_cerrado' && (
+                <PaymentPlanManager
+                  clientId={selectedClient.id}
+                  clientName={selectedClient.full_name}
+                  currentPlan={selectedClient.payment_plan}
+                  onPlanUpdate={(plan) => {
+                    setSelectedClient({...selectedClient, payment_plan: plan});
+                  }}
+                />
+              )}
+
+              {/* Gestión de documentos */}
+              <ClientDocumentManager
+                clientId={selectedClient.id}
+                clientName={selectedClient.full_name}
+                curp={selectedClient.curp}
+                onCurpUpdate={(curp) => {
+                  setSelectedClient({...selectedClient, curp});
+                }}
+              />
+
+              {/* Timeline de actividades */}
+              <CRMActivityTimeline clientId={selectedClient.id} />
+
+              {/* Lead scoring */}
+              <CRMLeadScoring 
+                client={selectedClient}
+                onScoreUpdate={(score) => {
+                  setSelectedClient({...selectedClient, lead_score: score});
+                }}
+              />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
+      {/* Dialog de notas */}
       <ClientNotesDialog
         open={notesDialog.open}
-        onOpenChange={(open) => setNotesDialog(prev => ({ ...prev, open }))}
+        onOpenChange={() => setNotesDialog({ open: false, clientId: "", clientName: "" })}
         clientId={notesDialog.clientId}
         clientName={notesDialog.clientName}
       />
 
-      {/* Dialog para actividades y recordatorios */}
-      <Dialog open={showActivities} onOpenChange={setShowActivities}>
-        <DialogContent className="max-w-6xl h-[80vh] overflow-y-auto bg-background/95 backdrop-blur-xl border border-border/50">
-          <DialogHeader>
-            <DialogTitle>Actividades y Recordatorios del Sistema</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-6">
-            {/* Recordatorios Pendientes */}
-            <div className="bg-yellow-50/50 border border-yellow-200 rounded-lg p-4">
-              <h4 className="font-semibold text-yellow-800 mb-3 flex items-center gap-2">
-                <Bell className="h-4 w-4" />
-                Recordatorios Pendientes ({pendingReminders.length})
-              </h4>
-              {pendingReminders.length > 0 ? (
-                <div className="space-y-3">
-                  {pendingReminders.map((reminder) => (
-                    <div key={reminder.id} className="flex items-center justify-between bg-white p-4 rounded border shadow-sm">
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">{reminder.title}</p>
-                        <p className="text-sm text-gray-600 mt-1">{reminder.message}</p>
-                        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {format(new Date(reminder.reminder_date), 'PPpp', { locale: es })}
-                        </p>
-                      </div>
-                      <div className="flex gap-2 ml-4">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={async () => {
-                            try {
-                              await supabase
-                                .from('crm_reminders')
-                                .update({ is_sent: true })
-                                .eq('id', reminder.id);
-                              fetchData();
-                              toast({
-                                title: "Recordatorio procesado",
-                                description: "El recordatorio ha sido marcado como atendido",
-                              });
-                            } catch (error) {
-                              console.error('Error updating reminder:', error);
-                            }
-                          }}
-                        >
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          Marcar como atendido
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-yellow-700">
-                  <Bell className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>No hay recordatorios pendientes</p>
-                </div>
-              )}
-            </div>
-
-            {/* Actividades por Cliente */}
-            <div className="space-y-6">
-              <h4 className="font-semibold text-foreground text-lg">Actividades por Cliente</h4>
-              {filteredClients.map((client) => (
-                <div key={client.id} className="border border-border/50 rounded-lg p-4 bg-background/50">
-                  <div className="flex items-center justify-between mb-4">
-                    <h5 className="font-semibold text-foreground">
-                      {client.full_name}
-                      <span className="ml-2 text-sm text-muted-foreground">
-                        (Score: {client.lead_score || calculateLeadScore(client)})
-                      </span>
-                    </h5>
-                    <Badge variant="outline">
-                      {statusConfig[client.status].label}
-                    </Badge>
-                  </div>
-                  <CRMActivityTimeline clientId={client.id} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Diálogo para Programar Acciones */}
-      <Dialog open={showScheduleDialog} onOpenChange={setShowScheduleDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Programar Acción</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Tipo de Acción</label>
-              <Select value={actionType} onValueChange={setActionType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="call">Llamada</SelectItem>
-                  <SelectItem value="meeting">Reunión</SelectItem>
-                  <SelectItem value="email">Email</SelectItem>
-                  <SelectItem value="follow_up">Seguimiento</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Fecha y Hora</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !scheduleDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarLucide className="mr-2 h-4 w-4" />
-                    {scheduleDate ? format(scheduleDate, "PPP HH:mm") : "Seleccionar fecha y hora"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={scheduleDate}
-                    onSelect={setScheduleDate}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                  {scheduleDate && (
-                    <div className="p-3 border-t">
-                      <input
-                        type="time"
-                        value={scheduleDate ? format(scheduleDate, "HH:mm") : ""}
-                        onChange={(e) => {
-                          if (scheduleDate && e.target.value) {
-                            const [hours, minutes] = e.target.value.split(':');
-                            const newDate = new Date(scheduleDate);
-                            newDate.setHours(parseInt(hours), parseInt(minutes));
-                            setScheduleDate(newDate);
-                          }
-                        }}
-                        className="w-full px-3 py-2 border border-border/50 rounded-md bg-background"
-                      />
-                    </div>
-                  )}
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Descripción</label>
-              <Textarea
-                value={actionDescription}
-                onChange={(e) => setActionDescription(e.target.value)}
-                placeholder="Descripción de la acción a realizar..."
-                rows={3}
-              />
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => setShowScheduleDialog(false)}
-              >
-                Cancelar
-              </Button>
-              <Button onClick={handleScheduleAction}>
-                Programar
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Dialog de pérdida de lead */}
+      <LeadLossDialog
+        isOpen={lossDialog.open}
+        onClose={() => setLossDialog({ open: false, clientId: "", clientName: "" })}
+        clientId={lossDialog.clientId}
+        clientName={lossDialog.clientName}
+        onLeadLost={fetchData}
+      />
     </div>
-  );
-}
-
-// Componente para formulario de recordatorios
-interface ReminderFormProps {
-  clientId: string;
-  clientName: string;
-  onSave: (clientId: string, title: string, message: string, reminderDate: string) => void;
-  onCancel: () => void;
-}
-
-function ReminderForm({ clientId, clientName, onSave, onCancel }: ReminderFormProps) {
-  const [title, setTitle] = useState("");
-  const [message, setMessage] = useState("");
-  const [reminderDate, setReminderDate] = useState<Date>();
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim() || !message.trim() || !reminderDate) return;
-
-    onSave(clientId, title, message, reminderDate.toISOString());
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium mb-1">Título del Recordatorio</label>
-        <Input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Ej: Llamar para seguimiento"
-          required
-        />
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium mb-1">Mensaje</label>
-        <Textarea
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder={`Recordatorio para el cliente ${clientName}...`}
-          rows={3}
-          required
-        />
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium mb-1">Fecha y Hora</label>
-        <input
-          type="datetime-local"
-          value={reminderDate ? reminderDate.toISOString().slice(0, 16) : ''}
-          onChange={(e) => setReminderDate(new Date(e.target.value))}
-          className="w-full px-3 py-2 border border-border/50 rounded-md bg-background"
-          required
-        />
-      </div>
-      
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
-        </Button>
-        <Button type="submit">
-          Crear Recordatorio
-        </Button>
-      </div>
-    </form>
   );
 }
