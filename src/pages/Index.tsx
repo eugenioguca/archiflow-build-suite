@@ -1,8 +1,16 @@
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Building2, Users, BarChart3, FileText, Zap, Shield, Globe, ArrowRight, Sparkles } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 const Index = () => {
+  const { user, loading, isApproved } = useAuth();
+
+  // Si el usuario está autenticado y aprobado, redirigir al dashboard
+  if (!loading && user && isApproved) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white relative overflow-hidden">
       {/* Background effects */}
