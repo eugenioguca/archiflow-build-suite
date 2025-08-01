@@ -16,7 +16,7 @@ interface Client {
   email: string | null;
   phone: string | null;
   address: string | null;
-  status: 'potential' | 'existing' | 'active' | 'completed';
+  status: 'nuevo_lead' | 'en_contacto' | 'cliente_cerrado' | 'potential' | 'existing' | 'active' | 'completed';
   budget: number | null;
   notes: string | null;
   created_at: string;
@@ -92,7 +92,7 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
     email: '',
     phone: '',
     address: '',
-    status: 'nuevo_lead' as 'nuevo_lead' | 'potential' | 'existing' | 'active' | 'completed',
+    status: 'nuevo_lead' as 'nuevo_lead' | 'en_contacto' | 'cliente_cerrado',
     budget: '',
     notes: '',
     state_name: '',
@@ -115,7 +115,7 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
         email: client.email || '',
         phone: client.phone || '',
         address: client.address || '',
-        status: client.status,
+        status: client.status === 'potential' || client.status === 'existing' || client.status === 'active' || client.status === 'completed' ? 'nuevo_lead' : client.status,
         budget: client.budget?.toString() || '',
         notes: client.notes || '',
         state_name: client.state_name || '',
@@ -301,10 +301,8 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="nuevo_lead">Nuevo Lead</SelectItem>
-                    <SelectItem value="potential">Potencial</SelectItem>
-                    <SelectItem value="existing">Existente</SelectItem>
-                    <SelectItem value="active">Activo</SelectItem>
-                    <SelectItem value="completed">Finalizado</SelectItem>
+                    <SelectItem value="en_contacto">En Contacto</SelectItem>
+                    <SelectItem value="cliente_cerrado">Cliente Cerrado</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
