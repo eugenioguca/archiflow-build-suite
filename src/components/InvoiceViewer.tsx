@@ -20,7 +20,7 @@ interface Invoice {
   receptor_rfc: string;
   subtotal: number;
   total: number;
-  estatus: 'borrador' | 'timbrada' | 'cancelada' | 'error';
+  estatus: string; // Changed from union type to string
   metodo_pago: string;
   forma_pago: string;
   observaciones?: string;

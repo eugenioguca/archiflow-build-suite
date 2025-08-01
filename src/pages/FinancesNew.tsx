@@ -12,6 +12,7 @@ import { ExpenseFormDialog } from '@/components/ExpenseFormDialog';
 import FinancialReportsManager from '@/components/FinancialReportsManager';
 import BudgetControlSystem from '@/components/BudgetControlSystem';
 import ProfitabilityAnalysis from '@/components/ProfitabilityAnalysis';
+import { ElectronicInvoicingDashboard } from '@/components/ElectronicInvoicingDashboard';
 import { 
   LayoutDashboard, 
   Wallet, 
@@ -36,7 +37,7 @@ const FinancesNew: React.FC = () => {
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-12 h-auto">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-13 h-auto">
           <TabsTrigger value="dashboard" className="flex items-center gap-2 py-3">
             <LayoutDashboard className="h-4 w-4" />
             <span className="hidden sm:block">Dashboard</span>
@@ -84,6 +85,10 @@ const FinancesNew: React.FC = () => {
           <TabsTrigger value="profitability" className="flex items-center gap-2 py-3">
             <TrendingUp className="h-4 w-4" />
             <span className="hidden sm:block">Rentabilidad</span>
+          </TabsTrigger>
+          <TabsTrigger value="invoicing" className="flex items-center gap-2 py-3">
+            <Receipt className="h-4 w-4" />
+            <span className="hidden sm:block">Facturación</span>
           </TabsTrigger>
         </TabsList>
 
@@ -150,6 +155,10 @@ const FinancesNew: React.FC = () => {
 
         <TabsContent value="profitability" className="space-y-6">
           <ProfitabilityAnalysis />
+        </TabsContent>
+
+        <TabsContent value="invoicing" className="space-y-6">
+          <ElectronicInvoicingDashboard />
         </TabsContent>
       </Tabs>
     </div>

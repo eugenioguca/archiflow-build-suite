@@ -20,7 +20,7 @@ interface Product {
   clave_sat: string;
   unidad_sat: string;
   precio_unitario: number;
-  tipo: 'producto' | 'servicio';
+  tipo: string; // Changed from union type to string
   activo: boolean;
   categoria: string;
   stock_actual: number;
@@ -146,7 +146,7 @@ export function ProductCatalogManager() {
       clave_sat: product.clave_sat,
       unidad_sat: product.unidad_sat,
       precio_unitario: product.precio_unitario,
-      tipo: product.tipo,
+      tipo: product.tipo as any,
       categoria: product.categoria || '',
       cuenta_contable: product.cuenta_contable || ''
     });

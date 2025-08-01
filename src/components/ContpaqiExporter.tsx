@@ -16,10 +16,13 @@ interface ExportConfig {
   nombre_configuracion: string;
   empresa_bd: string;
   ejercicio: number;
-  formato_exportacion: 'csv' | 'excel' | 'xml' | 'txt';
+  formato_exportacion: string; // Changed from union type to string
   tipo_poliza: string;
-  agrupar_por: 'dia' | 'semana' | 'mes';
+  agrupar_por: string; // Changed from union type to string
   activa: boolean;
+  cuenta_ventas_default?: string; // Added missing properties
+  cuenta_iva_trasladado?: string;
+  cuenta_clientes_default?: string;
 }
 
 interface ExportData {
@@ -150,8 +153,7 @@ export function ContpaqiExporter() {
       const { data: invoices, error } = await supabase
         .from('electronic_invoices')
         .select(`
-          *,
-          clients!inner(full_name, email)
+          *
         `)
         .eq('estatus', 'timbrada')
         .gte('fecha_emision', dateRange.start)
@@ -167,7 +169,7 @@ export function ContpaqiExporter() {
       invoices?.forEach((invoice, index) => {
         const fecha = new Date(invoice.fecha_emision).toISOString().split('T')[0];
         const numeroPoliza = `${config.tipo_poliza}${polizaCounter.toString().padStart(4, '0')}`;
-        const cliente = invoice.clients?.full_name || invoice.receptor_razon_social;
+        const cliente = invoice.receptor_razon_social;
 
         // Entry for client account (Debit)
         processedData.push({

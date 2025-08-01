@@ -16,7 +16,7 @@ import { Plus, Settings, Shield, Zap, Edit, Trash2, TestTube, Globe } from 'luci
 interface PACConfig {
   id: string;
   nombre: string;
-  proveedor: 'facturama' | 'sw_sapien' | 'fiscal_api' | 'otro';
+  proveedor: string; // Changed from union type to string
   activo: boolean;
   principal: boolean;
   api_url: string;
@@ -127,7 +127,7 @@ export function PACConfigManager() {
     setEditingConfig(config);
     setFormData({
       nombre: config.nombre,
-      proveedor: config.proveedor,
+      proveedor: config.proveedor as any,
       api_url: config.api_url,
       usuario: config.usuario || '',
       password: '',
