@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { Upload, Eye, Palette, Type, Layout, Image, Save, RotateCcw } from 'lucide-react';
+import { InvoicePreview } from './InvoicePreview';
 
 interface InvoiceTemplate {
   id: string;
@@ -30,6 +31,7 @@ export function InvoiceTemplateManager() {
   const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     fetchTemplates();
@@ -559,7 +561,7 @@ export function InvoiceTemplateManager() {
                 </Button>
                 
                 <div className="flex gap-2">
-                  <Button variant="outline">
+                  <Button variant="outline" onClick={() => setShowPreview(true)}>
                     <Eye className="h-4 w-4 mr-2" />
                     Vista Previa
                   </Button>
@@ -581,6 +583,15 @@ export function InvoiceTemplateManager() {
           )}
         </div>
       </div>
+
+      {/* Preview Modal */}
+      {selectedTemplate && (
+        <InvoicePreview
+          isOpen={showPreview}
+          onClose={() => setShowPreview(false)}
+          template={selectedTemplate}
+        />
+      )}
     </div>
   );
 }
