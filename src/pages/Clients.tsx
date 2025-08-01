@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Phone, Mail, Users } from 'lucide-react';
+import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Phone, Mail, Users, MapPin, Building, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,11 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { ClientFormDialog } from '@/components/ClientFormDialog';
 
 interface Client {
   id: string;
@@ -23,11 +21,18 @@ interface Client {
   budget: number | null;
   notes: string | null;
   created_at: string;
+  state_id?: string;
+  branch_office_id?: string;
+  land_square_meters?: number;
+  lead_source?: 'website' | 'facebook' | 'instagram' | 'commercial_alliance' | 'referral' | 'other';
+  lead_referral_details?: string;
+  state?: { name: string };
+  branch_office?: { name: string; city: string };
 }
 
 const statusLabels = {
   potential: 'Potencial',
-  existing: 'Existente',
+  existing: 'Existente', 
   active: 'Activo',
   completed: 'Finalizado'
 };
@@ -37,6 +42,15 @@ const statusColors = {
   existing: 'bg-blue-100 text-blue-800',
   active: 'bg-green-100 text-green-800',
   completed: 'bg-gray-100 text-gray-800'
+};
+
+const leadSourceLabels = {
+  website: 'Sitio Web',
+  facebook: 'Facebook',
+  instagram: 'Instagram',
+  commercial_alliance: 'Alianza Comercial',
+  referral: 'Referido',
+  other: 'Otro'
 };
 
 export default function Clients() {
@@ -55,12 +69,35 @@ export default function Clients() {
     try {
       const { data, error } = await supabase
         .from('clients')
-        .select('*')
+        .select(`
+          id,
+          full_name,
+          email,
+          phone,
+          address,
+          status,
+          budget,
+          notes,
+          created_at,
+          state_id,
+          branch_office_id,
+          land_square_meters,
+          lead_source,
+          lead_referral_details
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setClients(data || []);
-    } catch (error) {
+      
+      // Cast lead_source to match our interface
+      const processedData = data?.map(client => ({
+        ...client,
+        lead_source: client.lead_source as 'website' | 'facebook' | 'instagram' | 'commercial_alliance' | 'referral' | 'other'
+      }));
+      
+      setClients(processedData || []);
+    } catch (error: any) {
+      console.error('Error fetching clients:', error);
       toast({
         title: "Error",
         description: "No se pudieron cargar los clientes",
@@ -71,65 +108,13 @@ export default function Clients() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    
-    const formData = new FormData(e.currentTarget);
-    const clientData = {
-      full_name: formData.get('full_name') as string,
-      email: formData.get('email') as string || null,
-      phone: formData.get('phone') as string || null,
-      address: formData.get('address') as string || null,
-      status: formData.get('status') as 'potential' | 'existing' | 'active' | 'completed',
-      budget: formData.get('budget') ? parseFloat(formData.get('budget') as string) : null,
-      notes: formData.get('notes') as string || null,
-    };
-
-    try {
-      if (editingClient) {
-        const { error } = await supabase
-          .from('clients')
-          .update(clientData)
-          .eq('id', editingClient.id);
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Cliente actualizado",
-          description: "Los datos del cliente se actualizaron correctamente",
-        });
-      } else {
-        const { error } = await supabase
-          .from('clients')
-          .insert([clientData]);
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Cliente creado",
-          description: "El nuevo cliente se creó correctamente",
-        });
-      }
-      
-      setIsDialogOpen(false);
-      setEditingClient(null);
-      fetchClients();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo guardar el cliente",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleEdit = (client: Client) => {
     setEditingClient(client);
     setIsDialogOpen(true);
   };
 
   const handleDelete = async (clientId: string) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este cliente?')) return;
+    if (!confirm('¿Estás seguro de que quieres eliminar este cliente y su expediente?')) return;
 
     try {
       const { error } = await supabase
@@ -141,11 +126,11 @@ export default function Clients() {
 
       toast({
         title: "Cliente eliminado",
-        description: "El cliente se eliminó correctamente",
+        description: "El expediente del cliente se eliminó correctamente",
       });
       
       fetchClients();
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
         description: "No se pudo eliminar el cliente",
@@ -162,7 +147,8 @@ export default function Clients() {
   const filteredClients = clients.filter(client => {
     const matchesSearch = client.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         client.phone?.includes(searchTerm);
+                         client.phone?.includes(searchTerm) ||
+                         client.state?.name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || client.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -187,113 +173,14 @@ export default function Clients() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Gestión de Clientes</h1>
-          <p className="text-muted-foreground">Administra tu cartera de clientes</p>
+          <h1 className="text-3xl font-bold">Expedientes de Clientes</h1>
+          <p className="text-muted-foreground">Administra la cartera completa de clientes con sus expedientes</p>
         </div>
         
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nuevo Cliente
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>
-                {editingClient ? 'Editar Cliente' : 'Nuevo Cliente'}
-              </DialogTitle>
-              <DialogDescription>
-                {editingClient ? 'Modifica los datos del cliente' : 'Agrega un nuevo cliente al sistema'}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="full_name">Nombre Completo *</Label>
-                <Input
-                  id="full_name"
-                  name="full_name"
-                  defaultValue={editingClient?.full_name || ''}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  defaultValue={editingClient?.email || ''}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone">Teléfono</Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  defaultValue={editingClient?.phone || ''}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="status">Estado</Label>
-                <Select name="status" defaultValue={editingClient?.status || 'potential'}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="potential">Potencial</SelectItem>
-                    <SelectItem value="existing">Existente</SelectItem>
-                    <SelectItem value="active">Activo</SelectItem>
-                    <SelectItem value="completed">Finalizado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="budget">Presupuesto</Label>
-                <Input
-                  id="budget"
-                  name="budget"
-                  type="number"
-                  step="0.01"
-                  defaultValue={editingClient?.budget || ''}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="address">Dirección</Label>
-                <Input
-                  id="address"
-                  name="address"
-                  defaultValue={editingClient?.address || ''}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notas</Label>
-                <Textarea
-                  id="notes"
-                  name="notes"
-                  rows={3}
-                  defaultValue={editingClient?.notes || ''}
-                />
-              </div>
-
-              <div className="flex gap-2 pt-4">
-                <Button type="submit" className="flex-1">
-                  {editingClient ? 'Actualizar' : 'Crear'} Cliente
-                </Button>
-                <Button type="button" variant="outline" onClick={resetForm}>
-                  Cancelar
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => setIsDialogOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nuevo Expediente
+        </Button>
       </div>
 
       {/* Filtros */}
@@ -301,7 +188,7 @@ export default function Clients() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar clientes..."
+            placeholder="Buscar por nombre, email, teléfono, estado..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -325,19 +212,21 @@ export default function Clients() {
       {/* Tabla de clientes */}
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Clientes</CardTitle>
+          <CardTitle>Expedientes de Clientes</CardTitle>
           <CardDescription>
-            {filteredClients.length} cliente(s) encontrado(s)
+            {filteredClients.length} expediente(s) encontrado(s)
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nombre</TableHead>
+                <TableHead>Cliente</TableHead>
                 <TableHead>Contacto</TableHead>
+                <TableHead>Ubicación</TableHead>
+                <TableHead>Proyecto</TableHead>
+                <TableHead>Origen</TableHead>
                 <TableHead>Estado</TableHead>
-                <TableHead>Presupuesto</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
@@ -345,7 +234,12 @@ export default function Clients() {
               {filteredClients.map((client) => (
                 <TableRow key={client.id}>
                   <TableCell className="font-medium">
-                    {client.full_name}
+                    <div>
+                      <p className="font-semibold">{client.full_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Expediente creado: {new Date(client.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="space-y-1">
@@ -364,12 +258,52 @@ export default function Clients() {
                     </div>
                   </TableCell>
                   <TableCell>
+                    <div className="space-y-1">
+                      {client.state?.name && (
+                        <div className="flex items-center gap-1 text-sm">
+                          <MapPin className="h-3 w-3" />
+                          {client.state.name}
+                        </div>
+                      )}
+                      {client.branch_office && (
+                        <div className="flex items-center gap-1 text-sm">
+                          <Building className="h-3 w-3" />
+                          {client.branch_office.name}
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      <div className="text-sm">
+                        {formatCurrency(client.budget)}
+                      </div>
+                      {client.land_square_meters && (
+                        <div className="text-xs text-muted-foreground">
+                          {client.land_square_meters} m²
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      {client.lead_source && (
+                        <div className="flex items-center gap-1 text-sm">
+                          <Globe className="h-3 w-3" />
+                          {leadSourceLabels[client.lead_source]}
+                        </div>
+                      )}
+                      {client.lead_referral_details && (
+                        <div className="text-xs text-muted-foreground">
+                          {client.lead_referral_details}
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
                     <Badge className={statusColors[client.status]}>
                       {statusLabels[client.status]}
                     </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {formatCurrency(client.budget)}
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
@@ -378,10 +312,10 @@ export default function Clients() {
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="bg-background z-50">
                         <DropdownMenuItem onClick={() => handleEdit(client)}>
                           <Edit className="h-4 w-4 mr-2" />
-                          Editar
+                          Editar Expediente
                         </DropdownMenuItem>
                         <DropdownMenuItem 
                           onClick={() => handleDelete(client.id)}
@@ -401,12 +335,25 @@ export default function Clients() {
           {filteredClients.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-4 opacity-50 text-muted-foreground" />
-              <p>No se encontraron clientes</p>
-              <p className="text-sm">Crea tu primer cliente para comenzar</p>
+              <p>No se encontraron expedientes</p>
+              <p className="text-sm">Crea el primer expediente de cliente para comenzar</p>
             </div>
           )}
         </CardContent>
       </Card>
+
+      <ClientFormDialog
+        open={isDialogOpen}
+        onClose={() => {
+          setIsDialogOpen(false);
+          setEditingClient(null);
+        }}
+        client={editingClient}
+        onSave={() => {
+          fetchClients();
+          setEditingClient(null);
+        }}
+      />
     </div>
   );
 }

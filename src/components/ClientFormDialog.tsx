@@ -1,30 +1,30 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { MapPin, Building2, Users } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
+import { toast } from '@/hooks/use-toast';
+import { Loader2, MapPin } from 'lucide-react';
 
-interface ClientFormData {
-  full_name: string;
-  email: string;
-  phone: string;
-  state_id: string;
-  branch_office_id: string;
-  land_square_meters: number | null;
-  lead_source: string;
-  lead_referral_details: string;
-  notes: string;
-}
-
-interface State {
+interface Client {
   id: string;
-  name: string;
-  code: string;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  status: 'potential' | 'existing' | 'active' | 'completed';
+  budget: number | null;
+  notes: string | null;
+  created_at: string;
+  state_id?: string;
+  branch_office_id?: string;
+  land_square_meters?: number;
+  lead_source?: 'website' | 'facebook' | 'instagram' | 'commercial_alliance' | 'referral' | 'other';
+  lead_referral_details?: string;
 }
 
 interface BranchOffice {
@@ -35,85 +35,117 @@ interface BranchOffice {
 
 interface ClientFormDialogProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (client: any) => void;
-  client?: any;
+  onClose: () => void;
+  client?: Client | null;
+  onSave: () => void;
 }
 
-export function ClientFormDialog({ open, onOpenChange, onSubmit, client }: ClientFormDialogProps) {
-  const { toast } = useToast();
+// Estados de México
+const mexicanStates = [
+  { id: "1", name: "Aguascalientes" },
+  { id: "2", name: "Baja California" },
+  { id: "3", name: "Baja California Sur" },
+  { id: "4", name: "Campeche" },
+  { id: "5", name: "Coahuila" },
+  { id: "6", name: "Colima" },
+  { id: "7", name: "Chiapas" },
+  { id: "8", name: "Chihuahua" },
+  { id: "9", name: "Ciudad de México" },
+  { id: "10", name: "Durango" },
+  { id: "11", name: "Guanajuato" },
+  { id: "12", name: "Guerrero" },
+  { id: "13", name: "Hidalgo" },
+  { id: "14", name: "Jalisco" },
+  { id: "15", name: "México" },
+  { id: "16", name: "Michoacán" },
+  { id: "17", name: "Morelos" },
+  { id: "18", name: "Nayarit" },
+  { id: "19", name: "Nuevo León" },
+  { id: "20", name: "Oaxaca" },
+  { id: "21", name: "Puebla" },
+  { id: "22", name: "Querétaro" },
+  { id: "23", name: "Quintana Roo" },
+  { id: "24", name: "San Luis Potosí" },
+  { id: "25", name: "Sinaloa" },
+  { id: "26", name: "Sonora" },
+  { id: "27", name: "Tabasco" },
+  { id: "28", name: "Tamaulipas" },
+  { id: "29", name: "Tlaxcala" },
+  { id: "30", name: "Veracruz" },
+  { id: "31", name: "Yucatán" },
+  { id: "32", name: "Zacatecas" }
+];
+
+export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDialogProps) {
   const [loading, setLoading] = useState(false);
-  const [states, setStates] = useState<State[]>([]);
   const [branchOffices, setBranchOffices] = useState<BranchOffice[]>([]);
-  const [stateSearch, setStateSearch] = useState("");
-  
-  const [formData, setFormData] = useState<ClientFormData>({
-    full_name: client?.full_name || "",
-    email: client?.email || "",
-    phone: client?.phone || "",
-    state_id: client?.state_id || "",
-    branch_office_id: client?.branch_office_id || "",
-    land_square_meters: client?.land_square_meters || null,
-    lead_source: client?.lead_source || "website",
-    lead_referral_details: client?.lead_referral_details || "",
-    notes: client?.notes || ""
+  const [formData, setFormData] = useState({
+    full_name: '',
+    email: '',
+    phone: '',
+    address: '',
+    status: 'potential' as 'potential' | 'existing' | 'active' | 'completed',
+    budget: '',
+    notes: '',
+    state_id: '',
+    branch_office_id: '',
+    land_square_meters: '',
+    lead_source: '' as '' | 'website' | 'facebook' | 'instagram' | 'commercial_alliance' | 'referral' | 'other',
+    lead_referral_details: ''
   });
 
-  const leadSources = [
-    { value: "website", label: "Sitio Web" },
-    { value: "social_media", label: "Redes Sociales" },
-    { value: "referral", label: "Referido" },
-    { value: "advertisement", label: "Publicidad" },
-    { value: "partner", label: "Alianza Comercial" },
-    { value: "event", label: "Evento" }
-  ];
+  useEffect(() => {
+    fetchBranchOffices();
+  }, []);
 
   useEffect(() => {
-    if (open) {
-      fetchStates();
-      fetchBranchOffices();
-    }
-  }, [open]);
-
-  const fetchStates = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("mexican_states")
-        .select("*")
-        .order("name");
-      
-      if (error) throw error;
-      setStates(data || []);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los estados",
-        variant: "destructive"
+    if (client) {
+      setFormData({
+        full_name: client.full_name || '',
+        email: client.email || '',
+        phone: client.phone || '',
+        address: client.address || '',
+        status: client.status,
+        budget: client.budget?.toString() || '',
+        notes: client.notes || '',
+        state_id: client.state_id || '',
+        branch_office_id: client.branch_office_id || '',
+        land_square_meters: client.land_square_meters?.toString() || '',
+        lead_source: client.lead_source || '',
+        lead_referral_details: client.lead_referral_details || ''
+      });
+    } else {
+      // Reset form for new client
+      setFormData({
+        full_name: '',
+        email: '',
+        phone: '',
+        address: '',
+        status: 'potential',
+        budget: '',
+        notes: '',
+        state_id: '',
+        branch_office_id: '',
+        land_square_meters: '',
+        lead_source: '',
+        lead_referral_details: ''
       });
     }
-  };
+  }, [client, open]);
 
   const fetchBranchOffices = async () => {
     try {
       const { data, error } = await supabase
-        .from("branch_offices")
-        .select("id, name, city")
-        .eq("active", true)
-        .order("name");
-      
+        .from('branch_offices')
+        .select('id, name, city')
+        .eq('active', true)
+        .order('name');
+
       if (error) throw error;
       setBranchOffices(data || []);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar las sucursales",
-        variant: "destructive"
-      });
+    } catch (error) {
+      console.error('Error fetching branch offices:', error);
     }
-  };
-
-  const handleInputChange = (field: keyof ClientFormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -121,246 +153,290 @@ export function ClientFormDialog({ open, onOpenChange, onSubmit, client }: Clien
     setLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuario no autenticado");
-
-      // Get current user profile to get the profile ID
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-
-      if (!profile) throw new Error("Perfil no encontrado");
-
       const clientData = {
         full_name: formData.full_name,
-        email: formData.email,
-        phone: formData.phone,
+        email: formData.email || null,
+        phone: formData.phone || null,
+        address: formData.address || null,
+        status: formData.status,
+        budget: formData.budget ? parseFloat(formData.budget) : null,
+        notes: formData.notes || null,
         state_id: formData.state_id || null,
         branch_office_id: formData.branch_office_id || null,
-        land_square_meters: formData.land_square_meters,
-        lead_source: formData.lead_source as "website" | "social_media" | "referral" | "advertisement" | "partner" | "event",
-        lead_referral_details: formData.lead_referral_details,
-        notes: formData.notes,
-        status: "potential" as "potential"
+        land_square_meters: formData.land_square_meters ? parseFloat(formData.land_square_meters) : null,
+        lead_source: formData.lead_source ? formData.lead_source as any : null,
+        lead_referral_details: formData.lead_referral_details || null,
       };
 
-      let result;
       if (client) {
-        // Update existing client
-        const { data, error } = await supabase
-          .from("clients")
+        const { error } = await supabase
+          .from('clients')
           .update(clientData)
-          .eq("id", client.id)
-          .select()
-          .single();
+          .eq('id', client.id);
         
         if (error) throw error;
-        result = data;
+        
+        toast({
+          title: "Cliente actualizado",
+          description: "Los datos del cliente se actualizaron correctamente",
+        });
       } else {
-        // Create new client
-        const { data, error } = await supabase
-          .from("clients")
-          .insert([clientData])
-          .select()
-          .single();
+        const { error } = await supabase
+          .from('clients')
+          .insert(clientData as any);
         
         if (error) throw error;
-        result = data;
-      }
-
-      toast({
-        title: client ? "Cliente actualizado" : "Cliente creado",
-        description: "La información ha sido guardada correctamente"
-      });
-
-      onSubmit(result);
-      onOpenChange(false);
-      
-      // Reset form if creating new client
-      if (!client) {
-        setFormData({
-          full_name: "",
-          email: "",
-          phone: "",
-          state_id: "",
-          branch_office_id: "",
-          land_square_meters: null,
-          lead_source: "website",
-          lead_referral_details: "",
-          notes: ""
+        
+        toast({
+          title: "Cliente creado",
+          description: "El expediente del cliente se creó correctamente",
         });
       }
+      
+      onSave();
+      onClose();
     } catch (error: any) {
+      console.error('Error saving client:', error);
       toast({
         title: "Error",
-        description: error.message,
-        variant: "destructive"
+        description: "No se pudo guardar el cliente: " + error.message,
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredStates = states.filter(state => 
-    state.name.toLowerCase().includes(stateSearch.toLowerCase())
-  );
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            {client ? "Editar Cliente" : "Nuevo Cliente"}
+            <MapPin className="h-5 w-5" />
+            {client ? 'Editar Expediente del Cliente' : 'Nuevo Expediente de Cliente'}
           </DialogTitle>
+          <DialogDescription>
+            {client ? 'Modifica los datos del expediente del cliente' : 'Crea un nuevo expediente de cliente con toda la información requerida'}
+          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="full_name">Nombre Completo *</Label>
-              <Input
-                id="full_name"
-                value={formData.full_name}
-                onChange={(e) => handleInputChange("full_name", e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone">Teléfono *</Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="land_square_meters">Metros Cuadrados del Terreno</Label>
-              <Input
-                id="land_square_meters"
-                type="number"
-                value={formData.land_square_meters || ""}
-                onChange={(e) => handleInputChange("land_square_meters", e.target.value ? parseFloat(e.target.value) : null)}
-                placeholder="ej. 300"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Estado de la República *</Label>
-              <Select 
-                value={formData.state_id} 
-                onValueChange={(value) => handleInputChange("state_id", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona un estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <div className="p-2">
-                    <Input
-                      placeholder="Buscar estado..."
-                      value={stateSearch}
-                      onChange={(e) => setStateSearch(e.target.value)}
-                      className="mb-2"
-                    />
-                  </div>
-                  {filteredStates.map((state) => (
-                    <SelectItem key={state.id} value={state.id}>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        {state.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Sucursal</Label>
-              <Select 
-                value={formData.branch_office_id} 
-                onValueChange={(value) => handleInputChange("branch_office_id", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona una sucursal" />
-                </SelectTrigger>
-                <SelectContent>
-                  {branchOffices.map((office) => (
-                    <SelectItem key={office.id} value={office.id}>
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4" />
-                        {office.name} - {office.city}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Origen del Lead *</Label>
-              <Select 
-                value={formData.lead_source} 
-                onValueChange={(value) => handleInputChange("lead_source", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {leadSources.map((source) => (
-                    <SelectItem key={source.value} value={source.value}>
-                      {source.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {formData.lead_source === "partner" && (
+          {/* Información Básica */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Información Básica</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="lead_referral_details">Aliado que lo refirió</Label>
+                <Label htmlFor="full_name">Nombre Completo *</Label>
                 <Input
-                  id="lead_referral_details"
-                  value={formData.lead_referral_details}
-                  onChange={(e) => handleInputChange("lead_referral_details", e.target.value)}
-                  placeholder="Nombre del aliado comercial"
+                  id="full_name"
+                  value={formData.full_name}
+                  onChange={(e) => handleInputChange('full_name', e.target.value)}
+                  required
                 />
               </div>
-            )}
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">Teléfono *</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  placeholder="Ej: +52 55 1234 5678"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="status">Estado del Cliente</Label>
+                <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="potential">Potencial</SelectItem>
+                    <SelectItem value="existing">Existente</SelectItem>
+                    <SelectItem value="active">Activo</SelectItem>
+                    <SelectItem value="completed">Finalizado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
 
+          {/* Ubicación */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Ubicación</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="state">Estado de la República *</Label>
+                <Combobox
+                  items={mexicanStates.map(state => ({ value: state.id, label: state.name }))}
+                  value={formData.state_id}
+                  onValueChange={(value) => handleInputChange('state_id', value)}
+                  placeholder="Buscar estado..."
+                  emptyText="No se encontró el estado"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="branch_office">Sucursal Asignada</Label>
+                <Select value={formData.branch_office_id} onValueChange={(value) => handleInputChange('branch_office_id', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar sucursal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {branchOffices.map((office) => (
+                      <SelectItem key={office.id} value={office.id}>
+                        {office.name} - {office.city}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="address">Dirección Completa</Label>
+                <Input
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  placeholder="Calle, número, colonia, código postal..."
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Información del Proyecto */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Información del Proyecto</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="land_square_meters">Metros Cuadrados del Terreno</Label>
+                <Input
+                  id="land_square_meters"
+                  type="number"
+                  step="0.01"
+                  value={formData.land_square_meters}
+                  onChange={(e) => handleInputChange('land_square_meters', e.target.value)}
+                  placeholder="Ej: 150.50"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="budget">Presupuesto Estimado</Label>
+                <Input
+                  id="budget"
+                  type="number"
+                  step="0.01"
+                  value={formData.budget}
+                  onChange={(e) => handleInputChange('budget', e.target.value)}
+                  placeholder="Ej: 1500000"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Origen del Lead */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Origen del Lead</h3>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="lead_source">¿Cómo nos conoció? *</Label>
+                <Select value={formData.lead_source} onValueChange={(value) => handleInputChange('lead_source', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar origen del lead" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="website">Sitio Web</SelectItem>
+                    <SelectItem value="facebook">Facebook</SelectItem>
+                    <SelectItem value="instagram">Instagram</SelectItem>
+                    <SelectItem value="commercial_alliance">Alianza Comercial</SelectItem>
+                    <SelectItem value="referral">Referido</SelectItem>
+                    <SelectItem value="other">Otro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {formData.lead_source === 'commercial_alliance' && (
+                <div className="space-y-2">
+                  <Label htmlFor="lead_referral_details">¿Qué aliado comercial lo refirió? *</Label>
+                  <Input
+                    id="lead_referral_details"
+                    value={formData.lead_referral_details}
+                    onChange={(e) => handleInputChange('lead_referral_details', e.target.value)}
+                    placeholder="Nombre del aliado comercial"
+                    required
+                  />
+                </div>
+              )}
+
+              {formData.lead_source === 'referral' && (
+                <div className="space-y-2">
+                  <Label htmlFor="lead_referral_details">¿Quién lo refirió?</Label>
+                  <Input
+                    id="lead_referral_details"
+                    value={formData.lead_referral_details}
+                    onChange={(e) => handleInputChange('lead_referral_details', e.target.value)}
+                    placeholder="Nombre de la persona que lo refirió"
+                  />
+                </div>
+              )}
+
+              {formData.lead_source === 'other' && (
+                <div className="space-y-2">
+                  <Label htmlFor="lead_referral_details">Especificar origen</Label>
+                  <Input
+                    id="lead_referral_details"
+                    value={formData.lead_referral_details}
+                    onChange={(e) => handleInputChange('lead_referral_details', e.target.value)}
+                    placeholder="Describe cómo nos conoció"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Notas */}
           <div className="space-y-2">
-            <Label htmlFor="notes">Notas</Label>
+            <Label htmlFor="notes">Notas Adicionales</Label>
             <Textarea
               id="notes"
               value={formData.notes}
-              onChange={(e) => handleInputChange("notes", e.target.value)}
-              placeholder="Información adicional sobre el cliente..."
+              onChange={(e) => handleInputChange('notes', e.target.value)}
               rows={3}
+              placeholder="Información adicional sobre el cliente..."
             />
           </div>
 
-          <div className="flex gap-2 justify-end">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
+          <div className="flex gap-2 pt-4">
+            <Button type="submit" className="flex-1" disabled={loading}>
+              {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {client ? 'Actualizar' : 'Crear'} Expediente
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? "Guardando..." : (client ? "Actualizar" : "Crear Cliente")}
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
             </Button>
           </div>
         </form>
