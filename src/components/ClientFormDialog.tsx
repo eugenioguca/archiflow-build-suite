@@ -134,10 +134,16 @@ export function ClientFormDialog({ open, onOpenChange, onSubmit, client }: Clien
       if (!profile) throw new Error("Perfil no encontrado");
 
       const clientData = {
-        ...formData,
-        status: "potential" as any,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        full_name: formData.full_name,
+        email: formData.email,
+        phone: formData.phone,
+        state_id: formData.state_id || null,
+        branch_office_id: formData.branch_office_id || null,
+        land_square_meters: formData.land_square_meters,
+        lead_source: formData.lead_source as "website" | "social_media" | "referral" | "advertisement" | "partner" | "event",
+        lead_referral_details: formData.lead_referral_details,
+        notes: formData.notes,
+        status: "potential" as "potential"
       };
 
       let result;
