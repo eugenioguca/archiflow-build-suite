@@ -2671,6 +2671,7 @@ export type Database = {
           id: string
           phone: string | null
           position: string | null
+          profile_completed: boolean | null
           role: Database["public"]["Enums"]["user_role"]
           skills: string[] | null
           updated_at: string
@@ -2687,6 +2688,7 @@ export type Database = {
           id?: string
           phone?: string | null
           position?: string | null
+          profile_completed?: boolean | null
           role?: Database["public"]["Enums"]["user_role"]
           skills?: string[] | null
           updated_at?: string
@@ -2703,6 +2705,7 @@ export type Database = {
           id?: string
           phone?: string | null
           position?: string | null
+          profile_completed?: boolean | null
           role?: Database["public"]["Enums"]["user_role"]
           skills?: string[] | null
           updated_at?: string

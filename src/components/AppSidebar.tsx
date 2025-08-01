@@ -13,7 +13,8 @@ import {
   TrendingUp,
   Activity,
   Truck,
-  Palette
+  Palette,
+  Settings
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -46,7 +47,7 @@ const adminItems = [
   { title: "Finanzas", url: "/finances", icon: DollarSign, color: "text-primary" },
   { title: "Contabilidad", url: "/accounting", icon: Calculator, color: "text-primary" },
   { title: "Fotos de Avance", url: "/progress-photos", icon: Camera, color: "text-primary" },
-  { title: "Gestión de Usuarios", url: "/user-management", icon: User, color: "text-primary" },
+  { title: "Herramientas", url: "/user-management", icon: Settings, color: "text-primary" },
 ];
 
 const clientItems = [

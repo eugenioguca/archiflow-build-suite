@@ -25,12 +25,13 @@ import DesignIndex from "./pages/DesignIndex";
 import SuppliersNew from "./pages/SuppliersNew";
 import ClientPortal from "./pages/ClientPortal";
 import PendingApproval from "./components/PendingApproval";
+import { UserOnboarding } from "./components/UserOnboarding";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, isApproved } = useAuth();
+  const { user, loading, isApproved, needsOnboarding } = useAuth();
 
   if (loading) {
     return (
@@ -42,6 +43,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Show onboarding if user needs to complete profile
+  if (needsOnboarding) {
+    return <UserOnboarding user={user} onComplete={() => window.location.reload()} />;
   }
 
   // Show pending approval screen for non-approved users
@@ -53,7 +59,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function ClientProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, isApproved } = useAuth();
+  const { user, loading, isApproved, needsOnboarding } = useAuth();
 
   if (loading) {
     return (
@@ -65,6 +71,11 @@ function ClientProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Show onboarding if user needs to complete profile
+  if (needsOnboarding) {
+    return <UserOnboarding user={user} onComplete={() => window.location.reload()} />;
   }
 
   if (!isApproved) {
