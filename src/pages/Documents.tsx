@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Upload, FileText, Download, Trash2, Filter, FolderOpen, Eye } from 'lucide-react';
+import { Plus, Search, Upload, FileText, Download, Trash2, Filter, FolderOpen, Eye, Calendar, User, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,10 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { DocumentViewer } from '@/components/DocumentViewer';
 import { getFileUrl } from '@/lib/fileUtils';
+import { InteractiveCard } from '@/components/ui/interactive-card';
+import { SmartTooltip, SmartTooltipContent, SmartTooltipTrigger, SmartTooltipProvider } from '@/components/ui/smart-tooltip';
+import { DragDropUploader } from '@/components/ui/drag-drop-uploader';
+import { HoverPreview } from '@/components/ui/hover-preview';
 
 interface Document {
   id: string;
@@ -363,38 +367,57 @@ export default function Documents() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Gestión de Documentos</h1>
-          <p className="text-muted-foreground">Administra documentos de clientes y proyectos</p>
-        </div>
-        
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Upload className="h-4 w-4 mr-2" />
-              Subir Documento
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
+    <SmartTooltipProvider>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Gestión de Documentos</h1>
+            <p className="text-muted-foreground">Administra documentos de clientes y proyectos</p>
+          </div>
+          
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <SmartTooltip>
+                <SmartTooltipTrigger asChild>
+                  <Button>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Subir Documento
+                  </Button>
+                </SmartTooltipTrigger>
+                <SmartTooltipContent
+                  title="Subir Documento"
+                  description="Arrastra y suelta archivos o haz click para seleccionar"
+                  shortcut="Ctrl+U"
+                />
+              </SmartTooltip>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Subir Nuevo Documento</DialogTitle>
               <DialogDescription>
-                Agrega un documento al sistema de gestión
+                Arrastra archivos al área o selecciona manualmente.
               </DialogDescription>
             </DialogHeader>
             
-            <form onSubmit={handleFileUpload} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="file">Archivo *</Label>
-                <Input
-                  id="file"
-                  name="file"
-                  type="file"
-                  required
-                  accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.xls,.xlsx"
+            <form onSubmit={handleFileUpload} className="space-y-6">
+              <div>
+                <Label>Archivo *</Label>
+                <DragDropUploader
+                  onFilesSelected={(files) => {
+                    const form = document.querySelector('form[onsubmit]') as HTMLFormElement;
+                    if (form) {
+                      const input = form.querySelector('input[name="file"]') as HTMLInputElement;
+                      if (input && files.length > 0) {
+                        const dt = new DataTransfer();
+                        dt.items.add(files[0]);
+                        input.files = dt.files;
+                      }
+                    }
+                  }}
+                  multiple={false}
+                  className="mt-2"
                 />
+                <input type="file" name="file" className="hidden" required />
               </div>
 
               <div className="space-y-2">
@@ -486,102 +509,211 @@ export default function Documents() {
       <div className="flex gap-4 items-center">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar documentos..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+          <SmartTooltip>
+            <SmartTooltipTrigger asChild>
+              <Input
+                placeholder="Buscar documentos..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </SmartTooltipTrigger>
+            <SmartTooltipContent
+              title="Búsqueda Inteligente"
+              description="Busca por nombre, descripción, categoría o proyecto"
+              shortcut="Ctrl+F"
+            />
+          </SmartTooltip>
         </div>
         
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Filtrar por categoría" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas las categorías</SelectItem>
-            <SelectItem value="personal">Documentos Personales</SelectItem>
-            <SelectItem value="project">Documentos del Proyecto</SelectItem>
-            <SelectItem value="contract">Contratos</SelectItem>
-            <SelectItem value="permit">Permisos y Licencias</SelectItem>
-            <SelectItem value="other">Otros</SelectItem>
-          </SelectContent>
-        </Select>
+        <SmartTooltip>
+          <SmartTooltipTrigger asChild>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filtrar por categoría" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las categorías</SelectItem>
+                <SelectItem value="personal">Documentos Personales</SelectItem>
+                <SelectItem value="project">Documentos del Proyecto</SelectItem>
+                <SelectItem value="contract">Contratos</SelectItem>
+                <SelectItem value="permit">Permisos y Licencias</SelectItem>
+                <SelectItem value="other">Otros</SelectItem>
+              </SelectContent>
+            </Select>
+          </SmartTooltipTrigger>
+          <SmartTooltipContent
+            title="Filtro por Categoría"
+            description="Filtra documentos por tipo específico"
+          />
+        </SmartTooltip>
       </div>
 
       {/* Lista de documentos */}
-      <div className="grid gap-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filteredDocuments.map((document) => (
-          <Card key={document.id}>
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4 flex-1">
-                  <div className="p-2 bg-muted rounded-lg">
-                    <FileText className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold">{document.name}</h3>
-                      <Badge className={categoryColors[document.category as keyof typeof categoryColors] || categoryColors.other}>
-                        {categoryLabels[document.category as keyof typeof categoryLabels] || 'Otros'}
-                      </Badge>
-                    </div>
-                    
-                    {document.description && (
-                      <p className="text-sm text-muted-foreground">
-                        {document.description}
-                      </p>
-                    )}
-                    
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span>Subido por: {document.uploaded_by.full_name}</span>
-                      <span>•</span>
-                      <span>{formatDate(document.created_at)}</span>
-                      {document.client && (
-                        <>
-                          <span>•</span>
-                          <span>Cliente: {document.client.full_name}</span>
-                        </>
-                      )}
-                      {document.project && (
-                        <>
-                          <span>•</span>
-                          <span>Proyecto: {document.project.name}</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
+          <InteractiveCard
+            key={document.id}
+            title={document.name}
+            description={document.description}
+            badge={
+              <Badge className={categoryColors[document.category as keyof typeof categoryColors] || categoryColors.other}>
+                {categoryLabels[document.category as keyof typeof categoryLabels] || 'Otros'}
+              </Badge>
+            }
+            hoverPreview={
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <FileText className="h-4 w-4" />
+                  <span>{document.file_type}</span>
                 </div>
-                
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleView(document)}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Ver
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleDownload(document)}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Descargar
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleDelete(document.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                {document.description && (
+                  <p className="text-sm text-muted-foreground line-clamp-3">
+                    {document.description}
+                  </p>
+                )}
+                <div className="text-xs text-muted-foreground">
+                  Click para ver detalles completos
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            }
+            expandedContent={
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium flex items-center gap-1">
+                      <FileText className="h-3 w-3" />
+                      Tipo:
+                    </span>
+                    <span className="text-muted-foreground">{document.file_type}</span>
+                  </div>
+                  {document.project && (
+                    <div>
+                      <span className="font-medium flex items-center gap-1">
+                        <Building className="h-3 w-3" />
+                        Proyecto:
+                      </span>
+                      <span className="text-muted-foreground">{document.project.name}</span>
+                    </div>
+                  )}
+                  {document.client && (
+                    <div>
+                      <span className="font-medium flex items-center gap-1">
+                        <User className="h-3 w-3" />
+                        Cliente:
+                      </span>
+                      <span className="text-muted-foreground">{document.client.full_name}</span>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="text-sm">
+                  <span className="font-medium flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    Subido:
+                  </span>
+                  <span className="text-muted-foreground">
+                    {formatDate(document.created_at)} por {document.uploaded_by.full_name}
+                  </span>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <SmartTooltip>
+                    <SmartTooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleView(document)}
+                        className="flex-1"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Ver
+                      </Button>
+                    </SmartTooltipTrigger>
+                    <SmartTooltipContent
+                      title="Ver Documento"
+                      description="Abrir visualizador de documentos"
+                    />
+                  </SmartTooltip>
+                  
+                  <SmartTooltip>
+                    <SmartTooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleDownload(document)}
+                        className="flex-1"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Descargar
+                      </Button>
+                    </SmartTooltipTrigger>
+                    <SmartTooltipContent
+                      title="Descargar"
+                      description="Descargar archivo a tu dispositivo"
+                    />
+                  </SmartTooltip>
+                  
+                  <SmartTooltip>
+                    <SmartTooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleDelete(document.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </SmartTooltipTrigger>
+                    <SmartTooltipContent
+                      title="Eliminar"
+                      description="Eliminar documento permanentemente"
+                    />
+                  </SmartTooltip>
+                </div>
+              </div>
+            }
+            actions={
+              <div className="flex gap-1">
+                <HoverPreview
+                  trigger={
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  }
+                  preview={
+                    <div className="space-y-2">
+                      <div className="font-medium">Vista Rápida</div>
+                      <div className="text-sm text-muted-foreground">
+                        Click para abrir visualizador
+                      </div>
+                    </div>
+                  }
+                  position="top"
+                />
+              </div>
+            }
+          >
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <FileText className="h-4 w-4" />
+              <span className="flex-1">{document.file_type}</span>
+            </div>
+            
+            <div className="space-y-2 text-sm">
+              {document.project && (
+                <div className="flex items-center gap-2">
+                  <Building className="h-3 w-3" />
+                  <span className="text-muted-foreground">{document.project.name}</span>
+                </div>
+              )}
+              {document.client && (
+                <div className="flex items-center gap-2">
+                  <User className="h-3 w-3" />
+                  <span className="text-muted-foreground">{document.client.full_name}</span>
+                </div>
+              )}
+            </div>
+          </InteractiveCard>
         ))}
 
         {filteredDocuments.length === 0 && (
@@ -603,6 +735,7 @@ export default function Documents() {
         documentName={viewerState.documentName}
         fileType={viewerState.fileType}
       />
-    </div>
+      </div>
+    </SmartTooltipProvider>
   );
 }
