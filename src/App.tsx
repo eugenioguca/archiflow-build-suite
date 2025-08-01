@@ -14,7 +14,7 @@ import Clients from "./pages/Clients";
 import Projects from "./pages/Projects";
 import Documents from "./pages/Documents";
 import ProjectFiles from "./pages/ProjectFiles";
-import Finances from "./pages/Finances";
+import FinancesNew from "./pages/FinancesNew";
 import Accounting from "./pages/Accounting";
 import ProgressPhotos from "./pages/ProgressPhotos";
 import ProgressOverview from "./pages/ProgressOverview";
@@ -114,7 +114,7 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <Finances />
+                    <FinancesNew />
                   </Layout>
                 </ProtectedRoute>
               } 

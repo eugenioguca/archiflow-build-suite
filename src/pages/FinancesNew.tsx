@@ -37,7 +37,7 @@ const FinancesNew: React.FC = () => {
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-13 h-auto">
+        <TabsList className="flex w-full overflow-x-auto h-auto gap-2 p-2">
           <TabsTrigger value="dashboard" className="flex items-center gap-2 py-3">
             <LayoutDashboard className="h-4 w-4" />
             <span className="hidden sm:block">Dashboard</span>
