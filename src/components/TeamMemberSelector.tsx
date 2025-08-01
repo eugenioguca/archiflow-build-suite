@@ -169,7 +169,17 @@ export function TeamMemberSelector({ projectId, teamMembers, onTeamUpdate }: Tea
     }
   };
 
-  const removeTeamMember = async (memberId: string) => {
+  const removeTeamMember = async (memberId: string, memberRole: string) => {
+    // Prevent removal of sales advisor
+    if (memberRole === "sales_advisor") {
+      toast({
+        title: "No se puede eliminar",
+        description: "El asesor de ventas original no puede ser removido del equipo ya que conoce todo el expediente del cliente",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from("project_team_members")
@@ -306,17 +316,29 @@ export function TeamMemberSelector({ projectId, teamMembers, onTeamUpdate }: Tea
                   </p>
                 </div>
               </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => removeTeamMember(member.id)}
-                className="text-destructive hover:text-destructive"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              {member.role !== "sales_advisor" ? (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => removeTeamMember(member.id, member.role)}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
+                  Requerido
+                </Badge>
+              )}
             </div>
             
-            <Badge variant="secondary">{getRoleLabel(member.role)}</Badge>
+            <Badge 
+              variant={member.role === "sales_advisor" ? "default" : "secondary"}
+              className={member.role === "sales_advisor" ? "bg-primary text-primary-foreground" : ""}
+            >
+              {getRoleLabel(member.role)}
+              {member.role === "sales_advisor" && " ⭐"}
+            </Badge>
             
             {member.responsibilities && (
               <p className="text-sm text-muted-foreground">

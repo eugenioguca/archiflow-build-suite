@@ -188,6 +188,29 @@ export default function Design() {
 
   const fetchTeamMembers = async () => {
     try {
+      // First, get the project's client and their assigned advisor
+      const { data: projectData, error: projectError } = await supabase
+        .from("projects")
+        .select(`
+          client_id,
+          clients (
+            assigned_advisor_id,
+            profiles (
+              id,
+              full_name,
+              position,
+              department,
+              avatar_url,
+              skills
+            )
+          )
+        `)
+        .eq("id", projectId)
+        .single();
+
+      if (projectError) throw projectError;
+
+      // Get current team members
       const { data, error } = await supabase
         .from("project_team_members")
         .select(`
@@ -205,8 +228,54 @@ export default function Design() {
         .eq("is_active", true);
 
       if (error) throw error;
+
+      let teamMembersData = data || [];
+
+      // Check if sales advisor is in the team
+      const salesAdvisorId = projectData?.clients?.assigned_advisor_id;
+      if (salesAdvisorId) {
+        const salesAdvisorInTeam = teamMembersData.find(
+          member => member.user_id === salesAdvisorId && member.role === "sales_advisor"
+        );
+
+        // If sales advisor is not in the team, add them automatically
+        if (!salesAdvisorInTeam) {
+          try {
+            const { data: newMember, error: insertError } = await supabase
+              .from("project_team_members")
+              .insert([{
+                project_id: projectId,
+                user_id: salesAdvisorId,
+                role: "sales_advisor",
+                responsibilities: "Asesor de ventas original - Conoce todo el expediente del cliente"
+              }])
+              .select(`
+                *,
+                profiles:user_id (
+                  id,
+                  full_name,
+                  position,
+                  department,
+                  avatar_url,
+                  skills
+                )
+              `)
+              .single();
+
+            if (!insertError && newMember) {
+              teamMembersData.push(newMember);
+              toast({
+                title: "Asesor de ventas añadido",
+                description: "El asesor de ventas original ha sido añadido automáticamente al equipo"
+              });
+            }
+          } catch (insertError) {
+            console.log("Error adding sales advisor:", insertError);
+          }
+        }
+      }
       
-      const formattedMembers = (data || []).map(member => ({
+      const formattedMembers = teamMembersData.map(member => ({
         ...member,
         profile: member.profiles
       }));
