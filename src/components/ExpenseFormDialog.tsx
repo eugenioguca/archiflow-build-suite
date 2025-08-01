@@ -261,11 +261,13 @@ export function ExpenseFormDialog({
                     <SelectValue placeholder="Selecciona proveedor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {suppliers.map(supplier => (
-                      <SelectItem key={supplier.id} value={supplier.id}>
-                        {supplier.company_name} {supplier.rfc && `(${supplier.rfc})`}
-                      </SelectItem>
-                    ))}
+                    {suppliers
+                      .filter(supplier => supplier.id && supplier.id.trim() !== '')
+                      .map(supplier => (
+                        <SelectItem key={supplier.id} value={supplier.id}>
+                          {supplier.company_name} {supplier.rfc && `(${supplier.rfc})`}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -281,11 +283,13 @@ export function ExpenseFormDialog({
                       <SelectValue placeholder="Selecciona proyecto" />
                     </SelectTrigger>
                     <SelectContent>
-                      {projects.map(project => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.name}
-                        </SelectItem>
-                      ))}
+                      {projects
+                        .filter(project => project.id && project.id.trim() !== '')
+                        .map(project => (
+                          <SelectItem key={project.id} value={project.id}>
+                            {project.name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -299,11 +303,13 @@ export function ExpenseFormDialog({
                       <SelectValue placeholder="Selecciona cliente" />
                     </SelectTrigger>
                     <SelectContent>
-                      {clients.map(client => (
-                        <SelectItem key={client.id} value={client.id}>
-                          {client.full_name}
-                        </SelectItem>
-                      ))}
+                      {clients
+                        .filter(client => client.id && client.id.trim() !== '')
+                        .map(client => (
+                          <SelectItem key={client.id} value={client.id}>
+                            {client.full_name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
