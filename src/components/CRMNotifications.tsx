@@ -95,6 +95,9 @@ export function CRMNotifications() {
 
   const fetchPendingReminders = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       const { data, error } = await supabase
         .from('crm_reminders')
         .select(`
@@ -103,10 +106,11 @@ export function CRMNotifications() {
           message,
           reminder_date,
           popup_shown,
-          client:clients(full_name, project_type)
+          client:clients(full_name, project_type, assigned_advisor_id)
         `)
         .eq('popup_shown', false)
         .lte('reminder_date', new Date().toISOString())
+        .eq('user_id', user.id)
         .order('reminder_date', { ascending: true });
 
       if (error) throw error;

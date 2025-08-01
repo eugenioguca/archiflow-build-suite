@@ -330,11 +330,21 @@ export default function Sales() {
     try {
       if (!user?.id) throw new Error('No authenticated user');
 
+      // Obtener información del cliente para verificar si tiene asesor asignado
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('assigned_advisor_id')
+        .eq('id', reminder.client_id)
+        .single();
+
+      // Asignar recordatorio al asesor asignado o al usuario actual
+      const assignedUserId = clientData?.assigned_advisor_id || user.id;
+
       const { data: newReminder, error } = await supabase
         .from('crm_reminders')
         .insert([{
           ...reminder,
-          user_id: user.id,
+          user_id: assignedUserId,
           is_sent: false
         }])
         .select()

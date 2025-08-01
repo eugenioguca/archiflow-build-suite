@@ -93,15 +93,33 @@ export function CRMActivityTimeline({ clientId }: CRMActivityTimelineProps) {
     try {
       const { data, error } = await supabase
         .from('crm_activities')
-        .select(`
-          *,
-          user:profiles(full_name)
-        `)
+        .select('*')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setActivities(data as any || []);
+
+      // Fetch user details separately
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map(activity => activity.user_id))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .in('user_id', userIds);
+
+        const profilesMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+        
+        const transformedData = data.map(activity => ({
+          ...activity,
+          user: {
+            full_name: profilesMap.get(activity.user_id)?.full_name || 'Usuario desconocido'
+          }
+        }));
+        
+        setActivities(transformedData);
+      } else {
+        setActivities([]);
+      }
     } catch (error) {
       console.error('Error fetching activities:', error);
       toast({
@@ -139,11 +157,21 @@ export function CRMActivityTimeline({ clientId }: CRMActivityTimelineProps) {
 
       // Crear recordatorio si hay próxima acción
       if (newActivity.next_action && newActivity.next_action_date) {
+        // Obtener información del cliente para verificar si tiene asesor asignado
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('assigned_advisor_id')
+          .eq('id', clientId)
+          .single();
+
+        // Asignar recordatorio al asesor asignado o al usuario actual
+        const assignedUserId = clientData?.assigned_advisor_id || user.id;
+
         const { error: reminderError } = await supabase
           .from('crm_reminders')
           .insert({
             client_id: clientId,
-            user_id: user.id,
+            user_id: assignedUserId,
             title: `Próxima acción: ${newActivity.next_action}`,
             message: newActivity.description || newActivity.title,
             reminder_date: new Date(newActivity.next_action_date).toISOString(),
