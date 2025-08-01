@@ -12,7 +12,8 @@ import {
   User,
   TrendingUp,
   Activity,
-  Truck
+  Truck,
+  Palette
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -38,6 +39,7 @@ const adminItems = [
   { title: "Clientes", url: "/clients", icon: Users, color: "text-primary" },
   { title: "Ventas", url: "/sales", icon: TrendingUp, color: "text-success" },
   { title: "Proyectos", url: "/projects", icon: Building2, color: "text-primary" },
+  { title: "Diseño", url: "/design", icon: Palette, color: "text-purple" },
   { title: "Avances de Proyectos", url: "/progress-overview", icon: Activity, color: "text-purple" },
   { title: "Documentos", url: "/documents", icon: FolderOpen, color: "text-primary" },
   { title: "Proveedores", url: "/suppliers", icon: Truck, color: "text-orange" },

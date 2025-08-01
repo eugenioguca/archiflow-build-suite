@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { 
   Plus, Search, Building2, Calendar, DollarSign, MoreHorizontal, Edit, Trash2, 
   Users, Settings, Eye, TrendingUp, AlertCircle, CheckCircle2, Clock, 
-  FileText, Camera, BarChart3, Target, MapPin, Phone, Mail, Save, X, Upload, UserPlus, UserMinus
+  FileText, Camera, BarChart3, Target, MapPin, Phone, Mail, Save, X, Upload, UserPlus, UserMinus,
+  Palette, ArrowRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +27,7 @@ import { cn } from '@/lib/utils';
 import { EditableField } from '@/components/EditableField';
 import { ResponsiveTableWrapper } from '@/components/ui/responsive-table';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Link } from 'react-router-dom';
 
 interface Project {
   id: string;
@@ -1081,6 +1083,28 @@ export default function Projects() {
                             </div>
                           ))}
                         </div>
+                      </div>
+                      
+                      {/* Acciones rápidas */}
+                      <div className="flex gap-2 pt-2 border-t">
+                        {(project.status === 'design' || project.status === 'planning') && (
+                          <Link to={`/design/${project.id}`}>
+                            <Button size="sm" variant="outline" className="flex-1">
+                              <Palette className="h-4 w-4 mr-2" />
+                              Módulo de Diseño
+                              <ArrowRight className="h-4 w-4 ml-1" />
+                            </Button>
+                          </Link>
+                        )}
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => setSelectedProject(project)}
+                          className="flex-1"
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Ver Detalles
+                        </Button>
                       </div>
                     </div>
                   </CardContent>

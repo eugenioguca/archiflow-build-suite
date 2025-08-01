@@ -21,6 +21,7 @@ import ProgressOverview from "./pages/ProgressOverview";
 import Sales from "./pages/Sales";
 import UserManagement from "./pages/UserManagement";
 import Design from "./pages/Design";
+import DesignIndex from "./pages/DesignIndex";
 import SuppliersNew from "./pages/SuppliersNew";
 import ClientPortal from "./pages/ClientPortal";
 import PendingApproval from "./components/PendingApproval";
@@ -201,6 +202,16 @@ const App = () => (
                     <UserManagement />
                   </Layout>
                 </ProtectedRoute>
+               } 
+             />
+             <Route 
+               path="/design" 
+               element={
+                 <ProtectedRoute>
+                   <Layout>
+                     <DesignIndex />
+                   </Layout>
+                 </ProtectedRoute>
                } 
              />
              <Route 
