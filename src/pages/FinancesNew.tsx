@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ERPDashboard from '@/components/ERPDashboard';
 import { TreasuryDashboard } from '@/components/TreasuryDashboard';
@@ -9,10 +9,12 @@ import DetailedTransactionsTable from '@/components/DetailedTransactionsTable';
 import PPDMonitoringDashboard from '@/components/PPDMonitoringDashboard';
 import { CashTransactionForm } from '@/components/CashTransactionForm';
 import { ExpenseFormDialog } from '@/components/ExpenseFormDialog';
+import ExpenseTable from '@/components/ExpenseTable';
 import FinancialReportsManager from '@/components/FinancialReportsManager';
 import BudgetControlSystem from '@/components/BudgetControlSystem';
 import ProfitabilityAnalysis from '@/components/ProfitabilityAnalysis';
 import { ElectronicInvoicingDashboard } from '@/components/ElectronicInvoicingDashboard';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   LayoutDashboard, 
   Wallet, 
@@ -27,6 +29,36 @@ import {
 } from 'lucide-react';
 
 const FinancesNew: React.FC = () => {
+  const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false);
+  const [suppliers, setSuppliers] = useState<Array<{ id: string; company_name: string; rfc?: string }>>([]);
+  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([]);
+  const [clients, setClients] = useState<Array<{ id: string; full_name: string }>>([]);
+  const [refreshExpenses, setRefreshExpenses] = useState(0);
+
+  useEffect(() => {
+    fetchSupportData();
+  }, []);
+
+  const fetchSupportData = async () => {
+    try {
+      const [suppliersResult, projectsResult, clientsResult] = await Promise.all([
+        supabase.from('suppliers').select('id, company_name, rfc'),
+        supabase.from('projects').select('id, name'),
+        supabase.from('clients').select('id, full_name')
+      ]);
+
+      if (suppliersResult.data) setSuppliers(suppliersResult.data);
+      if (projectsResult.data) setProjects(projectsResult.data);
+      if (clientsResult.data) setClients(clientsResult.data);
+    } catch (error) {
+      console.error('Error fetching support data:', error);
+    }
+  };
+
+  const handleExpenseSuccess = () => {
+    setRefreshExpenses(prev => prev + 1);
+  };
+
   return (
     <div className="container mx-auto py-6">
       <div className="mb-6">
@@ -129,20 +161,10 @@ const FinancesNew: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="expenses" className="space-y-6">
-          <div className="grid gap-6">
-            <div className="text-center py-8">
-              <Receipt className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Registro de Gastos</h3>
-              <p className="text-muted-foreground mb-4">
-                Registra y gestiona los gastos de la empresa con soporte para CFDI
-              </p>
-              <div className="p-4 border-2 border-dashed rounded-lg">
-                <p className="text-muted-foreground">
-                  Módulo de gastos integrado con sistema CFDI
-                </p>
-              </div>
-            </div>
-          </div>
+          <ExpenseTable 
+            onNewExpense={() => setIsExpenseDialogOpen(true)}
+            refreshTrigger={refreshExpenses}
+          />
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">
@@ -161,6 +183,15 @@ const FinancesNew: React.FC = () => {
           <ElectronicInvoicingDashboard />
         </TabsContent>
       </Tabs>
+
+      <ExpenseFormDialog
+        isOpen={isExpenseDialogOpen}
+        onClose={() => setIsExpenseDialogOpen(false)}
+        onSuccess={handleExpenseSuccess}
+        suppliers={suppliers}
+        projects={projects}
+        clients={clients}
+      />
     </div>
   );
 };
