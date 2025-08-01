@@ -4,12 +4,15 @@ import { CRMNotifications } from "@/components/CRMNotifications";
 import { SmartReminders } from "@/components/SmartReminders";
 import { ClientRedirect } from "@/components/ClientRedirect";
 import { ReactNode } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface LayoutProps {
   children: ReactNode;
 }
 
 export default function Layout({ children }: LayoutProps) {
+  const isMobile = useIsMobile();
+
   return (
     <SidebarProvider>
       <ClientRedirect />
@@ -17,11 +20,11 @@ export default function Layout({ children }: LayoutProps) {
         <AppSidebar />
         
         <div className="flex-1 flex flex-col">
-          <header className="h-14 flex items-center border-b bg-background px-6">
+          <header className={`${isMobile ? 'h-12' : 'h-14'} flex items-center border-b bg-background ${isMobile ? 'px-3' : 'px-6'}`}>
             <SidebarTrigger />
           </header>
           
-          <main className="flex-1 p-6 bg-background">
+          <main className={`flex-1 ${isMobile ? 'p-2 sm:p-4' : 'p-6'} bg-background`}>
             {children}
             <CRMNotifications />
             <SmartReminders />

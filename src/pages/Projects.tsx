@@ -24,6 +24,8 @@ import { UserAvatar } from '@/components/UserAvatar';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { EditableField } from '@/components/EditableField';
+import { ResponsiveTableWrapper } from '@/components/ui/responsive-table';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Project {
   id: string;
@@ -132,6 +134,7 @@ export default function Projects() {
   const [isDocumentDialogOpen, setIsDocumentDialogOpen] = useState(false);
   const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
   const { user } = useAuth();
+  const isMobile = useIsMobile();
 
   // Columnas predefinidas para la tabla personalizable
   const [customColumns, setCustomColumns] = useState<any[]>([
@@ -617,7 +620,7 @@ export default function Projects() {
                   Nuevo Proyecto
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="w-full max-w-[95vw] sm:max-w-md md:max-w-lg lg:max-w-2xl xl:max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>{editingProject ? 'Editar Proyecto' : 'Nuevo Proyecto'}</DialogTitle>
                   <DialogDescription>
@@ -627,7 +630,7 @@ export default function Projects() {
                 {/* Dialog content will be added here */}
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-4">
-                    <div className="grid grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div>
                         <Label htmlFor="name">Nombre del Proyecto *</Label>
                         <Input
@@ -685,7 +688,7 @@ export default function Projects() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       <div>
                         <Label htmlFor="budget">Presupuesto</Label>
                         <Input
@@ -719,7 +722,7 @@ export default function Projects() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       <div>
                         <Label htmlFor="location">Ubicación</Label>
                         <Input
@@ -782,15 +785,15 @@ export default function Projects() {
         </div>
 
         {/* Tarjetas de estadísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
           <Card>
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Proyectos</p>
-                  <p className="text-2xl font-bold">{stats.total}</p>
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total Proyectos</p>
+                  <p className="text-xl sm:text-2xl font-bold">{stats.total}</p>
                 </div>
-                <Building2 className="h-8 w-8 text-blue-500" />
+                <Building2 className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
               </div>
             </CardContent>
           </Card>
@@ -848,7 +851,7 @@ export default function Projects() {
       {/* Filtros mejorados */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -860,7 +863,7 @@ export default function Projects() {
             </div>
             
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-48">
+              <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="Filtrar por estado" />
               </SelectTrigger>
               <SelectContent>
@@ -872,7 +875,7 @@ export default function Projects() {
             </Select>
 
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-full md:w-48">
+              <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="Filtrar por tipo" />
               </SelectTrigger>
                            <SelectContent>
@@ -1008,7 +1011,7 @@ export default function Projects() {
                       </div>
                       
                       {/* Información financiera y fechas */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                         <div>
                           <p className="text-muted-foreground">Presupuesto</p>
                           <p className="font-medium">{formatCurrency(project.budget)}</p>
@@ -1044,7 +1047,7 @@ export default function Projects() {
                       {/* Fases rápidas */}
                       <div className="space-y-2">
                         <p className="text-sm font-medium">Fases del Proyecto</p>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                           {project.phases.slice(0, 4).map((phase, index) => (
                             <div key={index} className="text-xs">
                               <div className="flex items-center gap-1">
@@ -1068,99 +1071,108 @@ export default function Projects() {
             </div>
           )}
 
-          {/* Vista de Tabla */}
+          {/* Vista de Tabla Responsiva */}
           {viewMode === 'table' && (
             <Card>
               <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Proyecto</TableHead>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead>Progreso</TableHead>
-                      <TableHead>Presupuesto</TableHead>
-                      <TableHead>Fechas</TableHead>
-                      <TableHead>Equipo</TableHead>
-                      <TableHead>Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredProjects.map((project) => (
-                      <TableRow key={project.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{project.name}</p>
-                            <p className="text-sm text-muted-foreground">{project.project_type}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{project.client.full_name}</p>
-                            {project.location && (
-                              <p className="text-sm text-muted-foreground">{project.location}</p>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={statusColors[project.status]}>
-                            {statusLabels[project.status]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-sm">
-                              <span>{project.progress_percentage}%</span>
-                            </div>
-                            <Progress value={project.progress_percentage} className="h-2 w-20" />
-                          </div>
-                        </TableCell>
-                        <TableCell>{formatCurrency(project.budget)}</TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            <p>Inicio: {formatDate(project.start_date)}</p>
-                            <p>Estimada: {formatDate(project.estimated_completion)}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex -space-x-2">
-                            {project.team_members.slice(0, 3).map((member, index) => (
-                              <Avatar key={index} className="h-6 w-6 border-2 border-background">
-                                <AvatarImage src={member.avatar_url || undefined} />
-                                <AvatarFallback className="text-xs">
-                                  {member.name.split(' ').map(n => n[0]).join('')}
-                                </AvatarFallback>
-                              </Avatar>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => setSelectedProject(project)}>
-                                <Eye className="h-4 w-4 mr-2" />
-                                Ver Detalles
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEdit(project)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDelete(project.id)}>
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Eliminar
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
+                <ResponsiveTableWrapper minWidth="800px">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[150px]">Proyecto</TableHead>
+                        <TableHead className="min-w-[120px]">Cliente</TableHead>
+                        <TableHead className="min-w-[100px]">Estado</TableHead>
+                        <TableHead className="min-w-[100px]">Progreso</TableHead>
+                        <TableHead className="min-w-[120px]">Presupuesto</TableHead>
+                        <TableHead className="min-w-[150px]">Fechas</TableHead>
+                        <TableHead className="min-w-[80px]">Equipo</TableHead>
+                        <TableHead className="min-w-[80px]">Acciones</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredProjects.map((project) => (
+                        <TableRow key={project.id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium text-sm">{project.name}</p>
+                              <p className="text-xs text-muted-foreground">{project.project_type}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium text-sm">{project.client.full_name}</p>
+                              {project.location && (
+                                <p className="text-xs text-muted-foreground truncate max-w-[100px]">{project.location}</p>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={`${statusColors[project.status]} text-xs`}>
+                              {statusLabels[project.status]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="text-xs font-medium">
+                                {project.progress_percentage}%
+                              </div>
+                              <Progress value={project.progress_percentage} className="h-1.5 w-16" />
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm">{formatCurrency(project.budget)}</span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-xs">
+                              <p>Inicio: {formatDate(project.start_date)}</p>
+                              <p>Estimada: {formatDate(project.estimated_completion)}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex -space-x-1">
+                              {project.team_members.slice(0, 2).map((member, index) => (
+                                <Avatar key={index} className="h-5 w-5 border border-background">
+                                  <AvatarImage src={member.avatar_url || undefined} />
+                                  <AvatarFallback className="text-xs">
+                                    {member.name.split(' ').map(n => n[0]).join('')}
+                                  </AvatarFallback>
+                                </Avatar>
+                              ))}
+                              {project.team_members.length > 2 && (
+                                <div className="h-5 w-5 rounded-full bg-muted border border-background flex items-center justify-center text-xs">
+                                  +{project.team_members.length - 2}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setSelectedProject(project)}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  Ver Detalles
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEdit(project)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDelete(project.id)}>
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Eliminar
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ResponsiveTableWrapper>
               </CardContent>
             </Card>
           )}
@@ -1171,7 +1183,7 @@ export default function Projects() {
       {/* Diálogo de detalles del proyecto */}
       {selectedProject && (
         <Dialog open={!!selectedProject} onOpenChange={() => setSelectedProject(null)}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-full max-w-[95vw] sm:max-w-md md:max-w-lg lg:max-w-4xl xl:max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div>

@@ -391,7 +391,7 @@ export default function Documents() {
                 />
               </SmartTooltip>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="w-full max-w-[95vw] sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Subir Nuevo Documento</DialogTitle>
               <DialogDescription>
@@ -506,8 +506,8 @@ export default function Documents() {
       </div>
 
       {/* Filtros */}
-      <div className="flex gap-4 items-center">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
+        <div className="relative flex-1 sm:max-w-sm">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <SmartTooltip>
             <SmartTooltipTrigger asChild>
@@ -529,7 +529,7 @@ export default function Documents() {
         <SmartTooltip>
           <SmartTooltipTrigger asChild>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="Filtrar por categoría" />
               </SelectTrigger>
               <SelectContent>
@@ -550,7 +550,7 @@ export default function Documents() {
       </div>
 
       {/* Lista de documentos */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filteredDocuments.map((document) => (
           <InteractiveCard
             key={document.id}

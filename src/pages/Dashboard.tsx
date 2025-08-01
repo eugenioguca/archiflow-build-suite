@@ -284,16 +284,16 @@ export default function Dashboard() {
       </div>
 
       {/* Métricas de Ventas y Avances de Proyectos */}
-      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="card-hover border-0 bg-gradient-to-br from-green-100/50 to-green-50/50 border-l-4 border-l-green-500 cursor-pointer glassmorphic-bg enhanced-hover" onClick={() => navigate('/sales')}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium break-words">Pipeline de Ventas</CardTitle>
-            <div className="p-2 bg-green-500/20 rounded-lg">
-              <TrendingUp className="h-5 w-5 text-green-600" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-6">
+            <CardTitle className="text-xs sm:text-sm font-medium break-words">Pipeline de Ventas</CardTitle>
+            <div className="p-1.5 sm:p-2 bg-green-500/20 rounded-lg">
+              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-xl md:text-2xl xl:text-3xl font-bold text-green-600 whitespace-nowrap overflow-hidden">
+          <CardContent className="p-3 sm:p-6 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl xl:text-3xl font-bold text-green-600 break-all">
               {formatCurrency(stats.pipelineValue || 0)} 
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -303,47 +303,47 @@ export default function Dashboard() {
         </Card>
 
         <Card className="card-hover border-0 bg-gradient-to-br from-blue-100/50 to-blue-50/50 border-l-4 border-l-blue-500 cursor-pointer glassmorphic-bg enhanced-hover" onClick={() => navigate('/progress-overview')}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium break-words">Proyectos Activos</CardTitle>
-            <div className="p-2 bg-blue-500/20 rounded-lg">
-              <Building2 className="h-5 w-5 text-blue-600" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-6">
+            <CardTitle className="text-xs sm:text-sm font-medium break-words">Proyectos Activos</CardTitle>
+            <div className="p-1.5 sm:p-2 bg-blue-500/20 rounded-lg">
+              <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-xl md:text-2xl xl:text-3xl font-bold text-blue-600 whitespace-nowrap">{stats.activeProjects}</div>
-            <p className="text-xs text-muted-foreground mt-1 whitespace-nowrap overflow-hidden text-ellipsis">
+          <CardContent className="p-3 sm:p-6 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl xl:text-3xl font-bold text-blue-600">{stats.activeProjects}</div>
+            <p className="text-xs text-muted-foreground mt-1 break-words">
               {stats.totalProjects > 0 ? `${stats.totalProjects} total` : 'Sin proyectos aún'}
             </p>
           </CardContent>
         </Card>
 
         <Card className="card-hover border-0 bg-gradient-to-br from-purple-100/50 to-purple-50/50 border-l-4 border-l-purple-500 cursor-pointer glassmorphic-bg enhanced-hover" onClick={() => navigate('/sales')}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium break-words">Clientes Potenciales</CardTitle>
-            <div className="p-2 bg-purple-500/20 rounded-lg">
-              <Users className="h-5 w-5 text-purple-600" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-6">
+            <CardTitle className="text-xs sm:text-sm font-medium break-words">Clientes Potenciales</CardTitle>
+            <div className="p-1.5 sm:p-2 bg-purple-500/20 rounded-lg">
+              <Users className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-xl md:text-2xl xl:text-3xl font-bold text-purple-600 whitespace-nowrap">{stats.potentialClients}</div>
-            <p className="text-xs text-muted-foreground mt-1 whitespace-nowrap overflow-hidden text-ellipsis">
+          <CardContent className="p-3 sm:p-6 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl xl:text-3xl font-bold text-purple-600">{stats.potentialClients}</div>
+            <p className="text-xs text-muted-foreground mt-1 break-words">
               {stats.totalClients > 0 ? 'En pipeline' : 'Sin clientes aún'}
             </p>
           </CardContent>
         </Card>
 
         <Card className="card-hover border-0 bg-gradient-to-br from-orange-100/50 to-orange-50/50 border-l-4 border-l-orange-500 glassmorphic-bg enhanced-hover">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium break-words">Tasa de Conversión</CardTitle>
-            <div className="p-2 bg-orange-500/20 rounded-lg">
-              <BarChart3 className="h-5 w-5 text-orange-600" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-6">
+            <CardTitle className="text-xs sm:text-sm font-medium break-words">Tasa de Conversión</CardTitle>
+            <div className="p-1.5 sm:p-2 bg-orange-500/20 rounded-lg">
+              <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-xl md:text-2xl xl:text-3xl font-bold text-orange-600 whitespace-nowrap">
+          <CardContent className="p-3 sm:p-6 pt-0">
+            <div className="text-lg sm:text-xl md:text-2xl xl:text-3xl font-bold text-orange-600">
               {stats.totalClients > 0 ? Math.round((stats.activeClients / stats.totalClients) * 100) : 0}%
             </div>
-            <p className="text-xs text-muted-foreground mt-1 whitespace-nowrap overflow-hidden text-ellipsis">
+            <p className="text-xs text-muted-foreground mt-1 break-words">
               Conversión de clientes
             </p>
           </CardContent>
@@ -351,7 +351,7 @@ export default function Dashboard() {
       </div>
 
       {/* Secciones de información detallada */}
-      <div className="grid gap-6 lg:gap-8 grid-cols-1 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 lg:gap-8 grid-cols-1 lg:grid-cols-2">
         <Card className="card-hover border-0 shadow-lg glassmorphic-bg enhanced-hover">
           <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-t-lg">
             <CardTitle className="flex items-center gap-3 text-xl">

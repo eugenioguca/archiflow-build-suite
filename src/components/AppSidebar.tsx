@@ -15,6 +15,7 @@ import {
   Truck
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import {
   Sidebar,
@@ -53,12 +54,13 @@ const clientItems = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, setOpenMobile } = useSidebar();
   const location = useLocation();
   const { user, signOut } = useAuth();
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
   const [userRole, setUserRole] = useState<string | null>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -79,6 +81,12 @@ export function AppSidebar() {
 
     fetchUserRole();
   }, [user]);
+
+  const handleNavigate = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
@@ -101,23 +109,27 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
-      <SidebarHeader className="p-4 border-b border-sidebar-border">
-        {!collapsed && (
+    <Sidebar 
+      collapsible={isMobile ? "none" : "icon"} 
+      className="border-r border-sidebar-border"
+      variant={isMobile ? "floating" : "sidebar"}
+    >
+      <SidebarHeader className={`${isMobile ? 'p-3' : 'p-4'} border-b border-sidebar-border`}>
+        {(!collapsed || isMobile) && (
           <div className="flex justify-center">
             <img 
               src="/lovable-uploads/2d4574ff-eac1-4a35-8890-f3fb20cf2252.png" 
               alt="Dovita Arquitectura" 
-              className="h-12 w-auto dark:hidden"
+              className={`${isMobile ? 'h-10' : 'h-12'} w-auto dark:hidden`}
             />
             <img 
               src="/lovable-uploads/7a3755e3-978f-4182-af7d-1db88590b5a4.png" 
               alt="Dovita Arquitectura" 
-              className="h-12 w-auto hidden dark:block"
+              className={`${isMobile ? 'h-10' : 'h-12'} w-auto hidden dark:block`}
             />
           </div>
         )}
-        {collapsed && (
+        {collapsed && !isMobile && (
           <div className="flex justify-center">
             <div className="p-2 bg-primary rounded-lg">
               <Building2 className="h-6 w-6 text-primary-foreground" />
@@ -128,20 +140,20 @@ export function AppSidebar() {
 
       <SidebarContent className="px-2">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/70 font-medium">
+          <SidebarGroupLabel className="text-sidebar-foreground/70 font-medium text-xs">
             Módulos Principales
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild className="h-11">
-                    <NavLink to={item.url} className={getNavCls}>
+                  <SidebarMenuButton asChild className={`${isMobile ? 'h-12' : 'h-11'}`}>
+                    <NavLink to={item.url} className={getNavCls} onClick={handleNavigate}>
                       <div className={`p-1.5 rounded-lg ${item.color}`}>
                         <item.icon className="h-5 w-5" />
                       </div>
-                      {!collapsed && (
-                        <span className="font-medium">{item.title}</span>
+                      {(!collapsed || isMobile) && (
+                        <span className={`font-medium ${isMobile ? 'text-base' : 'text-sm'}`}>{item.title}</span>
                       )}
                     </NavLink>
                   </SidebarMenuButton>
@@ -152,15 +164,15 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 border-t border-sidebar-border">
-        {!collapsed && user && (
+      <SidebarFooter className={`${isMobile ? 'p-3' : 'p-4'} border-t border-sidebar-border`}>
+        {(!collapsed || isMobile) && user && (
           <div className="space-y-3">
-            <div className="flex items-center gap-3 p-3 bg-sidebar-accent/50 rounded-lg">
+            <div className={`flex items-center gap-3 ${isMobile ? 'p-2' : 'p-3'} bg-sidebar-accent/50 rounded-lg`}>
               <div className="p-2 bg-primary rounded-full">
                 <User className="h-4 w-4 text-primary-foreground" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-sidebar-foreground truncate">
+                <p className={`${isMobile ? 'text-sm' : 'text-sm'} font-medium text-sidebar-foreground truncate`}>
                   {user.email}
                 </p>
                 <p className="text-xs text-sidebar-foreground/70">
@@ -181,7 +193,7 @@ export function AppSidebar() {
             </Button>
           </div>
         )}
-        {collapsed && user && (
+        {collapsed && !isMobile && user && (
           <div className="flex justify-center">
             <Button 
               variant="outline" 
