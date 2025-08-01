@@ -19,6 +19,9 @@ import { SalesDesignCalendar } from "@/components/SalesDesignCalendar";
 import { SalesPhaseManager } from "@/components/SalesPhaseManager";
 import { LeadLossDialog } from "@/components/LeadLossDialog";
 import { SalesExecutiveDashboard } from "@/components/SalesExecutiveDashboard";
+import { ContractTemplateManager } from "@/components/ContractTemplateManager";
+import { SalesDocumentValidator } from "@/components/SalesDocumentValidator";
+import { ClientInvoiceCreator } from "@/components/ClientInvoiceCreator";
 import {
   Users, 
   TrendingUp, 
@@ -660,17 +663,57 @@ export default function Sales() {
                 </Card>
               </div>
 
-              {/* Plan de pagos */}
-              {selectedClient.status === 'cliente_cerrado' && (
-                <PaymentPlanManager
-                  clientId={selectedClient.id}
-                  clientName={selectedClient.full_name}
-                  currentPlan={selectedClient.payment_plan}
-                  onPlanUpdate={(plan) => {
-                    setSelectedClient({...selectedClient, payment_plan: plan});
-                  }}
-                />
-              )}
+              {/* Document Validation and Sales Tools */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-6">
+                  <SalesDocumentValidator
+                    clientId={selectedClient.id}
+                    clientData={selectedClient}
+                    onClientUpdate={(updates) => {
+                      setSelectedClient(prev => prev ? { ...prev, ...updates } : null);
+                    }}
+                    onValidationComplete={() => {
+                      toast({
+                        title: "Documentos completos",
+                        description: "Todos los documentos legales están listos",
+                      });
+                    }}
+                  />
+
+                  <div className="bg-white p-6 rounded-lg border">
+                    <h4 className="text-lg font-semibold mb-4">Acciones</h4>
+                    <div className="space-y-3">
+                      <ClientInvoiceCreator
+                        clientId={selectedClient.id}
+                        clientName={selectedClient.full_name}
+                        paymentPlan={selectedClient.payment_plan}
+                        onInvoiceCreated={() => {
+                          toast({
+                            title: "Factura creada",
+                            description: "La factura se ha creado correctamente",
+                          });
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <PaymentPlanManager
+                    clientId={selectedClient.id}
+                    clientName={selectedClient.full_name}
+                    currentPlan={selectedClient.payment_plan}
+                    onPlanUpdate={(plan) => {
+                      setSelectedClient({...selectedClient, payment_plan: plan});
+                    }}
+                  />
+
+                  <ContractTemplateManager
+                    clientId={selectedClient.id}
+                    clientData={selectedClient}
+                  />
+                </div>
+              </div>
 
               {/* Gestión de documentos */}
               <ProjectDocumentManager
