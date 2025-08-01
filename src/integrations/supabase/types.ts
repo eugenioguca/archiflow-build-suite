@@ -1642,6 +1642,8 @@ export type Database = {
           category: string | null
           client_id: string | null
           created_at: string
+          department: string | null
+          department_permissions: string[] | null
           description: string | null
           document_status: string | null
           file_path: string
@@ -1659,6 +1661,8 @@ export type Database = {
           category?: string | null
           client_id?: string | null
           created_at?: string
+          department?: string | null
+          department_permissions?: string[] | null
           description?: string | null
           document_status?: string | null
           file_path: string
@@ -1676,6 +1680,8 @@ export type Database = {
           category?: string | null
           client_id?: string | null
           created_at?: string
+          department?: string | null
+          department_permissions?: string[] | null
           description?: string | null
           document_status?: string | null
           file_path?: string
@@ -3581,6 +3587,21 @@ export type Database = {
       calculate_complement_due_date: {
         Args: { payment_date: string }
         Returns: string
+      }
+      get_project_cumulative_documents: {
+        Args: { project_id_param: string; user_department?: string }
+        Returns: {
+          id: string
+          name: string
+          file_path: string
+          department: string
+          uploaded_by: string
+          created_at: string
+          file_type: string
+          file_size: number
+          description: string
+          uploader_name: string
+        }[]
       }
       has_module_permission: {
         Args: {

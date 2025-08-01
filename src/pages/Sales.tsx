@@ -14,7 +14,7 @@ import { CRMActivityTimeline } from "@/components/CRMActivityTimeline";
 import { CRMLeadScoring } from "@/components/CRMLeadScoring";
 import { EditableField } from "@/components/EditableField";
 import { PaymentPlanManager } from "@/components/PaymentPlanManager";
-import { ClientDocumentManager } from "@/components/ClientDocumentManager";
+import { ProjectDocumentManager } from "@/components/ProjectDocumentManager";
 import { SalesDesignCalendar } from "@/components/SalesDesignCalendar";
 import { SalesPhaseManager } from "@/components/SalesPhaseManager";
 import { LeadLossDialog } from "@/components/LeadLossDialog";
@@ -673,13 +673,10 @@ export default function Sales() {
               )}
 
               {/* Gestión de documentos */}
-              <ClientDocumentManager
+              <ProjectDocumentManager
                 clientId={selectedClient.id}
                 clientName={selectedClient.full_name}
-                curp={selectedClient.curp}
-                onCurpUpdate={(curp) => {
-                  setSelectedClient({...selectedClient, curp});
-                }}
+                currentDepartment="sales"
               />
 
               {/* Timeline de actividades */}
