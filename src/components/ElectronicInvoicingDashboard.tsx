@@ -24,6 +24,7 @@ interface DashboardStats {
 }
 
 export function ElectronicInvoicingDashboard() {
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [stats, setStats] = useState<DashboardStats>({
     totalInvoices: 0,
     invoicesThisMonth: 0,
@@ -121,7 +122,7 @@ export function ElectronicInvoicingDashboard() {
             Sistema completo de facturación electrónica con PAC integrado
           </p>
         </div>
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={() => setActiveTab('creator')}>
           <Plus className="h-4 w-4" />
           Nueva Factura
         </Button>
@@ -221,7 +222,7 @@ export function ElectronicInvoicingDashboard() {
       </div>
 
       {/* Main Tabs */}
-      <Tabs defaultValue="dashboard" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="invoices">Facturas</TabsTrigger>
