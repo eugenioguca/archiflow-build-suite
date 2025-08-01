@@ -109,8 +109,8 @@ export function EmployeeAdvanceManager() {
 
       const processedAdvances: EmployeeAdvance[] = (advancesResult.data || []).map(advance => ({
         ...advance,
-        project: (advance.project && typeof advance.project === 'object' && 'name' in advance.project) 
-          ? { name: (advance.project as any).name } 
+        project: advance.project && typeof advance.project === 'object' && 'name' in advance.project 
+          ? { name: String(advance.project.name) } 
           : null
       }));
       

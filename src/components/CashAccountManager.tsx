@@ -94,11 +94,11 @@ export function CashAccountManager() {
 
       const processedAccounts: CashAccount[] = (accountsResult.data || []).map(account => ({
         ...account,
-        project: (account.project && typeof account.project === 'object' && 'name' in account.project) 
-          ? { name: (account.project as any).name } 
+        project: account.project && typeof account.project === 'object' && 'name' in account.project 
+          ? { name: String(account.project.name) } 
           : null,
-        responsible_user: (account.responsible_user && typeof account.responsible_user === 'object' && 'full_name' in account.responsible_user)
-          ? { full_name: (account.responsible_user as any).full_name }
+        responsible_user: account.responsible_user && typeof account.responsible_user === 'object' && 'full_name' in account.responsible_user
+          ? { full_name: String(account.responsible_user.full_name) }
           : null
       }));
       

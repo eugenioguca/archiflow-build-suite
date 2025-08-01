@@ -82,8 +82,8 @@ export function CashFlowProjections() {
 
       const processedProjections: CashFlowProjection[] = (projectionsResult.data || []).map(projection => ({
         ...projection,
-        project: (projection.project && typeof projection.project === 'object' && 'name' in projection.project) 
-          ? { name: (projection.project as any).name } 
+        project: projection.project && typeof projection.project === 'object' && 'name' in projection.project 
+          ? { name: String(projection.project.name) } 
           : null
       }));
       
