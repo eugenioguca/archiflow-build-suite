@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Edit2, Users, Settings, Check, Clock, X, Building } from "lucide-react";
+import { Trash2, Edit2, Users, Settings, Check, Clock, X, Building, UserX } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,11 +31,32 @@ interface UserProfile {
 export default function UserManagement() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUserRole, setCurrentUserRole] = useState<string>('');
   const { toast } = useToast();
 
   useEffect(() => {
     fetchUsers();
+    fetchCurrentUserRole();
   }, []);
+
+  const fetchCurrentUserRole = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (profile) {
+          setCurrentUserRole(profile.role);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching current user role:', error);
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -140,10 +161,9 @@ export default function UserManagement() {
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
+  const handleDeactivateUser = async (userId: string) => {
     try {
-      // En lugar de eliminar el usuario del auth (que requiere service_role),
-      // marcamos el perfil como eliminado y lo desactivamos
+      // Marcar el perfil como rechazado y cambiar rol
       const { error } = await supabase
         .from('profiles')
         .update({ 
@@ -165,6 +185,46 @@ export default function UserManagement() {
       toast({
         title: "Error",
         description: "No se pudo desactivar el usuario",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      // Obtener el token del usuario actual
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No authenticated session');
+      }
+
+      // Llamar a la función Edge para eliminar el usuario
+      const response = await fetch('https://ycbflvptfgrjclzzlxci.supabase.co/functions/v1/delete-user', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to delete user');
+      }
+
+      toast({
+        title: "Éxito",
+        description: "Usuario eliminado completamente del sistema"
+      });
+
+      fetchUsers();
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo eliminar el usuario",
         variant: "destructive"
       });
     }
@@ -313,27 +373,53 @@ export default function UserManagement() {
                             </SelectContent>
                           </Select>
 
+                          {/* Botón de Desactivar Usuario */}
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="sm">
-                                <Trash2 className="h-4 w-4" />
+                              <Button variant="outline" size="sm" className="border-orange-500 text-orange-600 hover:bg-orange-50">
+                                <UserX className="h-4 w-4" />
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                                <AlertDialogTitle>¿Desactivar usuario?</AlertDialogTitle>
                                 <AlertDialogDescription>
                                   Esta acción desactivará al usuario cambiando su estado a "rechazado" y su rol a "client". El usuario no será eliminado del sistema pero perderá sus permisos administrativos.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteUser(user.user_id)}>
+                                <AlertDialogAction onClick={() => handleDeactivateUser(user.user_id)} className="bg-orange-600 hover:bg-orange-700">
                                   Desactivar
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
+
+                          {/* Botón de Eliminar Permanentemente - Solo para Admins */}
+                          {currentUserRole === 'admin' && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>¿Eliminar usuario permanentemente?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    <strong>¡CUIDADO!</strong> Esta acción eliminará permanentemente al usuario y todos sus datos asociados del sistema. Esta acción NO se puede deshacer.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteUser(user.user_id)} className="bg-red-600 hover:bg-red-700">
+                                    Eliminar Permanentemente
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
                         </div>
                       </div>
                     ))}
