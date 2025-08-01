@@ -87,9 +87,18 @@ export function AppSidebar() {
       : "hover:bg-sidebar-accent/80 transition-all duration-200";
 
   // Filter menu items based on user role
-  const menuItems = userRole === 'admin' 
-    ? adminItems 
-    : adminItems.filter(item => item.url !== '/user-management');
+  let menuItems = adminItems;
+  
+  if (userRole === 'client') {
+    // Clients should be redirected to their portal, but if they somehow reach this component, show minimal items
+    menuItems = clientItems;
+  } else if (userRole === 'employee') {
+    // Employees don't see user management
+    menuItems = adminItems.filter(item => item.url !== '/user-management');
+  } else if (userRole === 'admin') {
+    // Admins see everything
+    menuItems = adminItems;
+  }
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
@@ -155,7 +164,9 @@ export function AppSidebar() {
                   {user.email}
                 </p>
                 <p className="text-xs text-sidebar-foreground/70">
-                  Administrador
+                  {userRole === 'admin' ? 'Administrador' : 
+                   userRole === 'employee' ? 'Empleado' : 
+                   userRole === 'client' ? 'Cliente' : 'Usuario'}
                 </p>
               </div>
             </div>

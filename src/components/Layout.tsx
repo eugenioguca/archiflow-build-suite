@@ -2,6 +2,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { CRMNotifications } from "@/components/CRMNotifications";
 import { SmartReminders } from "@/components/SmartReminders";
+import { ClientRedirect } from "@/components/ClientRedirect";
 import { ReactNode } from "react";
 
 interface LayoutProps {
@@ -11,6 +12,7 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   return (
     <SidebarProvider>
+      <ClientRedirect />
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         
