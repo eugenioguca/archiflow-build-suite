@@ -898,6 +898,7 @@ export type Database = {
       clients: {
         Row: {
           address: string | null
+          alliance_id: string | null
           assigned_advisor_id: string | null
           branch_office_id: string | null
           budget: number | null
@@ -941,6 +942,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          alliance_id?: string | null
           assigned_advisor_id?: string | null
           branch_office_id?: string | null
           budget?: number | null
@@ -984,6 +986,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          alliance_id?: string | null
           assigned_advisor_id?: string | null
           branch_office_id?: string | null
           budget?: number | null
@@ -1027,6 +1030,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "clients_alliance_id_fkey"
+            columns: ["alliance_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_alliances"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "clients_assigned_advisor_id_fkey"
             columns: ["assigned_advisor_id"]
             isOneToOne: false
@@ -1055,6 +1065,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      commercial_alliances: {
+        Row: {
+          active: boolean | null
+          address: string | null
+          clients_referred: number | null
+          commission_rate: number | null
+          contact_person: string | null
+          created_at: string
+          created_by: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          projects_converted: number | null
+          total_commission_earned: number | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          address?: string | null
+          clients_referred?: number | null
+          commission_rate?: number | null
+          contact_person?: string | null
+          created_at?: string
+          created_by: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          projects_converted?: number | null
+          total_commission_earned?: number | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          address?: string | null
+          clients_referred?: number | null
+          commission_rate?: number | null
+          contact_person?: string | null
+          created_at?: string
+          created_by?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          projects_converted?: number | null
+          total_commission_earned?: number | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
       }
       company_fiscal_config: {
         Row: {
@@ -3511,6 +3578,7 @@ export type Database = {
         | "cold_call"
         | "event"
         | "partner"
+        | "commercial_alliance"
       module_name:
         | "dashboard"
         | "clients"
@@ -3713,6 +3781,7 @@ export const Constants = {
         "cold_call",
         "event",
         "partner",
+        "commercial_alliance",
       ],
       module_name: [
         "dashboard",
