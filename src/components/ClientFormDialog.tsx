@@ -290,9 +290,12 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
               <div className="space-y-2">
                 <Label htmlFor="state">Estado de la República *</Label>
                 <Combobox
-                  items={mexicanStates.map(state => ({ value: state.id, label: state.name }))}
-                  value={formData.state_id}
-                  onValueChange={(value) => handleInputChange('state_id', value)}
+                  items={mexicanStates.map(state => ({ value: state.name, label: state.name }))}
+                  value={mexicanStates.find(state => state.id === formData.state_id)?.name || ''}
+                  onValueChange={(value) => {
+                    const selectedState = mexicanStates.find(state => state.name === value);
+                    handleInputChange('state_id', selectedState?.id || '');
+                  }}
                   placeholder="Buscar estado..."
                   emptyText="No se encontró el estado"
                 />
