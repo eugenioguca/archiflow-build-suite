@@ -94,14 +94,7 @@ export default function Dashboard() {
         return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
       }).reduce((sum, e) => sum + Number(e.amount), 0) || 0;
 
-      // Fetch real photos data
-      const { data: photos } = await supabase.from('progress_photos').select('taken_at');
-      const totalPhotos = photos?.length || 0;
-      
-      // Recent photos (last 7 days)
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const recentPhotos = photos?.filter(p => p.taken_at && new Date(p.taken_at) > sevenDaysAgo).length || 0;
+      // Photos functionality removed
 
       // Fetch real CRM activities for recent activity
       const { data: activities } = await supabase
@@ -134,8 +127,8 @@ export default function Dashboard() {
         completedProjects,
         totalExpenses,
         monthlyExpenses,
-        totalPhotos,
-        recentPhotos,
+        totalPhotos: 0,
+        recentPhotos: 0,
         pipelineValue,
       });
 

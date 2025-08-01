@@ -12,7 +12,7 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { uploadFileToStorage, getFileUrl, downloadFile, getFileType, formatFileSize } from '@/lib/fileUtils';
 import { DocumentViewer } from '@/components/DocumentViewer';
-import { PhotoGallery } from '@/components/PhotoGallery';
+// Photo gallery removed
 
 interface ProjectFile {
   id: string;
@@ -104,18 +104,7 @@ export default function ProjectFiles() {
     fileType: ''
   });
 
-  const [photoGallery, setPhotoGallery] = useState({
-    isOpen: false,
-    photos: [] as Array<{
-      id: string;
-      photo_url: string;
-      description: string | null;
-      taken_at: string;
-      project_id: string;
-      taken_by: string;
-    }>,
-    initialIndex: 0
-  });
+  // Photo gallery removed
 
   useEffect(() => {
     fetchData();
@@ -298,29 +287,13 @@ export default function ProjectFiles() {
       // Use pre-generated public URL (same as ProgressOverview)
       const url = file.public_url || file.file_path;
       
-      if (file.file_category === 'photo') {
-        // Abrir galería de fotos para imágenes
-        setPhotoGallery({
-          isOpen: true,
-          photos: [{
-            id: file.id,
-            photo_url: url,
-            description: file.description || null,
-            taken_at: file.created_at,
-            project_id: file.project_id || '',
-            taken_by: file.uploaded_by
-          }],
-          initialIndex: 0
-        });
-      } else {
-        // Abrir visualizador de documentos para otros archivos
-        setDocumentViewer({
-          isOpen: true,
-          documentUrl: url,
-          documentName: file.name,
-          fileType: file.file_type
-        });
-      }
+      // Use DocumentViewer for all file types (photos removed)
+      setDocumentViewer({
+        isOpen: true,
+        documentUrl: url,
+        documentName: file.name,
+        fileType: file.file_type
+      });
     } catch (error) {
       console.error('Error viewing file:', error);
       toast({
@@ -670,12 +643,7 @@ export default function ProjectFiles() {
         fileType={documentViewer.fileType}
       />
 
-      <PhotoGallery
-        isOpen={photoGallery.isOpen}
-        onClose={() => setPhotoGallery(prev => ({ ...prev, isOpen: false }))}
-        photos={photoGallery.photos}
-        initialPhotoIndex={photoGallery.initialIndex}
-      />
+      {/* Photo gallery removed */}
     </div>
   );
 }

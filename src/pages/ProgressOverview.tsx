@@ -25,7 +25,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { DocumentViewer } from "@/components/DocumentViewer";
-import { PhotoGallery } from "@/components/PhotoGallery";
 
 
 interface ProjectOverview {
@@ -123,17 +122,13 @@ export default function ProgressOverview() {
   const [editingProjectInModal, setEditingProjectInModal] = useState(false);
   const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
   const [isDocumentDialogOpen, setIsDocumentDialogOpen] = useState(false);
-  const [isPhotoDialogOpen, setIsPhotoDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('active');
   const [viewMode, setViewMode] = useState<'detailed' | 'compact' | 'timeline'>('detailed');
   const [projectDocuments, setProjectDocuments] = useState<any[]>([]);
-  const [projectPhotos, setProjectPhotos] = useState<any[]>([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<any>(null);
-  const [isPhotoGalleryOpen, setIsPhotoGalleryOpen] = useState(false);
-  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
   const [expandedEstimatedDates, setExpandedEstimatedDates] = useState<Set<string>>(new Set());
   const [uploadingFile, setUploadingFile] = useState(false);
   const { toast } = useToast();
@@ -278,14 +273,7 @@ export default function ProgressOverview() {
 
       if (documentsError) throw documentsError;
 
-      // Cargar fotos de progreso del proyecto
-      const { data: photosData, error: photosError } = await supabase
-        .from('progress_photos')
-        .select('*')
-        .eq('project_id', projectId)
-        .order('taken_at', { ascending: false });
-
-      if (photosError) throw photosError;
+      // Photos functionality removed
 
       // Obtener URLs públicas para documentos
       const documentsWithUrls = await Promise.all(
@@ -311,31 +299,7 @@ export default function ProgressOverview() {
         })
       );
 
-      // Obtener URLs públicas de las fotos desde Storage
-      const photosWithUrls = await Promise.all(
-        (photosData || []).map(async (photo) => {
-          if (!photo.file_path) {
-            return { ...photo, public_url: photo.photo_url };
-          }
-          
-          // Si ya es una URL completa, usarla directamente
-          if (photo.file_path?.startsWith('http')) {
-            return { ...photo, public_url: photo.file_path };
-          }
-          
-          const { data } = supabase.storage
-            .from('progress-photos')
-            .getPublicUrl(photo.file_path);
-          
-          return {
-            ...photo,
-            public_url: data.publicUrl
-          };
-        })
-      );
-
       setProjectDocuments(documentsWithUrls);
-      setProjectPhotos(photosWithUrls);
     } catch (error) {
       console.error('Error loading project files:', error);
       toast({
@@ -1024,17 +988,8 @@ export default function ProgressOverview() {
     setIsDocumentViewerOpen(true);
   };
 
-  const handleViewPhoto = (photoIndex: number) => {
-    setSelectedPhotoIndex(photoIndex);
-    setIsPhotoGalleryOpen(true);
-  };
-
   const handleAddDocument = () => {
     setIsDocumentDialogOpen(true);
-  };
-
-  const handleAddPhoto = () => {
-    setIsPhotoDialogOpen(true);
   };
 
   const handleFileUpload = async (e: React.FormEvent<HTMLFormElement>, type: 'document' | 'photo') => {
@@ -1117,14 +1072,7 @@ export default function ProgressOverview() {
           taken_at: new Date().toISOString(),
         };
 
-        const { error } = await supabase
-          .from('progress_photos')
-          .insert([photoData]);
-
-        if (error) throw error;
-        
-        setIsPhotoDialogOpen(false);
-        fetchProjectFiles(selectedProject.id);
+        // Photos functionality removed
       }
 
       toast({
@@ -2247,10 +2195,6 @@ export default function ProgressOverview() {
                       <Plus className="h-4 w-4 mr-2" />
                       Agregar Documento
                     </Button>
-                    <Button variant="outline" onClick={() => setIsPhotoDialogOpen(true)}>
-                      <Camera className="h-4 w-4 mr-2" />
-                      Fotos de Progreso
-                    </Button>
                   </div>
 
                   {loadingFiles ? (
@@ -2316,50 +2260,7 @@ export default function ProgressOverview() {
                         </CardContent>
                       </Card>
 
-                      {/* Fotos de Progreso */}
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                            <Camera className="h-5 w-5" />
-                            Fotos de Progreso ({projectPhotos.length})
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          {projectPhotos.length > 0 ? (
-                            <div className="grid grid-cols-2 gap-3">
-                              {projectPhotos.slice(0, 6).map((photo, index) => (
-                                <div key={photo.id} className="relative aspect-square">
-                                  <img
-                                    src={photo.public_url}
-                                    alt={photo.description || 'Foto de progreso'}
-                                    className="w-full h-full object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-                                    onClick={() => handleViewPhoto(index)}
-                                    onError={(e) => {
-                                      const target = e.target as HTMLImageElement;
-                                      target.src = '/placeholder.svg';
-                                    }}
-                                  />
-                                  {photo.title && (
-                                    <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-2 rounded-b-lg">
-                                      {photo.title}
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                              {projectPhotos.length > 6 && (
-                                <div className="aspect-square bg-muted rounded-lg flex items-center justify-center text-sm text-muted-foreground">
-                                  +{projectPhotos.length - 6} más
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="text-center py-6 text-muted-foreground">
-                              <Camera className="h-8 w-8 mx-auto mb-2" />
-                              <p>No hay fotos para este proyecto</p>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
+                      {/* Photos section removed */}
                     </div>
                   )}
                 </TabsContent>
@@ -2396,33 +2297,7 @@ export default function ProgressOverview() {
         </DialogContent>
       </Dialog>
 
-      {/* Diálogo para agregar fotos de progreso */}
-      <Dialog open={isPhotoDialogOpen} onOpenChange={setIsPhotoDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Agregar Foto de Progreso</DialogTitle>
-            <DialogDescription>
-              Sube una foto del progreso del proyecto
-            </DialogDescription>
-          </DialogHeader>
-          <PhotoUploadForm 
-            projectId={selectedProject?.id || ''}
-            phases={selectedProject?.phases || []}
-            onSuccess={() => {
-              setIsPhotoDialogOpen(false);
-              toast({
-                title: "Foto agregada",
-                description: "La foto se ha subido correctamente",
-              });
-            }}
-            onFileUploaded={() => {
-              if (selectedProject) {
-                fetchProjectFiles(selectedProject.id);
-              }
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+      {/* Photo upload functionality removed */}
     </div>
   );
 }

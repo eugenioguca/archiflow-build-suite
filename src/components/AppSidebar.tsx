@@ -42,18 +42,14 @@ const adminItems = [
   { title: "Diseño", url: "/design", icon: Palette, color: "text-purple" },
   { title: "Proyectos", url: "/projects", icon: Building2, color: "text-primary" },
   { title: "Avances de Proyectos", url: "/progress-overview", icon: Activity, color: "text-purple" },
-  { title: "Documentos", url: "/documents", icon: FolderOpen, color: "text-primary" },
   { title: "Proveedores", url: "/suppliers", icon: Truck, color: "text-orange" },
   { title: "Finanzas", url: "/finances", icon: DollarSign, color: "text-primary" },
   { title: "Contabilidad", url: "/accounting", icon: Calculator, color: "text-primary" },
-  { title: "Fotos de Avance", url: "/progress-photos", icon: Camera, color: "text-primary" },
   { title: "Herramientas", url: "/user-management", icon: Settings, color: "text-primary" },
 ];
 
 const clientItems = [
   { title: "Mi Proyecto", url: "/my-project", icon: Building2, color: "text-info" },
-  { title: "Documentos", url: "/my-documents", icon: FolderOpen, color: "text-info" },
-  { title: "Fotos de Avance", url: "/my-photos", icon: Camera, color: "text-pink" },
 ];
 
 export function AppSidebar() {

@@ -12,11 +12,9 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import Projects from "./pages/Projects";
-import Documents from "./pages/Documents";
 import ProjectFiles from "./pages/ProjectFiles";
 import FinancesNew from "./pages/FinancesNew";
 import Accounting from "./pages/Accounting";
-import ProgressPhotos from "./pages/ProgressPhotos";
 import ProgressOverview from "./pages/ProgressOverview";
 import Sales from "./pages/Sales";
 import UserManagement from "./pages/UserManagement";
@@ -127,31 +125,11 @@ const App = () => (
               } 
             />
             <Route 
-              path="/documents" 
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Documents />
-                  </Layout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
               path="/project-files" 
               element={
                 <ProtectedRoute>
                   <Layout>
                     <ProjectFiles />
-                  </Layout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/progress-photos" 
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <ProgressPhotos />
                   </Layout>
                 </ProtectedRoute>
               } 
