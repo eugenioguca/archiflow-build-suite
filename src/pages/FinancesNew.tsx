@@ -9,6 +9,9 @@ import DetailedTransactionsTable from '@/components/DetailedTransactionsTable';
 import PPDMonitoringDashboard from '@/components/PPDMonitoringDashboard';
 import { CashTransactionForm } from '@/components/CashTransactionForm';
 import { ExpenseFormDialog } from '@/components/ExpenseFormDialog';
+import FinancialReportsManager from '@/components/FinancialReportsManager';
+import BudgetControlSystem from '@/components/BudgetControlSystem';
+import ProfitabilityAnalysis from '@/components/ProfitabilityAnalysis';
 import { 
   LayoutDashboard, 
   Wallet, 
@@ -18,7 +21,8 @@ import {
   List, 
   FileText, 
   CreditCard,
-  Receipt
+  Receipt,
+  Target
 } from 'lucide-react';
 
 const FinancesNew: React.FC = () => {
@@ -32,7 +36,7 @@ const FinancesNew: React.FC = () => {
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9 h-auto">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-12 h-auto">
           <TabsTrigger value="dashboard" className="flex items-center gap-2 py-3">
             <LayoutDashboard className="h-4 w-4" />
             <span className="hidden sm:block">Dashboard</span>
@@ -68,6 +72,18 @@ const FinancesNew: React.FC = () => {
           <TabsTrigger value="expenses" className="flex items-center gap-2 py-3">
             <Receipt className="h-4 w-4" />
             <span className="hidden sm:block">Gastos</span>
+          </TabsTrigger>
+          <TabsTrigger value="reports" className="flex items-center gap-2 py-3">
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:block">Reportes</span>
+          </TabsTrigger>
+          <TabsTrigger value="budgets" className="flex items-center gap-2 py-3">
+            <Target className="h-4 w-4" />
+            <span className="hidden sm:block">Presupuestos</span>
+          </TabsTrigger>
+          <TabsTrigger value="profitability" className="flex items-center gap-2 py-3">
+            <TrendingUp className="h-4 w-4" />
+            <span className="hidden sm:block">Rentabilidad</span>
           </TabsTrigger>
         </TabsList>
 
@@ -122,6 +138,18 @@ const FinancesNew: React.FC = () => {
               </div>
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="reports" className="space-y-6">
+          <FinancialReportsManager />
+        </TabsContent>
+
+        <TabsContent value="budgets" className="space-y-6">
+          <BudgetControlSystem />
+        </TabsContent>
+
+        <TabsContent value="profitability" className="space-y-6">
+          <ProfitabilityAnalysis />
         </TabsContent>
       </Tabs>
     </div>
