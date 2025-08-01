@@ -124,6 +124,250 @@ export type Database = {
           },
         ]
       }
+      advance_justifications: {
+        Row: {
+          advance_id: string
+          amount: number
+          approved: boolean | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by: string
+          description: string
+          fiscal_receipt: boolean | null
+          id: string
+          receipt_date: string
+          receipt_url: string | null
+          supplier_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          advance_id: string
+          amount: number
+          approved?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by: string
+          description: string
+          fiscal_receipt?: boolean | null
+          id?: string
+          receipt_date: string
+          receipt_url?: string | null
+          supplier_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          advance_id?: string
+          amount?: number
+          approved?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string
+          fiscal_receipt?: boolean | null
+          id?: string
+          receipt_date?: string
+          receipt_url?: string | null
+          supplier_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advance_justifications_advance_id_fkey"
+            columns: ["advance_id"]
+            isOneToOne: false
+            referencedRelation: "employee_advances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cash_accounts: {
+        Row: {
+          account_type: string
+          created_at: string
+          created_by: string
+          current_balance: number
+          description: string | null
+          id: string
+          max_limit: number | null
+          name: string
+          project_id: string | null
+          responsible_user_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          account_type?: string
+          created_at?: string
+          created_by: string
+          current_balance?: number
+          description?: string | null
+          id?: string
+          max_limit?: number | null
+          name: string
+          project_id?: string | null
+          responsible_user_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          account_type?: string
+          created_at?: string
+          created_by?: string
+          current_balance?: number
+          description?: string | null
+          id?: string
+          max_limit?: number | null
+          name?: string
+          project_id?: string | null
+          responsible_user_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cash_flow_projections: {
+        Row: {
+          actual_expenses: number | null
+          actual_income: number | null
+          actual_net_flow: number | null
+          created_at: string
+          created_by: string
+          id: string
+          notes: string | null
+          period_end: string
+          period_start: string
+          project_id: string | null
+          projected_expenses: number | null
+          projected_income: number | null
+          projected_net_flow: number | null
+          updated_at: string
+          variance: number | null
+        }
+        Insert: {
+          actual_expenses?: number | null
+          actual_income?: number | null
+          actual_net_flow?: number | null
+          created_at?: string
+          created_by: string
+          id?: string
+          notes?: string | null
+          period_end: string
+          period_start: string
+          project_id?: string | null
+          projected_expenses?: number | null
+          projected_income?: number | null
+          projected_net_flow?: number | null
+          updated_at?: string
+          variance?: number | null
+        }
+        Update: {
+          actual_expenses?: number | null
+          actual_income?: number | null
+          actual_net_flow?: number | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          project_id?: string | null
+          projected_expenses?: number | null
+          projected_income?: number | null
+          projected_net_flow?: number | null
+          updated_at?: string
+          variance?: number | null
+        }
+        Relationships: []
+      }
+      cash_transactions: {
+        Row: {
+          amount: number
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
+          cash_account_id: string
+          category: string
+          client_id: string | null
+          created_at: string
+          created_by: string
+          description: string
+          employee_name: string | null
+          expense_id: string | null
+          fiscal_compliant: boolean | null
+          id: string
+          notes: string | null
+          project_id: string | null
+          receipt_provided: boolean | null
+          receipt_url: string | null
+          reference_number: string | null
+          requires_receipt: boolean | null
+          supplier_id: string | null
+          transaction_type: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          cash_account_id: string
+          category: string
+          client_id?: string | null
+          created_at?: string
+          created_by: string
+          description: string
+          employee_name?: string | null
+          expense_id?: string | null
+          fiscal_compliant?: boolean | null
+          id?: string
+          notes?: string | null
+          project_id?: string | null
+          receipt_provided?: boolean | null
+          receipt_url?: string | null
+          reference_number?: string | null
+          requires_receipt?: boolean | null
+          supplier_id?: string | null
+          transaction_type: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          cash_account_id?: string
+          category?: string
+          client_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string
+          employee_name?: string | null
+          expense_id?: string | null
+          fiscal_compliant?: boolean | null
+          id?: string
+          notes?: string | null
+          project_id?: string | null
+          receipt_provided?: boolean | null
+          receipt_url?: string | null
+          reference_number?: string | null
+          requires_receipt?: boolean | null
+          supplier_id?: string | null
+          transaction_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_transactions_cash_account_id_fkey"
+            columns: ["cash_account_id"]
+            isOneToOne: false
+            referencedRelation: "cash_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cfdi_documents: {
         Row: {
           client_id: string | null
@@ -813,6 +1057,71 @@ export type Database = {
             columns: ["uploaded_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_advances: {
+        Row: {
+          advance_amount: number
+          advance_date: string
+          amount_justified: number | null
+          amount_pending: number | null
+          cash_transaction_id: string | null
+          created_at: string
+          created_by: string
+          due_date: string
+          employee_name: string
+          employee_position: string | null
+          id: string
+          notes: string | null
+          project_id: string | null
+          purpose: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          advance_amount: number
+          advance_date: string
+          amount_justified?: number | null
+          amount_pending?: number | null
+          cash_transaction_id?: string | null
+          created_at?: string
+          created_by: string
+          due_date: string
+          employee_name: string
+          employee_position?: string | null
+          id?: string
+          notes?: string | null
+          project_id?: string | null
+          purpose: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          advance_amount?: number
+          advance_date?: string
+          amount_justified?: number | null
+          amount_pending?: number | null
+          cash_transaction_id?: string | null
+          created_at?: string
+          created_by?: string
+          due_date?: string
+          employee_name?: string
+          employee_position?: string | null
+          id?: string
+          notes?: string | null
+          project_id?: string | null
+          purpose?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_advances_cash_transaction_id_fkey"
+            columns: ["cash_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "cash_transactions"
             referencedColumns: ["id"]
           },
         ]
