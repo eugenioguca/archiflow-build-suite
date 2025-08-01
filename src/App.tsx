@@ -20,6 +20,7 @@ import ProgressPhotos from "./pages/ProgressPhotos";
 import ProgressOverview from "./pages/ProgressOverview";
 import Sales from "./pages/Sales";
 import UserManagement from "./pages/UserManagement";
+import Design from "./pages/Design";
 import SuppliersNew from "./pages/SuppliersNew";
 import ClientPortal from "./pages/ClientPortal";
 import PendingApproval from "./components/PendingApproval";
@@ -200,7 +201,17 @@ const App = () => (
                     <UserManagement />
                   </Layout>
                 </ProtectedRoute>
-              } 
+               } 
+             />
+             <Route 
+               path="/design/:projectId" 
+               element={
+                 <ProtectedRoute>
+                   <Layout>
+                     <Design />
+                   </Layout>
+                 </ProtectedRoute>
+               } 
              />
              <Route 
                path="/client-portal" 

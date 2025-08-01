@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { TeamMemberSelector } from "@/components/TeamMemberSelector";
+import { DesignCalendar } from "@/components/DesignCalendar";
+import { ProjectBudgetManager } from "@/components/ProjectBudgetManager";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -466,61 +468,18 @@ export default function Design() {
           </TabsContent>
 
           <TabsContent value="calendar">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CalendarIcon className="h-5 w-5" />
-                    Calendario de Citas
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    className="rounded-md border"
-                  />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Próximas Citas</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="text-center py-8 text-muted-foreground">
-                      <CalendarIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>No hay citas programadas</p>
-                      <Button size="sm" className="mt-2">
-                        Programar Cita
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <DesignCalendar 
+              projectId={projectId!}
+              teamMembers={teamMembers.map(member => ({
+                id: member.profile.id,
+                full_name: member.profile.full_name,
+                avatar_url: member.profile.avatar_url
+              }))}
+            />
           </TabsContent>
 
           <TabsContent value="budget">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
-                  Presupuesto de Obra
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>El presupuesto de obra se habilitará cuando el diseño esté completado</p>
-                  <Button size="sm" className="mt-2" disabled>
-                    Crear Presupuesto
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <ProjectBudgetManager projectId={projectId!} />
           </TabsContent>
         </Tabs>
       </div>
