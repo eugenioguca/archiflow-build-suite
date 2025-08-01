@@ -20,7 +20,7 @@ import ProgressPhotos from "./pages/ProgressPhotos";
 import ProgressOverview from "./pages/ProgressOverview";
 import Sales from "./pages/Sales";
 import UserManagement from "./pages/UserManagement";
-import Suppliers from "./pages/Suppliers";
+import SuppliersNew from "./pages/SuppliersNew";
 import PendingApproval from "./components/PendingApproval";
 import NotFound from "./pages/NotFound";
 
@@ -134,7 +134,7 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Layout>
-                  <Suppliers />
+                  <SuppliersNew />
                 </Layout>
               </ProtectedRoute>
             }
