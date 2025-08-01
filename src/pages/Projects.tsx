@@ -189,15 +189,22 @@ export default function Projects() {
 
   const fetchClients = async () => {
     try {
+      console.log('Fetching clients...');
       const { data, error } = await supabase
         .from('clients')
-        .select('id, full_name, email, phone')
-        .eq('status', 'existing')
+        .select('id, full_name, email, phone, status')
+        .in('status', ['existing', 'active', 'potential'])
         .order('full_name');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching clients:', error);
+        throw error;
+      }
+      
+      console.log('Clients loaded:', data?.length || 0);
       setClients(data || []);
     } catch (error) {
+      console.error('Failed to fetch clients:', error);
       toast({
         title: "Error",
         description: "No se pudieron cargar los clientes",
@@ -644,17 +651,28 @@ export default function Projects() {
                       <div>
                         <Label htmlFor="client_id">Cliente *</Label>
                         <Select name="client_id" defaultValue={editingProject?.client.id || ''} required>
-                          <SelectTrigger className="bg-background">
-                            <SelectValue placeholder="Seleccionar cliente" />
+                          <SelectTrigger className="bg-background border">
+                            <SelectValue placeholder={loading ? "Cargando clientes..." : clients.length === 0 ? "No hay clientes disponibles" : "Seleccionar cliente"} />
                           </SelectTrigger>
-                          <SelectContent className="bg-background border z-50">
-                            {clients.map((client) => (
-                              <SelectItem key={client.id} value={client.id} className="hover:bg-accent">
-                                {client.full_name}
+                          <SelectContent className="bg-background border z-[100] backdrop-blur-sm">
+                            {clients.length === 0 ? (
+                              <SelectItem value="no-clients" disabled>
+                                No hay clientes disponibles
                               </SelectItem>
-                            ))}
+                            ) : (
+                              clients.map((client) => (
+                                <SelectItem key={client.id} value={client.id} className="hover:bg-accent bg-background">
+                                  {client.full_name}
+                                </SelectItem>
+                              ))
+                            )}
                           </SelectContent>
                         </Select>
+                        {clients.length === 0 && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Debe crear clientes primero en el módulo de Clientes
+                          </p>
+                        )}
                       </div>
                       
                       <div>

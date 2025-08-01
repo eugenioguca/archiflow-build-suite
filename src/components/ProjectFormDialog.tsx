@@ -1,20 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProjectFormData {
   name: string;
   description: string;
   location: string;
+  client_id: string;
   assigned_team: string[];
   phases: {
     name: string;
     value: number;
   }[];
+}
+
+interface Client {
+  id: string;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
 }
 
 interface ProjectFormDialogProps {
@@ -37,9 +47,42 @@ export function ProjectFormDialog({ open, onOpenChange, onSubmit }: ProjectFormD
     name: "",
     description: "",
     location: "",
+    client_id: "",
     assigned_team: [""],
     phases: defaultPhases
   });
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loadingClients, setLoadingClients] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (open) {
+      fetchClients();
+    }
+  }, [open]);
+
+  const fetchClients = async () => {
+    setLoadingClients(true);
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id, full_name, email, phone')
+        .in('status', ['existing', 'active', 'potential'])
+        .order('full_name');
+
+      if (error) throw error;
+      setClients(data || []);
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los clientes",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingClients(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +91,7 @@ export function ProjectFormDialog({ open, onOpenChange, onSubmit }: ProjectFormD
       name: "",
       description: "",
       location: "",
+      client_id: "",
       assigned_team: [""],
       phases: defaultPhases
     });
@@ -124,6 +168,36 @@ export function ProjectFormDialog({ open, onOpenChange, onSubmit }: ProjectFormD
                 required
               />
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="client_id">Cliente *</Label>
+            <Select 
+              value={formData.client_id} 
+              onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
+            >
+              <SelectTrigger className="bg-background border">
+                <SelectValue placeholder={loadingClients ? "Cargando clientes..." : clients.length === 0 ? "No hay clientes disponibles" : "Seleccionar cliente"} />
+              </SelectTrigger>
+              <SelectContent className="bg-background border z-[100] backdrop-blur-sm">
+                {clients.length === 0 ? (
+                  <SelectItem value="no-clients" disabled>
+                    No hay clientes disponibles
+                  </SelectItem>
+                ) : (
+                  clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id} className="hover:bg-accent bg-background">
+                      {client.full_name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+            {clients.length === 0 && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Debe crear clientes primero en el módulo de Clientes
+              </p>
+            )}
           </div>
 
           <div>
