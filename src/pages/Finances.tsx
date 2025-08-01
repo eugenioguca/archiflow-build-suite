@@ -381,9 +381,9 @@ export default function Finances() {
         invoice_number: formData.get('invoice_number') as string || null,
         invoice_date: formData.get('invoice_date') as string || null,
         tax_amount: formData.get('tax_amount') ? parseFloat(formData.get('tax_amount') as string) : null,
-        project_id: formData.get('project_id') as string || null,
-        client_id: formData.get('client_id') as string || null,
-        supplier_id: formData.get('supplier_id') as string || null,
+        project_id: (formData.get('project_id') as string) === 'none' ? null : (formData.get('project_id') as string || null),
+        client_id: (formData.get('client_id') as string) === 'none' ? null : (formData.get('client_id') as string || null),
+        supplier_id: (formData.get('supplier_id') as string) === 'none' ? null : (formData.get('supplier_id') as string || null),
         payment_method: formData.get('payment_method') as string || null,
         bank_account: formData.get('bank_account') as string || null,
         reference_number: formData.get('reference_number') as string || null,
@@ -453,8 +453,8 @@ export default function Finances() {
         tax_amount: formData.get('tax_amount') ? parseFloat(formData.get('tax_amount') as string) : null,
         payment_status: formData.get('payment_status') as 'pending' | 'partial' | 'paid' | 'overdue',
         payment_date: formData.get('payment_date') as string || null,
-        project_id: formData.get('project_id') as string || null,
-        client_id: formData.get('client_id') as string || null,
+        project_id: (formData.get('project_id') as string) === 'none' ? null : (formData.get('project_id') as string || null),
+        client_id: (formData.get('client_id') as string) === 'none' ? null : (formData.get('client_id') as string || null),
         created_by: profile.id,
       };
 
@@ -1156,7 +1156,7 @@ export default function Finances() {
                     <SelectValue placeholder="Seleccionar proveedor" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin proveedor</SelectItem>
+                    <SelectItem value="none">Sin proveedor</SelectItem>
                     {suppliers.map((supplier) => (
                       <SelectItem key={supplier.id} value={supplier.id}>
                         {supplier.company_name}
@@ -1173,7 +1173,7 @@ export default function Finances() {
                     <SelectValue placeholder="Seleccionar proyecto" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin proyecto</SelectItem>
+                    <SelectItem value="none">Sin proyecto</SelectItem>
                     {projects.map((project) => (
                       <SelectItem key={project.id} value={project.id}>
                         {project.name}
@@ -1317,7 +1317,7 @@ export default function Finances() {
                     <SelectValue placeholder="Seleccionar cliente" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin cliente</SelectItem>
+                    <SelectItem value="none">Sin cliente</SelectItem>
                     {clients.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.full_name}
@@ -1334,7 +1334,7 @@ export default function Finances() {
                     <SelectValue placeholder="Seleccionar proyecto" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sin proyecto</SelectItem>
+                    <SelectItem value="none">Sin proyecto</SelectItem>
                     {projects.map((project) => (
                       <SelectItem key={project.id} value={project.id}>
                         {project.name}

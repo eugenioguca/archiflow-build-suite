@@ -164,7 +164,7 @@ export function EmployeeAdvanceManager() {
       const advanceData = {
         employee_name: advanceFormData.employee_name,
         employee_position: advanceFormData.employee_position || null,
-        project_id: advanceFormData.project_id || null,
+        project_id: advanceFormData.project_id === 'none' ? null : (advanceFormData.project_id || null),
         advance_amount: amount,
         advance_date: advanceFormData.advance_date,
         purpose: advanceFormData.purpose,
@@ -390,7 +390,7 @@ export function EmployeeAdvanceManager() {
                       <SelectValue placeholder="Sin proyecto específico" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sin proyecto específico</SelectItem>
+                      <SelectItem value="none">Sin proyecto específico</SelectItem>
                       {projects.map((project) => (
                         <SelectItem key={project.id} value={project.id}>
                           {project.name}

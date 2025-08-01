@@ -376,14 +376,14 @@ const BudgetControlSystem: React.FC = () => {
                 <div>
                   <label className="text-sm font-medium">Proyecto (Opcional)</label>
                   <Select
-                    value={formData.project_id || ''}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, project_id: value || undefined }))}
+                    value={formData.project_id || 'none'}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, project_id: value === 'none' ? undefined : value }))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar proyecto" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sin proyecto específico</SelectItem>
+                      <SelectItem value="none">Sin proyecto específico</SelectItem>
                       {projects.map(project => (
                         <SelectItem key={project.id} value={project.id}>
                           {project.name}
@@ -403,7 +403,7 @@ const BudgetControlSystem: React.FC = () => {
                       <SelectValue placeholder="Seleccionar departamento" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sin departamento específico</SelectItem>
+                      <SelectItem value="none">Sin departamento específico</SelectItem>
                       {departments.map(dept => (
                         <SelectItem key={dept.value} value={dept.value}>
                           {dept.label}

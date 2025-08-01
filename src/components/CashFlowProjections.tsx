@@ -120,7 +120,7 @@ export function CashFlowProjections() {
     
     try {
       const projectionData = {
-        project_id: formData.project_id || null,
+        project_id: formData.project_id === 'none' ? null : (formData.project_id || null),
         period_start: formData.period_start,
         period_end: formData.period_end,
         projected_income: parseFloat(formData.projected_income) || 0,
@@ -270,7 +270,7 @@ export function CashFlowProjections() {
                       <SelectValue placeholder="General (todos los proyectos)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">General (todos los proyectos)</SelectItem>
+                      <SelectItem value="none">General (todos los proyectos)</SelectItem>
                       {projects.map((project) => (
                         <SelectItem key={project.id} value={project.id}>
                           {project.name}

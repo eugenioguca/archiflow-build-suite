@@ -153,9 +153,9 @@ export function CashTransactionForm() {
         amount: amount,
         description: formData.description,
         reference_number: formData.reference_number || null,
-        project_id: formData.project_id || null,
-        supplier_id: formData.supplier_id || null,
-        client_id: formData.client_id || null,
+        project_id: formData.project_id === 'none' ? null : (formData.project_id || null),
+        supplier_id: formData.supplier_id === 'none' ? null : (formData.supplier_id || null),
+        client_id: formData.client_id === 'none' ? null : (formData.client_id || null),
         employee_name: formData.employee_name || null,
         requires_receipt: formData.requires_receipt,
         receipt_provided: formData.receipt_provided,
@@ -385,7 +385,7 @@ export function CashTransactionForm() {
                       <SelectValue placeholder="Sin proyecto" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sin proyecto específico</SelectItem>
+                      <SelectItem value="none">Sin proyecto específico</SelectItem>
                       {projects.map((project) => (
                         <SelectItem key={project.id} value={project.id}>
                           {project.name}
@@ -403,7 +403,7 @@ export function CashTransactionForm() {
                         <SelectValue placeholder="Sin proveedor" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Sin proveedor específico</SelectItem>
+                        <SelectItem value="none">Sin proveedor específico</SelectItem>
                         {suppliers.map((supplier) => (
                           <SelectItem key={supplier.id} value={supplier.id}>
                             {supplier.company_name}
@@ -422,7 +422,7 @@ export function CashTransactionForm() {
                         <SelectValue placeholder="Sin cliente" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Sin cliente específico</SelectItem>
+                        <SelectItem value="none">Sin cliente específico</SelectItem>
                         {clients.map((client) => (
                           <SelectItem key={client.id} value={client.id}>
                             {client.full_name}
