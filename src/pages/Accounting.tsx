@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DocumentViewer } from '@/components/DocumentViewer';
 import { XMLUploader } from '@/components/XMLUploader';
 import { PaymentComplementsDashboard } from '@/components/PaymentComplementsDashboard';
+import { PPDComplianceManager } from '@/components/PPDComplianceManager';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ExpenseWithTax {
@@ -956,7 +957,7 @@ export default function Accounting() {
         </TabsContent>
 
         <TabsContent value="complement-management">
-          <PaymentComplementsDashboard />
+          <PPDComplianceManager />
         </TabsContent>
 
         <TabsContent value="monthly">

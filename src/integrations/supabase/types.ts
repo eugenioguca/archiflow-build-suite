@@ -249,6 +249,54 @@ export type Database = {
           },
         ]
       }
+      client_payments: {
+        Row: {
+          amount_paid: number
+          client_id: string
+          complement_due_date: string | null
+          complement_issued: boolean | null
+          created_at: string
+          created_by: string
+          id: string
+          invoice_id: string
+          notes: string | null
+          payment_date: string
+          payment_method: string | null
+          reference_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_paid: number
+          client_id: string
+          complement_due_date?: string | null
+          complement_issued?: boolean | null
+          created_at?: string
+          created_by: string
+          id?: string
+          invoice_id: string
+          notes?: string | null
+          payment_date: string
+          payment_method?: string | null
+          reference_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_paid?: number
+          client_id?: string
+          complement_due_date?: string | null
+          complement_issued?: boolean | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          invoice_id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string | null
+          reference_number?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       client_portal_settings: {
         Row: {
           can_view_documents: boolean | null
@@ -1639,6 +1687,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_complement_due_date: {
+        Args: { payment_date: string }
+        Returns: string
+      }
       has_module_permission: {
         Args: {
           _user_id: string
