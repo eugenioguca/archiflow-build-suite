@@ -32,7 +32,7 @@ interface CommercialAlliance {
 }
 
 const CommercialAlliancesManager: React.FC = () => {
-  const { profile } = useAuth();
+  const { user } = useAuth();
   const [alliances, setAlliances] = useState<CommercialAlliance[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -105,9 +105,13 @@ const CommercialAlliancesManager: React.FC = () => {
         if (error) throw error;
         toast.success("Alianza comercial actualizada");
       } else {
+        if (!user?.id) {
+          throw new Error("Usuario no autenticado");
+        }
+        
         const { error } = await supabase
           .from("commercial_alliances")
-          .insert([{ ...formData, created_by: profile?.user_id }]);
+          .insert([{ ...formData, created_by: user.id }]);
 
         if (error) throw error;
         toast.success("Alianza comercial creada");
