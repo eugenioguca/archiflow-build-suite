@@ -86,7 +86,7 @@ export function TreasuryDashboard() {
       const processedAccounts: CashAccount[] = (accountsResult.data || []).map(account => ({
         ...account,
         project: account.project && typeof account.project === 'object' && 'name' in account.project 
-          ? { name: String(account.project.name) } 
+          ? { name: String(account.project!.name) } 
           : null
       }));
       
