@@ -117,7 +117,7 @@ export function CashAccountManager() {
     setFormData({
       name: '',
       account_type: 'general',
-      project_id: '',
+      project_id: 'none',
       responsible_user_id: '',
       max_limit: '',
       description: '',
@@ -133,7 +133,7 @@ export function CashAccountManager() {
       const accountData = {
         name: formData.name,
         account_type: formData.account_type,
-        project_id: formData.project_id || null,
+        project_id: formData.project_id === 'none' ? null : (formData.project_id || null),
         responsible_user_id: formData.responsible_user_id,
         max_limit: formData.max_limit ? parseFloat(formData.max_limit) : null,
         description: formData.description || null,
@@ -186,7 +186,7 @@ export function CashAccountManager() {
     setFormData({
       name: account.name,
       account_type: account.account_type,
-      project_id: account.project_id || '',
+      project_id: account.project_id || 'none',
       responsible_user_id: account.responsible_user_id,
       max_limit: account.max_limit?.toString() || '',
       description: account.description || '',
@@ -319,7 +319,7 @@ export function CashAccountManager() {
                       <SelectValue placeholder="Seleccionar proyecto" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sin proyecto específico</SelectItem>
+                      <SelectItem value="none">Sin proyecto específico</SelectItem>
                       {projects.map((project) => (
                         <SelectItem key={project.id} value={project.id}>
                           {project.name}
