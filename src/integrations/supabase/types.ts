@@ -848,6 +848,84 @@ export type Database = {
         }
         Relationships: []
       }
+      contpaq_export_config: {
+        Row: {
+          activa: boolean | null
+          agrupar_por: string | null
+          codificacion: string | null
+          concepto_poliza_template: string | null
+          created_at: string
+          created_by: string
+          cuenta_clientes_default: string | null
+          cuenta_isr_retenido: string | null
+          cuenta_iva_retenido: string | null
+          cuenta_iva_trasladado: string | null
+          cuenta_ventas_default: string | null
+          ejercicio: number
+          empresa_bd: string
+          formato_exportacion: string | null
+          id: string
+          incluir_encabezados: boolean | null
+          mapeo_auxiliares: Json | null
+          mapeo_cuentas: Json | null
+          nombre_configuracion: string
+          periodo: number | null
+          separador_csv: string | null
+          tipo_poliza: string | null
+          updated_at: string
+        }
+        Insert: {
+          activa?: boolean | null
+          agrupar_por?: string | null
+          codificacion?: string | null
+          concepto_poliza_template?: string | null
+          created_at?: string
+          created_by: string
+          cuenta_clientes_default?: string | null
+          cuenta_isr_retenido?: string | null
+          cuenta_iva_retenido?: string | null
+          cuenta_iva_trasladado?: string | null
+          cuenta_ventas_default?: string | null
+          ejercicio: number
+          empresa_bd: string
+          formato_exportacion?: string | null
+          id?: string
+          incluir_encabezados?: boolean | null
+          mapeo_auxiliares?: Json | null
+          mapeo_cuentas?: Json | null
+          nombre_configuracion: string
+          periodo?: number | null
+          separador_csv?: string | null
+          tipo_poliza?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activa?: boolean | null
+          agrupar_por?: string | null
+          codificacion?: string | null
+          concepto_poliza_template?: string | null
+          created_at?: string
+          created_by?: string
+          cuenta_clientes_default?: string | null
+          cuenta_isr_retenido?: string | null
+          cuenta_iva_retenido?: string | null
+          cuenta_iva_trasladado?: string | null
+          cuenta_ventas_default?: string | null
+          ejercicio?: number
+          empresa_bd?: string
+          formato_exportacion?: string | null
+          id?: string
+          incluir_encabezados?: boolean | null
+          mapeo_auxiliares?: Json | null
+          mapeo_cuentas?: Json | null
+          nombre_configuracion?: string
+          periodo?: number | null
+          separador_csv?: string | null
+          tipo_poliza?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       crm_activities: {
         Row: {
           activity_type: Database["public"]["Enums"]["activity_type"]
@@ -1146,6 +1224,180 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      electronic_invoices: {
+        Row: {
+          cadena_original_complemento: string | null
+          certificado_sat: string | null
+          client_id: string | null
+          conceptos: Json
+          condiciones_pago: string | null
+          created_at: string
+          created_by: string
+          descuento: number | null
+          emisor_razon_social: string
+          emisor_regimen_fiscal: string
+          emisor_rfc: string
+          estatus: string | null
+          fecha_cancelacion: string | null
+          fecha_certificacion: string | null
+          fecha_emision: string
+          fecha_timbrado: string | null
+          fecha_vencimiento: string | null
+          folio: string
+          forma_pago: string | null
+          id: string
+          impuestos: Json | null
+          income_id: string | null
+          lugar_expedicion: string
+          metodo_pago: string | null
+          moneda: string | null
+          motivo_cancelacion: string | null
+          numero_certificado_sat: string | null
+          observaciones: string | null
+          orden_compra: string | null
+          pac_error_message: string | null
+          pac_response: Json | null
+          pdf_path: string | null
+          project_id: string | null
+          receptor_domicilio_fiscal: string | null
+          receptor_razon_social: string
+          receptor_regimen_fiscal: string | null
+          receptor_rfc: string
+          receptor_uso_cfdi: string
+          referencia_interna: string | null
+          rfc_proveedor_certif: string | null
+          sello_cfdi: string | null
+          sello_sat: string | null
+          serie: string
+          subtotal: number
+          tipo_cambio: number | null
+          tipo_comprobante: string
+          total: number
+          total_impuestos_retenidos: number | null
+          total_impuestos_trasladados: number | null
+          updated_at: string
+          uuid_fiscal: string | null
+          uuid_sustitucion: string | null
+          version_cfdi: string | null
+          xml_content: string | null
+          xml_path: string | null
+        }
+        Insert: {
+          cadena_original_complemento?: string | null
+          certificado_sat?: string | null
+          client_id?: string | null
+          conceptos?: Json
+          condiciones_pago?: string | null
+          created_at?: string
+          created_by: string
+          descuento?: number | null
+          emisor_razon_social: string
+          emisor_regimen_fiscal: string
+          emisor_rfc: string
+          estatus?: string | null
+          fecha_cancelacion?: string | null
+          fecha_certificacion?: string | null
+          fecha_emision?: string
+          fecha_timbrado?: string | null
+          fecha_vencimiento?: string | null
+          folio: string
+          forma_pago?: string | null
+          id?: string
+          impuestos?: Json | null
+          income_id?: string | null
+          lugar_expedicion: string
+          metodo_pago?: string | null
+          moneda?: string | null
+          motivo_cancelacion?: string | null
+          numero_certificado_sat?: string | null
+          observaciones?: string | null
+          orden_compra?: string | null
+          pac_error_message?: string | null
+          pac_response?: Json | null
+          pdf_path?: string | null
+          project_id?: string | null
+          receptor_domicilio_fiscal?: string | null
+          receptor_razon_social: string
+          receptor_regimen_fiscal?: string | null
+          receptor_rfc: string
+          receptor_uso_cfdi: string
+          referencia_interna?: string | null
+          rfc_proveedor_certif?: string | null
+          sello_cfdi?: string | null
+          sello_sat?: string | null
+          serie: string
+          subtotal?: number
+          tipo_cambio?: number | null
+          tipo_comprobante: string
+          total?: number
+          total_impuestos_retenidos?: number | null
+          total_impuestos_trasladados?: number | null
+          updated_at?: string
+          uuid_fiscal?: string | null
+          uuid_sustitucion?: string | null
+          version_cfdi?: string | null
+          xml_content?: string | null
+          xml_path?: string | null
+        }
+        Update: {
+          cadena_original_complemento?: string | null
+          certificado_sat?: string | null
+          client_id?: string | null
+          conceptos?: Json
+          condiciones_pago?: string | null
+          created_at?: string
+          created_by?: string
+          descuento?: number | null
+          emisor_razon_social?: string
+          emisor_regimen_fiscal?: string
+          emisor_rfc?: string
+          estatus?: string | null
+          fecha_cancelacion?: string | null
+          fecha_certificacion?: string | null
+          fecha_emision?: string
+          fecha_timbrado?: string | null
+          fecha_vencimiento?: string | null
+          folio?: string
+          forma_pago?: string | null
+          id?: string
+          impuestos?: Json | null
+          income_id?: string | null
+          lugar_expedicion?: string
+          metodo_pago?: string | null
+          moneda?: string | null
+          motivo_cancelacion?: string | null
+          numero_certificado_sat?: string | null
+          observaciones?: string | null
+          orden_compra?: string | null
+          pac_error_message?: string | null
+          pac_response?: Json | null
+          pdf_path?: string | null
+          project_id?: string | null
+          receptor_domicilio_fiscal?: string | null
+          receptor_razon_social?: string
+          receptor_regimen_fiscal?: string | null
+          receptor_rfc?: string
+          receptor_uso_cfdi?: string
+          referencia_interna?: string | null
+          rfc_proveedor_certif?: string | null
+          sello_cfdi?: string | null
+          sello_sat?: string | null
+          serie?: string
+          subtotal?: number
+          tipo_cambio?: number | null
+          tipo_comprobante?: string
+          total?: number
+          total_impuestos_retenidos?: number | null
+          total_impuestos_trasladados?: number | null
+          updated_at?: string
+          uuid_fiscal?: string | null
+          uuid_sustitucion?: string | null
+          version_cfdi?: string | null
+          xml_content?: string | null
+          xml_path?: string | null
+        }
+        Relationships: []
       }
       employee_advances: {
         Row: {
@@ -1482,6 +1734,182 @@ export type Database = {
           },
         ]
       }
+      invoice_cancellations: {
+        Row: {
+          acuse_cancelacion: string | null
+          created_at: string
+          created_by: string
+          estatus: string | null
+          fecha_cancelacion: string | null
+          fecha_solicitud: string
+          id: string
+          invoice_id: string
+          motivo_cancelacion: string
+          observaciones: string | null
+          uuid_sustitucion: string | null
+        }
+        Insert: {
+          acuse_cancelacion?: string | null
+          created_at?: string
+          created_by: string
+          estatus?: string | null
+          fecha_cancelacion?: string | null
+          fecha_solicitud?: string
+          id?: string
+          invoice_id: string
+          motivo_cancelacion: string
+          observaciones?: string | null
+          uuid_sustitucion?: string | null
+        }
+        Update: {
+          acuse_cancelacion?: string | null
+          created_at?: string
+          created_by?: string
+          estatus?: string | null
+          fecha_cancelacion?: string | null
+          fecha_solicitud?: string
+          id?: string
+          invoice_id?: string
+          motivo_cancelacion?: string
+          observaciones?: string | null
+          uuid_sustitucion?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_cancellations_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "electronic_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_series: {
+        Row: {
+          activa: boolean | null
+          automatica: boolean | null
+          created_at: string
+          created_by: string
+          descripcion: string | null
+          folio_actual: number
+          folio_final: number | null
+          folio_inicial: number
+          id: string
+          longitud_folio: number | null
+          prefijo: string | null
+          serie: string
+          sufijo: string | null
+          tipo_comprobante: string
+          updated_at: string
+        }
+        Insert: {
+          activa?: boolean | null
+          automatica?: boolean | null
+          created_at?: string
+          created_by: string
+          descripcion?: string | null
+          folio_actual?: number
+          folio_final?: number | null
+          folio_inicial?: number
+          id?: string
+          longitud_folio?: number | null
+          prefijo?: string | null
+          serie: string
+          sufijo?: string | null
+          tipo_comprobante: string
+          updated_at?: string
+        }
+        Update: {
+          activa?: boolean | null
+          automatica?: boolean | null
+          created_at?: string
+          created_by?: string
+          descripcion?: string | null
+          folio_actual?: number
+          folio_final?: number | null
+          folio_inicial?: number
+          id?: string
+          longitud_folio?: number | null
+          prefijo?: string | null
+          serie?: string
+          sufijo?: string | null
+          tipo_comprobante?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pac_configurations: {
+        Row: {
+          activo: boolean | null
+          api_key: string | null
+          api_secret: string | null
+          api_url: string
+          configuracion_adicional: Json | null
+          costo_timbrado: number | null
+          created_at: string
+          created_by: string
+          creditos_disponibles: number | null
+          endpoint_cancelacion: string | null
+          endpoint_consulta: string | null
+          endpoint_timbrado: string | null
+          id: string
+          limite_mensual: number | null
+          modo_pruebas: boolean | null
+          nombre: string
+          password: string | null
+          principal: boolean | null
+          proveedor: string
+          updated_at: string
+          usuario: string | null
+        }
+        Insert: {
+          activo?: boolean | null
+          api_key?: string | null
+          api_secret?: string | null
+          api_url: string
+          configuracion_adicional?: Json | null
+          costo_timbrado?: number | null
+          created_at?: string
+          created_by: string
+          creditos_disponibles?: number | null
+          endpoint_cancelacion?: string | null
+          endpoint_consulta?: string | null
+          endpoint_timbrado?: string | null
+          id?: string
+          limite_mensual?: number | null
+          modo_pruebas?: boolean | null
+          nombre: string
+          password?: string | null
+          principal?: boolean | null
+          proveedor: string
+          updated_at?: string
+          usuario?: string | null
+        }
+        Update: {
+          activo?: boolean | null
+          api_key?: string | null
+          api_secret?: string | null
+          api_url?: string
+          configuracion_adicional?: Json | null
+          costo_timbrado?: number | null
+          created_at?: string
+          created_by?: string
+          creditos_disponibles?: number | null
+          endpoint_cancelacion?: string | null
+          endpoint_consulta?: string | null
+          endpoint_timbrado?: string | null
+          id?: string
+          limite_mensual?: number | null
+          modo_pruebas?: boolean | null
+          nombre?: string
+          password?: string | null
+          principal?: boolean | null
+          proveedor?: string
+          updated_at?: string
+          usuario?: string | null
+        }
+        Relationships: []
+      }
       payment_complements: {
         Row: {
           cfdi_document_id: string
@@ -1538,6 +1966,102 @@ export type Database = {
           },
         ]
       }
+      payment_complements_tracking: {
+        Row: {
+          cadena_pago: string | null
+          certificado_pago: string | null
+          complement_uuid: string | null
+          created_at: string
+          created_by: string
+          cuenta_destino: string | null
+          cuenta_origen: string | null
+          estatus: string | null
+          fecha_pago: string
+          forma_pago: string
+          id: string
+          invoice_id: string
+          moneda: string | null
+          monto_pago: number
+          numero_operacion: string | null
+          payment_id: string | null
+          pdf_path: string | null
+          rfc_banco_destino: string | null
+          rfc_banco_origen: string | null
+          sello_pago: string | null
+          tipo_cadena_pago: string | null
+          tipo_cambio: number | null
+          updated_at: string
+          xml_path: string | null
+        }
+        Insert: {
+          cadena_pago?: string | null
+          certificado_pago?: string | null
+          complement_uuid?: string | null
+          created_at?: string
+          created_by: string
+          cuenta_destino?: string | null
+          cuenta_origen?: string | null
+          estatus?: string | null
+          fecha_pago: string
+          forma_pago: string
+          id?: string
+          invoice_id: string
+          moneda?: string | null
+          monto_pago: number
+          numero_operacion?: string | null
+          payment_id?: string | null
+          pdf_path?: string | null
+          rfc_banco_destino?: string | null
+          rfc_banco_origen?: string | null
+          sello_pago?: string | null
+          tipo_cadena_pago?: string | null
+          tipo_cambio?: number | null
+          updated_at?: string
+          xml_path?: string | null
+        }
+        Update: {
+          cadena_pago?: string | null
+          certificado_pago?: string | null
+          complement_uuid?: string | null
+          created_at?: string
+          created_by?: string
+          cuenta_destino?: string | null
+          cuenta_origen?: string | null
+          estatus?: string | null
+          fecha_pago?: string
+          forma_pago?: string
+          id?: string
+          invoice_id?: string
+          moneda?: string | null
+          monto_pago?: number
+          numero_operacion?: string | null
+          payment_id?: string | null
+          pdf_path?: string | null
+          rfc_banco_destino?: string | null
+          rfc_banco_origen?: string | null
+          sello_pago?: string | null
+          tipo_cadena_pago?: string | null
+          tipo_cambio?: number | null
+          updated_at?: string
+          xml_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_complements_tracking_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "electronic_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_complements_tracking_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "client_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_settings: {
         Row: {
           created_at: string
@@ -1558,6 +2082,102 @@ export type Database = {
           id?: string
           setting_key?: string
           setting_value?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      products_services: {
+        Row: {
+          activo: boolean | null
+          aplica_ieps: boolean | null
+          aplica_iva: boolean | null
+          categoria: string | null
+          clave_sat: string
+          codigo_barras: string | null
+          codigo_interno: string
+          created_at: string
+          created_by: string
+          cuenta_contable: string | null
+          descripcion: string | null
+          id: string
+          imagen_url: string | null
+          marca: string | null
+          modelo: string | null
+          nombre: string
+          notas: string | null
+          objeto_impuesto: string | null
+          precio_maximo: number | null
+          precio_minimo: number | null
+          precio_unitario: number
+          stock_actual: number | null
+          stock_minimo: number | null
+          subcategoria: string | null
+          tasa_ieps: number | null
+          tasa_iva: number | null
+          tipo: string
+          unidad_sat: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean | null
+          aplica_ieps?: boolean | null
+          aplica_iva?: boolean | null
+          categoria?: string | null
+          clave_sat: string
+          codigo_barras?: string | null
+          codigo_interno: string
+          created_at?: string
+          created_by: string
+          cuenta_contable?: string | null
+          descripcion?: string | null
+          id?: string
+          imagen_url?: string | null
+          marca?: string | null
+          modelo?: string | null
+          nombre: string
+          notas?: string | null
+          objeto_impuesto?: string | null
+          precio_maximo?: number | null
+          precio_minimo?: number | null
+          precio_unitario?: number
+          stock_actual?: number | null
+          stock_minimo?: number | null
+          subcategoria?: string | null
+          tasa_ieps?: number | null
+          tasa_iva?: number | null
+          tipo?: string
+          unidad_sat: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean | null
+          aplica_ieps?: boolean | null
+          aplica_iva?: boolean | null
+          categoria?: string | null
+          clave_sat?: string
+          codigo_barras?: string | null
+          codigo_interno?: string
+          created_at?: string
+          created_by?: string
+          cuenta_contable?: string | null
+          descripcion?: string | null
+          id?: string
+          imagen_url?: string | null
+          marca?: string | null
+          modelo?: string | null
+          nombre?: string
+          notas?: string | null
+          objeto_impuesto?: string | null
+          precio_maximo?: number | null
+          precio_minimo?: number | null
+          precio_unitario?: number
+          stock_actual?: number | null
+          stock_minimo?: number | null
+          subcategoria?: string | null
+          tasa_ieps?: number | null
+          tasa_iva?: number | null
+          tipo?: string
+          unidad_sat?: string
           updated_at?: string
         }
         Relationships: []
@@ -1869,6 +2489,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sat_product_catalog: {
+        Row: {
+          clave_producto: string
+          complemento_concepto: string | null
+          created_at: string
+          descripcion: string
+          estimulo_frontera: string | null
+          fecha_fin_vigencia: string | null
+          fecha_inicio_vigencia: string | null
+          id: string
+          incluye_iva: boolean | null
+        }
+        Insert: {
+          clave_producto: string
+          complemento_concepto?: string | null
+          created_at?: string
+          descripcion: string
+          estimulo_frontera?: string | null
+          fecha_fin_vigencia?: string | null
+          fecha_inicio_vigencia?: string | null
+          id?: string
+          incluye_iva?: boolean | null
+        }
+        Update: {
+          clave_producto?: string
+          complemento_concepto?: string | null
+          created_at?: string
+          descripcion?: string
+          estimulo_frontera?: string | null
+          fecha_fin_vigencia?: string | null
+          fecha_inicio_vigencia?: string | null
+          id?: string
+          incluye_iva?: boolean | null
+        }
+        Relationships: []
+      }
+      sat_unit_catalog: {
+        Row: {
+          clave_unidad: string
+          created_at: string
+          descripcion: string | null
+          fecha_fin_vigencia: string | null
+          fecha_inicio_vigencia: string | null
+          id: string
+          nombre: string
+          nota: string | null
+          simbolo: string | null
+        }
+        Insert: {
+          clave_unidad: string
+          created_at?: string
+          descripcion?: string | null
+          fecha_fin_vigencia?: string | null
+          fecha_inicio_vigencia?: string | null
+          id?: string
+          nombre: string
+          nota?: string | null
+          simbolo?: string | null
+        }
+        Update: {
+          clave_unidad?: string
+          created_at?: string
+          descripcion?: string | null
+          fecha_fin_vigencia?: string | null
+          fecha_inicio_vigencia?: string | null
+          id?: string
+          nombre?: string
+          nota?: string | null
+          simbolo?: string | null
+        }
+        Relationships: []
       }
       supplier_payments: {
         Row: {
