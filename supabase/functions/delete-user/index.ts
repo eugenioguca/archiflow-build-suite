@@ -25,12 +25,6 @@ serve(async (req) => {
       }
     )
 
-    // Create regular Supabase client to verify current user
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    )
-
     // Get the authorization header
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
@@ -43,14 +37,9 @@ serve(async (req) => {
       )
     }
 
-    // Set the auth header for the regular client
-    supabaseClient.auth.setSession({
-      access_token: authHeader.replace('Bearer ', ''),
-      refresh_token: ''
-    })
-
-    // Get current user
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
+    // Extract token and get current user using admin client
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token)
     if (userError || !user) {
       return new Response(
         JSON.stringify({ error: 'Invalid token' }),
