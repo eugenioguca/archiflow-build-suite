@@ -71,8 +71,8 @@ export function CashAccountManager() {
           .from('cash_accounts')
           .select(`
             *,
-            project:projects(name),
-            responsible_user:profiles!cash_accounts_responsible_user_id_fkey(full_name)
+            projects(id, name),
+            responsible_user:profiles!fk_cash_accounts_responsible_user(id, full_name)
           `)
           .order('created_at', { ascending: false }),
           
@@ -94,12 +94,8 @@ export function CashAccountManager() {
 
       const processedAccounts: CashAccount[] = (accountsResult.data || []).map(account => ({
         ...account,
-        project: account.project && typeof account.project === 'object' && 'name' in account.project 
-          ? { name: String(account.project!.name) } 
-          : null,
-        responsible_user: account.responsible_user && typeof account.responsible_user === 'object' && 'full_name' in account.responsible_user
-          ? { full_name: String(account.responsible_user!.full_name) }
-          : null
+        project: account.projects ? { name: account.projects.name } : null,
+        responsible_user: account.responsible_user ? { full_name: account.responsible_user.full_name } : null
       }));
       
       setAccounts(processedAccounts);
