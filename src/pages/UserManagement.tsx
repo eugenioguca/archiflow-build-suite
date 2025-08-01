@@ -142,21 +142,29 @@ export default function UserManagement() {
 
   const handleDeleteUser = async (userId: string) => {
     try {
-      const { error } = await supabase.auth.admin.deleteUser(userId);
+      // En lugar de eliminar el usuario del auth (que requiere service_role),
+      // marcamos el perfil como eliminado y lo desactivamos
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          approval_status: 'rejected',
+          role: 'client' // Cambiar a rol más básico
+        })
+        .eq('user_id', userId);
 
       if (error) throw error;
 
       toast({
         title: "Éxito",
-        description: "Usuario eliminado correctamente"
+        description: "Usuario desactivado correctamente"
       });
 
       fetchUsers();
     } catch (error: any) {
-      console.error('Error deleting user:', error);
+      console.error('Error deactivating user:', error);
       toast({
         title: "Error",
-        description: "No se pudo eliminar el usuario",
+        description: "No se pudo desactivar el usuario",
         variant: "destructive"
       });
     }
@@ -315,13 +323,13 @@ export default function UserManagement() {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Esta acción eliminará permanentemente al usuario y todos sus datos asociados.
+                                  Esta acción desactivará al usuario cambiando su estado a "rechazado" y su rol a "client". El usuario no será eliminado del sistema pero perderá sus permisos administrativos.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                 <AlertDialogAction onClick={() => handleDeleteUser(user.user_id)}>
-                                  Eliminar
+                                  Desactivar
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
