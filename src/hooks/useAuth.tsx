@@ -10,6 +10,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   loading: boolean;
   isApproved: boolean;
+  needsOnboarding: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,6 +20,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true); // Cambiado a true para evitar flash inicial
   const [isApproved, setIsApproved] = useState(false);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   useEffect(() => {
     // Check for existing session first
@@ -34,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             const { data: profile, error: profileError } = await supabase
               .from('profiles')
-              .select('approval_status, role')
+              .select('approval_status, role, full_name, position, department, phone, profile_completed')
               .eq('user_id', session.user.id)
               .single();
             
@@ -46,17 +48,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const isApprovedUser = profile?.approval_status === 'approved';
             const shouldBeApproved = isAdmin || isApprovedUser;
             
+            // Check if profile is complete (need all required fields)
+            const profileComplete = profile?.profile_completed === true ||
+              (profile?.full_name && profile?.position && profile?.department && profile?.phone);
+            
             console.log('Is admin:', isAdmin);
             console.log('Is approved user:', isApprovedUser);
             console.log('Should be approved:', shouldBeApproved);
+            console.log('Profile complete:', profileComplete);
             
             setIsApproved(shouldBeApproved);
+            setNeedsOnboarding(!profileComplete && shouldBeApproved);
           } catch (error) {
             console.error('Error checking approval status:', error);
             setIsApproved(false);
           }
         } else {
           setIsApproved(false);
+          setNeedsOnboarding(false);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
@@ -80,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             try {
               const { data: profile, error: profileError } = await supabase
                 .from('profiles')
-                .select('approval_status, role')
+                .select('approval_status, role, full_name, position, department, phone, profile_completed')
                 .eq('user_id', session.user.id)
                 .single();
               
@@ -92,8 +101,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               const isApprovedUser = profile?.approval_status === 'approved';
               const shouldBeApproved = isAdmin || isApprovedUser;
               
+              // Check if profile is complete
+              const profileComplete = profile?.profile_completed === true ||
+                (profile?.full_name && profile?.position && profile?.department && profile?.phone);
+              
               console.log('Auth listener - Should be approved:', shouldBeApproved);
+              console.log('Auth listener - Profile complete:', profileComplete);
               setIsApproved(shouldBeApproved);
+              setNeedsOnboarding(!profileComplete && shouldBeApproved);
             } catch (error) {
               console.error('Error checking approval status in listener:', error);
               setIsApproved(false);
@@ -101,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }, 0);
         } else {
           setIsApproved(false);
+          setNeedsOnboarding(false);
         }
       }
     );
@@ -150,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut,
     loading,
     isApproved,
+    needsOnboarding,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
