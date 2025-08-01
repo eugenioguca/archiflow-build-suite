@@ -13,6 +13,7 @@ import { InvoiceViewer } from './InvoiceViewer';
 import { ContpaqiExporter } from './ContpaqiExporter';
 import { PACConfigManager } from './PACConfigManager';
 import { BillingClientsManager } from './BillingClientsManager';
+import { InvoiceTemplateManager } from './InvoiceTemplateManager';
 
 interface DashboardStats {
   totalInvoices: number;
@@ -318,7 +319,14 @@ export function ElectronicInvoicingDashboard() {
         </TabsContent>
 
         <TabsContent value="config">
-          <PACConfigManager />
+          <div className="space-y-6">
+            <div className="grid gap-6">
+              <InvoiceTemplateManager />
+              <div className="border-t pt-6">
+                <PACConfigManager />
+              </div>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

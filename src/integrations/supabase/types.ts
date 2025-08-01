@@ -1910,6 +1910,54 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_templates: {
+        Row: {
+          colors_config: Json | null
+          company_logo_path: string | null
+          company_logo_url: string | null
+          created_at: string
+          created_by: string
+          fonts_config: Json | null
+          footer_config: Json | null
+          header_config: Json | null
+          id: string
+          is_active: boolean | null
+          layout_config: Json | null
+          template_name: string
+          updated_at: string
+        }
+        Insert: {
+          colors_config?: Json | null
+          company_logo_path?: string | null
+          company_logo_url?: string | null
+          created_at?: string
+          created_by: string
+          fonts_config?: Json | null
+          footer_config?: Json | null
+          header_config?: Json | null
+          id?: string
+          is_active?: boolean | null
+          layout_config?: Json | null
+          template_name?: string
+          updated_at?: string
+        }
+        Update: {
+          colors_config?: Json | null
+          company_logo_path?: string | null
+          company_logo_url?: string | null
+          created_at?: string
+          created_by?: string
+          fonts_config?: Json | null
+          footer_config?: Json | null
+          header_config?: Json | null
+          id?: string
+          is_active?: boolean | null
+          layout_config?: Json | null
+          template_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pac_configurations: {
         Row: {
           activo: boolean | null
