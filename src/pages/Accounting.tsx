@@ -14,6 +14,7 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DocumentViewer } from '@/components/DocumentViewer';
 import { XMLUploader } from '@/components/XMLUploader';
+import { PaymentComplementsDashboard } from '@/components/PaymentComplementsDashboard';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ExpenseWithTax {
@@ -606,12 +607,13 @@ export default function Accounting() {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="overview">Resumen Fiscal</TabsTrigger>
           <TabsTrigger value="income-breakdown">Ingresos</TabsTrigger>
           <TabsTrigger value="expense-breakdown">Gastos</TabsTrigger>
           <TabsTrigger value="compliance">Cumplimiento</TabsTrigger>
           <TabsTrigger value="complements">Complementos</TabsTrigger>
+          <TabsTrigger value="complement-management">Gestión PPD</TabsTrigger>
           <TabsTrigger value="monthly">Análisis Mensual</TabsTrigger>
         </TabsList>
 
@@ -951,6 +953,10 @@ export default function Accounting() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="complement-management">
+          <PaymentComplementsDashboard />
         </TabsContent>
 
         <TabsContent value="monthly">
