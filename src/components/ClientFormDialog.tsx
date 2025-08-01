@@ -23,7 +23,7 @@ interface Client {
   state_name?: string;
   branch_office_id?: string;
   land_square_meters?: number;
-  lead_source?: 'website' | 'facebook' | 'instagram' | 'commercial_alliance' | 'referral' | 'other';
+  lead_source?: 'website' | 'commercial_alliance' | 'referral' | 'social_media' | 'advertisement' | 'cold_call' | 'event' | 'partner';
   lead_referral_details?: string;
 }
 
@@ -98,7 +98,7 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
     state_name: '',
     branch_office_id: '',
     land_square_meters: '',
-    lead_source: '' as '' | 'website' | 'facebook' | 'instagram' | 'commercial_alliance' | 'referral' | 'other',
+    lead_source: '' as '' | 'website' | 'commercial_alliance' | 'referral' | 'social_media' | 'advertisement' | 'cold_call' | 'event' | 'partner',
     lead_referral_details: '',
     alliance_id: ''
   });
@@ -400,11 +400,13 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="website">Sitio Web</SelectItem>
-                    <SelectItem value="facebook">Facebook</SelectItem>
-                    <SelectItem value="instagram">Instagram</SelectItem>
                     <SelectItem value="commercial_alliance">Alianza Comercial</SelectItem>
                     <SelectItem value="referral">Referido</SelectItem>
-                    <SelectItem value="other">Otro</SelectItem>
+                    <SelectItem value="social_media">Redes Sociales</SelectItem>
+                    <SelectItem value="advertisement">Publicidad</SelectItem>
+                    <SelectItem value="cold_call">Llamada en Frío</SelectItem>
+                    <SelectItem value="event">Evento</SelectItem>
+                    <SelectItem value="partner">Socio</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -439,17 +441,6 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
                 </div>
               )}
 
-              {formData.lead_source === 'other' && (
-                <div className="space-y-2">
-                  <Label htmlFor="lead_referral_details">Especificar origen</Label>
-                  <Input
-                    id="lead_referral_details"
-                    value={formData.lead_referral_details}
-                    onChange={(e) => handleInputChange('lead_referral_details', e.target.value)}
-                    placeholder="Describe cómo nos conoció"
-                  />
-                </div>
-              )}
             </div>
           </div>
 

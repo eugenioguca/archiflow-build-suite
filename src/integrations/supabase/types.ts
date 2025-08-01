@@ -933,7 +933,7 @@ export type Database = {
           project_type: Database["public"]["Enums"]["project_type"] | null
           sales_pipeline_stage: string | null
           social_media: Json | null
-          state_id: string | null
+          state_name: string | null
           status: Database["public"]["Enums"]["client_status"]
           tags: string[] | null
           timeline_months: number | null
@@ -977,7 +977,7 @@ export type Database = {
           project_type?: Database["public"]["Enums"]["project_type"] | null
           sales_pipeline_stage?: string | null
           social_media?: Json | null
-          state_id?: string | null
+          state_name?: string | null
           status?: Database["public"]["Enums"]["client_status"]
           tags?: string[] | null
           timeline_months?: number | null
@@ -1021,7 +1021,7 @@ export type Database = {
           project_type?: Database["public"]["Enums"]["project_type"] | null
           sales_pipeline_stage?: string | null
           social_media?: Json | null
-          state_id?: string | null
+          state_name?: string | null
           status?: Database["public"]["Enums"]["client_status"]
           tags?: string[] | null
           timeline_months?: number | null
@@ -1055,13 +1055,6 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "clients_state_id_fkey"
-            columns: ["state_id"]
-            isOneToOne: false
-            referencedRelation: "mexican_states"
             referencedColumns: ["id"]
           },
         ]

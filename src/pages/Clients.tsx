@@ -21,13 +21,11 @@ interface Client {
   budget: number | null;
   notes: string | null;
   created_at: string;
-  state_id?: string;
+  state_name?: string;
   branch_office_id?: string;
   land_square_meters?: number;
-  lead_source?: 'website' | 'facebook' | 'instagram' | 'commercial_alliance' | 'referral' | 'other';
+  lead_source?: 'website' | 'commercial_alliance' | 'referral' | 'social_media' | 'advertisement' | 'cold_call' | 'event' | 'partner';
   lead_referral_details?: string;
-  state?: { name: string };
-  branch_office?: { name: string; city: string };
 }
 
 const statusLabels = {
@@ -46,11 +44,13 @@ const statusColors = {
 
 const leadSourceLabels = {
   website: 'Sitio Web',
-  facebook: 'Facebook',
-  instagram: 'Instagram',
   commercial_alliance: 'Alianza Comercial',
   referral: 'Referido',
-  other: 'Otro'
+  social_media: 'Redes Sociales',
+  advertisement: 'Publicidad',
+  cold_call: 'Llamada en Frío',
+  event: 'Evento',
+  partner: 'Socio'
 };
 
 export default function Clients() {
@@ -79,7 +79,7 @@ export default function Clients() {
           budget,
           notes,
           created_at,
-          state_id,
+          state_name,
           branch_office_id,
           land_square_meters,
           lead_source,
@@ -89,13 +89,7 @@ export default function Clients() {
 
       if (error) throw error;
       
-      // Cast lead_source to match our interface
-      const processedData = data?.map(client => ({
-        ...client,
-        lead_source: client.lead_source as 'website' | 'facebook' | 'instagram' | 'commercial_alliance' | 'referral' | 'other'
-      }));
-      
-      setClients(processedData || []);
+      setClients(data || []);
     } catch (error: any) {
       console.error('Error fetching clients:', error);
       toast({
@@ -148,7 +142,7 @@ export default function Clients() {
     const matchesSearch = client.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          client.phone?.includes(searchTerm) ||
-                         client.state?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+                         client.state_name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || client.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -257,18 +251,18 @@ export default function Clients() {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
+                   <TableCell>
                     <div className="space-y-1">
-                      {client.state?.name && (
+                      {client.state_name && (
                         <div className="flex items-center gap-1 text-sm">
                           <MapPin className="h-3 w-3" />
-                          {client.state.name}
+                          {client.state_name}
                         </div>
                       )}
-                      {client.branch_office && (
-                        <div className="flex items-center gap-1 text-sm">
+                      {client.address && (
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           <Building className="h-3 w-3" />
-                          {client.branch_office.name}
+                          {client.address}
                         </div>
                       )}
                     </div>
