@@ -922,6 +922,7 @@ export type Database = {
           location_details: Json | null
           next_contact_date: string | null
           notes: string | null
+          payment_plan: Json | null
           phone: string | null
           preferred_contact_method:
             | Database["public"]["Enums"]["contact_method"]
@@ -932,6 +933,7 @@ export type Database = {
           project_size: string | null
           project_type: Database["public"]["Enums"]["project_type"] | null
           sales_pipeline_stage: string | null
+          service_type: string | null
           social_media: Json | null
           state_name: string | null
           status: Database["public"]["Enums"]["client_status"]
@@ -966,6 +968,7 @@ export type Database = {
           location_details?: Json | null
           next_contact_date?: string | null
           notes?: string | null
+          payment_plan?: Json | null
           phone?: string | null
           preferred_contact_method?:
             | Database["public"]["Enums"]["contact_method"]
@@ -976,6 +979,7 @@ export type Database = {
           project_size?: string | null
           project_type?: Database["public"]["Enums"]["project_type"] | null
           sales_pipeline_stage?: string | null
+          service_type?: string | null
           social_media?: Json | null
           state_name?: string | null
           status?: Database["public"]["Enums"]["client_status"]
@@ -1010,6 +1014,7 @@ export type Database = {
           location_details?: Json | null
           next_contact_date?: string | null
           notes?: string | null
+          payment_plan?: Json | null
           phone?: string | null
           preferred_contact_method?:
             | Database["public"]["Enums"]["contact_method"]
@@ -1020,6 +1025,7 @@ export type Database = {
           project_size?: string | null
           project_type?: Database["public"]["Enums"]["project_type"] | null
           sales_pipeline_stage?: string | null
+          service_type?: string | null
           social_media?: Json | null
           state_name?: string | null
           status?: Database["public"]["Enums"]["client_status"]
@@ -1507,6 +1513,7 @@ export type Database = {
         Row: {
           appointment_date: string
           attendees: string[]
+          client_id: string | null
           created_at: string
           created_by: string
           description: string | null
@@ -1515,10 +1522,12 @@ export type Database = {
           status: string | null
           title: string
           updated_at: string
+          visible_to_sales: boolean | null
         }
         Insert: {
           appointment_date: string
           attendees: string[]
+          client_id?: string | null
           created_at?: string
           created_by: string
           description?: string | null
@@ -1527,10 +1536,12 @@ export type Database = {
           status?: string | null
           title: string
           updated_at?: string
+          visible_to_sales?: boolean | null
         }
         Update: {
           appointment_date?: string
           attendees?: string[]
+          client_id?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
@@ -1539,8 +1550,16 @@ export type Database = {
           status?: string | null
           title?: string
           updated_at?: string
+          visible_to_sales?: boolean | null
         }
         Relationships: [
+          {
+            foreignKeyName: "design_appointments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "design_appointments_created_by_fkey"
             columns: ["created_by"]
@@ -2374,6 +2393,53 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      module_notifications: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          id: string
+          is_read: boolean | null
+          message: string
+          notification_type: string
+          source_module: string
+          target_module: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message: string
+          notification_type: string
+          source_module: string
+          target_module: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          notification_type?: string
+          source_module?: string
+          target_module?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "module_notifications_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pac_configurations: {
         Row: {
@@ -3543,7 +3609,15 @@ export type Database = {
         | "follow_up"
         | "negotiation"
         | "contract_review"
-      client_status: "potential" | "existing" | "active" | "completed"
+      client_status:
+        | "potential"
+        | "existing"
+        | "active"
+        | "completed"
+        | "nuevo_lead"
+        | "en_contacto"
+        | "lead_perdido"
+        | "cliente_cerrado"
       contact_method:
         | "phone"
         | "email"
@@ -3743,7 +3817,16 @@ export const Constants = {
         "negotiation",
         "contract_review",
       ],
-      client_status: ["potential", "existing", "active", "completed"],
+      client_status: [
+        "potential",
+        "existing",
+        "active",
+        "completed",
+        "nuevo_lead",
+        "en_contacto",
+        "lead_perdido",
+        "cliente_cerrado",
+      ],
       contact_method: [
         "phone",
         "email",
