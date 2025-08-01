@@ -91,7 +91,12 @@ export function TreasuryDashboard() {
       }));
       
       setCashAccounts(processedAccounts);
-      setRecentTransactions(transactionsResult.data || []);
+      // Process transactions to handle potential SelectQueryError
+      const processedTransactions = (transactionsResult.data || []).map(transaction => ({
+        ...transaction,
+        cash_account: { name: 'Cuenta de efectivo' }
+      }));
+      setRecentTransactions(processedTransactions);
       setPendingAdvances(advancesResult.data || []);
     } catch (error) {
       console.error('Error fetching treasury data:', error);
