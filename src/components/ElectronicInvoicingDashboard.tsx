@@ -12,6 +12,7 @@ import { InvoiceCreator } from './InvoiceCreator';
 import { InvoiceViewer } from './InvoiceViewer';
 import { ContpaqiExporter } from './ContpaqiExporter';
 import { PACConfigManager } from './PACConfigManager';
+import { BillingClientsManager } from './BillingClientsManager';
 
 interface DashboardStats {
   totalInvoices: number;
@@ -221,9 +222,10 @@ export function ElectronicInvoicingDashboard() {
 
       {/* Main Tabs */}
       <Tabs defaultValue="dashboard" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="invoices">Facturas</TabsTrigger>
+          <TabsTrigger value="clients">Clientes</TabsTrigger>
           <TabsTrigger value="products">Productos</TabsTrigger>
           <TabsTrigger value="creator">Crear Factura</TabsTrigger>
           <TabsTrigger value="export">Exportar</TabsTrigger>
@@ -296,6 +298,10 @@ export function ElectronicInvoicingDashboard() {
 
         <TabsContent value="invoices">
           <InvoiceViewer onStatsUpdate={fetchDashboardStats} />
+        </TabsContent>
+
+        <TabsContent value="clients">
+          <BillingClientsManager />
         </TabsContent>
 
         <TabsContent value="products">

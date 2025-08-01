@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Search, Edit, Trash2, Package, Barcode, DollarSign } from 'lucide-react';
+import { SATKeySelector } from './SATKeySelector';
 
 interface Product {
   id: string;
@@ -275,22 +276,22 @@ export function ProductCatalogManager() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="clave_sat">Clave SAT</Label>
-                  <Input
-                    id="clave_sat"
+                  <Label htmlFor="clave_sat">Clave SAT *</Label>
+                  <SATKeySelector
+                    type="product"
                     value={formData.clave_sat}
-                    onChange={(e) => setFormData({ ...formData, clave_sat: e.target.value })}
-                    placeholder="50211503"
+                    onValueChange={(value) => setFormData({ ...formData, clave_sat: value })}
+                    placeholder="Seleccionar clave de producto SAT"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="unidad_sat">Unidad SAT</Label>
-                  <Input
-                    id="unidad_sat"
+                  <Label htmlFor="unidad_sat">Unidad SAT *</Label>
+                  <SATKeySelector
+                    type="unit"
                     value={formData.unidad_sat}
-                    onChange={(e) => setFormData({ ...formData, unidad_sat: e.target.value })}
-                    placeholder="H87"
+                    onValueChange={(value) => setFormData({ ...formData, unidad_sat: value })}
+                    placeholder="Seleccionar unidad de medida SAT"
                     required
                   />
                 </div>

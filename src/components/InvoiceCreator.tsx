@@ -26,11 +26,20 @@ interface InvoiceItem {
   total: number;
 }
 
-interface Client {
+interface BillingClient {
   id: string;
-  full_name: string;
-  email: string;
-  phone: string;
+  rfc: string;
+  razon_social: string;
+  nombre_comercial?: string;
+  regimen_fiscal: string;
+  codigo_postal_fiscal: string;
+  domicilio_fiscal: any;
+  uso_cfdi_default: string;
+  metodo_pago_default: string;
+  forma_pago_default: string;
+  email?: string;
+  telefono?: string;
+  activo: boolean;
 }
 
 interface Product {
@@ -47,7 +56,7 @@ interface InvoiceCreatorProps {
 }
 
 export function InvoiceCreator({ onInvoiceCreated }: InvoiceCreatorProps) {
-  const [clients, setClients] = useState<Client[]>([]);
+  const [billingClients, setBillingClients] = useState<BillingClient[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [searchProduct, setSearchProduct] = useState('');
@@ -73,7 +82,7 @@ export function InvoiceCreator({ onInvoiceCreated }: InvoiceCreatorProps) {
   });
 
   useEffect(() => {
-    fetchClients();
+    fetchBillingClients();
     fetchProducts();
   }, []);
 
@@ -94,17 +103,18 @@ export function InvoiceCreator({ onInvoiceCreated }: InvoiceCreatorProps) {
     calculateTotals();
   }, [items]);
 
-  const fetchClients = async () => {
+  const fetchBillingClients = async () => {
     try {
       const { data, error } = await supabase
-        .from('clients')
-        .select('id, full_name, email, phone')
-        .order('full_name');
+        .from('billing_clients')
+        .select('*')
+        .eq('activo', true)
+        .order('razon_social');
 
       if (error) throw error;
-      setClients(data || []);
+      setBillingClients(data || []);
     } catch (error) {
-      console.error('Error fetching clients:', error);
+      console.error('Error fetching billing clients:', error);
     }
   };
 
@@ -352,11 +362,11 @@ export function InvoiceCreator({ onInvoiceCreated }: InvoiceCreatorProps) {
                     <SelectValue placeholder="Seleccionar cliente" />
                   </SelectTrigger>
                   <SelectContent>
-                    {clients.map((client) => (
+                    {billingClients.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4" />
-                          {client.full_name}
+                          {client.razon_social}
                         </div>
                       </SelectItem>
                     ))}

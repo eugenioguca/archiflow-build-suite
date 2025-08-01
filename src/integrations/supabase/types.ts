@@ -197,6 +197,78 @@ export type Database = {
           },
         ]
       }
+      billing_clients: {
+        Row: {
+          activo: boolean | null
+          client_id: string | null
+          codigo_postal_fiscal: string
+          contacto_principal: string | null
+          created_at: string
+          created_by: string
+          domicilio_fiscal: Json
+          email: string | null
+          forma_pago_default: string | null
+          id: string
+          metodo_pago_default: string | null
+          moneda_default: string | null
+          nombre_comercial: string | null
+          notas: string | null
+          project_id: string | null
+          razon_social: string
+          regimen_fiscal: string
+          rfc: string
+          telefono: string | null
+          updated_at: string
+          uso_cfdi_default: string | null
+        }
+        Insert: {
+          activo?: boolean | null
+          client_id?: string | null
+          codigo_postal_fiscal: string
+          contacto_principal?: string | null
+          created_at?: string
+          created_by: string
+          domicilio_fiscal: Json
+          email?: string | null
+          forma_pago_default?: string | null
+          id?: string
+          metodo_pago_default?: string | null
+          moneda_default?: string | null
+          nombre_comercial?: string | null
+          notas?: string | null
+          project_id?: string | null
+          razon_social: string
+          regimen_fiscal: string
+          rfc: string
+          telefono?: string | null
+          updated_at?: string
+          uso_cfdi_default?: string | null
+        }
+        Update: {
+          activo?: boolean | null
+          client_id?: string | null
+          codigo_postal_fiscal?: string
+          contacto_principal?: string | null
+          created_at?: string
+          created_by?: string
+          domicilio_fiscal?: Json
+          email?: string | null
+          forma_pago_default?: string | null
+          id?: string
+          metodo_pago_default?: string | null
+          moneda_default?: string | null
+          nombre_comercial?: string | null
+          notas?: string | null
+          project_id?: string | null
+          razon_social?: string
+          regimen_fiscal?: string
+          rfc?: string
+          telefono?: string | null
+          updated_at?: string
+          uso_cfdi_default?: string | null
+        }
+        Relationships: []
+      }
       cash_accounts: {
         Row: {
           account_type: string
@@ -2526,6 +2598,39 @@ export type Database = {
         }
         Relationships: []
       }
+      sat_product_keys: {
+        Row: {
+          clave: string
+          created_at: string
+          descripcion: string
+          fecha_fin_vigencia: string | null
+          fecha_inicio_vigencia: string | null
+          id: string
+          incluye_complemento: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          clave: string
+          created_at?: string
+          descripcion: string
+          fecha_fin_vigencia?: string | null
+          fecha_inicio_vigencia?: string | null
+          id?: string
+          incluye_complemento?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          clave?: string
+          created_at?: string
+          descripcion?: string
+          fecha_fin_vigencia?: string | null
+          fecha_inicio_vigencia?: string | null
+          id?: string
+          incluye_complemento?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sat_unit_catalog: {
         Row: {
           clave_unidad: string
@@ -2559,6 +2664,36 @@ export type Database = {
           nombre?: string
           nota?: string | null
           simbolo?: string | null
+        }
+        Relationships: []
+      }
+      sat_unit_keys: {
+        Row: {
+          clave: string
+          created_at: string
+          descripcion: string | null
+          id: string
+          nombre: string
+          simbolo: string | null
+          updated_at: string
+        }
+        Insert: {
+          clave: string
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre: string
+          simbolo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          clave?: string
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre?: string
+          simbolo?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
