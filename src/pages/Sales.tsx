@@ -53,7 +53,7 @@ interface Client {
   full_name: string;
   email: string;
   phone: string;
-  status: 'potential' | 'existing' | 'active' | 'completed';
+  status: 'potential' | 'existing' | 'active' | 'completed' | 'nuevo_lead' | 'en_contacto' | 'lead_perdido' | 'cliente_cerrado';
   lead_source: 'website' | 'referral' | 'social_media' | 'event' | 'advertisement' | 'cold_call' | 'partner' | 'commercial_alliance';
   project_type: 'residential' | 'commercial' | 'industrial' | 'renovation' | 'landscape' | 'interior_design';
   budget: number;
@@ -72,6 +72,9 @@ interface Client {
   advisor_name?: string;
   assigned_advisor?: any;
   created_by_profile?: any;
+  curp?: string;
+  payment_plan?: any;
+  service_type?: string;
 }
 
 interface Activity {
@@ -101,6 +104,10 @@ const statusConfig = {
   existing: { label: "Existente", color: "bg-blue-100 text-blue-700", progress: 40 },
   active: { label: "Activo", color: "bg-green-100 text-green-700", progress: 70 },
   completed: { label: "Completado", color: "bg-purple-100 text-purple-700", progress: 100 },
+  nuevo_lead: { label: "Nuevo Lead", color: "bg-yellow-100 text-yellow-700", progress: 5 },
+  en_contacto: { label: "En Contacto", color: "bg-orange-100 text-orange-700", progress: 25 },
+  lead_perdido: { label: "Lead Perdido", color: "bg-red-100 text-red-700", progress: 0 },
+  cliente_cerrado: { label: "Cliente Cerrado", color: "bg-green-100 text-green-700", progress: 100 },
 };
 
 const projectTypeConfig = {
@@ -130,7 +137,7 @@ export default function Sales() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("potential");
+  const [statusFilter, setStatusFilter] = useState<string>("nuevo_lead");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [isNewClientDialogOpen, setIsNewClientDialogOpen] = useState(false);
@@ -155,7 +162,7 @@ export default function Sales() {
       full_name: "",
       email: "",
       phone: "",
-      status: "potential",
+      status: "nuevo_lead",
       lead_source: "website",
       project_type: "residential",
       budget: 0,
@@ -211,8 +218,12 @@ export default function Sales() {
         advisor_name: client.assigned_advisor?.full_name || 'Sin asignar'
       }));
       
-      const potentialClients = allClients.filter(client => client.status === 'potential');
-      const closedClientsData = allClients.filter(client => ['existing', 'active', 'completed'].includes(client.status));
+      const potentialClients = allClients.filter(client => 
+        ['potential', 'nuevo_lead', 'en_contacto'].includes(client.status)
+      );
+      const closedClientsData = allClients.filter(client => 
+        ['existing', 'active', 'completed', 'cliente_cerrado', 'lead_perdido'].includes(client.status)
+      );
 
       // Fetch activities
       const { data: activitiesData, error: activitiesError } = await supabase

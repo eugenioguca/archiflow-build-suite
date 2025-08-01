@@ -17,7 +17,7 @@ interface Client {
   email: string | null;
   phone: string | null;
   address: string | null;
-  status: 'potential' | 'existing' | 'active' | 'completed';
+  status: 'potential' | 'existing' | 'active' | 'completed' | 'nuevo_lead' | 'en_contacto' | 'lead_perdido' | 'cliente_cerrado';
   budget: number | null;
   notes: string | null;
   created_at: string;
@@ -26,20 +26,31 @@ interface Client {
   land_square_meters?: number;
   lead_source?: 'website' | 'commercial_alliance' | 'referral' | 'social_media' | 'advertisement' | 'cold_call' | 'event' | 'partner';
   lead_referral_details?: string;
+  curp?: string;
+  payment_plan?: any;
+  service_type?: string;
 }
 
 const statusLabels = {
   potential: 'Potencial',
   existing: 'Existente', 
   active: 'Activo',
-  completed: 'Finalizado'
+  completed: 'Finalizado',
+  nuevo_lead: 'Nuevo Lead',
+  en_contacto: 'En Contacto',
+  lead_perdido: 'Lead Perdido',
+  cliente_cerrado: 'Cliente Cerrado'
 };
 
 const statusColors = {
   potential: 'bg-yellow-100 text-yellow-800',
   existing: 'bg-blue-100 text-blue-800',
   active: 'bg-green-100 text-green-800',
-  completed: 'bg-gray-100 text-gray-800'
+  completed: 'bg-gray-100 text-gray-800',
+  nuevo_lead: 'bg-yellow-100 text-yellow-800',
+  en_contacto: 'bg-orange-100 text-orange-800',
+  lead_perdido: 'bg-red-100 text-red-800',
+  cliente_cerrado: 'bg-green-100 text-green-800'
 };
 
 const leadSourceLabels = {
@@ -199,6 +210,10 @@ export default function Clients() {
             <SelectItem value="existing">Existentes</SelectItem>
             <SelectItem value="active">Activos</SelectItem>
             <SelectItem value="completed">Finalizados</SelectItem>
+            <SelectItem value="nuevo_lead">Nuevos Leads</SelectItem>
+            <SelectItem value="en_contacto">En Contacto</SelectItem>
+            <SelectItem value="lead_perdido">Leads Perdidos</SelectItem>
+            <SelectItem value="cliente_cerrado">Clientes Cerrados</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -294,11 +309,11 @@ export default function Clients() {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <Badge className={statusColors[client.status]}>
-                      {statusLabels[client.status]}
-                    </Badge>
-                  </TableCell>
+                   <TableCell>
+                     <Badge className={statusColors[client.status as keyof typeof statusColors]}>
+                       {statusLabels[client.status as keyof typeof statusLabels]}
+                     </Badge>
+                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -342,7 +357,7 @@ export default function Clients() {
           setIsDialogOpen(false);
           setEditingClient(null);
         }}
-        client={editingClient}
+        client={editingClient as any}
         onSave={() => {
           fetchClients();
           setEditingClient(null);
