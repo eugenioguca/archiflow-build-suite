@@ -33,6 +33,13 @@ interface BranchOffice {
   city: string;
 }
 
+interface CommercialAlliance {
+  id: string;
+  name: string;
+  contact_person?: string;
+  active: boolean;
+}
+
 interface ClientFormDialogProps {
   open: boolean;
   onClose: () => void;
@@ -79,6 +86,7 @@ const mexicanStates = [
 export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDialogProps) {
   const [loading, setLoading] = useState(false);
   const [branchOffices, setBranchOffices] = useState<BranchOffice[]>([]);
+  const [commercialAlliances, setCommercialAlliances] = useState<CommercialAlliance[]>([]);
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
@@ -91,11 +99,13 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
     branch_office_id: '',
     land_square_meters: '',
     lead_source: '' as '' | 'website' | 'facebook' | 'instagram' | 'commercial_alliance' | 'referral' | 'other',
-    lead_referral_details: ''
+    lead_referral_details: '',
+    alliance_id: ''
   });
 
   useEffect(() => {
     fetchBranchOffices();
+    fetchCommercialAlliances();
   }, []);
 
   useEffect(() => {
@@ -112,7 +122,8 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
         branch_office_id: client.branch_office_id || '',
         land_square_meters: client.land_square_meters?.toString() || '',
         lead_source: client.lead_source || '',
-        lead_referral_details: client.lead_referral_details || ''
+        lead_referral_details: client.lead_referral_details || '',
+        alliance_id: (client as any).alliance_id || ''
       });
     } else {
       // Reset form for new client
@@ -128,7 +139,8 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
         branch_office_id: '',
         land_square_meters: '',
         lead_source: '',
-        lead_referral_details: ''
+        lead_referral_details: '',
+        alliance_id: ''
       });
     }
   }, [client, open]);
@@ -145,6 +157,21 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
       setBranchOffices(data || []);
     } catch (error) {
       console.error('Error fetching branch offices:', error);
+    }
+  };
+
+  const fetchCommercialAlliances = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('commercial_alliances')
+        .select('id, name, contact_person, active')
+        .eq('active', true)
+        .order('name');
+
+      if (error) throw error;
+      setCommercialAlliances(data || []);
+    } catch (error) {
+      console.error('Error fetching commercial alliances:', error);
     }
   };
 
@@ -166,6 +193,7 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
         land_square_meters: formData.land_square_meters ? parseFloat(formData.land_square_meters) : null,
         lead_source: formData.lead_source ? formData.lead_source as any : null,
         lead_referral_details: formData.lead_referral_details || null,
+        alliance_id: formData.alliance_id || null,
       };
 
       if (client) {
@@ -384,14 +412,19 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
 
               {formData.lead_source === 'commercial_alliance' && (
                 <div className="space-y-2">
-                  <Label htmlFor="lead_referral_details">¿Qué aliado comercial lo refirió? *</Label>
-                  <Input
-                    id="lead_referral_details"
-                    value={formData.lead_referral_details}
-                    onChange={(e) => handleInputChange('lead_referral_details', e.target.value)}
-                    placeholder="Nombre del aliado comercial"
-                    required
-                  />
+                  <Label htmlFor="alliance_id">Alianza Comercial *</Label>
+                  <Select value={formData.alliance_id} onValueChange={(value) => handleInputChange('alliance_id', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar alianza comercial" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {commercialAlliances.map((alliance) => (
+                        <SelectItem key={alliance.id} value={alliance.id}>
+                          {alliance.name} {alliance.contact_person && `(${alliance.contact_person})`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
 

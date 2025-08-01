@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface AuthContextType {
   user: User | null;
   session: Session | null;
+  profile: any | null;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(true); // Cambiado a true para evitar flash inicial
   const [isApproved, setIsApproved] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
@@ -57,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.log('Should be approved:', shouldBeApproved);
             console.log('Profile complete:', profileComplete);
             
+            setProfile(profile);
             setIsApproved(shouldBeApproved);
             setNeedsOnboarding(!profileComplete && shouldBeApproved);
           } catch (error) {
@@ -107,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               
               console.log('Auth listener - Should be approved:', shouldBeApproved);
               console.log('Auth listener - Profile complete:', profileComplete);
+              setProfile(profile);
               setIsApproved(shouldBeApproved);
               setNeedsOnboarding(!profileComplete && shouldBeApproved);
             } catch (error) {
@@ -161,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = {
     user,
     session,
+    profile,
     signIn,
     signUp,
     signOut,

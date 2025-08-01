@@ -6,12 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Edit2, Users, Settings, Check, Clock, X, Building, UserX } from "lucide-react";
+import { Trash2, Edit2, Users, Settings, Check, Clock, X, Building, UserX, Handshake } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import CommercialAlliancesManager from "@/components/CommercialAlliancesManager";
 
 interface UserProfile {
   id: string;
@@ -256,7 +257,7 @@ export default function UserManagement() {
 
       {!loading && (
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="users" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Gestión de Usuarios
@@ -264,6 +265,10 @@ export default function UserManagement() {
             <TabsTrigger value="branches" className="flex items-center gap-2">
               <Building className="h-4 w-4" />
               Sucursales
+            </TabsTrigger>
+            <TabsTrigger value="alliances" className="flex items-center gap-2">
+              <Handshake className="h-4 w-4" />
+              Alianzas Comerciales
             </TabsTrigger>
           </TabsList>
           
@@ -431,6 +436,10 @@ export default function UserManagement() {
           
           <TabsContent value="branches">
             <BranchOfficeManager />
+          </TabsContent>
+          
+          <TabsContent value="alliances">
+            <CommercialAlliancesManager />
           </TabsContent>
         </Tabs>
       )}

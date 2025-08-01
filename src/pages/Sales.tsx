@@ -54,7 +54,7 @@ interface Client {
   email: string;
   phone: string;
   status: 'potential' | 'existing' | 'active' | 'completed';
-  lead_source: 'website' | 'referral' | 'social_media' | 'event' | 'advertisement' | 'cold_call' | 'partner';
+  lead_source: 'website' | 'referral' | 'social_media' | 'event' | 'advertisement' | 'cold_call' | 'partner' | 'commercial_alliance';
   project_type: 'residential' | 'commercial' | 'industrial' | 'renovation' | 'landscape' | 'interior_design';
   budget: number;
   priority: 'low' | 'medium' | 'high' | 'urgent';
@@ -66,6 +66,7 @@ interface Client {
   location_details: any;
   notes: string;
   assigned_advisor_id?: string;
+  alliance_id?: string;
   created_at?: string;
   created_by?: string;
   advisor_name?: string;
