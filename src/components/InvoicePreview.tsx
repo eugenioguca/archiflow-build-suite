@@ -1,7 +1,8 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { QrCode, FileText, Calendar, Building, Mail, Phone } from 'lucide-react';
 
 interface InvoiceTemplate {
   id: string;
@@ -29,247 +30,352 @@ export function InvoicePreview({ isOpen, onClose, template }: InvoicePreviewProp
     footer_config = {}
   } = template;
 
-  const styles = {
-    page: {
-      fontFamily: fonts_config.body_font || 'Arial',
-      fontSize: `${fonts_config.body_size || 12}px`,
-      color: colors_config.text_color || '#1F2937',
-      backgroundColor: colors_config.background_color || '#FFFFFF',
-      padding: '20px',
-      maxWidth: '800px',
-      margin: '0 auto'
-    },
-    header: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      marginBottom: '30px',
-      borderBottom: `2px solid ${colors_config.primary_color || '#3B82F6'}`,
-      paddingBottom: '20px'
-    },
-    logo: {
-      maxHeight: header_config.logo_size === 'small' ? '60px' : 
-                 header_config.logo_size === 'large' ? '120px' : '90px',
-      maxWidth: '200px',
-      objectFit: 'contain' as const
-    },
-    title: {
-      fontSize: `${fonts_config.title_size || 24}px`,
-      fontFamily: fonts_config.title_font || 'Arial',
-      color: colors_config.primary_color || '#3B82F6',
-      fontWeight: 'bold',
-      margin: '0 0 10px 0'
-    },
-    subtitle: {
-      fontSize: `${fonts_config.subtitle_size || 18}px`,
-      fontFamily: fonts_config.subtitle_font || 'Arial',
-      color: colors_config.secondary_color || '#64748B',
-      margin: '0 0 20px 0'
-    },
-    table: {
-      width: '100%',
-      borderCollapse: 'collapse' as const,
-      marginBottom: '20px'
-    },
-    tableHeader: {
-      backgroundColor: colors_config.primary_color || '#3B82F6',
-      color: 'white',
-      padding: '12px 8px',
-      textAlign: 'left' as const,
-      fontSize: '14px',
-      fontWeight: 'bold'
-    },
-    tableCell: {
-      padding: '10px 8px',
-      borderBottom: `1px solid ${colors_config.secondary_color || '#64748B'}`,
-      fontSize: '13px'
-    },
-    total: {
-      backgroundColor: colors_config.primary_color || '#3B82F6',
-      color: 'white',
-      padding: '12px 8px',
-      textAlign: 'right' as const,
-      fontWeight: 'bold'
-    },
-    footer: {
-      marginTop: '40px',
-      textAlign: 'center' as const,
-      padding: '20px',
-      borderTop: `1px solid ${colors_config.secondary_color || '#64748B'}`,
-      fontSize: '12px',
-      color: colors_config.secondary_color || '#64748B'
-    }
-  };
+  // Modern color palette with gradients
+  const primaryColor = colors_config.primary_color || '#3B82F6';
+  const secondaryColor = colors_config.secondary_color || '#64748B';
+  const accentColor = colors_config.accent_color || '#F97316';
+  const textColor = colors_config.text_color || '#1F2937';
+  const backgroundColor = colors_config.background_color || '#FFFFFF';
 
   const sampleData = {
     folio: 'FAC-A-001-2024',
     fecha: new Date().toLocaleDateString('es-MX'),
+    serie: 'A',
+    numero: '001',
     cliente: {
       razon_social: 'Ejemplo Cliente S.A. de C.V.',
       rfc: 'EJE010101000',
-      domicilio: 'Av. Ejemplo 123, Col. Centro, CP 12345, Ciudad de México'
+      domicilio: 'Av. Ejemplo 123, Col. Centro',
+      ciudad: 'Ciudad de México, CP 12345',
+      email: 'cliente@ejemplo.com',
+      telefono: '+52 55 1234-5678'
     },
     conceptos: [
       {
         cantidad: 1,
-        descripcion: 'Servicios de consultoría especializada',
+        descripcion: 'Servicios de consultoría especializada en desarrollo empresarial',
         precio_unitario: 15000.00,
         importe: 15000.00
       },
       {
         cantidad: 2,
-        descripcion: 'Desarrollo de sistema personalizado',
+        descripcion: 'Desarrollo de sistema personalizado con integración completa',
         precio_unitario: 25000.00,
         importe: 50000.00
+      },
+      {
+        cantidad: 1,
+        descripcion: 'Capacitación y soporte técnico especializado',
+        precio_unitario: 8500.00,
+        importe: 8500.00
       }
     ],
-    subtotal: 65000.00,
-    iva: 10400.00,
-    total: 75400.00
+    subtotal: 73500.00,
+    iva: 11760.00,
+    total: 85260.00
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Vista Previa - {template.template_name}</DialogTitle>
+      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto p-0">
+        <DialogHeader className="p-6 pb-4">
+          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            Vista Previa - {template.template_name}
+          </DialogTitle>
         </DialogHeader>
         
-        <div style={styles.page} className="bg-white">
-          {/* Header */}
-          <div style={styles.header}>
-            <div style={{ 
-              order: header_config.logo_position === 'right' ? 2 : 0,
-              flex: header_config.logo_position === 'center' ? '1' : 'none',
-              textAlign: header_config.logo_position === 'center' ? 'center' : 'left'
-            }}>
-              {company_logo_url && header_config.show_logo && (
-                <img 
-                  src={company_logo_url} 
-                  alt="Logo de la empresa" 
-                  style={styles.logo}
-                />
-              )}
-            </div>
-            
-            <div style={{ 
-              order: header_config.company_info_position === 'left' ? 0 : 2,
-              textAlign: 'right',
-              flex: 1
-            }}>
-              <h1 style={styles.title}>FACTURA</h1>
-              <div style={styles.subtitle}>
-                <strong>Ejemplo Empresa S.A. de C.V.</strong><br />
-                RFC: EMP010101000<br />
-                Av. Empresa 456, Col. Corporativa<br />
-                CP 54321, Ciudad de México
+        <div className="px-6 pb-6">
+          <div 
+            className="bg-white shadow-2xl rounded-xl overflow-hidden border border-gray-100"
+            style={{
+              fontFamily: fonts_config.body_font || "'Inter', sans-serif",
+              fontSize: `${fonts_config.body_size || 14}px`,
+              color: textColor,
+              maxWidth: '900px',
+              margin: '0 auto'
+            }}
+          >
+            {/* Modern Header with Gradient */}
+            <div 
+              className="relative overflow-hidden"
+              style={{
+                background: `linear-gradient(135deg, ${primaryColor}, ${accentColor})`,
+                padding: '2rem'
+              }}
+            >
+              <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
+              
+              <div className="relative z-10 flex justify-between items-start text-white">
+                <div className="flex items-center space-x-6">
+                  {company_logo_url && header_config.show_logo && (
+                    <div className="bg-white/20 backdrop-blur-md rounded-xl p-3 shadow-xl">
+                      <img 
+                        src={company_logo_url} 
+                        alt="Logo de la empresa" 
+                        className="max-h-16 w-auto filter brightness-0 invert"
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <h1 
+                      style={{
+                        fontSize: `${fonts_config.title_size || 32}px`,
+                        fontFamily: fonts_config.title_font || "'Inter', sans-serif",
+                        fontWeight: '800',
+                        margin: 0,
+                        textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                      }}
+                    >
+                      FACTURA
+                    </h1>
+                    <div className="flex items-center space-x-4 mt-2">
+                      <Badge className="bg-white/20 text-white border-white/30 px-3 py-1">
+                        {sampleData.serie}-{sampleData.numero}
+                      </Badge>
+                      <span className="text-white/90 font-medium">
+                        {sampleData.folio}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="text-right">
+                  <div className="bg-white/15 backdrop-blur-md rounded-lg p-4 shadow-xl">
+                    <h2 className="text-xl font-bold mb-2">Ejemplo Empresa S.A. de C.V.</h2>
+                    <div className="text-sm text-white/90 space-y-1">
+                      <p className="font-semibold">RFC: EMP010101000</p>
+                      <p>Av. Empresa 456, Col. Corporativa</p>
+                      <p>CP 54321, Ciudad de México</p>
+                      <div className="flex items-center justify-end space-x-2 mt-2">
+                        <Mail className="h-4 w-4" />
+                        <span className="text-xs">facturacion@ejemplo.com</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Invoice Info */}
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: '1fr 1fr', 
-            gap: '20px', 
-            marginBottom: '30px' 
-          }}>
-            <Card className="p-4">
-              <h3 style={{ ...styles.subtitle, margin: '0 0 10px 0' }}>Datos del Cliente</h3>
-              <p style={{ margin: '5px 0' }}><strong>Razón Social:</strong> {sampleData.cliente.razon_social}</p>
-              <p style={{ margin: '5px 0' }}><strong>RFC:</strong> {sampleData.cliente.rfc}</p>
-              <p style={{ margin: '5px 0' }}><strong>Domicilio:</strong> {sampleData.cliente.domicilio}</p>
-            </Card>
-            
-            <Card className="p-4">
-              <h3 style={{ ...styles.subtitle, margin: '0 0 10px 0' }}>Datos de la Factura</h3>
-              <p style={{ margin: '5px 0' }}><strong>Folio:</strong> {sampleData.folio}</p>
-              <p style={{ margin: '5px 0' }}><strong>Fecha:</strong> {sampleData.fecha}</p>
-              <p style={{ margin: '5px 0' }}><strong>Método de Pago:</strong> PUE</p>
-              <p style={{ margin: '5px 0' }}><strong>Forma de Pago:</strong> Transferencia</p>
-            </Card>
-          </div>
+            {/* Content Section */}
+            <div className="p-8 space-y-8">
+              {/* Client and Invoice Info Cards */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-white">
+                  <CardContent className="p-6">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <Building className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <h3 className="text-lg font-bold text-blue-900">Datos del Cliente</h3>
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm font-medium text-blue-700">Razón Social</p>
+                        <p className="font-semibold text-gray-900">{sampleData.cliente.razon_social}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-blue-700">RFC</p>
+                        <p className="font-mono font-semibold text-gray-900">{sampleData.cliente.rfc}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-blue-700">Domicilio</p>
+                        <p className="text-gray-800">{sampleData.cliente.domicilio}</p>
+                        <p className="text-gray-800">{sampleData.cliente.ciudad}</p>
+                      </div>
+                      <div className="flex items-center space-x-4 pt-2">
+                        <div className="flex items-center space-x-1">
+                          <Mail className="h-4 w-4 text-blue-600" />
+                          <span className="text-sm text-gray-700">{sampleData.cliente.email}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Phone className="h-4 w-4 text-blue-600" />
+                          <span className="text-sm text-gray-700">{sampleData.cliente.telefono}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-50 to-white">
+                  <CardContent className="p-6">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <div className="p-2 bg-orange-100 rounded-lg">
+                        <FileText className="h-5 w-5 text-orange-600" />
+                      </div>
+                      <h3 className="text-lg font-bold text-orange-900">Información Fiscal</h3>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-orange-700">Fecha de Emisión</p>
+                        <div className="flex items-center space-x-2">
+                          <Calendar className="h-4 w-4 text-orange-600" />
+                          <p className="font-semibold text-gray-900">{sampleData.fecha}</p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-orange-700">Serie y Folio</p>
+                        <p className="font-mono font-semibold text-gray-900">{sampleData.folio}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-orange-700">Método de Pago</p>
+                        <Badge variant="outline" className="mt-1">PUE - Pago en una sola exhibición</Badge>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-orange-700">Forma de Pago</p>
+                        <Badge variant="outline" className="mt-1">03 - Transferencia electrónica</Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
 
-          {/* Conceptos Table */}
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.tableHeader}>Cantidad</th>
-                <th style={styles.tableHeader}>Descripción</th>
-                <th style={styles.tableHeader}>Precio Unitario</th>
-                <th style={styles.tableHeader}>Importe</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sampleData.conceptos.map((concepto, index) => (
-                <tr key={index}>
-                  <td style={styles.tableCell}>{concepto.cantidad}</td>
-                  <td style={styles.tableCell}>{concepto.descripcion}</td>
-                  <td style={styles.tableCell}>${concepto.precio_unitario.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
-                  <td style={styles.tableCell}>${concepto.importe.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              {/* Modern Concepts Table */}
+              <Card className="border-0 shadow-lg overflow-hidden">
+                <div 
+                  className="px-6 py-4 text-white font-bold"
+                  style={{
+                    background: `linear-gradient(90deg, ${primaryColor}, ${accentColor})`
+                  }}
+                >
+                  <h3 className="text-lg">Conceptos Facturados</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">Cant.</th>
+                        <th className="px-6 py-4 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">Descripción</th>
+                        <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 uppercase tracking-wider">Precio Unit.</th>
+                        <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 uppercase tracking-wider">Importe</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {sampleData.conceptos.map((concepto, index) => (
+                        <tr key={index} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              <span className="text-sm font-bold text-blue-600">{concepto.cantidad}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <p className="text-sm font-medium text-gray-900">{concepto.descripcion}</p>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <span className="text-sm font-mono font-medium text-gray-900">
+                              ${concepto.precio_unitario.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <span className="text-sm font-mono font-bold text-gray-900">
+                              ${concepto.importe.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
 
-          {/* Totals */}
-          <div style={{ textAlign: 'right', marginBottom: '30px' }}>
-            <table style={{ ...styles.table, width: '300px', marginLeft: 'auto' }}>
-              <tbody>
-                <tr>
-                  <td style={styles.tableCell}><strong>Subtotal:</strong></td>
-                  <td style={styles.tableCell}>${sampleData.subtotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
-                </tr>
-                <tr>
-                  <td style={styles.tableCell}><strong>IVA (16%):</strong></td>
-                  <td style={styles.tableCell}>${sampleData.iva.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
-                </tr>
-                <tr>
-                  <td style={styles.total}><strong>Total:</strong></td>
-                  <td style={styles.total}><strong>${sampleData.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</strong></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+              {/* Modern Totals Section */}
+              <div className="flex justify-end">
+                <Card className="border-0 shadow-lg bg-gradient-to-br from-gray-50 to-white w-full max-w-md">
+                  <CardContent className="p-6">
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600 font-medium">Subtotal:</span>
+                        <span className="font-mono text-lg font-semibold">
+                          ${sampleData.subtotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600 font-medium">IVA (16%):</span>
+                        <span className="font-mono text-lg font-semibold text-blue-600">
+                          ${sampleData.iva.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <div className="border-t pt-4">
+                        <div 
+                          className="flex justify-between items-center text-white p-4 rounded-lg shadow-md"
+                          style={{
+                            background: `linear-gradient(135deg, ${primaryColor}, ${accentColor})`
+                          }}
+                        >
+                          <span className="text-xl font-bold">TOTAL:</span>
+                          <span className="text-2xl font-mono font-bold">
+                            ${sampleData.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
 
-          {/* QR Code placeholder */}
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            marginBottom: '20px'
-          }}>
-            <div style={{ 
-              width: '100px', 
-              height: '100px', 
-              border: `2px dashed ${colors_config.secondary_color || '#64748B'}`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '12px',
-              color: colors_config.secondary_color || '#64748B'
-            }}>
-              Código QR
+              {/* QR Code and Fiscal Data */}
+              <Card className="border-0 shadow-lg bg-gradient-to-r from-blue-50 via-white to-orange-50">
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-start space-x-8">
+                    <div className="flex items-center space-x-4">
+                      <div 
+                        className="w-24 h-24 border-2 border-dashed rounded-lg flex items-center justify-center bg-white shadow-inner"
+                        style={{ borderColor: secondaryColor }}
+                      >
+                        <QrCode className="h-8 w-8 text-gray-400" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900 mb-2">Código QR</h4>
+                        <p className="text-sm text-gray-600">Escanea para verificar</p>
+                        <p className="text-sm text-gray-600">la autenticidad del CFDI</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1 max-w-md">
+                      <h4 className="font-bold text-gray-900 mb-3">Información Fiscal</h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="bg-white rounded-lg p-3 shadow-sm">
+                          <p className="text-gray-600">UUID Fiscal:</p>
+                          <p className="font-mono text-xs text-gray-800 break-all">A1B2C3D4-E5F6-7890-ABCD-EF1234567890</p>
+                        </div>
+                        <div className="bg-white rounded-lg p-3 shadow-sm">
+                          <p className="text-gray-600">Certificado SAT:</p>
+                          <p className="font-mono text-gray-800">30001000000400002495</p>
+                        </div>
+                        <div className="bg-white rounded-lg p-3 shadow-sm">
+                          <p className="text-gray-600">Fecha de Certificación:</p>
+                          <p className="text-gray-800">{new Date().toLocaleString('es-MX')}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-            <div style={{ fontSize: '11px', color: colors_config.secondary_color || '#64748B' }}>
-              <p><strong>UUID:</strong> A1B2C3D4-E5F6-7890-ABCD-EF1234567890</p>
-              <p><strong>Certificado SAT:</strong> 30001000000400002495</p>
-              <p><strong>Fecha de Certificación:</strong> {new Date().toLocaleString('es-MX')}</p>
-            </div>
-          </div>
 
-          {/* Footer */}
-          {footer_config.show_footer && (
-            <div style={styles.footer}>
-              <p>{footer_config.footer_text || 'Gracias por su preferencia'}</p>
-              {footer_config.show_generation_date && (
-                <p>Documento generado el {new Date().toLocaleString('es-MX')}</p>
-              )}
-              {footer_config.show_page_numbers && (
-                <p>Página 1 de 1</p>
-              )}
-            </div>
-          )}
+            {/* Modern Footer */}
+            {footer_config.show_footer && (
+              <div 
+                className="text-center py-6 text-white"
+                style={{
+                  background: `linear-gradient(135deg, ${primaryColor}dd, ${accentColor}dd)`
+                }}
+              >
+                <div className="bg-white/10 backdrop-blur-sm mx-8 rounded-lg p-4">
+                  <p className="font-medium text-lg">
+                    {footer_config.footer_text || 'Gracias por su preferencia'}
+                  </p>
+                  <div className="flex justify-center space-x-6 mt-2 text-sm text-white/90">
+                    {footer_config.show_generation_date && (
+                      <p>Generado: {new Date().toLocaleString('es-MX')}</p>
+                    )}
+                    {footer_config.show_page_numbers && (
+                      <p>Página 1 de 1</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
