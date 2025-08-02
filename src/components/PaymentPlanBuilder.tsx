@@ -144,10 +144,15 @@ export const PaymentPlanBuilder = ({
       if (projectData?.payment_plan && typeof projectData.payment_plan === 'object') {
         try {
           const plans = Array.isArray(projectData.payment_plan) ? projectData.payment_plan : [projectData.payment_plan];
-          // Asegurar que cada plan tenga un array de payments válido
+          // Asegurar que cada plan tenga un array de payments válido y campos numéricos válidos
           const validPlans = plans.map((plan: any) => ({
             ...plan,
-            payments: Array.isArray(plan.payments) ? plan.payments : []
+            payments: Array.isArray(plan.payments) ? plan.payments.map((payment: any) => ({
+              ...payment,
+              amount: typeof payment.amount === 'number' ? payment.amount : 0,
+              paid_amount: typeof payment.paid_amount === 'number' ? payment.paid_amount : 0
+            })) : [],
+            total_amount: typeof plan.total_amount === 'number' ? plan.total_amount : 0
           }));
           setPaymentPlans(validPlans as unknown as PaymentPlan[]);
         } catch (e) {
@@ -187,7 +192,7 @@ export const PaymentPlanBuilder = ({
       if (Math.abs(totalInstallments - planAmountNumber) > 0.01) {
         toast({
           title: "Error",
-          description: `Las cuotas deben sumar exactamente $${planAmountNumber.toLocaleString()}`,
+          description: `Las cuotas deben sumar exactamente $${formatCurrencyDisplay(planAmountNumber)}`,
           variant: "destructive",
         });
         return;
@@ -413,6 +418,13 @@ export const PaymentPlanBuilder = ({
     }, 0);
   };
 
+  const formatCurrencyDisplay = (value: number | undefined | null): string => {
+    if (value === undefined || value === null || isNaN(value)) {
+      return '0';
+    }
+    return value.toLocaleString();
+  };
+
   const getPaymentProgress = (payments: PaymentInstallment[], totalAmount: number) => {
     if (!payments || !Array.isArray(payments) || totalAmount === 0) {
       return 0;
@@ -584,17 +596,17 @@ export const PaymentPlanBuilder = ({
                           <div className="flex justify-between text-sm">
                             <span>Total de cuotas:</span>
                             <span className="font-medium">
-                              ${customInstallments.reduce((sum, inst) => sum + inst.amount, 0).toLocaleString()}
+                              ${formatCurrencyDisplay(customInstallments.reduce((sum, inst) => sum + inst.amount, 0))}
                             </span>
                           </div>
                           <div className="flex justify-between text-sm">
                             <span>Monto del plan:</span>
-                            <span className="font-medium">${parseCurrency(planAmount).toLocaleString()}</span>
+                            <span className="font-medium">${formatCurrencyDisplay(parseCurrency(planAmount))}</span>
                           </div>
                           <div className="flex justify-between text-sm font-medium border-t pt-2 mt-2">
                             <span>Diferencia:</span>
                             <span className={customInstallments.reduce((sum, inst) => sum + inst.amount, 0) === parseCurrency(planAmount) ? 'text-green-600' : 'text-red-600'}>
-                              ${(customInstallments.reduce((sum, inst) => sum + inst.amount, 0) - parseCurrency(planAmount)).toLocaleString()}
+                              ${formatCurrencyDisplay(customInstallments.reduce((sum, inst) => sum + inst.amount, 0) - parseCurrency(planAmount))}
                             </span>
                           </div>
                         </div>
@@ -659,8 +671,8 @@ export const PaymentPlanBuilder = ({
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="text-right">
-                        <div className="text-2xl font-bold">
-                          ${totalPaid.toLocaleString()} / ${plan.total_amount.toLocaleString()}
+                         <div className="text-2xl font-bold">
+                           ${formatCurrencyDisplay(totalPaid)} / ${formatCurrencyDisplay(plan.total_amount)}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           {progress}% completado
@@ -699,8 +711,8 @@ export const PaymentPlanBuilder = ({
                               #{payment.installment_number}
                             </Badge>
                             <div>
-                              <div className="font-medium">
-                                ${payment.amount.toLocaleString()}
+                               <div className="font-medium">
+                                 ${formatCurrencyDisplay(payment.amount)}
                               </div>
                               <div className="text-sm text-muted-foreground">
                                 Vence: {format(new Date(payment.due_date), 'dd/MM/yyyy', { locale: es })}
