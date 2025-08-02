@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -153,7 +154,7 @@ export function DesignCompletionManager({
       const { error } = await supabase
         .from("client_projects")
         .update({
-          status: 'completed', // Use valid enum value  
+          status: 'completed',
           updated_at: new Date().toISOString()
         })
         .eq("id", projectId);
@@ -175,6 +176,38 @@ export function DesignCompletionManager({
     }
   };
 
+  const handleBudgetAccepted = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("client_projects")
+        .update({
+          status: 'budget_accepted',
+          moved_to_construction_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", projectId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Presupuesto Aceptado",
+        description: "El proyecto se ha movido automáticamente al módulo de construcción",
+      });
+
+      // Refresh to reflect changes
+      window.location.reload();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "No se pudo procesar la aceptación del presupuesto",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getProgressPercentage = () => {
     const completedPhases = phases.filter(phase => phase.status === 'completed').length;
     return Math.round((completedPhases / phases.length) * 100);
@@ -182,36 +215,31 @@ export function DesignCompletionManager({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <CheckCircle className="h-5 w-5" />
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <CheckCircle className="h-4 w-4" />
           Estado del Diseño
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Progress Overview */}
-        <div className="space-y-3">
+      <CardContent className="space-y-4">
+        {/* Compact Progress Overview */}
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Progreso General</span>
+            <span className="text-sm font-medium">Progreso</span>
             <span className="text-sm text-muted-foreground">{getProgressPercentage()}%</span>
           </div>
-          <div className="w-full bg-secondary rounded-full h-2">
-            <div 
-              className="bg-primary h-2 rounded-full transition-all duration-300"
-              style={{ width: `${getProgressPercentage()}%` }}
-            ></div>
-          </div>
+          <Progress value={getProgressPercentage()} className="h-1.5" />
         </div>
 
-        {/* Phase Status Summary */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Compact Phase Status */}
+        <div className="grid grid-cols-2 gap-2">
           {phases.map(phase => (
-            <div key={phase.id} className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${
+            <div key={phase.id} className="flex items-center gap-2 text-xs">
+              <div className={`w-2 h-2 rounded-full ${
                 phase.status === 'completed' ? 'bg-green-500' : 
                 phase.status === 'in_progress' ? 'bg-yellow-500' : 'bg-gray-300'
               }`}></div>
-              <span className="text-sm">{phase.phase_name}</span>
+              <span className="truncate">{phase.phase_name}</span>
             </div>
           ))}
         </div>
@@ -263,43 +291,70 @@ export function DesignCompletionManager({
           </div>
         )}
 
+        {/* Design Status Options */}
+        <div className="space-y-3">
+          <div className="text-sm font-medium mb-2">Estado del Diseño</div>
+          
+          <div className="space-y-2">
+            <Button 
+              onClick={handleMoveToConstruction}
+              disabled={loading}
+              className="w-full justify-start h-auto p-3"
+              variant="outline"
+            >
+              <div className="flex items-center gap-3 w-full">
+                <Building className="h-4 w-4 flex-shrink-0" />
+                <div className="text-left">
+                  <div className="font-medium">Cliente ya cuenta con un diseño</div>
+                  <div className="text-xs text-muted-foreground">Omitir fases de diseño y continuar con construcción</div>
+                </div>
+              </div>
+            </Button>
+
+            <Button 
+              onClick={handleBudgetAccepted}
+              disabled={loading}
+              className="w-full justify-start h-auto p-3"
+              variant="outline"
+            >
+              <div className="flex items-center gap-3 w-full">
+                <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                <div className="text-left">
+                  <div className="font-medium">Cliente Acepta presupuesto de Obra</div>
+                  <div className="text-xs text-muted-foreground">Proyecto pasa automáticamente a construcción</div>
+                </div>
+              </div>
+            </Button>
+          </div>
+        </div>
+
         {/* Post-Completion Options */}
         {isDesignCompleted && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded text-sm">
               <CheckCircle className="h-4 w-4 text-green-600" />
-              <div className="text-sm text-green-800 font-medium">
-                ¡Diseño Completado! ¿Cuál es el siguiente paso?
-              </div>
+              <span className="text-green-800 font-medium">¡Diseño Completado!</span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <Button 
                 onClick={handleMoveToConstruction}
                 disabled={loading}
-                className="flex items-center gap-2"
-                size="lg"
+                size="sm"
               >
-                <Building className="h-4 w-4" />
-                Continuar con Construcción
-                <ArrowRight className="h-4 w-4" />
+                <Building className="h-4 w-4 mr-1" />
+                Construcción
               </Button>
 
               <Button 
                 onClick={handleCompleteDesignOnly}
                 disabled={loading}
                 variant="outline"
-                className="flex items-center gap-2"
-                size="lg"
+                size="sm"
               >
-                <FileText className="h-4 w-4" />
+                <FileText className="h-4 w-4 mr-1" />
                 Solo Diseño
               </Button>
-            </div>
-
-            <div className="text-xs text-muted-foreground text-center mt-4">
-              <p><strong>Continuar con Construcción:</strong> Transferir proyecto al módulo de construcción con presupuesto</p>
-              <p><strong>Solo Diseño:</strong> Finalizar el proyecto únicamente con el diseño entregado</p>
             </div>
           </div>
         )}

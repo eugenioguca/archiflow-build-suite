@@ -3806,6 +3806,7 @@ export type Database = {
         | "construction"
         | "design_completed"
         | "design_only_completed"
+        | "budget_accepted"
       contact_method:
         | "phone"
         | "email"
@@ -4023,6 +4024,7 @@ export const Constants = {
         "construction",
         "design_completed",
         "design_only_completed",
+        "budget_accepted",
       ],
       contact_method: [
         "phone",
