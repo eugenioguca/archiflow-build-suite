@@ -38,15 +38,15 @@ interface ClientProject {
   profiles?: {
     id: string;
     display_name: string;
-  };
+  } | null;
   branch_offices?: {
     id: string;
     name: string;
-  };
+  } | null;
   commercial_alliances?: {
     id: string;
     name: string;
-  };
+  } | null;
 }
 
 const statusLabels = {
@@ -54,6 +54,10 @@ const statusLabels = {
   existing: 'Existente', 
   active: 'Activo',
   completed: 'Finalizado',
+  design: 'En Diseño',
+  construction: 'En Construcción',
+  design_completed: 'Diseño Terminado',
+  design_only_completed: 'Solo Diseño',
   nuevo_lead: 'Nuevo Lead',
   en_contacto: 'En Contacto',
   lead_perdido: 'Lead Perdido',
@@ -65,6 +69,10 @@ const statusColors = {
   existing: 'bg-blue-100 text-blue-800',
   active: 'bg-green-100 text-green-800',
   completed: 'bg-gray-100 text-gray-800',
+  design: 'bg-purple-100 text-purple-800',
+  construction: 'bg-orange-100 text-orange-800',
+  design_completed: 'bg-green-100 text-green-800',
+  design_only_completed: 'bg-blue-100 text-blue-800',
   nuevo_lead: 'bg-yellow-100 text-yellow-800',
   en_contacto: 'bg-orange-100 text-orange-800',
   lead_perdido: 'bg-red-100 text-red-800',
@@ -137,7 +145,8 @@ export default function Clients() {
 
       if (error) throw error;
       
-      setClients(data || []);
+      // Type assertion to match our interface
+      setClients((data as unknown as Client[]) || []);
     } catch (error: any) {
       console.error('Error fetching clients:', error);
       toast({
@@ -344,21 +353,67 @@ export default function Clients() {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <div className="text-sm text-muted-foreground">
-                      Ver proyectos
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm text-muted-foreground">
-                      -
-                    </div>
-                  </TableCell>
                    <TableCell>
-                     <Badge variant="secondary">
-                       Cliente Base
-                     </Badge>
+                     {client.client_projects && client.client_projects.length > 0 ? (
+                       <div className="space-y-1">
+                         {client.client_projects.map((project) => (
+                           <div key={project.id} className="text-sm">
+                             <p className="font-medium">{project.project_name}</p>
+                             <p className="text-xs text-muted-foreground">
+                               {project.service_type} - {formatCurrency(project.budget)}
+                             </p>
+                           </div>
+                         ))}
+                       </div>
+                     ) : (
+                       <div className="text-sm text-muted-foreground">
+                         Sin proyectos
+                       </div>
+                     )}
                    </TableCell>
+                   <TableCell>
+                     {client.client_projects && client.client_projects.length > 0 ? (
+                       <div className="space-y-1">
+                         {client.client_projects.map((project) => (
+                           <div key={project.id} className="text-sm text-muted-foreground">
+                             {project.commercial_alliances?.name || 'Directo'}
+                           </div>
+                         ))}
+                       </div>
+                     ) : (
+                       <div className="text-sm text-muted-foreground">
+                         -
+                       </div>
+                     )}
+                   </TableCell>
+                    <TableCell>
+                      {client.client_projects && client.client_projects.length > 0 ? (
+                        <div className="space-y-1">
+                          {client.client_projects.map((project) => (
+                            <div key={project.id} className="flex flex-col gap-1">
+                              <Badge 
+                                variant="outline" 
+                                className={statusColors[project.sales_pipeline_stage as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}
+                              >
+                                {statusLabels[project.sales_pipeline_stage as keyof typeof statusLabels] || project.sales_pipeline_stage}
+                              </Badge>
+                              {project.status !== project.sales_pipeline_stage && (
+                                <Badge 
+                                  variant="secondary"
+                                  className={statusColors[project.status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}
+                                >
+                                  {statusLabels[project.status as keyof typeof statusLabels] || project.status}
+                                </Badge>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <Badge variant="secondary">
+                          Sin proyecto
+                        </Badge>
+                      )}
+                    </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
