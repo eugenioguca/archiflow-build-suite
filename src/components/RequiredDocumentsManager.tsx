@@ -191,16 +191,11 @@ export const RequiredDocumentsManager = ({
 
       if (uploadError) throw uploadError;
 
-      // Obtener URL pública
-      const { data: publicUrlData } = supabase.storage
-        .from('client-documents')
-        .getPublicUrl(filePath);
-
-      // Actualizar registro en la base de datos
+      // Actualizar registro en la base de datos con la ruta del archivo
       const { error: updateError } = await supabase
         .from('client_projects')
         .update({
-          constancia_situacion_fiscal_url: publicUrlData.publicUrl,
+          constancia_situacion_fiscal_url: filePath, // Guardar la ruta, no la URL
           constancia_situacion_fiscal_uploaded: true
         })
         .eq('id', clientProjectId);
@@ -354,15 +349,33 @@ export const RequiredDocumentsManager = ({
 
                     {doc.type === 'fiscal_certificate' && (
                       <div className="flex gap-2">
-                        {status.completed && status.value && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => window.open(status.value as string, '_blank')}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        )}
+                         {status.completed && status.value && (
+                           <Button
+                             variant="outline"
+                             size="sm"
+                             onClick={async () => {
+                               try {
+                                 // Generar URL firmada para ver el archivo
+                                 const { data: signedUrlData, error } = await supabase.storage
+                                   .from('client-documents')
+                                   .createSignedUrl(status.value as string, 3600);
+                                 
+                                 if (error) throw error;
+                                 
+                                 window.open(signedUrlData.signedUrl, '_blank');
+                               } catch (error) {
+                                 console.error('Error getting signed URL:', error);
+                                 toast({
+                                   title: "Error",
+                                   description: "No se pudo acceder al documento",
+                                   variant: "destructive",
+                                 });
+                               }
+                             }}
+                           >
+                             <Eye className="h-4 w-4" />
+                           </Button>
+                         )}
                         <Button
                           variant="outline"
                           size="sm"
