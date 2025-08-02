@@ -30,22 +30,43 @@ interface MaterialRequirement {
   id: string;
   project_id: string;
   budget_item_id: string | null;
+  phase_id: string | null;
+  material_code: string | null;
   material_name: string;
+  description: string | null;
   category: string;
+  subcategory: string | null;
   unit_of_measure: string;
   quantity_required: number;
   quantity_ordered: number;
   quantity_delivered: number;
+  quantity_used: number;
   quantity_remaining: number;
+  quantity_wasted: number;
   unit_cost: number;
   total_cost: number;
   supplier_id: string | null;
+  supplier_quote_url: string | null;
   expected_delivery_date: string | null;
+  actual_delivery_date: string | null;
+  quality_specifications: any;
+  safety_requirements: any;
+  storage_requirements: string | null;
   priority_level: string;
   status: string;
+  procurement_notes: string | null;
+  quality_approved: boolean;
+  quality_approved_by: string | null;
+  quality_approved_at: string | null;
+  waste_reason: string | null;
+  cost_variance_percentage: number;
+  lead_time_days: number | null;
+  min_stock_level: number;
+  max_stock_level: number;
+  reorder_point: number;
+  created_by: string;
   created_at: string;
   updated_at: string;
-  created_by: string;
 }
 
 interface MaterialRequirementsProps {
@@ -116,7 +137,7 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
         return;
       }
 
-      setMaterials(data || []);
+      setMaterials(data as any || []);
     } catch (error) {
       console.error("Error:", error);
       toast.error("Error al cargar los materiales");
@@ -186,6 +207,7 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
 
   const filteredMaterials = materials.filter(material => {
     const matchesSearch = material.material_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         material.material_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          material.category.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesCategory = categoryFilter === "all" || material.category === categoryFilter;
@@ -376,7 +398,7 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                           <div>
                             <div className="font-medium">{material.material_name}</div>
                             <div className="text-sm text-muted-foreground">
-                              {material.category}
+                              {material.material_code || 'Sin código'}
                             </div>
                             {isLowStock(material) && (
                               <div className="flex items-center gap-1 text-red-600 text-xs mt-1">
