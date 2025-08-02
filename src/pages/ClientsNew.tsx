@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, MoreHorizontal, FolderOpen, User, Building } from "lucide-react";
+import { Plus, Search, MoreHorizontal, FolderOpen, User, Building, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ClientProjectManager } from "@/components/ClientProjectManager";
@@ -148,6 +148,65 @@ export default function ClientsNew() {
       style: 'currency',
       currency: 'MXN'
     }).format(amount);
+  };
+
+  const handleDelete = async (clientId: string) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar este cliente y todo su expediente? Esta acción eliminará también todos sus proyectos y documentos asociados y no se puede deshacer.')) return;
+
+    try {
+      // Primero eliminar documentos del cliente
+      const { error: documentsError } = await supabase
+        .from('client_documents')
+        .delete()
+        .eq('client_id', clientId);
+
+      if (documentsError) {
+        console.warn('Error eliminando documentos del cliente:', documentsError);
+        // No detenemos el proceso por esto, solo advertimos
+      }
+
+      // Eliminar documentos en tabla general
+      const { error: generalDocsError } = await supabase
+        .from('documents')
+        .delete()
+        .eq('client_id', clientId);
+
+      if (generalDocsError) {
+        console.warn('Error eliminando documentos generales del cliente:', generalDocsError);
+      }
+
+      // Eliminar proyectos del cliente
+      const { error: projectsError } = await supabase
+        .from('client_projects')
+        .delete()
+        .eq('client_id', clientId);
+
+      if (projectsError) {
+        console.warn('Error eliminando proyectos del cliente:', projectsError);
+      }
+
+      // Finalmente eliminar el cliente
+      const { error: clientError } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', clientId);
+
+      if (clientError) throw clientError;
+
+      toast({
+        title: "Cliente eliminado",
+        description: "El expediente completo del cliente se eliminó correctamente, incluyendo proyectos y documentos",
+      });
+      
+      fetchClients();
+    } catch (error: any) {
+      console.error('Error eliminando cliente:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el cliente. Por favor, inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    }
   };
 
   const filteredClients = clients.filter(client =>
@@ -313,7 +372,7 @@ export default function ClientsNew() {
                             <FolderOpen className="h-4 w-4 mr-2" />
                             Ver Proyectos
                           </DropdownMenuItem>
-                          <DropdownMenuItem
+                           <DropdownMenuItem
                             onClick={() => {
                               setSelectedClient(client);
                               setNewClientForProject(false);
@@ -322,6 +381,13 @@ export default function ClientsNew() {
                           >
                             <User className="h-4 w-4 mr-2" />
                             Editar Cliente
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDelete(client.id)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Eliminar Cliente
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
