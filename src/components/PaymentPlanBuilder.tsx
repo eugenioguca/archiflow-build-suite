@@ -395,6 +395,11 @@ export const PaymentPlanBuilder = ({
 
       setPaymentPlans(updatedPlans);
 
+      // Notify parent component about the update
+      if (onPlanUpdate) {
+        onPlanUpdate();
+      }
+
       toast({
         title: "Éxito",
         description: "Estado de pago actualizado y guardado",

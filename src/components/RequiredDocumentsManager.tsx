@@ -98,25 +98,32 @@ export const RequiredDocumentsManager = ({
   const [paymentPlanData, setPaymentPlanData] = useState<any>(null);
   const { toast } = useToast();
 
-  // Cargar datos del plan de pagos al montar el componente
+  // Cargar datos del plan de pagos al montar el componente y cuando se actualiza
+  const fetchPaymentPlan = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('client_projects')
+        .select('payment_plan')
+        .eq('id', clientProjectId)
+        .single();
+
+      if (error) throw error;
+      setPaymentPlanData(data?.payment_plan);
+    } catch (error) {
+      console.error('Error fetching payment plan:', error);
+    }
+  };
+
   useEffect(() => {
-    const fetchPaymentPlan = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('client_projects')
-          .select('payment_plan')
-          .eq('id', clientProjectId)
-          .single();
-
-        if (error) throw error;
-        setPaymentPlanData(data?.payment_plan);
-      } catch (error) {
-        console.error('Error fetching payment plan:', error);
-      }
-    };
-
     fetchPaymentPlan();
   }, [clientProjectId]);
+
+  // Refetch cuando onDocumentUpdate es llamado (cuando hay cambios externos)
+  useEffect(() => {
+    if (onDocumentUpdate) {
+      fetchPaymentPlan();
+    }
+  }, [onDocumentUpdate]);
 
   const checkPaymentPlanCompleted = () => {
     if (!paymentPlanData) return false;
@@ -124,10 +131,14 @@ export const RequiredDocumentsManager = ({
     try {
       const plans = Array.isArray(paymentPlanData) ? paymentPlanData : [paymentPlanData];
       
-      // Verificar si al menos un plan tiene un pago marcado como pagado
+      // Verificar si al menos un plan tiene un pago marcado como pagado o con status 'paid'
       return plans.some((plan: any) => {
         if (!Array.isArray(plan.payments)) return false;
-        return plan.payments.some((payment: any) => payment.paid === true);
+        return plan.payments.some((payment: any) => 
+          payment.paid === true || 
+          payment.status === 'paid' || 
+          payment.status === 'partial'
+        );
       });
     } catch (error) {
       console.error('Error checking payment plan:', error);
