@@ -15,6 +15,7 @@ import {
   Wrench,
   Camera
 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { EquipmentForm } from "@/components/forms/EquipmentForm";
 import { ConstructionPhaseForm } from "@/components/forms/ConstructionPhaseForm";
@@ -48,6 +49,7 @@ interface ConstructionDashboardProps {
 }
 
 export function ConstructionDashboard({ projectId }: ConstructionDashboardProps) {
+  const isMobile = useIsMobile();
   const [stats, setStats] = useState<ConstructionStats>({
     totalPhases: 0,
     completedPhases: 0,
@@ -153,11 +155,11 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(8)].map((_, i) => (
+      <div className="space-y-4 sm:space-y-6">
+        <div className={`grid grid-cols-1 ${isMobile ? 'sm:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-4'} gap-3 sm:gap-4`}>
+          {[...Array(isMobile ? 4 : 8)].map((_, i) => (
             <Card key={i}>
-              <CardContent className="p-6">
+              <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
                 <div className="animate-pulse">
                   <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
                   <div className="h-8 bg-gray-200 rounded w-1/2"></div>
@@ -176,62 +178,62 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
   const inspectionPassRate = stats.totalInspections > 0 ? (stats.passedInspections / stats.totalInspections) * 100 : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={`grid grid-cols-1 ${isMobile ? 'sm:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-4'} gap-3 sm:gap-4`}>
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Building2 className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Fases Completadas</p>
+          <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
+            <div className={`flex items-center ${isMobile ? 'gap-3' : 'gap-4'}`}>
+              <Building2 className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-blue-600`} />
+              <div className="flex-1 min-w-0">
+                <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-muted-foreground`}>Fases Completadas</p>
                 <div className="flex items-center">
-                  <p className="text-2xl font-bold">{stats.completedPhases}</p>
-                  <p className="text-muted-foreground ml-2">/ {stats.totalPhases}</p>
+                  <p className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>{stats.completedPhases}</p>
+                  <p className={`text-muted-foreground ml-2 ${isMobile ? 'text-sm' : ''}`}>/ {stats.totalPhases}</p>
                 </div>
-                <Progress value={phaseProgress} className="mt-2 h-2" />
+                <Progress value={phaseProgress} className={`mt-2 ${isMobile ? 'h-1' : 'h-2'}`} />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <CheckCircle className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Hitos Completados</p>
+          <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
+            <div className={`flex items-center ${isMobile ? 'gap-3' : 'gap-4'}`}>
+              <CheckCircle className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-green-600`} />
+              <div className="flex-1 min-w-0">
+                <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-muted-foreground`}>Hitos Completados</p>
                 <div className="flex items-center">
-                  <p className="text-2xl font-bold">{stats.completedMilestones}</p>
-                  <p className="text-muted-foreground ml-2">/ {stats.totalMilestones}</p>
+                  <p className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>{stats.completedMilestones}</p>
+                  <p className={`text-muted-foreground ml-2 ${isMobile ? 'text-sm' : ''}`}>/ {stats.totalMilestones}</p>
                 </div>
-                <Progress value={milestoneProgress} className="mt-2 h-2" />
+                <Progress value={milestoneProgress} className={`mt-2 ${isMobile ? 'h-1' : 'h-2'}`} />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <DollarSign className="h-8 w-8 text-yellow-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Presupuesto Ejecutado</p>
-                <p className="text-2xl font-bold">${stats.budgetExecuted.toLocaleString()}</p>
-                <Progress value={budgetProgress} className="mt-2 h-2" />
+          <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
+            <div className={`flex items-center ${isMobile ? 'gap-3' : 'gap-4'}`}>
+              <DollarSign className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-yellow-600`} />
+              <div className="flex-1 min-w-0">
+                <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-muted-foreground`}>Presupuesto Ejecutado</p>
+                <p className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>${stats.budgetExecuted.toLocaleString()}</p>
+                <Progress value={budgetProgress} className={`mt-2 ${isMobile ? 'h-1' : 'h-2'}`} />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <TrendingUp className="h-8 w-8 text-purple-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">Calidad</p>
-                <p className="text-2xl font-bold">{inspectionPassRate.toFixed(1)}%</p>
-                <p className="text-sm text-muted-foreground">
+          <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
+            <div className={`flex items-center ${isMobile ? 'gap-3' : 'gap-4'}`}>
+              <TrendingUp className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-purple-600`} />
+              <div className="flex-1 min-w-0">
+                <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-muted-foreground`}>Calidad</p>
+                <p className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>{inspectionPassRate.toFixed(1)}%</p>
+                <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>
                   {stats.passedInspections} / {stats.totalInspections} inspecciones
                 </p>
               </div>
@@ -241,7 +243,7 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
       </div>
 
       {/* Alerts and Status */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className={`grid grid-cols-1 ${isMobile ? 'gap-4' : 'lg:grid-cols-2 gap-6'}`}>
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -249,7 +251,7 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
               Alertas y Pendientes
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className={`${isMobile ? 'space-y-2' : 'space-y-3'}`}>
             {stats.overdueMilestones > 0 && (
               <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
                 <div className="flex items-center gap-2">
@@ -296,7 +298,7 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
               Actividad Reciente
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className={`${isMobile ? 'space-y-2' : 'space-y-3'}`}>
             <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
               <div className="flex items-center gap-2">
                 <Wrench className="h-4 w-4 text-blue-600" />
@@ -336,6 +338,7 @@ interface QuickActionsProps {
 }
 
 function QuickActions({ projectId, onStatsRefresh }: QuickActionsProps) {
+  const isMobile = useIsMobile();
   const [newPhaseDialog, setNewPhaseDialog] = useState(false);
   const [newMilestoneDialog, setNewMilestoneDialog] = useState(false);
   const [newEquipmentDialog, setNewEquipmentDialog] = useState(false);
@@ -350,12 +353,12 @@ function QuickActions({ projectId, onStatsRefresh }: QuickActionsProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className={`grid grid-cols-2 ${isMobile ? 'gap-3' : 'md:grid-cols-4 gap-4'}`}>
           <Dialog open={newPhaseDialog} onOpenChange={setNewPhaseDialog}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="h-20 flex-col gap-2">
-                <Building2 className="h-6 w-6" />
-                <span className="text-sm">Nueva Fase</span>
+              <Button variant="outline" className={`${isMobile ? 'h-16 flex-col gap-1' : 'h-20 flex-col gap-2'}`}>
+                <Building2 className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'}`} />
+                <span className={`${isMobile ? 'text-xs' : 'text-sm'}`}>Nueva Fase</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
@@ -378,9 +381,9 @@ function QuickActions({ projectId, onStatsRefresh }: QuickActionsProps) {
 
           <Dialog open={newMilestoneDialog} onOpenChange={setNewMilestoneDialog}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="h-20 flex-col gap-2">
-                <Calendar className="h-6 w-6" />
-                <span className="text-sm">Programar Hito</span>
+              <Button variant="outline" className={`${isMobile ? 'h-16 flex-col gap-1' : 'h-20 flex-col gap-2'}`}>
+                <Calendar className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'}`} />
+                <span className={`${isMobile ? 'text-xs' : 'text-sm'}`}>Programar Hito</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
@@ -403,9 +406,9 @@ function QuickActions({ projectId, onStatsRefresh }: QuickActionsProps) {
 
           <Dialog open={newEquipmentDialog} onOpenChange={setNewEquipmentDialog}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="h-20 flex-col gap-2">
-                <Wrench className="h-6 w-6" />
-                <span className="text-sm">Asignar Equipo</span>
+              <Button variant="outline" className={`${isMobile ? 'h-16 flex-col gap-1' : 'h-20 flex-col gap-2'}`}>
+                <Wrench className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'}`} />
+                <span className={`${isMobile ? 'text-xs' : 'text-sm'}`}>Asignar Equipo</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
@@ -428,9 +431,9 @@ function QuickActions({ projectId, onStatsRefresh }: QuickActionsProps) {
 
           <Dialog open={uploadPhotoDialog} onOpenChange={setUploadPhotoDialog}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="h-20 flex-col gap-2">
-                <Camera className="h-6 w-6" />
-                <span className="text-sm">Subir Foto</span>
+              <Button variant="outline" className={`${isMobile ? 'h-16 flex-col gap-1' : 'h-20 flex-col gap-2'}`}>
+                <Camera className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'}`} />
+                <span className={`${isMobile ? 'text-xs' : 'text-sm'}`}>Subir Foto</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">

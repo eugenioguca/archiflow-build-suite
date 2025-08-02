@@ -18,8 +18,10 @@ import {
   Image as ImageIcon,
   Trash2,
   Edit,
-  ZoomIn
+  ZoomIn,
+  Eye
 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ProgressPhotoForm } from "@/components/forms/ProgressPhotoForm";
@@ -59,6 +61,7 @@ interface ProgressPhotosManagerProps {
 }
 
 export function ProgressPhotosManager({ projectId }: ProgressPhotosManagerProps) {
+  const isMobile = useIsMobile();
   const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
   const [loading, setLoading] = useState(true);
   const [newPhotoDialog, setNewPhotoDialog] = useState(false);
@@ -311,7 +314,7 @@ export function ProgressPhotosManager({ projectId }: ProgressPhotosManagerProps)
           </CardContent>
         </Card>
       ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className={`grid grid-cols-1 ${isMobile ? 'sm:grid-cols-2 gap-3' : 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6'}`}>
           {filteredPhotos.map((photo) => (
             <Card key={photo.id} className="overflow-hidden">
               <div className="relative aspect-square">
@@ -339,16 +342,15 @@ export function ProgressPhotosManager({ projectId }: ProgressPhotosManagerProps)
                 </div>
               </div>
               
-              <CardContent className="p-4">
-                <h3 className="font-medium mb-1 truncate">
+              <CardContent className={`${isMobile ? 'p-3' : 'p-4'}`}>
+                <h3 className={`font-medium mb-1 truncate ${isMobile ? 'text-sm' : ''}`}>
                   {photo.title || "Sin título"}
                 </h3>
-                <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                <p className={`text-sm text-muted-foreground mb-2 line-clamp-2 ${isMobile ? 'text-xs' : ''}`}>
                   {photo.description || "Sin descripción"}
                 </p>
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
+                <div className={`flex items-center justify-between text-xs text-muted-foreground mb-3 ${isMobile ? 'mb-2' : ''}`}>
                   <span>{format(new Date(photo.taken_at), "dd/MM/yyyy", { locale: es })}</span>
-                  <span>{photo.photo_type}</span>
                 </div>
                 
                 <div className="flex gap-1">
@@ -358,7 +360,7 @@ export function ProgressPhotosManager({ projectId }: ProgressPhotosManagerProps)
                     className="flex-1"
                     onClick={() => setSelectedPhoto(photo)}
                   >
-                    <ZoomIn className="h-4 w-4" />
+                    <Eye className="h-4 w-4" />
                   </Button>
                   <Button 
                     variant="ghost" 
