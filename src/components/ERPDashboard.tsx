@@ -177,7 +177,7 @@ const ERPDashboard: React.FC = () => {
       supabase.from('expenses').select('amount').gte('created_at', startDate.toISOString()).lte('created_at', endDate.toISOString()),
       supabase.from('projects').select('id').neq('status', 'completed'),
       supabase.from('suppliers').select('id').eq('status', 'active'),
-      supabase.from('clients').select('id').neq('status', 'potential'),
+      supabase.from('clients').select('id'),
       supabase.from('employee_advances').select('advance_amount, amount_justified').neq('status', 'completed'),
       supabase.from('cfdi_documents').select('id, tipo_comprobante').eq('status', 'active').eq('validation_status', 'pending')
     ]);

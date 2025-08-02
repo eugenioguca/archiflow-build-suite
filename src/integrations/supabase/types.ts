@@ -928,6 +928,8 @@ export type Database = {
           last_activity_date: string | null
           last_contact_date: string | null
           lead_referral_details: string | null
+          lead_source: string | null
+          lead_source_details: string | null
           location_details: Json | null
           next_contact_date: string | null
           notes: string | null
@@ -962,6 +964,8 @@ export type Database = {
           last_activity_date?: string | null
           last_contact_date?: string | null
           lead_referral_details?: string | null
+          lead_source?: string | null
+          lead_source_details?: string | null
           location_details?: Json | null
           next_contact_date?: string | null
           notes?: string | null
@@ -996,6 +1000,8 @@ export type Database = {
           last_activity_date?: string | null
           last_contact_date?: string | null
           lead_referral_details?: string | null
+          lead_source?: string | null
+          lead_source_details?: string | null
           location_details?: Json | null
           next_contact_date?: string | null
           notes?: string | null
@@ -1055,6 +1061,7 @@ export type Database = {
           notes: string | null
           phone: string | null
           profile_id: string | null
+          state: string | null
           updated_at: string
         }
         Insert: {
@@ -1066,6 +1073,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           profile_id?: string | null
+          state?: string | null
           updated_at?: string
         }
         Update: {
@@ -1077,6 +1085,7 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           profile_id?: string | null
+          state?: string | null
           updated_at?: string
         }
         Relationships: [
