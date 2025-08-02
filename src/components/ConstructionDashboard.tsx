@@ -139,7 +139,7 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
             {constructionProject.permit_status === "expired" && "Permisos Vencidos"}
           </Badge>
           <BudgetEditDialog
-            constructionProjectId={constructionProject.id}
+            projectId={constructionProject.project_id}
             currentBudget={constructionProject.total_budget}
             currentArea={constructionProject.construction_area}
             estimatedCompletion={constructionProject.estimated_completion_date}

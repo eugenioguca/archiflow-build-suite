@@ -101,7 +101,7 @@ export function ConstructionPhaseDialog({
       if (profileError) throw profileError;
 
       const phaseData = {
-        construction_project_id: constructionProjectId,
+        project_id: constructionProjectId,
         phase_name: formData.phase_name,
         phase_type: formData.phase_type,
         phase_order: formData.phase_order,

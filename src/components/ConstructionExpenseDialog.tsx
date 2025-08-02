@@ -82,11 +82,11 @@ export function ConstructionExpenseDialog({
         supabase
           .from('construction_budget_items')
           .select('id, descripcion')
-          .eq('construction_project_id', constructionProjectId),
+          .eq('project_id', constructionProjectId),
         supabase
           .from('construction_phases')
           .select('id, phase_name')
-          .eq('construction_project_id', constructionProjectId)
+          .eq('project_id', constructionProjectId)
       ]);
 
       if (suppliersRes.data) setSuppliers(suppliersRes.data);
@@ -116,7 +116,7 @@ export function ConstructionExpenseDialog({
       if (profileError) throw profileError;
 
       const expenseData = {
-        construction_project_id: constructionProjectId,
+        project_id: constructionProjectId,
         description: formData.description,
         expense_type: formData.expense_type,
         quantity: formData.quantity,
@@ -150,9 +150,9 @@ export function ConstructionExpenseDialog({
 
         if (error) throw error;
 
-        // Update spent budget in construction project
+        // Update spent budget in client project
         const { error: updateError } = await supabase
-          .from('construction_projects')
+          .from('client_projects')
           .update({
             spent_budget: formData.total_amount
           })

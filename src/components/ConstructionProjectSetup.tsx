@@ -85,7 +85,7 @@ export function ConstructionProjectSetup({ onProjectCreated }: ConstructionProje
       // Insert default budget items
       await supabase.rpc(
         'insert_default_construction_budget_items',
-        { construction_project_id_param: constructionProjectId }
+        { project_id_param: constructionProjectId }
       );
 
       toast({

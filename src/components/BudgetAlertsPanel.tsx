@@ -17,10 +17,10 @@ interface BudgetAlert {
 }
 
 interface BudgetAlertsPanelProps {
-  constructionProjectId: string;
+  projectId: string;
 }
 
-export function BudgetAlertsPanel({ constructionProjectId }: BudgetAlertsPanelProps) {
+export function BudgetAlertsPanel({ projectId }: BudgetAlertsPanelProps) {
   const [alerts, setAlerts] = useState<BudgetAlert[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -36,7 +36,7 @@ export function BudgetAlertsPanel({ constructionProjectId }: BudgetAlertsPanelPr
           event: 'INSERT',
           schema: 'public',
           table: 'construction_budget_alerts',
-          filter: `construction_project_id=eq.${constructionProjectId}`
+          filter: `project_id=eq.${projectId}`
         },
         (payload) => {
           setAlerts(prev => [payload.new as BudgetAlert, ...prev]);
@@ -47,7 +47,7 @@ export function BudgetAlertsPanel({ constructionProjectId }: BudgetAlertsPanelPr
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [constructionProjectId]);
+  }, [projectId]);
 
   const fetchAlerts = async () => {
     try {
@@ -55,7 +55,7 @@ export function BudgetAlertsPanel({ constructionProjectId }: BudgetAlertsPanelPr
       const { data, error } = await supabase
         .from('construction_budget_alerts')
         .select('*')
-        .eq('construction_project_id', constructionProjectId)
+        .eq('project_id', projectId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

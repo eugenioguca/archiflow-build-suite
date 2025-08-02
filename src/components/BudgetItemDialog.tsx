@@ -25,14 +25,14 @@ interface BudgetItem {
 }
 
 interface BudgetItemDialogProps {
-  constructionProjectId: string;
+  projectId: string;
   item?: BudgetItem;
   trigger?: React.ReactNode;
   onSave: () => void;
 }
 
 export function BudgetItemDialog({ 
-  constructionProjectId, 
+  projectId, 
   item, 
   trigger,
   onSave 
@@ -98,7 +98,7 @@ export function BudgetItemDialog({
       if (profileError) throw profileError;
 
       const itemData = {
-        construction_project_id: constructionProjectId,
+        project_id: projectId,
         codigo: formData.codigo,
         descripcion: formData.descripcion,
         unidad: formData.unidad,

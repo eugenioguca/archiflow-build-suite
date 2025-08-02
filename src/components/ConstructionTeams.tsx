@@ -84,7 +84,7 @@ export function ConstructionTeams({ constructionProjectId }: ConstructionTeamsPr
       const { error } = await supabase
         .from("construction_teams")
         .insert({
-          construction_project_id: constructionProjectId,
+          project_id: constructionProjectId,
           team_name: formData.team_name,
           specialization: formData.specialization,
           contact_info: formData.contact_info ? JSON.parse(formData.contact_info) : {},

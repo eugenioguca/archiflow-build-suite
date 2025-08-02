@@ -87,7 +87,7 @@ export function MaterialDialog({
         supabase
           .from('construction_budget_items')
           .select('id, descripcion')
-          .eq('construction_project_id', constructionProjectId)
+          .eq('project_id', constructionProjectId)
       ]);
 
       if (suppliersRes.data) setSuppliers(suppliersRes.data);
@@ -116,7 +116,7 @@ export function MaterialDialog({
       if (profileError) throw profileError;
 
       const materialData = {
-        construction_project_id: constructionProjectId,
+        project_id: constructionProjectId,
         material_name: formData.material_name,
         material_code: formData.material_code,
         description: formData.description,

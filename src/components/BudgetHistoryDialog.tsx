@@ -23,11 +23,11 @@ interface BudgetChange {
 }
 
 interface BudgetHistoryDialogProps {
-  constructionProjectId: string;
+  projectId: string;
   trigger?: React.ReactNode;
 }
 
-export function BudgetHistoryDialog({ constructionProjectId, trigger }: BudgetHistoryDialogProps) {
+export function BudgetHistoryDialog({ projectId, trigger }: BudgetHistoryDialogProps) {
   const [open, setOpen] = useState(false);
   const [changes, setChanges] = useState<BudgetChange[]>([]);
   const [loading, setLoading] = useState(false);
@@ -47,7 +47,7 @@ export function BudgetHistoryDialog({ constructionProjectId, trigger }: BudgetHi
           *,
           profile:profiles!authorized_by(full_name)
         `)
-        .eq('construction_project_id', constructionProjectId)
+        .eq('project_id', projectId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

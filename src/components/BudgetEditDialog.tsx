@@ -10,7 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import { DollarSign, Edit } from 'lucide-react';
 
 interface BudgetEditDialogProps {
-  constructionProjectId: string;
+  projectId: string;
   currentBudget: number;
   currentArea: number;
   estimatedCompletion: string;
@@ -18,7 +18,7 @@ interface BudgetEditDialogProps {
 }
 
 export function BudgetEditDialog({ 
-  constructionProjectId, 
+  projectId, 
   currentBudget, 
   currentArea, 
   estimatedCompletion,
@@ -51,24 +51,24 @@ export function BudgetEditDialog({
 
       if (profileError) throw profileError;
 
-      // Update construction project
-      const { error: constructionError } = await supabase
-        .from('construction_projects')
+      // Update client project
+      const { error: projectError } = await supabase
+        .from('client_projects')
         .update({
-          total_budget: formData.total_budget,
+          construction_budget: formData.total_budget,
           construction_area: formData.construction_area,
           estimated_completion_date: formData.estimated_completion_date,
           updated_at: new Date().toISOString()
         })
-        .eq('id', constructionProjectId);
+        .eq('id', projectId);
 
-      if (constructionError) throw constructionError;
+      if (projectError) throw projectError;
 
       // Create budget change log
       const { error: logError } = await supabase
         .from('construction_budget_changes')
         .insert({
-          construction_project_id: constructionProjectId,
+          project_id: projectId,
           previous_budget: currentBudget,
           new_budget: formData.total_budget,
           change_reason: formData.reason,
@@ -80,7 +80,7 @@ export function BudgetEditDialog({
 
       // Check for budget alerts
       await supabase.rpc('check_budget_alerts', {
-        construction_project_id_param: constructionProjectId
+        project_id_param: projectId
       });
 
       toast({

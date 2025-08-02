@@ -70,16 +70,16 @@ export function TimelineActivityDialog({
         supabase
           .from('construction_phases')
           .select('id, phase_name')
-          .eq('construction_project_id', constructionProjectId),
+          .eq('project_id', constructionProjectId),
         supabase
           .from('construction_teams')
           .select('id, team_name')
-          .eq('construction_project_id', constructionProjectId)
+          .eq('project_id', constructionProjectId)
           .eq('active', true),
         supabase
           .from('construction_timelines')
           .select('id, activity_name')
-          .eq('construction_project_id', constructionProjectId)
+          .eq('project_id', constructionProjectId)
       ]);
 
       if (phasesRes.data) setPhases(phasesRes.data);
@@ -109,7 +109,7 @@ export function TimelineActivityDialog({
       if (profileError) throw profileError;
 
       const activityData = {
-        construction_project_id: constructionProjectId,
+        project_id: constructionProjectId,
         activity_name: formData.activity_name,
         description: formData.description,
         planned_start_date: formData.planned_start_date,
