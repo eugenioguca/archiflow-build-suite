@@ -120,9 +120,10 @@ export const SalesDocumentValidator: React.FC<SalesDocumentValidatorProps> = ({
     }
   };
 
-  const handleDocumentUploaded = () => {
-    // Refresh documents count when a new document is uploaded
-    updateDocumentsCount();
+  const handleDocumentUploaded = async () => {
+    console.log('Document uploaded, refreshing count...');
+    await updateDocumentsCount();
+    console.log('Completeness check finished');
   };
 
   const totalCompletedCount = documentsCount + (isValidCURP ? 1 : 0);
