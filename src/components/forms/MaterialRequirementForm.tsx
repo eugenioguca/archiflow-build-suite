@@ -173,10 +173,10 @@ export function MaterialRequirementForm({
           {initialData ? "Editar Material" : "Nuevo Material"}
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <CardContent className="overflow-visible">
+        <form onSubmit={handleSubmit} className="space-y-6 overflow-visible">
           {/* Main Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-visible">
             <SmartCombobox
               label="Cuentas de Mayor"
               value={formData.cuenta_mayor}
