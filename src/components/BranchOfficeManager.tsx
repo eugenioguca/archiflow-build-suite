@@ -52,10 +52,10 @@ export function BranchOfficeManager() {
     name: "",
     address: "",
     city: "",
-    state_id: "",
+    state_id: undefined,
     phone: "",
     email: "",
-    manager_id: "",
+    manager_id: undefined,
     active: true
   });
 
@@ -154,10 +154,10 @@ export function BranchOfficeManager() {
       name: office.name,
       address: office.address || "",
       city: office.city || "",
-      state_id: office.state_id || "",
+      state_id: office.state_id || undefined,
       phone: office.phone || "",
       email: office.email || "",
-      manager_id: office.manager_id || "",
+      manager_id: office.manager_id || undefined,
       active: office.active
     });
     setDialogOpen(true);
@@ -168,10 +168,10 @@ export function BranchOfficeManager() {
       name: "",
       address: "",
       city: "",
-      state_id: "",
+      state_id: undefined,
       phone: "",
       email: "",
-      manager_id: "",
+      manager_id: undefined,
       active: true
     });
   };

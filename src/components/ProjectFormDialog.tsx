@@ -47,7 +47,7 @@ export function ProjectFormDialog({ open, onOpenChange, onSubmit }: ProjectFormD
     name: "",
     description: "",
     location: "",
-    client_id: "",
+    client_id: undefined,
     assigned_team: [""],
     phases: defaultPhases
   });
@@ -90,7 +90,7 @@ export function ProjectFormDialog({ open, onOpenChange, onSubmit }: ProjectFormD
       name: "",
       description: "",
       location: "",
-      client_id: "",
+      client_id: undefined,
       assigned_team: [""],
       phases: defaultPhases
     });

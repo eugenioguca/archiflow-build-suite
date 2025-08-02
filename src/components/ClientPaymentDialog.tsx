@@ -31,7 +31,7 @@ export function ClientPaymentDialog({
   const [formData, setFormData] = useState({
     amount_paid: "",
     payment_date: new Date(),
-    payment_method: "",
+    payment_method: "03",
     reference_number: "",
     notes: ""
   });
@@ -103,7 +103,7 @@ export function ClientPaymentDialog({
     setFormData({
       amount_paid: "",
       payment_date: new Date(),
-      payment_method: "",
+      payment_method: "03",
       reference_number: "",
       notes: ""
     });

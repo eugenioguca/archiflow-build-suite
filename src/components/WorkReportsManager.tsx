@@ -97,7 +97,7 @@ export function WorkReportsManager({ projectId }: WorkReportsManagerProps) {
     defaultValues: {
       report_date: new Date().toISOString().split('T')[0],
       shift: "day",
-      weather_conditions: "",
+      weather_conditions: "sunny",
       temperature_celsius: "",
       humidity_percentage: "",
       wind_conditions: "",
