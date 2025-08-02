@@ -1048,164 +1048,38 @@ export type Database = {
       clients: {
         Row: {
           address: string | null
-          alliance_id: string | null
-          assigned_advisor_id: string | null
-          branch_office_id: string | null
-          budget: number | null
-          company_size: string | null
-          conversion_date: string | null
-          conversion_notes: string | null
           created_at: string
-          curp: string | null
-          decision_maker_name: string | null
-          decision_maker_role: string | null
           email: string | null
-          estimated_value: number | null
           full_name: string
           id: string
-          land_square_meters: number | null
-          last_activity_date: string | null
-          last_contact_date: string | null
-          lead_referral_details: string | null
-          lead_score: number | null
-          lead_source: Database["public"]["Enums"]["lead_source"] | null
-          location_details: Json | null
-          next_contact_date: string | null
           notes: string | null
-          payment_plan: Json | null
           phone: string | null
-          preferred_contact_method:
-            | Database["public"]["Enums"]["contact_method"]
-            | null
-          priority: Database["public"]["Enums"]["priority_level"] | null
-          probability_percentage: number | null
           profile_id: string | null
-          project_size: string | null
-          project_type: Database["public"]["Enums"]["project_type"] | null
-          sales_pipeline_stage: string | null
-          service_type: string | null
-          social_media: Json | null
-          state_name: string | null
-          status: Database["public"]["Enums"]["client_status"]
-          tags: string[] | null
-          timeline_months: number | null
           updated_at: string
-          website: string | null
         }
         Insert: {
           address?: string | null
-          alliance_id?: string | null
-          assigned_advisor_id?: string | null
-          branch_office_id?: string | null
-          budget?: number | null
-          company_size?: string | null
-          conversion_date?: string | null
-          conversion_notes?: string | null
           created_at?: string
-          curp?: string | null
-          decision_maker_name?: string | null
-          decision_maker_role?: string | null
           email?: string | null
-          estimated_value?: number | null
           full_name: string
           id?: string
-          land_square_meters?: number | null
-          last_activity_date?: string | null
-          last_contact_date?: string | null
-          lead_referral_details?: string | null
-          lead_score?: number | null
-          lead_source?: Database["public"]["Enums"]["lead_source"] | null
-          location_details?: Json | null
-          next_contact_date?: string | null
           notes?: string | null
-          payment_plan?: Json | null
           phone?: string | null
-          preferred_contact_method?:
-            | Database["public"]["Enums"]["contact_method"]
-            | null
-          priority?: Database["public"]["Enums"]["priority_level"] | null
-          probability_percentage?: number | null
           profile_id?: string | null
-          project_size?: string | null
-          project_type?: Database["public"]["Enums"]["project_type"] | null
-          sales_pipeline_stage?: string | null
-          service_type?: string | null
-          social_media?: Json | null
-          state_name?: string | null
-          status?: Database["public"]["Enums"]["client_status"]
-          tags?: string[] | null
-          timeline_months?: number | null
           updated_at?: string
-          website?: string | null
         }
         Update: {
           address?: string | null
-          alliance_id?: string | null
-          assigned_advisor_id?: string | null
-          branch_office_id?: string | null
-          budget?: number | null
-          company_size?: string | null
-          conversion_date?: string | null
-          conversion_notes?: string | null
           created_at?: string
-          curp?: string | null
-          decision_maker_name?: string | null
-          decision_maker_role?: string | null
           email?: string | null
-          estimated_value?: number | null
           full_name?: string
           id?: string
-          land_square_meters?: number | null
-          last_activity_date?: string | null
-          last_contact_date?: string | null
-          lead_referral_details?: string | null
-          lead_score?: number | null
-          lead_source?: Database["public"]["Enums"]["lead_source"] | null
-          location_details?: Json | null
-          next_contact_date?: string | null
           notes?: string | null
-          payment_plan?: Json | null
           phone?: string | null
-          preferred_contact_method?:
-            | Database["public"]["Enums"]["contact_method"]
-            | null
-          priority?: Database["public"]["Enums"]["priority_level"] | null
-          probability_percentage?: number | null
           profile_id?: string | null
-          project_size?: string | null
-          project_type?: Database["public"]["Enums"]["project_type"] | null
-          sales_pipeline_stage?: string | null
-          service_type?: string | null
-          social_media?: Json | null
-          state_name?: string | null
-          status?: Database["public"]["Enums"]["client_status"]
-          tags?: string[] | null
-          timeline_months?: number | null
           updated_at?: string
-          website?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "clients_alliance_id_fkey"
-            columns: ["alliance_id"]
-            isOneToOne: false
-            referencedRelation: "commercial_alliances"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "clients_assigned_advisor_id_fkey"
-            columns: ["assigned_advisor_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "clients_branch_office_id_fkey"
-            columns: ["branch_office_id"]
-            isOneToOne: false
-            referencedRelation: "branch_offices"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "clients_profile_id_fkey"
             columns: ["profile_id"]
