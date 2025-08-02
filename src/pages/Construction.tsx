@@ -3,9 +3,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ExcelImporter } from '@/components/ExcelImporter';
 import { PartidasList } from '@/components/PartidasList';
+import { ConstructionDashboard } from '@/components/ConstructionDashboard';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Hammer, Building2, Users, FileText } from 'lucide-react';
+import { Hammer, Building2, Users, FileText, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -39,11 +40,18 @@ export default function Construction() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [partidas, setPartidas] = useState<Partida[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasConstructionProject, setHasConstructionProject] = useState(false);
 
   useEffect(() => {
     fetchProjects();
     fetchSuppliers();
   }, []);
+
+  useEffect(() => {
+    if (selectedProject) {
+      checkConstructionProject();
+    }
+  }, [selectedProject]);
 
   const fetchProjects = async () => {
     try {
@@ -82,6 +90,22 @@ export default function Construction() {
       console.error('Error fetching suppliers:', error);
       // Set empty array if suppliers table doesn't exist yet
       setSuppliers([]);
+    }
+  };
+
+  const checkConstructionProject = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('construction_projects')
+        .select('id')
+        .eq('project_id', selectedProject)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      setHasConstructionProject(!!data);
+    } catch (error) {
+      console.error('Error checking construction project:', error);
+      setHasConstructionProject(false);
     }
   };
 
@@ -172,13 +196,20 @@ export default function Construction() {
           </Card>
 
           {/* Tabs principales */}
-          <Tabs defaultValue="presupuesto" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4">
+          <Tabs defaultValue={hasConstructionProject ? "dashboard" : "presupuesto"} className="space-y-4">
+            <TabsList className="grid w-full grid-cols-5">
+              {hasConstructionProject && <TabsTrigger value="dashboard">Dashboard</TabsTrigger>}
               <TabsTrigger value="presupuesto">Presupuesto</TabsTrigger>
               <TabsTrigger value="proveedores">Proveedores</TabsTrigger>
               <TabsTrigger value="documentos">Documentos</TabsTrigger>
               <TabsTrigger value="reportes">Reportes</TabsTrigger>
             </TabsList>
+
+            {hasConstructionProject && (
+              <TabsContent value="dashboard">
+                <ConstructionDashboard projectId={selectedProject} />
+              </TabsContent>
+            )}
 
             <TabsContent value="presupuesto" className="space-y-4">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
