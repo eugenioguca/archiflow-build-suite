@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 import Layout from "../components/Layout";
 import { TeamMemberSelector } from "@/components/TeamMemberSelector";
 import { DesignCalendar } from "@/components/DesignCalendar";
@@ -24,7 +27,13 @@ import {
   PlayCircle,
   Calculator,
   FileUser,
-  Timer
+  Timer,
+  ArrowRight,
+  Home,
+  Layers,
+  Users,
+  DollarSign,
+  Target
 } from "lucide-react";
 
 interface DesignPhase {
@@ -436,186 +445,351 @@ export default function Design() {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8 space-y-8">
-        {/* Header */}
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Módulo de Diseño</h1>
-              <p className="text-muted-foreground">
-                {project?.project_name || "Cargando proyecto..."}
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              <Badge variant="outline" className="px-3 py-1">
-                <User className="h-4 w-4 mr-2" />
-                {project?.clients?.full_name || "Cliente"}
-              </Badge>
-              <Badge variant="secondary" className="px-3 py-1">
-                <Calculator className="h-4 w-4 mr-2" />
-                {getPhaseProgress()}% Completado
-              </Badge>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+        {/* Breadcrumb Navigation */}
+        <div className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-40">
+          <div className="container mx-auto px-6 py-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Link to="/dashboard" className="hover:text-foreground transition-colors">
+                <Home className="h-4 w-4" />
+              </Link>
+              <ArrowRight className="h-3 w-3" />
+              <span className="text-foreground font-medium">Diseño</span>
+              <ArrowRight className="h-3 w-3" />
+              <span className="truncate max-w-[200px]">{project?.project_name}</span>
             </div>
           </div>
         </div>
 
-        {/* Tabs */}
-        <Tabs defaultValue="phases" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="phases">Fases</TabsTrigger>
-            <TabsTrigger value="team">Equipo</TabsTrigger>
-            <TabsTrigger value="calendar">Calendario</TabsTrigger>
-            <TabsTrigger value="budget">Presupuesto</TabsTrigger>
-            <TabsTrigger value="client-info">
-              <FileUser className="h-4 w-4 mr-1" />
-              Expediente
-            </TabsTrigger>
-          </TabsList>
+        {/* Header Section */}
+        <div className="container mx-auto px-6 py-8">
+          <div className="glass-card p-8 mb-8">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+                    <Layers className="h-5 w-5 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                      {project?.project_name}
+                    </h1>
+                    <p className="text-muted-foreground">Módulo de Diseño Arquitectónico</p>
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap items-center gap-3">
+                  <Badge variant="outline" className="px-3 py-1.5 glass-button">
+                    <User className="h-4 w-4 mr-2" />
+                    {project?.clients?.full_name}
+                  </Badge>
+                  <Badge variant="secondary" className="px-3 py-1.5">
+                    <Target className="h-4 w-4 mr-2" />
+                    {getPhaseProgress()}% Completado
+                  </Badge>
+                </div>
+              </div>
+              
+              {/* Progress Overview */}
+              <div className="glass-card p-6 lg:min-w-[280px]">
+                <div className="flex items-center gap-3 mb-3">
+                  <Calculator className="h-5 w-5 text-primary" />
+                  <span className="font-semibold">Progreso General</span>
+                </div>
+                <Progress value={getPhaseProgress()} className="h-3 mb-2" />
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>{phases.filter(p => p.status === 'completed').length} de {phases.length} fases completadas</span>
+                  <span>{getPhaseProgress()}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
 
-          <TabsContent value="phases" className="space-y-6">
-            <div className="grid gap-6">
-              {phases.map((phase) => (
-                <Card key={phase.id} className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full ${getStatusColor(phase.status)}`} />
-                      <h3 className="text-lg font-semibold">{phase.phase_name}</h3>
-                      <Badge variant="outline" className="ml-2">
-                        Fase {phase.phase_order}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      {getStatusIcon(phase.status)}
-                      <div className="flex items-center gap-2">
-                        <Timer className="h-4 w-4 text-muted-foreground" />
-                        <span className={`text-sm font-medium ${
-                          phase.days_elapsed > 14 ? 'text-red-600' : 
-                          phase.days_elapsed > 7 ? 'text-amber-600' : 'text-muted-foreground'
-                        }`}>
-                          {phase.days_elapsed || 0} días
+          {/* Main Content with Resizable Layout */}
+          <ResizablePanelGroup direction="horizontal" className="min-h-[800px] glass-card rounded-xl overflow-hidden">
+            {/* Navigation Panel */}
+            <ResizablePanel defaultSize={25} minSize={20} maxSize={35}>
+              <div className="h-full p-6 border-r bg-muted/30">
+                <h3 className="font-semibold mb-4 flex items-center gap-2">
+                  <Layers className="h-4 w-4" />
+                  Navegación
+                </h3>
+                <nav className="space-y-2">
+                  <TabsList className="grid w-full grid-rows-5 h-auto gap-2 bg-transparent p-0">
+                    <TabsTrigger 
+                      value="phases" 
+                      className="w-full justify-start glass-button data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                    >
+                      <Target className="h-4 w-4 mr-3" />
+                      Fases del Diseño
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="team"
+                      className="w-full justify-start glass-button data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                    >
+                      <Users className="h-4 w-4 mr-3" />
+                      Equipo de Trabajo
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="calendar"
+                      className="w-full justify-start glass-button data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                    >
+                      <CalendarIcon className="h-4 w-4 mr-3" />
+                      Calendario
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="budget"
+                      className="w-full justify-start glass-button data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                    >
+                      <DollarSign className="h-4 w-4 mr-3" />
+                      Presupuesto
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="client-info"
+                      className="w-full justify-start glass-button data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                    >
+                      <FileUser className="h-4 w-4 mr-3" />
+                      Expediente Cliente
+                    </TabsTrigger>
+                  </TabsList>
+                </nav>
+                
+                {/* Phase Timeline Overview */}
+                <div className="mt-8">
+                  <h4 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wide">
+                    Timeline de Fases
+                  </h4>
+                  <div className="space-y-3">
+                    {phases.map((phase, index) => (
+                      <div key={phase.id} className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full ${getStatusColor(phase.status)}`} />
+                        <span className={`text-xs ${phase.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
+                          {phase.phase_name}
                         </span>
-                        {phase.days_elapsed > 14 && (
-                          <Badge variant="destructive" className="text-xs">
-                            Retrasado
-                          </Badge>
+                        {phase.status === 'in_progress' && (
+                          <div className="animate-pulse">
+                            <PlayCircle className="h-3 w-3 text-primary" />
+                          </div>
                         )}
                       </div>
-                    </div>
+                    ))}
                   </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div>
-                      <label className="text-sm font-medium">Fecha Estimada</label>
-                      <Input
-                        type="date"
-                        value={phase.estimated_delivery_date || ""}
-                        onChange={(e) => updatePhaseDate(phase.id, e.target.value)}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Estado</label>
-                      <Select
-                        value={phase.status}
-                        onValueChange={(value) => updatePhaseStatus(phase.id, value)}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pendiente</SelectItem>
-                          <SelectItem value="in_progress">En Progreso</SelectItem>
-                          <SelectItem value="completed">Completado</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Progreso del Proyecto</label>
-                      <div className="mt-2">
-                        <div className="text-sm text-muted-foreground">
-                          {getPhaseProgress()}% completado
-                        </div>
-                        <div className="w-full bg-secondary rounded-full h-2 mt-1">
-                          <div 
-                            className="bg-primary h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${getPhaseProgress()}%` }}
-                          />
+                </div>
+              </div>
+            </ResizablePanel>
+
+            <ResizableHandle withHandle />
+
+            {/* Main Content Panel */}
+            <ResizablePanel defaultSize={75}>
+              <div className="h-full overflow-auto">
+                <Tabs defaultValue="phases" className="h-full">
+                  {/* Phases Content */}
+                  <TabsContent value="phases" className="m-0 h-full">
+                    <div className="p-8">
+                      <div className="mb-6">
+                        <h2 className="text-2xl font-bold mb-2">Fases del Diseño Arquitectónico</h2>
+                        <p className="text-muted-foreground">Gestiona el progreso de cada fase del proyecto de diseño</p>
+                      </div>
+
+                      {/* Horizontal Timeline */}
+                      <div className="mb-8 overflow-x-auto">
+                        <div className="flex items-center gap-4 min-w-max pb-4">
+                          {phases.map((phase, index) => (
+                            <div key={phase.id} className="flex items-center">
+                              <div className="flex flex-col items-center min-w-[180px]">
+                                <div className={`w-12 h-12 rounded-full border-4 flex items-center justify-center ${
+                                  phase.status === 'completed' ? 'bg-green-500 border-green-500' :
+                                  phase.status === 'in_progress' ? 'bg-yellow-500 border-yellow-500' :
+                                  'bg-muted border-muted'
+                                }`}>
+                                  {getStatusIcon(phase.status)}
+                                </div>
+                                <span className="text-sm font-medium mt-2 text-center">{phase.phase_name}</span>
+                                <span className="text-xs text-muted-foreground">Fase {phase.phase_order}</span>
+                              </div>
+                              {index < phases.length - 1 && (
+                                <div className={`h-px w-16 ${
+                                  phase.status === 'completed' ? 'bg-green-300' : 'bg-muted'
+                                }`} />
+                              )}
+                            </div>
+                          ))}
                         </div>
                       </div>
+
+                      {/* Phase Details */}
+                      <div className="grid gap-6">
+                        {phases.map((phase) => (
+                          <Card key={phase.id} className="glass-card hover:shadow-lg transition-all duration-300">
+                            <CardHeader className="pb-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-4 h-4 rounded-full ${getStatusColor(phase.status)}`} />
+                                  <CardTitle className="text-lg">{phase.phase_name}</CardTitle>
+                                  <Badge variant="outline">Fase {phase.phase_order}</Badge>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                  {getStatusIcon(phase.status)}
+                                  <div className="flex items-center gap-2">
+                                    <Timer className="h-4 w-4 text-muted-foreground" />
+                                    <span className={`text-sm font-medium ${
+                                      phase.days_elapsed > 14 ? 'text-destructive' : 
+                                      phase.days_elapsed > 7 ? 'text-orange-500' : 'text-muted-foreground'
+                                    }`}>
+                                      {phase.days_elapsed || 0} días
+                                    </span>
+                                    {phase.days_elapsed > 14 && (
+                                      <Badge variant="destructive" className="text-xs">Retrasado</Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </CardHeader>
+
+                            <CardContent className="space-y-4">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium">Fecha Estimada</label>
+                                  <Input
+                                    type="date"
+                                    value={phase.estimated_delivery_date || ""}
+                                    onChange={(e) => updatePhaseDate(phase.id, e.target.value)}
+                                    className="glass-input"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium">Estado</label>
+                                  <Select
+                                    value={phase.status}
+                                    onValueChange={(value) => updatePhaseStatus(phase.id, value)}
+                                  >
+                                    <SelectTrigger className="glass-input">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="pending">Pendiente</SelectItem>
+                                      <SelectItem value="in_progress">En Progreso</SelectItem>
+                                      <SelectItem value="completed">Completado</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium">Progreso Individual</label>
+                                  <div className="flex items-center gap-2 mt-2">
+                                    <Progress 
+                                      value={phase.status === 'completed' ? 100 : phase.status === 'in_progress' ? 50 : 0} 
+                                      className="flex-1"
+                                    />
+                                    <span className="text-sm text-muted-foreground min-w-[3ch]">
+                                      {phase.status === 'completed' ? '100' : phase.status === 'in_progress' ? '50' : '0'}%
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium">Notas y Observaciones</label>
+                                <Textarea
+                                  value={phase.notes || ""}
+                                  onChange={(e) => {
+                                    const updatedPhases = phases.map(p =>
+                                      p.id === phase.id ? { ...p, notes: e.target.value } : p
+                                    );
+                                    setPhases(updatedPhases);
+                                  }}
+                                  onBlur={async () => {
+                                    try {
+                                      await supabase
+                                        .from("design_phases")
+                                        .update({ notes: phase.notes })
+                                        .eq("id", phase.id);
+                                    } catch (error) {
+                                      console.error("Error updating notes:", error);
+                                    }
+                                  }}
+                                  placeholder="Agrega notas sobre el progreso de esta fase..."
+                                  className="glass-input"
+                                  rows={3}
+                                />
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                        
+                        {/* Design Completion Manager */}
+                        <DesignCompletionManager 
+                          projectId={projectId}
+                          phases={phases}
+                          onPhaseUpdate={(updatedPhases) => setPhases(updatedPhases)}
+                        />
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium">Notas</label>
-                    <Textarea
-                      value={phase.notes || ""}
-                      onChange={(e) => {
-                        const updatedPhases = phases.map(p =>
-                          p.id === phase.id ? { ...p, notes: e.target.value } : p
-                        );
-                        setPhases(updatedPhases);
-                      }}
-                      onBlur={async () => {
-                        try {
-                          await supabase
-                            .from("design_phases")
-                            .update({ notes: phase.notes })
-                            .eq("id", phase.id);
-                        } catch (error) {
-                          console.error("Error updating notes:", error);
-                        }
-                      }}
-                      placeholder="Notas sobre esta fase..."
-                      className="mt-1"
-                      rows={3}
-                    />
-                  </div>
-                </Card>
-              ))}
-              
-              {/* Design Completion Manager */}
-              <DesignCompletionManager 
-                projectId={projectId}
-                phases={phases}
-                onPhaseUpdate={(updatedPhases) => setPhases(updatedPhases)}
-              />
-            </div>
-          </TabsContent>
+                  </TabsContent>
 
-          <TabsContent value="team">
-            <TeamMemberSelector 
-              projectId={projectId} 
-              teamMembers={teamMembers}
-              onTeamUpdate={(members) => setTeamMembers(members)}
-            />
-          </TabsContent>
+                  {/* Other Tab Contents */}
+                  <TabsContent value="team" className="m-0 h-full">
+                    <div className="p-8">
+                      <div className="mb-6">
+                        <h2 className="text-2xl font-bold mb-2">Equipo de Trabajo</h2>
+                        <p className="text-muted-foreground">Gestiona los miembros del equipo asignados al proyecto</p>
+                      </div>
+                      <TeamMemberSelector 
+                        projectId={projectId} 
+                        teamMembers={teamMembers}
+                        onTeamUpdate={(members) => setTeamMembers(members)}
+                      />
+                    </div>
+                  </TabsContent>
 
-          <TabsContent value="calendar">
-            <DesignCalendar 
-              projectId={projectId} 
-              teamMembers={teamMembers.map(tm => ({
-                id: tm.profile.id,
-                full_name: tm.profile.full_name,
-                avatar_url: tm.profile.avatar_url
-              }))} 
-            />
-          </TabsContent>
+                  <TabsContent value="calendar" className="m-0 h-full">
+                    <div className="p-8">
+                      <div className="mb-6">
+                        <h2 className="text-2xl font-bold mb-2">Calendario del Proyecto</h2>
+                        <p className="text-muted-foreground">Visualiza fechas importantes y entregables</p>
+                      </div>
+                      <DesignCalendar 
+                        projectId={projectId} 
+                        teamMembers={teamMembers.map(tm => ({
+                          id: tm.profile.id,
+                          full_name: tm.profile.full_name,
+                          avatar_url: tm.profile.avatar_url
+                        }))} 
+                      />
+                    </div>
+                  </TabsContent>
 
-          <TabsContent value="budget">
-            <ProjectBudgetManager 
-              projectId={projectId}
-              projectName={project?.project_name}
-              clientName={project?.clients?.full_name}
-              onBudgetUpdate={(budget) => {
-                console.log("Budget updated:", budget);
-              }}
-            />
-          </TabsContent>
+                  <TabsContent value="budget" className="m-0 h-full">
+                    <div className="p-8">
+                      <div className="mb-6">
+                        <h2 className="text-2xl font-bold mb-2">Presupuesto del Proyecto</h2>
+                        <p className="text-muted-foreground">Administra el presupuesto y costos del proyecto</p>
+                      </div>
+                      <ProjectBudgetManager 
+                        projectId={projectId}
+                        projectName={project?.project_name}
+                        clientName={project?.clients?.full_name}
+                        onBudgetUpdate={(budget) => {
+                          console.log("Budget updated:", budget);
+                        }}
+                      />
+                    </div>
+                  </TabsContent>
 
-          <TabsContent value="client-info">
-            <ClientInfoPanel projectId={projectId} />
-          </TabsContent>
-        </Tabs>
+                  <TabsContent value="client-info" className="m-0 h-full">
+                    <div className="p-8">
+                      <div className="mb-6">
+                        <h2 className="text-2xl font-bold mb-2">Expediente del Cliente</h2>
+                        <p className="text-muted-foreground">Información completa y documentos del cliente</p>
+                      </div>
+                      <ClientInfoPanel projectId={projectId} />
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </div>
       </div>
     </Layout>
   );
