@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import Layout from "@/components/Layout";
+import Layout from "../components/Layout";
 import { TeamMemberSelector } from "@/components/TeamMemberSelector";
 import { DesignCalendar } from "@/components/DesignCalendar";
 import { ProjectBudgetManager } from "@/components/ProjectBudgetManager";
