@@ -787,10 +787,9 @@ export default function Sales() {
               </TabsContent>
 
               <TabsContent value="payments" className="mt-6">
-                {['en_contacto', 'cliente_cerrado'].includes(selectedProject.sales_pipeline_stage) ? (
+                 {['en_contacto', 'cliente_cerrado'].includes(selectedProject.sales_pipeline_stage) ? (
                   <PaymentPlanBuilder
                     clientProjectId={selectedProject.id}
-                    totalBudget={selectedProject.budget || 0}
                     clientName={selectedProject.clients?.full_name || ''}
                     onPlanUpdate={() => fetchData()}
                   />

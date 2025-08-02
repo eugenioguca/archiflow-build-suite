@@ -66,7 +66,6 @@ interface PaymentTemplate {
 
 interface PaymentPlanBuilderProps {
   clientProjectId: string;
-  totalBudget: number;
   clientName: string;
   onPlanUpdate?: () => void;
 }
@@ -112,7 +111,6 @@ const PAYMENT_TEMPLATES: PaymentTemplate[] = [
 
 export const PaymentPlanBuilder = ({ 
   clientProjectId, 
-  totalBudget, 
   clientName, 
   onPlanUpdate 
 }: PaymentPlanBuilderProps) => {
@@ -121,6 +119,7 @@ export const PaymentPlanBuilder = ({
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [customInstallments, setCustomInstallments] = useState<PaymentInstallment[]>([]);
   const [planName, setPlanName] = useState('');
+  const [planAmount, setPlanAmount] = useState<number>(0);
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -131,41 +130,9 @@ export const PaymentPlanBuilder = ({
 
   const fetchPaymentPlans = async () => {
     try {
-      // Mock data until types regenerate
-      const mockPlans: PaymentPlan[] = [
-        {
-          id: '1',
-          client_project_id: clientProjectId,
-          plan_name: 'Plan Principal',
-          total_amount: totalBudget,
-          currency: 'MXN',
-          status: 'active',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          payments: [
-            {
-              id: '1',
-              payment_plan_id: '1',
-              installment_number: 1,
-              amount: totalBudget * 0.5,
-              due_date: new Date().toISOString().split('T')[0],
-              description: 'Anticipo 50%',
-              status: 'pending'
-            },
-            {
-              id: '2',
-              payment_plan_id: '1',
-              installment_number: 2,
-              amount: totalBudget * 0.5,
-              due_date: addMonths(new Date(), 2).toISOString().split('T')[0],
-              description: 'Pago final 50%',
-              status: 'pending'
-            }
-          ]
-        }
-      ];
-      
-      setPaymentPlans(mockPlans);
+      setLoading(false);
+      // Los planes se cargarán de la base de datos cuando se implemente
+      setPaymentPlans([]);
     } catch (error) {
       console.error('Error fetching payment plans:', error);
       toast({
@@ -180,32 +147,32 @@ export const PaymentPlanBuilder = ({
 
   const createPaymentPlan = async () => {
     try {
-      if (!planName || customInstallments.length === 0) {
+      if (!planName || !planAmount || customInstallments.length === 0) {
         toast({
           title: "Error",
-          description: "Por favor completa todos los campos",
+          description: "Por favor completa todos los campos incluyendo el monto del plan",
           variant: "destructive",
         });
         return;
       }
 
-      // Verificar que las cuotas sumen el total
+      // Verificar que las cuotas sumen el total del plan
       const totalInstallments = customInstallments.reduce((sum, inst) => sum + inst.amount, 0);
-      if (Math.abs(totalInstallments - totalBudget) > 0.01) {
+      if (Math.abs(totalInstallments - planAmount) > 0.01) {
         toast({
           title: "Error",
-          description: `Las cuotas deben sumar exactamente $${totalBudget.toLocaleString()}`,
+          description: `Las cuotas deben sumar exactamente $${planAmount.toLocaleString()}`,
           variant: "destructive",
         });
         return;
       }
 
-      // Mock creation until types regenerate
+      // Crear nuevo plan
       const newPlan: PaymentPlan = {
         id: Math.random().toString(),
         client_project_id: clientProjectId,
         plan_name: planName,
-        total_amount: totalBudget,
+        total_amount: planAmount,
         currency: 'MXN',
         status: 'draft',
         created_at: new Date().toISOString(),
@@ -240,6 +207,7 @@ export const PaymentPlanBuilder = ({
 
   const resetForm = () => {
     setPlanName('');
+    setPlanAmount(0);
     setSelectedTemplate('');
     setCustomInstallments([]);
     setStartDate(new Date());
@@ -253,7 +221,7 @@ export const PaymentPlanBuilder = ({
     }
 
     const installments = template.installments.map((inst, index) => {
-      const amount = Math.round((totalBudget * inst.percentage) / 100);
+      const amount = planAmount > 0 ? Math.round((planAmount * inst.percentage) / 100) : 0;
       const dueDate = addMonths(startDate, inst.months_offset);
       
       return {
@@ -268,7 +236,9 @@ export const PaymentPlanBuilder = ({
     });
 
     setCustomInstallments(installments);
-    setPlanName(`${template.name} - ${clientName}`);
+    if (!planName) {
+      setPlanName(`${template.name} - ${clientName}`);
+    }
   };
 
   const addCustomInstallment = () => {
@@ -293,6 +263,23 @@ export const PaymentPlanBuilder = ({
   const removeInstallment = (index: number) => {
     const updated = customInstallments.filter((_, i) => i !== index);
     setCustomInstallments(updated);
+  };
+
+  const deletePlan = async (planId: string) => {
+    try {
+      setPaymentPlans(prev => prev.filter(plan => plan.id !== planId));
+      toast({
+        title: "Éxito",
+        description: "Plan de pago eliminado correctamente",
+      });
+    } catch (error) {
+      console.error('Error deleting payment plan:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el plan de pago",
+        variant: "destructive",
+      });
+    }
   };
 
   const updatePaymentStatus = async (installmentId: string, status: string, paidAmount?: number) => {
@@ -365,9 +352,6 @@ export const PaymentPlanBuilder = ({
               Plan de Pagos
             </CardTitle>
             <div className="flex items-center gap-2">
-              <Badge variant="outline">
-                Presupuesto: ${totalBudget.toLocaleString()}
-              </Badge>
               <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
                 <DialogTrigger asChild>
                   <Button>
@@ -382,13 +366,22 @@ export const PaymentPlanBuilder = ({
                   
                   <div className="space-y-6">
                     {/* Configuración básica */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="text-sm font-medium">Nombre del Plan</label>
                         <Input
                           value={planName}
                           onChange={(e) => setPlanName(e.target.value)}
-                          placeholder="Ej: Plan de pagos - Juan Pérez"
+                          placeholder="Ej: Plan diseño arquitectónico"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Monto Total del Plan</label>
+                        <Input
+                          type="number"
+                          value={planAmount}
+                          onChange={(e) => setPlanAmount(parseFloat(e.target.value) || 0)}
+                          placeholder="0"
                         />
                       </div>
                       <div>
@@ -499,13 +492,13 @@ export const PaymentPlanBuilder = ({
                             </span>
                           </div>
                           <div className="flex justify-between text-sm">
-                            <span>Presupuesto del proyecto:</span>
-                            <span className="font-medium">${totalBudget.toLocaleString()}</span>
+                            <span>Monto del plan:</span>
+                            <span className="font-medium">${planAmount.toLocaleString()}</span>
                           </div>
                           <div className="flex justify-between text-sm font-medium border-t pt-2 mt-2">
                             <span>Diferencia:</span>
-                            <span className={customInstallments.reduce((sum, inst) => sum + inst.amount, 0) === totalBudget ? 'text-green-600' : 'text-red-600'}>
-                              ${(customInstallments.reduce((sum, inst) => sum + inst.amount, 0) - totalBudget).toLocaleString()}
+                            <span className={customInstallments.reduce((sum, inst) => sum + inst.amount, 0) === planAmount ? 'text-green-600' : 'text-red-600'}>
+                              ${(customInstallments.reduce((sum, inst) => sum + inst.amount, 0) - planAmount).toLocaleString()}
                             </span>
                           </div>
                         </div>
@@ -567,13 +560,23 @@ export const PaymentPlanBuilder = ({
                         </span>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold">
-                        ${totalPaid.toLocaleString()} / ${plan.total_amount.toLocaleString()}
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <div className="text-2xl font-bold">
+                          ${totalPaid.toLocaleString()} / ${plan.total_amount.toLocaleString()}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {progress}% completado
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        {progress}% completado
-                      </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deletePlan(plan.id)}
+                        className="ml-2"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 </CardHeader>
