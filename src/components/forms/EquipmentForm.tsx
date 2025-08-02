@@ -77,7 +77,7 @@ export function EquipmentForm({ projectId, initialData, onSuccess, onCancel }: E
     } : {
       equipment_name: "",
       equipment_code: "",
-      equipment_type: "",
+      equipment_type: "Maquinaria Pesada",
       brand: "",
       model: "",
       serial_number: "",

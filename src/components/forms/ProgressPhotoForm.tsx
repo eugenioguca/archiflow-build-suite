@@ -50,8 +50,8 @@ export function ProgressPhotoForm({ projectId, onSuccess, onCancel }: ProgressPh
     defaultValues: {
       title: "",
       description: "",
-      category: "",
-      phase_id: "",
+      category: "General",
+      phase_id: undefined,
       is_before_photo: false,
       is_after_photo: false,
     },
