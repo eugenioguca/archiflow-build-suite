@@ -61,6 +61,11 @@ interface BudgetItem {
   notas?: string;
 }
 
+interface Supplier {
+  id: string;
+  company_name: string;
+}
+
 interface AdvancedBudgetManagerProps {
   constructionProjectId: string;
   totalBudget: number;
@@ -76,7 +81,7 @@ export function AdvancedBudgetManager({
 }: AdvancedBudgetManagerProps) {
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<BudgetItem[]>([]);
-  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -149,7 +154,7 @@ export function AdvancedBudgetManager({
     try {
       const { data, error } = await supabase
         .from('suppliers')
-        .select('id, company_name, category')
+        .select('id, company_name')
         .eq('active', true);
 
       if (error) throw error;
