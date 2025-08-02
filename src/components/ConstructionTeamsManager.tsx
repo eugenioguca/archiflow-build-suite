@@ -51,8 +51,8 @@ export function ConstructionTeamsManager({ projectId }: ConstructionTeamsManager
   const [formData, setFormData] = useState({
     team_name: "",
     team_code: "",
-    team_type: "",
-    specialty: "",
+    team_type: "construccion",
+    specialty: "general",
     hourly_rate: 0,
     daily_rate: 0,
     current_location: "",
@@ -133,8 +133,8 @@ export function ConstructionTeamsManager({ projectId }: ConstructionTeamsManager
       setFormData({
         team_name: "",
         team_code: "",
-        team_type: "",
-        specialty: "",
+        team_type: "construccion",
+        specialty: "general",
         hourly_rate: 0,
         daily_rate: 0,
         current_location: "",
@@ -279,8 +279,8 @@ export function ConstructionTeamsManager({ projectId }: ConstructionTeamsManager
                     setFormData({
                       team_name: "",
                       team_code: "",
-                      team_type: "",
-                      specialty: "",
+                      team_type: "construccion",
+                      specialty: "general",
                       hourly_rate: 0,
                       daily_rate: 0,
                       current_location: "",
