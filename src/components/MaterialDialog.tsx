@@ -347,14 +347,14 @@ export function MaterialDialog({
             <div className="space-y-2">
               <Label htmlFor="supplier_id">Proveedor</Label>
               <Select 
-                value={formData.supplier_id || ''} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, supplier_id: value || undefined }))}
+                value={formData.supplier_id || 'none'} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, supplier_id: value === 'none' ? undefined : value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar proveedor" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin asignar</SelectItem>
+                  <SelectItem value="none">Sin asignar</SelectItem>
                   {suppliers.map(supplier => (
                     <SelectItem key={supplier.id} value={supplier.id}>
                       {supplier.company_name}

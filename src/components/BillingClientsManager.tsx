@@ -372,17 +372,18 @@ export function BillingClientsManager() {
                     <div>
                       <label className="text-sm font-medium mb-2 block">Cliente de ventas</label>
                       <Select
-                        value={formData.client_id}
+                        value={formData.client_id || 'none'}
                         onValueChange={(value) => {
-                          setFormData(prev => ({ ...prev, client_id: value }));
-                          if (value) importFromSalesClient(value);
+                          const actualValue = value === 'none' ? '' : value;
+                          setFormData(prev => ({ ...prev, client_id: actualValue }));
+                          if (actualValue) importFromSalesClient(actualValue);
                         }}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Seleccionar cliente de ventas" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Sin vincular</SelectItem>
+                          <SelectItem value="none">Sin vincular</SelectItem>
                           {salesClients.map(client => (
                             <SelectItem key={client.id} value={client.id}>
                               {client.full_name}
@@ -394,14 +395,14 @@ export function BillingClientsManager() {
                     <div>
                       <label className="text-sm font-medium mb-2 block">Proyecto</label>
                       <Select
-                        value={formData.project_id}
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, project_id: value }))}
+                        value={formData.project_id || 'none'}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, project_id: value === 'none' ? '' : value }))}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Seleccionar proyecto" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Sin vincular</SelectItem>
+                          <SelectItem value="none">Sin vincular</SelectItem>
                           {projects.map(project => (
                             <SelectItem key={project.id} value={project.id}>
                               {project.name} - {project.clients.full_name}

@@ -269,14 +269,14 @@ export function TimelineActivityDialog({
             <div className="space-y-2">
               <Label htmlFor="phase_id">Fase</Label>
               <Select 
-                value={formData.phase_id || ''} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, phase_id: value || undefined }))}
+                value={formData.phase_id || 'none'} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, phase_id: value === 'none' ? undefined : value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar fase" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin asignar</SelectItem>
+                  <SelectItem value="none">Sin asignar</SelectItem>
                   {phases.map(phase => (
                     <SelectItem key={phase.id} value={phase.id}>
                       {phase.phase_name}
@@ -288,14 +288,14 @@ export function TimelineActivityDialog({
             <div className="space-y-2">
               <Label htmlFor="assigned_team_id">Equipo Asignado</Label>
               <Select 
-                value={formData.assigned_team_id || ''} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, assigned_team_id: value || undefined }))}
+                value={formData.assigned_team_id || 'none'} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, assigned_team_id: value === 'none' ? undefined : value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar equipo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin asignar</SelectItem>
+                  <SelectItem value="none">Sin asignar</SelectItem>
                   {teams.map(team => (
                     <SelectItem key={team.id} value={team.id}>
                       {team.team_name}

@@ -343,14 +343,14 @@ export function ConstructionExpenseDialog({
             <div className="space-y-2">
               <Label htmlFor="supplier_id">Proveedor</Label>
               <Select 
-                value={formData.supplier_id || ''} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, supplier_id: value || undefined }))}
+                value={formData.supplier_id || 'none'} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, supplier_id: value === 'none' ? undefined : value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar proveedor" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin asignar</SelectItem>
+                  <SelectItem value="none">Sin asignar</SelectItem>
                   {suppliers.map(supplier => (
                     <SelectItem key={supplier.id} value={supplier.id}>
                       {supplier.company_name}
@@ -362,14 +362,14 @@ export function ConstructionExpenseDialog({
             <div className="space-y-2">
               <Label htmlFor="phase_id">Fase</Label>
               <Select 
-                value={formData.phase_id || ''} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, phase_id: value || undefined }))}
+                value={formData.phase_id || 'none'} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, phase_id: value === 'none' ? undefined : value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar fase" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin asignar</SelectItem>
+                  <SelectItem value="none">Sin asignar</SelectItem>
                   {phases.map(phase => (
                     <SelectItem key={phase.id} value={phase.id}>
                       {phase.phase_name}
@@ -402,14 +402,14 @@ export function ConstructionExpenseDialog({
             <div className="space-y-2">
               <Label htmlFor="payment_method">Método de Pago</Label>
               <Select 
-                value={formData.payment_method || ''} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, payment_method: value || undefined }))}
+                value={formData.payment_method || 'none'} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, payment_method: value === 'none' ? undefined : value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar método" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin especificar</SelectItem>
+                  <SelectItem value="none">Sin especificar</SelectItem>
                   {paymentMethods.map(method => (
                     <SelectItem key={method.value} value={method.value}>
                       {method.label}
