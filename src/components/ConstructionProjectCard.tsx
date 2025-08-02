@@ -50,13 +50,17 @@ interface ConstructionProjectCardProps {
 }
 
 export function ConstructionProjectCard({ project, onOpenProject }: ConstructionProjectCardProps) {
+  if (!project) {
+    return null;
+  }
+  
   const constructionData = project.construction_project?.[0];
   const totalBudget = project.budget || constructionData?.total_budget || 0;
   const spentBudget = project.spent_budget || constructionData?.spent_budget || 0;
   const progressPercentage = constructionData?.overall_progress_percentage || 0;
   const permitStatus = constructionData?.permit_status || "pending";
   const estimatedCompletion = constructionData?.estimated_completion_date;
-  const constructionArea = constructionData?.construction_area || project.construction_area || (project.land_square_meters * 0.8);
+  const constructionArea = constructionData?.construction_area || project.construction_area || (project.land_square_meters ? project.land_square_meters * 0.8 : 0);
 
   const budgetPercentage = totalBudget > 0 
     ? (spentBudget / totalBudget) * 100 
@@ -104,10 +108,10 @@ export function ConstructionProjectCard({ project, onOpenProject }: Construction
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
             <CardTitle className="text-lg font-semibold mb-1 truncate">
-              {project.project_name}
+              {project?.project_name || 'Proyecto sin nombre'}
             </CardTitle>
             <p className="text-sm text-muted-foreground truncate">
-              Cliente: {project.client.full_name}
+              Cliente: {project?.client?.full_name || 'Cliente no especificado'}
             </p>
           </div>
           <div className="flex flex-col gap-1 ml-4">
