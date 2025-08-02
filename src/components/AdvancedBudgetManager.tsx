@@ -135,27 +135,24 @@ export function AdvancedBudgetManager({
     try {
       const { data, error } = await supabase
         .from('budget_items')
-        .select(`
-          *,
-          supplier:suppliers(company_name)
-        `)
-        .eq('project_id', projectId)
-        .order('item_name', { ascending: true });
+        .select('*')
+        .eq('budget_id', projectId)
+        .order('item_order', { ascending: true });
 
       if (error) throw error;
 
-      const itemsWithSupplier = (data || []).map((item: any) => ({
+      const itemsWithSupplier = (data || []).map((item) => ({
         id: item.id,
         codigo: item.item_name || `ITEM-${item.item_order}`,
         descripcion: item.description || item.item_name,
-        unidad: 'pza', // Hardcoded por simplicidad
+        unidad: 'pza',
         cantidad: item.quantity || 1,
         precio_unitario: item.unit_price || 0,
         total: item.total_price || 0,
-        categoria: 'General', // Hardcoded por simplicidad
-        supplier_name: item.supplier?.company_name,
-        status: 'pending' as const, // Hardcoded por simplicidad
-        project_id: item.project_id,
+        categoria: 'General',
+        supplier_name: 'Sin asignar',
+        status: 'pending' as const,
+        project_id: projectId,
         notas: ''
       }));
 

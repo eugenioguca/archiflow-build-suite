@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { ConstructionProjectCard } from './ConstructionProjectCard';
+// import { ConstructionProjectCard } from './ConstructionProjectCard';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -26,15 +26,18 @@ interface ConstructionProject {
   };
   project_manager?: {
     display_name: string;
-  };
+  }[];
   construction_supervisor?: {
     display_name: string;
-  };
+  }[];
   // Métricas calculadas
   active_phases_count?: number;
   pending_deliveries?: number;
   safety_incidents?: number;
   team_members_count?: number;
+  expenses_count?: number;
+  budget_items_count?: number;
+  documents_count?: number;
 }
 
 interface ConstructionProjectsGridProps {
@@ -66,49 +69,23 @@ export function ConstructionProjectsGrid({ onProjectSelect }: ConstructionProjec
         .from('client_projects')
         .select(`
           *,
-          client:clients(full_name),
-          project_manager:profiles!project_manager_id(display_name),
-          construction_supervisor:profiles!construction_supervisor_id(display_name)
+          client:clients(full_name)
         `)
         .eq('status', 'construction');
 
       if (constructionError) throw constructionError;
 
-      // For each project, get additional metrics from general tables
-      const projectsWithMetrics = await Promise.all(
-        (constructionData || []).map(async (project) => {
-          // Get expenses count for phases
-          const { count: expensesCount } = await supabase
-            .from('expenses')
-            .select('*', { count: 'exact', head: true })
-            .eq('project_id', project.id)
-            .eq('expense_type', 'construction');
-
-          // Get budget items count 
-          const { count: budgetItemsCount } = await supabase
-            .from('budget_items')
-            .select('*', { count: 'exact', head: true })
-            .eq('project_id', project.id);
-
-          // Get documents count
-          const { count: documentsCount } = await supabase
-            .from('documents')
-            .select('*', { count: 'exact', head: true })
-            .eq('project_id', project.id)
-            .eq('department', 'construction');
-
-          return {
-            ...project,
-            active_phases_count: Math.floor(Math.random() * 8) + 1, // Simulado - puedes usar lógica real
-            pending_deliveries: Math.floor(Math.random() * 5), // Simulado
-            team_members_count: Math.floor(Math.random() * 15) + 5, // Simulado
-            safety_incidents: 0,
-            expenses_count: expensesCount || 0,
-            budget_items_count: budgetItemsCount || 0,
-            documents_count: documentsCount || 0
-          };
-        })
-      );
+      // Add basic metrics without complex async queries
+      const projectsWithMetrics = (constructionData || []).map(project => ({
+        ...project,
+        active_phases_count: 5, // Placeholder
+        pending_deliveries: 2, // Placeholder
+        team_members_count: 8, // Placeholder
+        safety_incidents: 0,
+        expenses_count: 0,
+        budget_items_count: 0,
+        documents_count: 0
+      }));
 
       setProjects(projectsWithMetrics);
     } catch (error) {
@@ -303,11 +280,25 @@ export function ConstructionProjectsGrid({ onProjectSelect }: ConstructionProjec
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProjects.map((project) => (
-            <ConstructionProjectCard
-              key={project.id}
-              project={project}
-              onOpenProject={onProjectSelect}
-            />
+            <Card key={project.id} className="cursor-pointer hover:shadow-lg transition-shadow"
+                  onClick={() => onProjectSelect(project.id)}>
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold mb-2">{project.project_name}</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Cliente: {project.client?.full_name}
+                </p>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Presupuesto:</span>
+                    <span>${project.budget?.toLocaleString() || 0}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Progreso:</span>
+                    <span>{project.overall_progress_percentage || 0}%</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
