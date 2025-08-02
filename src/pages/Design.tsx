@@ -59,8 +59,8 @@ interface TeamMember {
 
 interface Project {
   id: string;
-  name: string;
-  description?: string;
+  project_name: string;
+  project_description?: string;
   client_id: string;
   clients?: {
     full_name: string;
@@ -110,7 +110,7 @@ export default function Design() {
   const fetchProjectData = async () => {
     try {
       const { data, error } = await supabase
-        .from("projects")
+        .from("client_projects")
         .select(`
           *,
           clients (
@@ -120,9 +120,19 @@ export default function Design() {
           )
         `)
         .eq("id", projectId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      
+      if (!data) {
+        toast({
+          title: "Error",
+          description: "Proyecto no encontrado",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       setProject(data);
     } catch (error: any) {
       toast({
@@ -402,7 +412,7 @@ export default function Design() {
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Módulo de Diseño</h1>
               <p className="text-muted-foreground">
-                {project?.name || "Cargando proyecto..."}
+                {project?.project_name || "Cargando proyecto..."}
               </p>
             </div>
             <div className="flex items-center gap-4">
