@@ -48,7 +48,7 @@ export function SalesDocumentValidator({
       supabase
         .from('documents')
         .select('*')
-        .or(`client_id.eq.${clientId},project_id.in.(${clientData?.project_id || 'null'})`)
+        .eq('client_id', clientId)
         .eq('document_status', 'active'),
       supabase
         .from('client_documents')
@@ -211,15 +211,49 @@ export function SalesDocumentValidator({
             uploaded_by: user.id
           });
       } else {
+        // Get or create project for non-sensitive documents
+        let projectId = clientData?.project_id;
+        
+        if (!projectId) {
+          // Check if client has an existing project
+          const { data: projects } = await supabase
+            .from('projects')
+            .select('id')
+            .eq('client_id', clientId)
+            .limit(1);
+          
+          if (projects && projects.length > 0) {
+            projectId = projects[0].id;
+          } else {
+            // Create a basic project for the client
+            const { data: newProject, error: projectError } = await supabase
+              .from('projects')
+              .insert({
+                name: `Proyecto para ${clientData?.full_name || 'Cliente'}`,
+                client_id: clientId,
+                status: 'planning',
+                created_by: user.id
+              })
+              .select('id')
+              .single();
+            
+            if (projectError || !newProject) {
+              throw new Error('No se pudo crear el proyecto para el documento');
+            }
+            
+            projectId = newProject.id;
+          }
+        }
+
         // Documentos del proyecto van al bucket público
-        const result = await uploadProjectDocument(file, clientData?.project_id || clientId, 'sales');
+        const result = await uploadProjectDocument(file, projectId, 'sales');
         filePath = result.filePath;
 
         // Save to documents table
         await supabase
           .from('documents')
           .insert({
-            project_id: clientData?.project_id,
+            project_id: projectId,
             client_id: clientId,
             name: file.name,
             file_path: filePath,
@@ -243,7 +277,7 @@ export function SalesDocumentValidator({
       console.error('Error uploading document:', error);
       toast({
         title: "Error",
-        description: "No se pudo subir el documento",
+        description: `No se pudo subir el documento: ${error instanceof Error ? error.message : 'Error desconocido'}`,
         variant: "destructive",
       });
     }
