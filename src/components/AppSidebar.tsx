@@ -41,6 +41,7 @@ const adminItems = [
   { title: "Ventas", url: "/sales", icon: TrendingUp, color: "text-success" },
   { title: "Diseño", url: "/design", icon: Palette, color: "text-purple" },
   { title: "Proyectos", url: "/projects", icon: Building2, color: "text-primary" },
+  { title: "Construcción", url: "/construction", icon: Settings, color: "text-orange" },
   { title: "Avances de Proyectos", url: "/progress-overview", icon: Activity, color: "text-purple" },
   { title: "Proveedores", url: "/suppliers", icon: Truck, color: "text-orange" },
   { title: "Finanzas", url: "/finances", icon: DollarSign, color: "text-primary" },
