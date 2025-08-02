@@ -920,6 +920,8 @@ export type Database = {
           client_id: string
           constancia_situacion_fiscal_uploaded: boolean | null
           constancia_situacion_fiscal_url: string | null
+          contract_uploaded: boolean | null
+          contract_url: string | null
           conversion_date: string | null
           conversion_notes: string | null
           created_at: string
@@ -960,6 +962,8 @@ export type Database = {
           client_id: string
           constancia_situacion_fiscal_uploaded?: boolean | null
           constancia_situacion_fiscal_url?: string | null
+          contract_uploaded?: boolean | null
+          contract_url?: string | null
           conversion_date?: string | null
           conversion_notes?: string | null
           created_at?: string
@@ -1000,6 +1004,8 @@ export type Database = {
           client_id?: string
           constancia_situacion_fiscal_uploaded?: boolean | null
           constancia_situacion_fiscal_url?: string | null
+          contract_uploaded?: boolean | null
+          contract_url?: string | null
           conversion_date?: string | null
           conversion_notes?: string | null
           created_at?: string

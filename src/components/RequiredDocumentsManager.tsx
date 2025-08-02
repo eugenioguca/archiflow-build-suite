@@ -26,6 +26,8 @@ interface ClientProject {
   curp?: string;
   constancia_situacion_fiscal_url?: string;
   constancia_situacion_fiscal_uploaded?: boolean;
+  contract_url?: string;
+  contract_uploaded?: boolean;
   sales_pipeline_stage: string;
   clients?: {
     full_name: string;
@@ -117,8 +119,8 @@ export const RequiredDocumentsManager = ({
         };
       case 'contract':
         return {
-          completed: false, // TODO: Implementar validación de contratos
-          value: null,
+          completed: !!clientProject.contract_uploaded && !!clientProject.contract_url,
+          value: clientProject.contract_url,
           canEdit: true
         };
       case 'payment_plan':
@@ -213,6 +215,50 @@ export const RequiredDocumentsManager = ({
       toast({
         title: "Error",
         description: "No se pudo subir la constancia fiscal",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const uploadContract = async (file: File) => {
+    try {
+      setUploading(true);
+
+      // Subir archivo a Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${clientProjectId}_contract_${Date.now()}.${fileExt}`;
+      const filePath = `client-documents/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('client-documents')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Actualizar registro en la base de datos con la ruta del archivo
+      const { error: updateError } = await supabase
+        .from('client_projects')
+        .update({
+          contract_url: filePath,
+          contract_uploaded: true
+        })
+        .eq('id', clientProjectId);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: "Éxito",
+        description: "Contrato subido correctamente",
+      });
+
+      onDocumentUpdate?.();
+    } catch (error) {
+      console.error('Error uploading contract:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo subir el contrato",
         variant: "destructive",
       });
     } finally {
@@ -396,11 +442,54 @@ export const RequiredDocumentsManager = ({
                       </div>
                     )}
 
-                    {doc.type === 'contract' && (
-                      <Button variant="outline" size="sm" disabled>
-                        <FileText className="h-4 w-4" />
-                      </Button>
-                    )}
+                     {doc.type === 'contract' && (
+                       <div className="flex gap-2">
+                          {status.completed && status.value && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  // Generar URL firmada para ver el archivo
+                                  const { data: signedUrlData, error } = await supabase.storage
+                                    .from('client-documents')
+                                    .createSignedUrl(status.value as string, 3600);
+                                  
+                                  if (error) throw error;
+                                  
+                                  window.open(signedUrlData.signedUrl, '_blank');
+                                } catch (error) {
+                                  console.error('Error getting signed URL:', error);
+                                  toast({
+                                    title: "Error",
+                                    description: "No se pudo acceder al contrato",
+                                    variant: "destructive",
+                                  });
+                                }
+                              }}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           disabled={uploading}
+                           onClick={() => {
+                             const input = document.createElement('input');
+                             input.type = 'file';
+                             input.accept = '.pdf,.jpg,.jpeg,.png';
+                             input.onchange = (e) => {
+                               const file = (e.target as HTMLInputElement).files?.[0];
+                               if (file) uploadContract(file);
+                             };
+                             input.click();
+                           }}
+                         >
+                           <Upload className="h-4 w-4" />
+                         </Button>
+                       </div>
+                     )}
 
                     {doc.type === 'payment_plan' && (
                       <Button variant="outline" size="sm" disabled>
