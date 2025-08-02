@@ -191,29 +191,31 @@ export function SmartCombobox({
           >
             <Command>
               <CommandInput placeholder="Buscar..." />
-              <CommandList className="max-h-60 overflow-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
-                <CommandEmpty>{emptyText}</CommandEmpty>
-                <CommandGroup>
-                  {items.map((item) => (
-                    <CommandItem
-                      key={item.value}
-                      value={item.value}
-                      onSelect={(currentValue) => {
-                        onValueChange(currentValue === value ? "" : currentValue)
-                        setOpen(false)
-                      }}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          value === item.value ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      {item.label}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
+              <ScrollArea className="h-60">
+                <CommandList>
+                  <CommandEmpty>{emptyText}</CommandEmpty>
+                  <CommandGroup>
+                    {items.map((item) => (
+                      <CommandItem
+                        key={item.value}
+                        value={item.value}
+                        onSelect={(currentValue) => {
+                          onValueChange(currentValue === value ? "" : currentValue)
+                          setOpen(false)
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            value === item.value ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {item.label}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </ScrollArea>
             </Command>
           </PopoverContent>
         </Popover>
