@@ -88,10 +88,10 @@ export function ConstructionTimeline({ constructionProjectId }: ConstructionTime
           <h2 className="text-2xl font-bold">Timeline de Construcción</h2>
           <p className="text-muted-foreground">Cronograma detallado de actividades</p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Nueva Actividad
-        </Button>
+        <TimelineActivityDialog 
+          constructionProjectId={constructionProjectId}
+          onSave={fetchActivities}
+        />
       </div>
 
       {/* Timeline Visual */}
