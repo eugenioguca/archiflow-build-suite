@@ -433,7 +433,7 @@ function QuickActions({ projectId, onStatsRefresh }: QuickActionsProps) {
                 <span className="text-sm">Subir Foto</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Subir Foto de Progreso</DialogTitle>
                 <DialogDescription>
