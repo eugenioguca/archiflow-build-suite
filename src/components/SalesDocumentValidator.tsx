@@ -218,6 +218,17 @@ export function SalesDocumentValidator({
         filePath = result.filePath;
         console.log('✅ File uploaded to storage:', filePath);
 
+        // Get the current user's profile to use as uploaded_by
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (!profile) {
+          throw new Error('No se pudo obtener el perfil del usuario');
+        }
+        
         // Also save to client_documents table for sensitive docs
         const insertData = {
           client_id: clientId,
@@ -226,7 +237,7 @@ export function SalesDocumentValidator({
           file_path: filePath,
           file_type: getFileType(file.name).type,
           file_size: file.size,
-          uploaded_by: user.id
+          uploaded_by: profile.id
         };
         
         console.log('💾 Inserting to client_documents table:', insertData);
@@ -237,7 +248,7 @@ export function SalesDocumentValidator({
 
         if (insertError) {
           console.error('❌ Error inserting to client_documents:', insertError);
-          throw insertError;
+          throw new Error(`Error guardando documento: ${insertError.message}`);
         }
         
         console.log('✅ Successfully inserted to client_documents table');
@@ -250,17 +261,34 @@ export function SalesDocumentValidator({
         if (!projectId) {
           console.log('🔍 Looking for existing project for client');
           // Check if client has an existing project
-          const { data: projects } = await supabase
+          const { data: projects, error: projectsError } = await supabase
             .from('projects')
             .select('id')
             .eq('client_id', clientId)
             .limit(1);
+          
+          if (projectsError) {
+            console.error('❌ Error fetching projects:', projectsError);
+            throw new Error('No se pudo verificar proyectos existentes');
+          }
           
           if (projects && projects.length > 0) {
             projectId = projects[0].id;
             console.log('✅ Found existing project:', projectId);
           } else {
             console.log('🆕 Creating new project for client');
+            
+            // Get the current user's profile to use as created_by
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('user_id', user.id)
+              .single();
+            
+            if (!profile) {
+              throw new Error('No se pudo obtener el perfil del usuario');
+            }
+            
             // Create a basic project for the client
             const { data: newProject, error: projectError } = await supabase
               .from('projects')
@@ -268,14 +296,18 @@ export function SalesDocumentValidator({
                 name: `Proyecto para ${clientData?.full_name || 'Cliente'}`,
                 client_id: clientId,
                 status: 'planning',
-                created_by: user.id
+                created_by: profile.id
               })
               .select('id')
               .single();
             
-            if (projectError || !newProject) {
+            if (projectError) {
               console.error('❌ Error creating project:', projectError);
-              throw new Error('No se pudo crear el proyecto para el documento');
+              throw new Error(`No se pudo crear el proyecto: ${projectError.message}`);
+            }
+            
+            if (!newProject) {
+              throw new Error('No se recibió respuesta al crear el proyecto');
             }
             
             projectId = newProject.id;
@@ -288,6 +320,17 @@ export function SalesDocumentValidator({
         filePath = result.filePath;
         console.log('✅ File uploaded to project storage:', filePath);
 
+        // Get the current user's profile to use as uploaded_by
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (!profile) {
+          throw new Error('No se pudo obtener el perfil del usuario');
+        }
+        
         // Save to documents table
         const insertData = {
           project_id: projectId,
@@ -299,7 +342,7 @@ export function SalesDocumentValidator({
           category: requirementId,
           tags: [requirementId],
           department: 'sales',
-          uploaded_by: user.id,
+          uploaded_by: profile.id,
           access_level: 'internal'
         };
         
@@ -311,7 +354,7 @@ export function SalesDocumentValidator({
 
         if (insertError) {
           console.error('❌ Error inserting to documents:', insertError);
-          throw insertError;
+          throw new Error(`Error guardando documento: ${insertError.message}`);
         }
         
         console.log('✅ Successfully inserted to documents table');
@@ -335,26 +378,31 @@ export function SalesDocumentValidator({
   };
 
   const markDocumentAsUploaded = async (requirementId: string, filePath: string) => {
-    setRequirements(prev => prev.map(req => 
-      req.id === requirementId 
-        ? { ...req, status: 'uploaded', file_path: filePath }
-        : req
-    ));
-
-    // Check if all requirements are met
-    const updatedReqs = requirements.map(req => 
-      req.id === requirementId 
-        ? { ...req, status: 'uploaded' as const }
-        : req
-    );
-
-    const allComplete = updatedReqs.every(req => 
-      !req.required || req.status === 'uploaded' || req.status === 'validated'
-    );
-
-    if (allComplete) {
-      onValidationComplete();
-    }
+    console.log('📝 Marking document as uploaded:', { requirementId, filePath });
+    
+    setRequirements(prev => {
+      const updatedReqs = prev.map(req => 
+        req.id === requirementId 
+          ? { ...req, status: 'uploaded' as const, file_path: filePath }
+          : req
+      );
+      
+      console.log('📊 Updated requirements:', updatedReqs.map(r => ({ id: r.id, status: r.status })));
+      
+      // Check if all requirements are met using the fresh state
+      const allComplete = updatedReqs.every(req => 
+        !req.required || req.status === 'uploaded' || req.status === 'validated'
+      );
+      
+      console.log('✅ All requirements complete?', allComplete);
+      
+      if (allComplete) {
+        console.log('🎉 All documents complete - triggering validation complete');
+        onValidationComplete();
+      }
+      
+      return updatedReqs;
+    });
   };
 
   const getStatusIcon = (status: string) => {
