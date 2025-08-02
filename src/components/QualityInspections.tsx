@@ -180,7 +180,7 @@ export function QualityInspections({ projectId }: QualityInspectionsProps) {
         .from("quality_inspections")
         .insert({
           project_id: projectId,
-          phase_id: data.phase_id || null,
+          phase_id: (data.phase_id && data.phase_id !== 'no-phase') ? data.phase_id : null,
           inspection_type: data.inspection_type,
           inspection_name: data.inspection_name,
           inspection_code: data.inspection_code || null,
@@ -442,7 +442,7 @@ export function QualityInspections({ projectId }: QualityInspectionsProps) {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="">Sin fase específica</SelectItem>
+                                <SelectItem value="no-phase">Sin fase específica</SelectItem>
                                 {phases.map(phase => (
                                   <SelectItem key={phase.id} value={phase.id}>
                                     {phase.phase_name}
