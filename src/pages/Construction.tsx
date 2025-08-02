@@ -117,6 +117,21 @@ export default function Construction() {
 
   const createConstructionProject = async () => {
     try {
+      // Obtener el profile ID del usuario autenticado
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', userData.user?.id)
+        .single();
+
+      if (profileError) {
+        console.error('Error getting profile:', profileError);
+        throw new Error('No se pudo obtener el perfil del usuario');
+      }
+
       const { data, error } = await supabase
         .from('construction_projects')
         .insert({
@@ -128,13 +143,17 @@ export default function Construction() {
           estimated_completion_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 90 days from now
           overall_progress_percentage: 0,
           permit_status: 'pending',
-          created_by: (await supabase.auth.getUser()).data.user?.id || ''
+          created_by: profileData.id
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error inserting construction project:', error);
+        throw error;
+      }
       
+      console.log('Construction project created successfully:', data);
       setHasConstructionProject(true);
       toast({
         title: "Proyecto de construcción creado",
@@ -144,9 +163,10 @@ export default function Construction() {
       console.error('Error creating construction project:', error);
       toast({
         title: "Error",
-        description: "No se pudo crear el proyecto de construcción",
+        description: error instanceof Error ? error.message : "No se pudo crear el proyecto de construcción",
         variant: "destructive",
       });
+      setHasConstructionProject(false);
     }
   };
 
