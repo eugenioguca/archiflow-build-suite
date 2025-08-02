@@ -68,10 +68,10 @@ interface ConstructionExpense {
 }
 
 interface IntegratedExpenseManagerProps {
-  constructionProjectId: string;
+  projectId: string;
 }
 
-export function IntegratedExpenseManager({ constructionProjectId }: IntegratedExpenseManagerProps) {
+export function IntegratedExpenseManager({ projectId }: IntegratedExpenseManagerProps) {
   const [expenses, setExpenses] = useState<ConstructionExpense[]>([]);
   const [filteredExpenses, setFilteredExpenses] = useState<ConstructionExpense[]>([]);
   const [suppliers, setSuppliers] = useState<{id: string; company_name: string}[]>([]);
@@ -84,7 +84,7 @@ export function IntegratedExpenseManager({ constructionProjectId }: IntegratedEx
 
   useEffect(() => {
     fetchData();
-  }, [constructionProjectId]);
+  }, [projectId]);
 
   useEffect(() => {
     filterExpenses();
@@ -114,7 +114,7 @@ export function IntegratedExpenseManager({ constructionProjectId }: IntegratedEx
           supplier:suppliers(company_name),
           phase:construction_phases(phase_name)
         `)
-        .eq('construction_project_id', constructionProjectId)
+        .eq('project_id', projectId)
         .order('expense_date', { ascending: false });
 
       if (error) throw error;
@@ -157,7 +157,7 @@ export function IntegratedExpenseManager({ constructionProjectId }: IntegratedEx
       const { data, error } = await supabase
         .from('construction_phases')
         .select('id, phase_name')
-        .eq('construction_project_id', constructionProjectId);
+        .eq('project_id', projectId);
 
       if (error) throw error;
       setPhases(data || []);

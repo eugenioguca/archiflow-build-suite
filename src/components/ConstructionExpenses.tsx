@@ -26,7 +26,7 @@ export function ConstructionExpenses({ constructionProjectId }: ConstructionExpe
       const { data, error } = await supabase
         .from("construction_expenses")
         .select("*")
-        .eq("construction_project_id", constructionProjectId);
+        .eq("project_id", constructionProjectId);
       if (error) throw error;
       setExpenses(data || []);
     } catch (error) {

@@ -54,7 +54,7 @@ export function ConstructionTeams({ constructionProjectId }: ConstructionTeamsPr
       const { data, error } = await supabase
         .from("construction_teams")
         .select("*")
-        .eq("construction_project_id", constructionProjectId)
+        .eq("project_id", constructionProjectId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;

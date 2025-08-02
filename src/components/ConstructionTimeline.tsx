@@ -42,7 +42,7 @@ export function ConstructionTimeline({ constructionProjectId }: ConstructionTime
           *,
           phase:construction_phases(phase_name, phase_type)
         `)
-        .eq("construction_project_id", constructionProjectId)
+        .eq("project_id", constructionProjectId)
         .order("planned_start_date", { ascending: true });
 
       if (error) throw error;

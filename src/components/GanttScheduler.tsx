@@ -41,10 +41,10 @@ interface TimelineActivity {
 }
 
 interface GanttSchedulerProps {
-  constructionProjectId: string;
+  projectId: string;
 }
 
-export function GanttScheduler({ constructionProjectId }: GanttSchedulerProps) {
+export function GanttScheduler({ projectId }: GanttSchedulerProps) {
   const [activities, setActivities] = useState<TimelineActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
@@ -54,7 +54,7 @@ export function GanttScheduler({ constructionProjectId }: GanttSchedulerProps) {
 
   useEffect(() => {
     fetchTimelineData();
-  }, [constructionProjectId]);
+  }, [projectId]);
 
   const fetchTimelineData = async () => {
     try {
@@ -66,7 +66,7 @@ export function GanttScheduler({ constructionProjectId }: GanttSchedulerProps) {
           phase:construction_phases(phase_name),
           team:construction_teams(team_name)
         `)
-        .eq('construction_project_id', constructionProjectId)
+        .eq('project_id', projectId)
         .order('planned_start_date', { ascending: true });
 
       if (error) throw error;

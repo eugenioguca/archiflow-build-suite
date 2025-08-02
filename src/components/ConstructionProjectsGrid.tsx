@@ -76,21 +76,21 @@ export function ConstructionProjectsGrid({ onProjectSelect }: ConstructionProjec
           const { count: phasesCount } = await supabase
             .from('construction_phases')
             .select('*', { count: 'exact', head: true })
-            .eq('construction_project_id', project.id)
+            .eq('project_id', project.id)
             .eq('status', 'in_progress');
 
           // Get pending deliveries count
           const { count: deliveriesCount } = await supabase
             .from('construction_deliveries')
             .select('*', { count: 'exact', head: true })
-            .eq('construction_project_id', project.id)
+            .eq('project_id', project.id)
             .in('delivery_status', ['scheduled', 'in_transit']);
 
           // Get team members count
           const { count: teamCount } = await supabase
             .from('construction_teams')
             .select('*', { count: 'exact', head: true })
-            .eq('construction_project_id', project.id)
+            .eq('project_id', project.id)
             .eq('active', true);
 
           return {

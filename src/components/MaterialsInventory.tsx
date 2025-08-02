@@ -51,7 +51,7 @@ export function MaterialsInventory({ constructionProjectId }: MaterialsInventory
           supplier:suppliers(company_name),
           partida:partidas_catalog(nombre, codigo)
         `)
-        .eq("construction_project_id", constructionProjectId)
+        .eq("project_id", constructionProjectId)
         .order("material_name", { ascending: true });
 
       if (error) throw error;
