@@ -69,11 +69,11 @@ export default function Dashboard() {
         setLoading(true);
       }
       
-      // Fetch real clients data with budget for pipeline calculation
-      const { data: clients } = await supabase.from('clients').select('status, budget');
-      const totalClients = clients?.length || 0;
-      const activeClients = clients?.filter(c => c.status === 'active').length || 0;
-      const potentialClients = clients?.filter(c => c.status === 'potential').length || 0;
+      // Fetch client projects data for pipeline calculation
+      const { data: clientProjects } = await supabase.from('client_projects').select('status, budget');
+      const totalClients = clientProjects?.length || 0;
+      const activeClients = clientProjects?.filter(c => c.status === 'active').length || 0;
+      const potentialClients = clientProjects?.filter(c => c.status === 'potential').length || 0;
 
       // Fetch real projects data with budget for pipeline calculation
       const { data: projects } = await supabase.from('projects').select('status, name, created_at, progress_percentage, budget');
@@ -106,13 +106,13 @@ export default function Dashboard() {
       // Fetch real income data  
       const { data: incomes } = await supabase.from('incomes').select('amount, description, created_at');
 
-      // Calculate real pipeline value from potential clients' budgets
-      const realPipelineValue = clients?.filter(c => c.status === 'potential').reduce((sum, c) => sum + (Number(c.budget) || 0), 0) || 0;
+      // Calculate real pipeline value from potential client projects
+      const realPipelineValue = clientProjects?.filter(c => c.status === 'potential').reduce((sum, c) => sum + (Number(c.budget) || 0), 0) || 0;
       const potentialProjectsBudgets = projects?.filter(p => p.status === 'planning').reduce((sum, p) => sum + (Number(p.budget) || 0), 0) || 0;
       const pipelineValue = realPipelineValue + potentialProjectsBudgets;
       
       console.log('Dashboard Pipeline Debug:', {
-        potentialClients: clients?.filter(c => c.status === 'potential'),
+        potentialClients: clientProjects?.filter(c => c.status === 'potential'),
         realPipelineValue,
         potentialProjectsBudgets,
         totalPipelineValue: pipelineValue

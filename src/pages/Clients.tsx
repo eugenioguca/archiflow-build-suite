@@ -17,18 +17,9 @@ interface Client {
   email: string | null;
   phone: string | null;
   address: string | null;
-  status: 'potential' | 'existing' | 'active' | 'completed' | 'nuevo_lead' | 'en_contacto' | 'lead_perdido' | 'cliente_cerrado';
-  budget: number | null;
   notes: string | null;
   created_at: string;
-  state_name?: string;
-  branch_office_id?: string;
-  land_square_meters?: number;
-  lead_source?: 'website' | 'commercial_alliance' | 'referral' | 'social_media' | 'advertisement' | 'cold_call' | 'event' | 'partner';
-  lead_referral_details?: string;
-  curp?: string;
-  payment_plan?: any;
-  service_type?: string;
+  updated_at: string;
 }
 
 const statusLabels = {
@@ -80,22 +71,7 @@ export default function Clients() {
     try {
       const { data, error } = await supabase
         .from('clients')
-        .select(`
-          id,
-          full_name,
-          email,
-          phone,
-          address,
-          status,
-          budget,
-          notes,
-          created_at,
-          state_name,
-          branch_office_id,
-          land_square_meters,
-          lead_source,
-          lead_referral_details
-        `)
+        .select('id, full_name, email, phone, address, notes, created_at, updated_at')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -152,10 +128,8 @@ export default function Clients() {
   const filteredClients = clients.filter(client => {
     const matchesSearch = client.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         client.phone?.includes(searchTerm) ||
-                         client.state_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || client.status === statusFilter;
-    return matchesSearch && matchesStatus;
+                         client.phone?.includes(searchTerm);
+    return matchesSearch; // Removed status filter since it's now in client_projects
   });
 
   const formatCurrency = (amount: number | null) => {
@@ -268,12 +242,6 @@ export default function Clients() {
                   </TableCell>
                    <TableCell>
                     <div className="space-y-1">
-                      {client.state_name && (
-                        <div className="flex items-center gap-1 text-sm">
-                          <MapPin className="h-3 w-3" />
-                          {client.state_name}
-                        </div>
-                      )}
                       {client.address && (
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           <Building className="h-3 w-3" />
@@ -283,35 +251,18 @@ export default function Clients() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="space-y-1">
-                      <div className="text-sm">
-                        {formatCurrency(client.budget)}
-                      </div>
-                      {client.land_square_meters && (
-                        <div className="text-xs text-muted-foreground">
-                          {client.land_square_meters} m²
-                        </div>
-                      )}
+                    <div className="text-sm text-muted-foreground">
+                      Ver proyectos
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="space-y-1">
-                      {client.lead_source && (
-                        <div className="flex items-center gap-1 text-sm">
-                          <Globe className="h-3 w-3" />
-                          {leadSourceLabels[client.lead_source]}
-                        </div>
-                      )}
-                      {client.lead_referral_details && (
-                        <div className="text-xs text-muted-foreground">
-                          {client.lead_referral_details}
-                        </div>
-                      )}
+                    <div className="text-sm text-muted-foreground">
+                      -
                     </div>
                   </TableCell>
                    <TableCell>
-                     <Badge className={statusColors[client.status as keyof typeof statusColors]}>
-                       {statusLabels[client.status as keyof typeof statusLabels]}
+                     <Badge variant="secondary">
+                       Cliente Base
                      </Badge>
                    </TableCell>
                   <TableCell className="text-right">

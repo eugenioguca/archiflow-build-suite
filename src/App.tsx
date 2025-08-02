@@ -10,7 +10,7 @@ import Layout from "@/components/Layout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
-import Clients from "./pages/Clients";
+import ClientsNew from "./pages/ClientsNew";
 import Projects from "./pages/Projects";
 import ProjectFiles from "./pages/ProjectFiles";
 import FinancesNew from "./pages/FinancesNew";
@@ -109,7 +109,7 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <Clients />
+                    <ClientsNew />
                   </Layout>
                 </ProtectedRoute>
               } 
