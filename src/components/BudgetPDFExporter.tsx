@@ -390,15 +390,34 @@ export function BudgetPDFExporter({ budget, items, projectName, clientName }: Bu
   const saveBudgetToProject = async () => {
     setSaving(true);
     try {
-      // Generate PDF with intelligent pagination
       const pdf = new jsPDF('p', 'mm', 'letter');
-      const htmlContent = generateHtmlContent();
       
-      // Split content by pages
-      const pages = htmlContent.split('</div>').filter(page => page.trim());
+      // Calculate pagination
+      const ITEMS_PER_PAGE = 13;
+      const FIRST_PAGE_ITEMS = 8;
+      const pages: BudgetItem[][] = [];
       
-      for (let i = 0; i < pages.length; i++) {
-        if (i > 0) pdf.addPage();
+      if (items.length <= FIRST_PAGE_ITEMS) {
+        pages.push(items);
+      } else {
+        pages.push(items.slice(0, FIRST_PAGE_ITEMS));
+        let remainingItems = items.slice(FIRST_PAGE_ITEMS);
+        while (remainingItems.length > 0) {
+          pages.push(remainingItems.slice(0, ITEMS_PER_PAGE));
+          remainingItems = remainingItems.slice(ITEMS_PER_PAGE);
+        }
+      }
+
+      // Generate each page
+      for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+        if (pageIndex > 0) pdf.addPage();
+        
+        const pageItems = pages[pageIndex];
+        const isLastPage = pageIndex === pages.length - 1;
+        const pageNumber = pageIndex + 1;
+        const totalPages = pages.length;
+        
+        const pageHtml = generatePageContent(pageItems, pageNumber, totalPages, isLastPage);
         
         const tempDiv = document.createElement('div');
         tempDiv.style.position = 'absolute';
@@ -407,7 +426,7 @@ export function BudgetPDFExporter({ budget, items, projectName, clientName }: Bu
         tempDiv.style.width = '216mm';
         tempDiv.style.height = '279mm';
         tempDiv.style.backgroundColor = 'white';
-        tempDiv.innerHTML = pages[i] + '</div>';
+        tempDiv.innerHTML = pageHtml;
 
         document.body.appendChild(tempDiv);
 
@@ -416,17 +435,14 @@ export function BudgetPDFExporter({ budget, items, projectName, clientName }: Bu
           useCORS: true,
           allowTaint: true,
           backgroundColor: '#ffffff',
-          width: 816, // Letter size width in pixels
-          height: 1056 // Letter size height in pixels
+          width: 816,
+          height: 1056
         });
 
         document.body.removeChild(tempDiv);
 
         const imgData = canvas.toDataURL('image/png');
-        const imgWidth = 216; // Letter width in mm
-        const imgHeight = 279; // Letter height in mm
-        
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'PNG', 0, 0, 216, 279);
       }
 
       // Convert PDF to blob
@@ -503,15 +519,34 @@ export function BudgetPDFExporter({ budget, items, projectName, clientName }: Bu
 
   const generatePDF = async () => {
     try {
-      // Generate PDF with intelligent pagination
       const pdf = new jsPDF('p', 'mm', 'letter');
-      const htmlContent = generateHtmlContent();
       
-      // Split content by pages
-      const pages = htmlContent.split('</div>').filter(page => page.trim());
+      // Calculate pagination
+      const ITEMS_PER_PAGE = 13;
+      const FIRST_PAGE_ITEMS = 8;
+      const pages: BudgetItem[][] = [];
       
-      for (let i = 0; i < pages.length; i++) {
-        if (i > 0) pdf.addPage();
+      if (items.length <= FIRST_PAGE_ITEMS) {
+        pages.push(items);
+      } else {
+        pages.push(items.slice(0, FIRST_PAGE_ITEMS));
+        let remainingItems = items.slice(FIRST_PAGE_ITEMS);
+        while (remainingItems.length > 0) {
+          pages.push(remainingItems.slice(0, ITEMS_PER_PAGE));
+          remainingItems = remainingItems.slice(ITEMS_PER_PAGE);
+        }
+      }
+
+      // Generate each page
+      for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+        if (pageIndex > 0) pdf.addPage();
+        
+        const pageItems = pages[pageIndex];
+        const isLastPage = pageIndex === pages.length - 1;
+        const pageNumber = pageIndex + 1;
+        const totalPages = pages.length;
+        
+        const pageHtml = generatePageContent(pageItems, pageNumber, totalPages, isLastPage);
         
         const tempDiv = document.createElement('div');
         tempDiv.style.position = 'absolute';
@@ -520,7 +555,7 @@ export function BudgetPDFExporter({ budget, items, projectName, clientName }: Bu
         tempDiv.style.width = '216mm';
         tempDiv.style.height = '279mm';
         tempDiv.style.backgroundColor = 'white';
-        tempDiv.innerHTML = pages[i] + '</div>';
+        tempDiv.innerHTML = pageHtml;
 
         document.body.appendChild(tempDiv);
 
@@ -529,17 +564,14 @@ export function BudgetPDFExporter({ budget, items, projectName, clientName }: Bu
           useCORS: true,
           allowTaint: true,
           backgroundColor: '#ffffff',
-          width: 816, // Letter size width in pixels
-          height: 1056 // Letter size height in pixels
+          width: 816,
+          height: 1056
         });
 
         document.body.removeChild(tempDiv);
 
         const imgData = canvas.toDataURL('image/png');
-        const imgWidth = 216; // Letter width in mm
-        const imgHeight = 279; // Letter height in mm
-        
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+        pdf.addImage(imgData, 'PNG', 0, 0, 216, 279);
       }
 
       const fileName = `Presupuesto_${projectName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
