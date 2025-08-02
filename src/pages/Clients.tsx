@@ -20,6 +20,33 @@ interface Client {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  client_projects?: ClientProject[];
+}
+
+interface ClientProject {
+  id: string;
+  project_name: string;
+  status: string;
+  sales_pipeline_stage: string;
+  priority: string;
+  budget: number | null;
+  service_type: string;
+  constancia_situacion_fiscal_uploaded: boolean;
+  contract_uploaded: boolean;
+  has_existing_design: boolean;
+  created_at: string;
+  profiles?: {
+    id: string;
+    display_name: string;
+  };
+  branch_offices?: {
+    id: string;
+    name: string;
+  };
+  commercial_alliances?: {
+    id: string;
+    name: string;
+  };
 }
 
 const statusLabels = {
@@ -71,7 +98,41 @@ export default function Clients() {
     try {
       const { data, error } = await supabase
         .from('clients')
-        .select('id, full_name, email, phone, address, notes, created_at, updated_at')
+        .select(`
+          id, 
+          full_name, 
+          email, 
+          phone, 
+          address, 
+          notes, 
+          created_at, 
+          updated_at,
+          client_projects (
+            id,
+            project_name,
+            status,
+            sales_pipeline_stage,
+            priority,
+            budget,
+            service_type,
+            constancia_situacion_fiscal_uploaded,
+            contract_uploaded,
+            has_existing_design,
+            created_at,
+            profiles:assigned_advisor_id (
+              id,
+              display_name
+            ),
+            branch_offices:branch_office_id (
+              id,
+              name
+            ),
+            commercial_alliances:alliance_id (
+              id,
+              name
+            )
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
