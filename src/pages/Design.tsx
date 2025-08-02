@@ -506,84 +506,84 @@ export default function Design() {
           </div>
 
           {/* Main Content with Resizable Layout */}
-          <ResizablePanelGroup direction="horizontal" className="min-h-[800px] glass-card rounded-xl overflow-hidden">
-            {/* Navigation Panel */}
-            <ResizablePanel defaultSize={25} minSize={20} maxSize={35}>
-              <div className="h-full p-6 border-r bg-muted/30">
-                <h3 className="font-semibold mb-4 flex items-center gap-2">
-                  <Layers className="h-4 w-4" />
-                  Navegación
-                </h3>
-                <nav className="space-y-2">
-                  <TabsList className="grid w-full grid-rows-5 h-auto gap-2 bg-transparent p-0">
-                    <TabsTrigger 
-                      value="phases" 
-                      className="w-full justify-start glass-button data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                    >
-                      <Target className="h-4 w-4 mr-3" />
-                      Fases del Diseño
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="team"
-                      className="w-full justify-start glass-button data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                    >
-                      <Users className="h-4 w-4 mr-3" />
-                      Equipo de Trabajo
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="calendar"
-                      className="w-full justify-start glass-button data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                    >
-                      <CalendarIcon className="h-4 w-4 mr-3" />
-                      Calendario
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="budget"
-                      className="w-full justify-start glass-button data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                    >
-                      <DollarSign className="h-4 w-4 mr-3" />
-                      Presupuesto
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="client-info"
-                      className="w-full justify-start glass-button data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                    >
-                      <FileUser className="h-4 w-4 mr-3" />
-                      Expediente Cliente
-                    </TabsTrigger>
-                  </TabsList>
-                </nav>
-                
-                {/* Phase Timeline Overview */}
-                <div className="mt-8">
-                  <h4 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wide">
-                    Timeline de Fases
-                  </h4>
-                  <div className="space-y-3">
-                    {phases.map((phase, index) => (
-                      <div key={phase.id} className="flex items-center gap-3">
-                        <div className={`w-2 h-2 rounded-full ${getStatusColor(phase.status)}`} />
-                        <span className={`text-xs ${phase.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
-                          {phase.phase_name}
-                        </span>
-                        {phase.status === 'in_progress' && (
-                          <div className="animate-pulse">
-                            <PlayCircle className="h-3 w-3 text-primary" />
-                          </div>
-                        )}
-                      </div>
-                    ))}
+          <Tabs defaultValue="phases" className="glass-card rounded-xl overflow-hidden">
+            <ResizablePanelGroup direction="horizontal" className="min-h-[800px]">
+              {/* Navigation Panel */}
+              <ResizablePanel defaultSize={25} minSize={20} maxSize={35}>
+                <div className="h-full p-6 border-r bg-muted/30">
+                  <h3 className="font-semibold mb-4 flex items-center gap-2">
+                    <Layers className="h-4 w-4" />
+                    Navegación
+                  </h3>
+                  <nav className="space-y-2">
+                    <TabsList className="grid w-full grid-rows-5 h-auto gap-2 bg-transparent p-0">
+                      <TabsTrigger 
+                        value="phases" 
+                        className="w-full justify-start glass-button data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                      >
+                        <Target className="h-4 w-4 mr-3" />
+                        Fases del Diseño
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="team"
+                        className="w-full justify-start glass-button data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                      >
+                        <Users className="h-4 w-4 mr-3" />
+                        Equipo de Trabajo
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="calendar"
+                        className="w-full justify-start glass-button data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                      >
+                        <CalendarIcon className="h-4 w-4 mr-3" />
+                        Calendario
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="budget"
+                        className="w-full justify-start glass-button data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                      >
+                        <DollarSign className="h-4 w-4 mr-3" />
+                        Presupuesto
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="client-info"
+                        className="w-full justify-start glass-button data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                      >
+                        <FileUser className="h-4 w-4 mr-3" />
+                        Expediente Cliente
+                      </TabsTrigger>
+                    </TabsList>
+                  </nav>
+                  
+                  {/* Phase Timeline Overview */}
+                  <div className="mt-8">
+                    <h4 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wide">
+                      Timeline de Fases
+                    </h4>
+                    <div className="space-y-3">
+                      {phases.map((phase, index) => (
+                        <div key={phase.id} className="flex items-center gap-3">
+                          <div className={`w-2 h-2 rounded-full ${getStatusColor(phase.status)}`} />
+                          <span className={`text-xs ${phase.status === 'completed' ? 'line-through text-muted-foreground' : ''}`}>
+                            {phase.phase_name}
+                          </span>
+                          {phase.status === 'in_progress' && (
+                            <div className="animate-pulse">
+                              <PlayCircle className="h-3 w-3 text-primary" />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </ResizablePanel>
+              </ResizablePanel>
 
-            <ResizableHandle withHandle />
+              <ResizableHandle withHandle />
 
-            {/* Main Content Panel */}
-            <ResizablePanel defaultSize={75}>
-              <div className="h-full overflow-auto">
-                <Tabs defaultValue="phases" className="h-full">
+              {/* Main Content Panel */}
+              <ResizablePanel defaultSize={75}>
+                <div className="h-full overflow-auto">
                   {/* Phases Content */}
                   <TabsContent value="phases" className="m-0 h-full">
                     <div className="p-8">
@@ -785,10 +785,10 @@ export default function Design() {
                       <ClientInfoPanel projectId={projectId} />
                     </div>
                   </TabsContent>
-                </Tabs>
-              </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
+                </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </Tabs>
         </div>
       </div>
     </Layout>
