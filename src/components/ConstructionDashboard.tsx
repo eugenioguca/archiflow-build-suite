@@ -17,6 +17,9 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { EquipmentForm } from "@/components/forms/EquipmentForm";
+import { ConstructionPhaseForm } from "@/components/forms/ConstructionPhaseForm";
+import { ConstructionMilestoneForm } from "@/components/forms/ConstructionMilestoneForm";
+import { ProgressPhotoForm } from "@/components/forms/ProgressPhotoForm";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -322,16 +325,17 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
       </div>
 
       {/* Quick Actions */}
-      <QuickActions projectId={projectId} />
+      <QuickActions projectId={projectId} onStatsRefresh={fetchConstructionStats} />
     </div>
   );
 }
 
 interface QuickActionsProps {
   projectId: string;
+  onStatsRefresh: () => void;
 }
 
-function QuickActions({ projectId }: QuickActionsProps) {
+function QuickActions({ projectId, onStatsRefresh }: QuickActionsProps) {
   const [newPhaseDialog, setNewPhaseDialog] = useState(false);
   const [newMilestoneDialog, setNewMilestoneDialog] = useState(false);
   const [newEquipmentDialog, setNewEquipmentDialog] = useState(false);
@@ -361,9 +365,14 @@ function QuickActions({ projectId }: QuickActionsProps) {
                   Crear una nueva fase para organizar las actividades del proyecto
                 </DialogDescription>
               </DialogHeader>
-              <div className="text-center text-muted-foreground py-8">
-                Formulario de nueva fase en desarrollo
-              </div>
+              <ConstructionPhaseForm
+                projectId={projectId}
+                onSuccess={() => {
+                  setNewPhaseDialog(false);
+                  onStatsRefresh();
+                }}
+                onCancel={() => setNewPhaseDialog(false)}
+              />
             </DialogContent>
           </Dialog>
 
@@ -381,9 +390,14 @@ function QuickActions({ projectId }: QuickActionsProps) {
                   Programar un nuevo hito importante en el cronograma
                 </DialogDescription>
               </DialogHeader>
-              <div className="text-center text-muted-foreground py-8">
-                Formulario de nuevo hito en desarrollo
-              </div>
+              <ConstructionMilestoneForm
+                projectId={projectId}
+                onSuccess={() => {
+                  setNewMilestoneDialog(false);
+                  onStatsRefresh();
+                }}
+                onCancel={() => setNewMilestoneDialog(false)}
+              />
             </DialogContent>
           </Dialog>
 
@@ -403,7 +417,10 @@ function QuickActions({ projectId }: QuickActionsProps) {
               </DialogHeader>
               <EquipmentForm
                 projectId={projectId}
-                onSuccess={() => setNewEquipmentDialog(false)}
+                onSuccess={() => {
+                  setNewEquipmentDialog(false);
+                  onStatsRefresh();
+                }}
                 onCancel={() => setNewEquipmentDialog(false)}
               />
             </DialogContent>
@@ -423,9 +440,14 @@ function QuickActions({ projectId }: QuickActionsProps) {
                   Agregar fotos del avance de la construcción
                 </DialogDescription>
               </DialogHeader>
-              <div className="text-center text-muted-foreground py-8">
-                Formulario de subida de fotos en desarrollo
-              </div>
+              <ProgressPhotoForm
+                projectId={projectId}
+                onSuccess={() => {
+                  setUploadPhotoDialog(false);
+                  onStatsRefresh();
+                }}
+                onCancel={() => setUploadPhotoDialog(false)}
+              />
             </DialogContent>
           </Dialog>
         </div>
