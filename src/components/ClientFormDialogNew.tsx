@@ -263,6 +263,25 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
     }));
   };
 
+  const formatCurrency = (value: string) => {
+    // Remover todo excepto números
+    const numericValue = value.replace(/[^\d]/g, '');
+    
+    // Si está vacío, devolver vacío
+    if (!numericValue) return '';
+    
+    // Formatear con comas
+    const formatted = new Intl.NumberFormat('es-MX').format(parseInt(numericValue));
+    return `$${formatted}`;
+  };
+
+  const handleBudgetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value;
+    // Extraer solo números para almacenar
+    const numericValue = rawValue.replace(/[^\d]/g, '');
+    handleInputChange('budget', numericValue);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -348,12 +367,10 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
                   <Label htmlFor="budget">Presupuesto Estimado</Label>
                   <Input
                     id="budget"
-                    type="number"
-                    value={formData.budget}
-                    onChange={(e) => handleInputChange('budget', e.target.value)}
-                    placeholder="Ej: 1500000"
-                    min="0"
-                    step="0.01"
+                    type="text"
+                    value={formatCurrency(formData.budget)}
+                    onChange={handleBudgetChange}
+                    placeholder="Ej: $1,500,000"
                   />
                 </div>
 
