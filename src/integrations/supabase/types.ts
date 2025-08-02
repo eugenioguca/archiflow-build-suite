@@ -5039,6 +5039,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      revert_project_from_construction: {
+        Args: { project_id_param: string; revert_reason: string }
+        Returns: undefined
+      }
       update_design_phase_days_elapsed: {
         Args: Record<PropertyKey, never>
         Returns: undefined
