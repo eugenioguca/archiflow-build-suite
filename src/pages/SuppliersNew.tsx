@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Search, Edit2, Trash2, Building2, CreditCard, FileText, Filter, Download, DollarSign, Calendar, Receipt, Upload, AlertTriangle, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -145,6 +146,7 @@ export default function SuppliersNew() {
     regimen_fiscal: "601",
     codigo_postal: "",
     uso_cfdi_default: "G03",
+    ofrece_credito: false,
     dias_credito: 30,
     limite_credito: 0,
     supplier_category: "materials" as "materials" | "equipment" | "services" | "subcontractor" | "utilities" | "other",
@@ -262,6 +264,9 @@ export default function SuppliersNew() {
 
       const supplierData = {
         ...supplierFormData,
+        // Solo incluir datos de crédito si ofrece crédito
+        dias_credito: supplierFormData.ofrece_credito ? supplierFormData.dias_credito : null,
+        limite_credito: supplierFormData.ofrece_credito ? supplierFormData.limite_credito : null,
         created_by: user.id,
         country: 'México'
       };
@@ -408,6 +413,7 @@ export default function SuppliersNew() {
       regimen_fiscal: "601",
       codigo_postal: "",
       uso_cfdi_default: "G03",
+      ofrece_credito: false,
       dias_credito: 30,
       limite_credito: 0,
       supplier_category: "materials",
@@ -816,26 +822,50 @@ export default function SuppliersNew() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="dias_credito">Días de Crédito</Label>
-                    <Input
-                      id="dias_credito"
-                      type="number"
-                      value={supplierFormData.dias_credito}
-                      onChange={(e) => setSupplierFormData({...supplierFormData, dias_credito: parseInt(e.target.value)})}
-                    />
+                {/* Checkbox para Ofrece Crédito */}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="ofrece_credito"
+                    checked={supplierFormData.ofrece_credito}
+                    onCheckedChange={(checked) => setSupplierFormData({
+                      ...supplierFormData, 
+                      ofrece_credito: checked as boolean,
+                      // Si no ofrece crédito, resetear los valores
+                      dias_credito: checked ? supplierFormData.dias_credito : 0,
+                      limite_credito: checked ? supplierFormData.limite_credito : 0
+                    })}
+                  />
+                  <Label htmlFor="ofrece_credito" className="text-sm font-medium">
+                    ¿Ofrece Crédito?
+                  </Label>
+                </div>
+
+                {/* Campos de crédito - solo si ofrece crédito */}
+                {supplierFormData.ofrece_credito && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="dias_credito">Días de Crédito</Label>
+                      <Input
+                        id="dias_credito"
+                        type="number"
+                        value={supplierFormData.dias_credito}
+                        onChange={(e) => setSupplierFormData({...supplierFormData, dias_credito: parseInt(e.target.value)})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="limite_credito">Límite de Crédito</Label>
+                      <Input
+                        id="limite_credito"
+                        type="number"
+                        step="0.01"
+                        value={supplierFormData.limite_credito}
+                        onChange={(e) => setSupplierFormData({...supplierFormData, limite_credito: parseFloat(e.target.value)})}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="limite_credito">Límite de Crédito</Label>
-                    <Input
-                      id="limite_credito"
-                      type="number"
-                      step="0.01"
-                      value={supplierFormData.limite_credito}
-                      onChange={(e) => setSupplierFormData({...supplierFormData, limite_credito: parseFloat(e.target.value)})}
-                    />
-                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="supplier_category">Categoría</Label>
                     <Select value={supplierFormData.supplier_category} onValueChange={(value) => setSupplierFormData({...supplierFormData, supplier_category: value as "materials" | "equipment" | "services" | "subcontractor" | "utilities" | "other"})}>
@@ -1135,10 +1165,11 @@ export default function SuppliersNew() {
                                 regimen_fiscal: supplier.regimen_fiscal || "",
                                 codigo_postal: supplier.codigo_postal || "",
                                 uso_cfdi_default: supplier.uso_cfdi_default || "G03",
+                                ofrece_credito: (supplier.dias_credito && supplier.dias_credito > 0) || (supplier.limite_credito && supplier.limite_credito > 0) || false,
                                 dias_credito: supplier.dias_credito || 30,
                                 limite_credito: supplier.limite_credito || 0,
                                 supplier_category: supplier.supplier_category as "materials" | "equipment" | "services" | "subcontractor" | "utilities" | "other",
-                                rating: supplier.rating || 0,
+                                rating: supplier.rating || 5,
                                 notes: supplier.notes || "",
                                 website: supplier.website || ""
                               });
