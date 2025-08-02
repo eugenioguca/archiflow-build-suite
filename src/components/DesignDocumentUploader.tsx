@@ -86,7 +86,14 @@ export function DesignDocumentUploader({ projectId, teamMembers }: DesignDocumen
           description,
           design_phase,
           created_at,
-          profiles:uploaded_by (full_name)
+          client_id,
+          profiles:uploaded_by (full_name),
+          client_projects!inner (
+            client_id,
+            clients!inner (
+              full_name
+            )
+          )
         `)
         .eq('project_id', projectId)
         .eq('department', 'design')
@@ -163,6 +170,15 @@ export function DesignDocumentUploader({ projectId, teamMembers }: DesignDocumen
 
       if (!profile) throw new Error("Perfil no encontrado");
 
+      // Get client_id from the project
+      const { data: projectData, error: projectError } = await supabase
+        .from("client_projects")
+        .select("client_id")
+        .eq("id", projectId)
+        .single();
+
+      if (projectError || !projectData) throw new Error("No se pudo obtener información del proyecto");
+
       for (const file of selectedFiles) {
         // Upload file to storage
         const fileExt = file.name.split('.').pop();
@@ -179,6 +195,7 @@ export function DesignDocumentUploader({ projectId, teamMembers }: DesignDocumen
           .from('documents')
           .insert({
             project_id: projectId,
+            client_id: projectData.client_id,
             name: `${documentName} - ${file.name}`,
             file_path: uploadData.path,
             file_type: file.type,
