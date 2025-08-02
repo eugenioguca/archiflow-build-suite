@@ -244,7 +244,15 @@ export const PaymentPlanBuilder = ({
     const installments = template.installments.map((inst, index) => {
       const planAmountNumber = parseCurrency(planAmount);
       const amount = planAmountNumber > 0 ? Math.round((planAmountNumber * inst.percentage) / 100) : 0;
-      const dueDate = addMonths(startDate, inst.months_offset);
+      
+      let dueDate: Date;
+      if (index === template.installments.length - 1) {
+        // Para el último pago, siempre usar 45 días después del primer pago
+        dueDate = addDays(startDate, 45);
+      } else {
+        // Para los demás pagos, usar el offset original de la plantilla
+        dueDate = addMonths(startDate, inst.months_offset);
+      }
       
       return {
         id: `temp_${index}`,
