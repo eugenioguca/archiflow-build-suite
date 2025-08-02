@@ -101,7 +101,7 @@ export default function Sales() {
   const [advisorFilter, setAdvisorFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<ClientProject | null>(null);
-  const [activeTab, setActiveTab] = useState("pipeline");
+  const [activeTab, setActiveTab] = useState("list");
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -359,8 +359,8 @@ export default function Sales() {
       {/* Tabs principales */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-5 w-full">
+          <TabsTrigger value="list">Smart View</TabsTrigger>
           <TabsTrigger value="pipeline">Pipeline Kanban</TabsTrigger>
-          <TabsTrigger value="list">Vista Lista</TabsTrigger>
           <TabsTrigger value="calendar">Calendario</TabsTrigger>
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="contracts">Contratos</TabsTrigger>
