@@ -18,6 +18,7 @@ import Accounting from "./pages/Accounting";
 import Sales from "./pages/Sales";
 import UserManagement from "./pages/UserManagement";
 import Design from "./pages/Design";
+import { Construction } from "./pages/Construction";
 
 import SuppliersNew from "./pages/SuppliersNew";
 import ClientPortal from "./pages/ClientPortal";
@@ -189,6 +190,16 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <Design />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/construction" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Construction />
                 </Layout>
               </ProtectedRoute>
             } 

@@ -14,7 +14,8 @@ import {
   Activity,
   Truck,
   Palette,
-  Settings
+  Settings,
+  HardHat
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -40,7 +41,7 @@ const adminItems = [
   { title: "Clientes", url: "/clients", icon: Users, color: "text-primary" },
   { title: "Ventas", url: "/sales", icon: TrendingUp, color: "text-success" },
   { title: "Diseño", url: "/design", icon: Palette, color: "text-purple" },
-  
+  { title: "Construcción", url: "/construction", icon: HardHat, color: "text-orange" },
   { title: "Proveedores", url: "/suppliers", icon: Truck, color: "text-orange" },
   { title: "Finanzas", url: "/finances", icon: DollarSign, color: "text-primary" },
   { title: "Contabilidad", url: "/accounting", icon: Calculator, color: "text-primary" },
