@@ -927,6 +927,7 @@ export type Database = {
           created_at: string
           curp: string | null
           estimated_value: number | null
+          has_existing_design: boolean | null
           id: string
           land_square_meters: number | null
           last_activity_date: string | null
@@ -935,6 +936,7 @@ export type Database = {
           lead_source: string | null
           lead_source_details: string | null
           location_details: Json | null
+          moved_to_construction_at: string | null
           next_contact_date: string | null
           notes: string | null
           payment_plan: Json | null
@@ -969,6 +971,7 @@ export type Database = {
           created_at?: string
           curp?: string | null
           estimated_value?: number | null
+          has_existing_design?: boolean | null
           id?: string
           land_square_meters?: number | null
           last_activity_date?: string | null
@@ -977,6 +980,7 @@ export type Database = {
           lead_source?: string | null
           lead_source_details?: string | null
           location_details?: Json | null
+          moved_to_construction_at?: string | null
           next_contact_date?: string | null
           notes?: string | null
           payment_plan?: Json | null
@@ -1011,6 +1015,7 @@ export type Database = {
           created_at?: string
           curp?: string | null
           estimated_value?: number | null
+          has_existing_design?: boolean | null
           id?: string
           land_square_meters?: number | null
           last_activity_date?: string | null
@@ -1019,6 +1024,7 @@ export type Database = {
           lead_source?: string | null
           lead_source_details?: string | null
           location_details?: Json | null
+          moved_to_construction_at?: string | null
           next_contact_date?: string | null
           notes?: string | null
           payment_plan?: Json | null
@@ -3737,6 +3743,10 @@ export type Database = {
         Args: { payment_date: string }
         Returns: string
       }
+      create_default_design_phases: {
+        Args: { project_id_param: string }
+        Returns: undefined
+      }
       get_project_cumulative_documents: {
         Args: { project_id_param: string; user_department?: string }
         Returns: {
@@ -3767,6 +3777,10 @@ export type Database = {
       is_admin: {
         Args: { _user_id: string }
         Returns: boolean
+      }
+      update_design_phase_days_elapsed: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {
