@@ -665,19 +665,7 @@ export default function Sales() {
               {/* Document Validation and Sales Tools */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-6">
-                  {/* Subida de documentos sensibles - siempre disponible */}
-                  <ClientDocumentUploader
-                    clientId={selectedClient.id}
-                    clientName={selectedClient.full_name}
-                    onDocumentUploaded={() => {
-                      toast({
-                        title: "Documento subido",
-                        description: "El documento se guardará en el expediente del cliente",
-                      });
-                    }}
-                  />
-                  
-                  {/* Validación visual de documentos - indicador de progreso */}
+                  {/* Interfaz unificada de documentos legales */}
                   <SalesDocumentValidator
                     clientId={selectedClient.id}
                     clientData={selectedClient}

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadClientDocument, uploadProjectDocument, getFileType } from "@/lib/fileUtils";
 import { CheckCircle, XCircle, AlertTriangle, Upload, FileText } from "lucide-react";
 
 interface DocumentRequirement {
@@ -42,12 +43,21 @@ export function SalesDocumentValidator({
   }, [clientId, clientData]);
 
   const initializeRequirements = async () => {
-    // Check existing documents for this client/project
-    const { data: documents } = await supabase
-      .from('documents')
-      .select('*')
-      .or(`client_id.eq.${clientId},project_id.in.(${clientData?.project_id || 'null'})`)
-      .eq('document_status', 'active');
+    // Check existing documents for this client/project from both tables
+    const [documentsResult, clientDocumentsResult] = await Promise.all([
+      supabase
+        .from('documents')
+        .select('*')
+        .or(`client_id.eq.${clientId},project_id.in.(${clientData?.project_id || 'null'})`)
+        .eq('document_status', 'active'),
+      supabase
+        .from('client_documents')
+        .select('*')
+        .eq('client_id', clientId)
+    ]);
+
+    const documents = documentsResult.data || [];
+    const clientDocuments = clientDocumentsResult.data || [];
 
     const baseRequirements: DocumentRequirement[] = [
       {
@@ -87,21 +97,26 @@ export function SalesDocumentValidator({
       }
     ];
 
-    // Update status based on existing documents
-    if (documents) {
-      baseRequirements.forEach(req => {
-        const doc = documents.find(d => 
-          d.name.toLowerCase().includes(req.id.replace('_', ' ')) ||
-          d.category === req.id ||
-          d.tags?.includes(req.id)
-        );
-        
-        if (doc) {
-          req.status = 'uploaded';
-          req.file_path = doc.file_path;
-        }
-      });
-    }
+    // Update status based on existing documents from both sources
+    baseRequirements.forEach(req => {
+      // Check documents table first
+      const doc = documents.find(d => 
+        d.name.toLowerCase().includes(req.id.replace('_', ' ')) ||
+        d.category === req.id ||
+        d.tags?.includes(req.id)
+      );
+      
+      // Check client_documents table
+      const clientDoc = clientDocuments.find(d => 
+        d.document_type === req.id ||
+        d.document_name.toLowerCase().includes(req.id.replace('_', ' '))
+      );
+      
+      if (doc || clientDoc) {
+        req.status = 'uploaded';
+        req.file_path = doc?.file_path || clientDoc?.file_path;
+      }
+    });
 
     setRequirements(baseRequirements);
   };
@@ -163,6 +178,74 @@ export function SalesDocumentValidator({
       });
     } finally {
       setIsValidatingCurp(false);
+    }
+  };
+
+  const handleDocumentUpload = async (file: File, requirementId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuario no autenticado');
+
+      let filePath: string;
+
+      // Documentos sensibles van a client_documents bucket
+      if (['constancia_fiscal', 'identificacion'].includes(requirementId)) {
+        const result = await uploadClientDocument(
+          file, 
+          clientId, 
+          clientData?.full_name || 'Cliente', 
+          requirementId
+        );
+        filePath = result.filePath;
+
+        // Also save to client_documents table for sensitive docs
+        await supabase
+          .from('client_documents')
+          .insert({
+            client_id: clientId,
+            document_type: requirementId,
+            document_name: file.name,
+            file_path: filePath,
+            file_type: getFileType(file.name).type,
+            file_size: file.size,
+            uploaded_by: user.id
+          });
+      } else {
+        // Documentos del proyecto van al bucket público
+        const result = await uploadProjectDocument(file, clientData?.project_id || clientId, 'sales');
+        filePath = result.filePath;
+
+        // Save to documents table
+        await supabase
+          .from('documents')
+          .insert({
+            project_id: clientData?.project_id,
+            client_id: clientId,
+            name: file.name,
+            file_path: filePath,
+            file_type: getFileType(file.name).type,
+            file_size: file.size,
+            category: requirementId,
+            tags: [requirementId],
+            department: 'sales',
+            uploaded_by: user.id,
+            access_level: 'internal'
+          });
+      }
+
+      markDocumentAsUploaded(requirementId, filePath);
+      
+      toast({
+        title: "Documento subido",
+        description: `${file.name} se ha subido correctamente`,
+      });
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo subir el documento",
+        variant: "destructive",
+      });
     }
   };
 
@@ -290,20 +373,29 @@ export function SalesDocumentValidator({
               <div className="flex items-center gap-2">
                 {getStatusBadge(requirement.status)}
                 {requirement.status === 'missing' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      // This will trigger the ProjectDocumentManager upload for this specific document type
-                      toast({
-                        title: "Información",
-                        description: `Use el gestor de documentos para subir: ${requirement.name}`,
-                      });
-                    }}
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Subir
-                  </Button>
+                  <div className="relative">
+                    <input
+                      type="file"
+                      id={`upload-${requirement.id}`}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleDocumentUpload(file, requirement.id);
+                        }
+                        // Reset input
+                        e.target.value = '';
+                      }}
+                      accept=".pdf,.jpg,.jpeg,.png"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Subir
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>
