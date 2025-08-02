@@ -188,24 +188,12 @@ export default function Design() {
 
   const fetchTeamMembers = async () => {
     try {
-      // First, get the project's client and their assigned advisor
+      // Get project with client_projects information
       const { data: projectData, error: projectError } = await supabase
-        .from("projects")
-        .select(`
-          client_id,
-          clients (
-            assigned_advisor_id,
-            profiles (
-              id,
-              full_name,
-              position,
-              department,
-              avatar_url,
-              skills
-            )
-          )
-        `)
-        .eq("id", projectId)
+        .from("client_projects")
+        .select("assigned_advisor_id")
+        .eq("client_id", project?.client_id)
+        .limit(1)
         .single();
 
       if (projectError) throw projectError;
@@ -231,7 +219,7 @@ export default function Design() {
 
       let teamMembersData = data || [];
 
-      // Check if sales advisor is in the team (from client_projects)
+      // Project data should have assigned_advisor_id directly
       const salesAdvisorId = projectData?.assigned_advisor_id;
       if (salesAdvisorId) {
         const salesAdvisorInTeam = teamMembersData.find(
