@@ -119,7 +119,7 @@ export const PaymentPlanBuilder = ({
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [customInstallments, setCustomInstallments] = useState<PaymentInstallment[]>([]);
   const [planName, setPlanName] = useState('');
-  const [planAmount, setPlanAmount] = useState<number>(0);
+  const [planAmount, setPlanAmount] = useState<string>('');
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -147,7 +147,8 @@ export const PaymentPlanBuilder = ({
 
   const createPaymentPlan = async () => {
     try {
-      if (!planName || !planAmount || customInstallments.length === 0) {
+      const planAmountNumber = parseCurrency(planAmount);
+      if (!planName || !planAmount || planAmountNumber === 0 || customInstallments.length === 0) {
         toast({
           title: "Error",
           description: "Por favor completa todos los campos incluyendo el monto del plan",
@@ -158,10 +159,10 @@ export const PaymentPlanBuilder = ({
 
       // Verificar que las cuotas sumen el total del plan
       const totalInstallments = customInstallments.reduce((sum, inst) => sum + inst.amount, 0);
-      if (Math.abs(totalInstallments - planAmount) > 0.01) {
+      if (Math.abs(totalInstallments - planAmountNumber) > 0.01) {
         toast({
           title: "Error",
-          description: `Las cuotas deben sumar exactamente $${planAmount.toLocaleString()}`,
+          description: `Las cuotas deben sumar exactamente $${planAmountNumber.toLocaleString()}`,
           variant: "destructive",
         });
         return;
@@ -172,7 +173,7 @@ export const PaymentPlanBuilder = ({
         id: Math.random().toString(),
         client_project_id: clientProjectId,
         plan_name: planName,
-        total_amount: planAmount,
+        total_amount: planAmountNumber,
         currency: 'MXN',
         status: 'draft',
         created_at: new Date().toISOString(),
@@ -207,10 +208,30 @@ export const PaymentPlanBuilder = ({
 
   const resetForm = () => {
     setPlanName('');
-    setPlanAmount(0);
+    setPlanAmount('');
     setSelectedTemplate('');
     setCustomInstallments([]);
     setStartDate(new Date());
+  };
+
+  const formatCurrency = (value: string) => {
+    // Remover todo excepto dígitos
+    const numericValue = value.replace(/[^\d]/g, '');
+    if (!numericValue) return '';
+    
+    // Convertir a número y formatear con comas
+    const number = parseInt(numericValue);
+    return number.toLocaleString('es-MX');
+  };
+
+  const parseCurrency = (value: string): number => {
+    const numericValue = value.replace(/[^\d]/g, '');
+    return numericValue ? parseInt(numericValue) : 0;
+  };
+
+  const handlePlanAmountChange = (value: string) => {
+    const formatted = formatCurrency(value);
+    setPlanAmount(formatted);
   };
 
   const applyTemplate = (templateId: string) => {
@@ -221,7 +242,8 @@ export const PaymentPlanBuilder = ({
     }
 
     const installments = template.installments.map((inst, index) => {
-      const amount = planAmount > 0 ? Math.round((planAmount * inst.percentage) / 100) : 0;
+      const planAmountNumber = parseCurrency(planAmount);
+      const amount = planAmountNumber > 0 ? Math.round((planAmountNumber * inst.percentage) / 100) : 0;
       const dueDate = addMonths(startDate, inst.months_offset);
       
       return {
@@ -378,10 +400,9 @@ export const PaymentPlanBuilder = ({
                       <div>
                         <label className="text-sm font-medium">Monto Total del Plan</label>
                         <Input
-                          type="number"
                           value={planAmount}
-                          onChange={(e) => setPlanAmount(parseFloat(e.target.value) || 0)}
-                          placeholder="0"
+                          onChange={(e) => handlePlanAmountChange(e.target.value)}
+                          placeholder="Ingresa el monto"
                         />
                       </div>
                       <div>
@@ -493,12 +514,12 @@ export const PaymentPlanBuilder = ({
                           </div>
                           <div className="flex justify-between text-sm">
                             <span>Monto del plan:</span>
-                            <span className="font-medium">${planAmount.toLocaleString()}</span>
+                            <span className="font-medium">${parseCurrency(planAmount).toLocaleString()}</span>
                           </div>
                           <div className="flex justify-between text-sm font-medium border-t pt-2 mt-2">
                             <span>Diferencia:</span>
-                            <span className={customInstallments.reduce((sum, inst) => sum + inst.amount, 0) === planAmount ? 'text-green-600' : 'text-red-600'}>
-                              ${(customInstallments.reduce((sum, inst) => sum + inst.amount, 0) - planAmount).toLocaleString()}
+                            <span className={customInstallments.reduce((sum, inst) => sum + inst.amount, 0) === parseCurrency(planAmount) ? 'text-green-600' : 'text-red-600'}>
+                              ${(customInstallments.reduce((sum, inst) => sum + inst.amount, 0) - parseCurrency(planAmount)).toLocaleString()}
                             </span>
                           </div>
                         </div>
