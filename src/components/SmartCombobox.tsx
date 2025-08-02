@@ -199,17 +199,18 @@ export function SmartCombobox({
           >
             <Command>
               <CommandInput placeholder="Buscar..." />
-              <CommandList className={cn(dropdownHeight, "overflow-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent")}>
-                <CommandEmpty>{emptyText}</CommandEmpty>
-                <CommandGroup>
-                  {items.map((item) => (
-                    <CommandItem
-                      key={item.value}
-                      value={item.value}
-                      onSelect={(currentValue) => {
-                        onValueChange(currentValue === value ? "" : currentValue)
-                        setOpen(false)
-                      }}
+              <ScrollArea className={dropdownHeight}>
+                <CommandList>
+                  <CommandEmpty>{emptyText}</CommandEmpty>
+                  <CommandGroup>
+                    {items.map((item) => (
+                      <CommandItem
+                        key={item.value}
+                        value={item.value}
+                        onSelect={(currentValue) => {
+                          onValueChange(currentValue === value ? "" : currentValue)
+                          setOpen(false)
+                        }}
                       >
                         <Check
                           className={cn(
@@ -218,10 +219,11 @@ export function SmartCombobox({
                           )}
                         />
                         {item.label}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </ScrollArea>
             </Command>
           </PopoverContent>
         </Popover>
