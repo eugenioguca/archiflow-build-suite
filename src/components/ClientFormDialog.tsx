@@ -16,15 +16,8 @@ interface Client {
   email: string | null;
   phone: string | null;
   address: string | null;
-  status: 'nuevo_lead' | 'en_contacto' | 'cliente_cerrado' | 'potential' | 'existing' | 'active' | 'completed';
-  budget: number | null;
   notes: string | null;
   created_at: string;
-  state_name?: string;
-  branch_office_id?: string;
-  land_square_meters?: number;
-  lead_source?: 'website' | 'commercial_alliance' | 'referral' | 'social_media' | 'advertisement' | 'cold_call' | 'event' | 'partner';
-  lead_referral_details?: string;
 }
 
 interface BranchOffice {
@@ -92,15 +85,7 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
     email: '',
     phone: '',
     address: '',
-    status: 'nuevo_lead' as 'nuevo_lead' | 'en_contacto' | 'cliente_cerrado',
-    budget: '',
-    notes: '',
-    state_name: '',
-    branch_office_id: '',
-    land_square_meters: '',
-    lead_source: '' as '' | 'website' | 'commercial_alliance' | 'referral' | 'social_media' | 'advertisement' | 'cold_call' | 'event' | 'partner',
-    lead_referral_details: '',
-    alliance_id: ''
+    notes: ''
   });
 
   useEffect(() => {
@@ -115,15 +100,7 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
         email: client.email || '',
         phone: client.phone || '',
         address: client.address || '',
-        status: client.status === 'potential' || client.status === 'existing' || client.status === 'active' || client.status === 'completed' ? 'nuevo_lead' : client.status,
-        budget: client.budget?.toString() || '',
-        notes: client.notes || '',
-        state_name: client.state_name || '',
-        branch_office_id: client.branch_office_id || '',
-        land_square_meters: client.land_square_meters?.toString() || '',
-        lead_source: client.lead_source || '',
-        lead_referral_details: client.lead_referral_details || '',
-        alliance_id: (client as any).alliance_id || ''
+        notes: client.notes || ''
       });
     } else {
       // Reset form for new client
@@ -132,15 +109,7 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
         email: '',
         phone: '',
         address: '',
-        status: 'nuevo_lead',
-        budget: '',
-        notes: '',
-        state_name: '',
-        branch_office_id: '',
-        land_square_meters: '',
-        lead_source: '',
-        lead_referral_details: '',
-        alliance_id: ''
+        notes: ''
       });
     }
   }, [client, open]);
@@ -185,15 +154,7 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
         email: formData.email || null,
         phone: formData.phone || null,
         address: formData.address || null,
-        status: formData.status,
-        budget: formData.budget ? parseFloat(formData.budget) : null,
-        notes: formData.notes || null,
-        state_name: formData.state_name || null,
-        branch_office_id: formData.branch_office_id || null,
-        land_square_meters: formData.land_square_meters ? parseFloat(formData.land_square_meters) : null,
-        lead_source: formData.lead_source ? formData.lead_source as any : null,
-        lead_referral_details: formData.lead_referral_details || null,
-        alliance_id: formData.alliance_id || null,
+        notes: formData.notes || null
       };
 
       if (client) {
@@ -258,7 +219,7 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Información Básica */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Información Básica</h3>
+            <h3 className="text-lg font-semibold">Información Básica del Cliente</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -294,152 +255,14 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="status">Estado del Cliente</Label>
-                <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="nuevo_lead">Nuevo Lead</SelectItem>
-                    <SelectItem value="en_contacto">En Contacto</SelectItem>
-                    <SelectItem value="cliente_cerrado">Cliente Cerrado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          {/* Ubicación */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Ubicación</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="state">Estado de la República *</Label>
-                <Combobox
-                  items={mexicanStates.map(state => ({ value: state.name, label: state.name }))}
-                  value={formData.state_name || ''}
-                  onValueChange={(value) => {
-                    handleInputChange('state_name', value);
-                  }}
-                  placeholder="Buscar estado..."
-                  emptyText="No se encontró el estado"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="branch_office">Sucursal Asignada</Label>
-                <Select value={formData.branch_office_id} onValueChange={(value) => handleInputChange('branch_office_id', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar sucursal" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {branchOffices.map((office) => (
-                      <SelectItem key={office.id} value={office.id}>
-                        {office.name} - {office.city}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="address">Dirección Completa</Label>
+                <Label htmlFor="address">Dirección</Label>
                 <Input
                   id="address"
                   value={formData.address}
                   onChange={(e) => handleInputChange('address', e.target.value)}
-                  placeholder="Calle, número, colonia, código postal..."
+                  placeholder="Dirección del cliente"
                 />
               </div>
-            </div>
-          </div>
-
-          {/* Información del Proyecto */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Información del Proyecto</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="land_square_meters">Metros Cuadrados del Terreno</Label>
-                <Input
-                  id="land_square_meters"
-                  type="number"
-                  step="0.01"
-                  value={formData.land_square_meters}
-                  onChange={(e) => handleInputChange('land_square_meters', e.target.value)}
-                  placeholder="Ej: 150.50"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="budget">Presupuesto Estimado</Label>
-                <Input
-                  id="budget"
-                  type="number"
-                  step="0.01"
-                  value={formData.budget}
-                  onChange={(e) => handleInputChange('budget', e.target.value)}
-                  placeholder="Ej: 1500000"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Origen del Lead */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Origen del Lead</h3>
-            
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="lead_source">¿Cómo nos conoció? *</Label>
-                <Select value={formData.lead_source} onValueChange={(value) => handleInputChange('lead_source', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar origen del lead" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="website">Sitio Web</SelectItem>
-                    <SelectItem value="commercial_alliance">Alianza Comercial</SelectItem>
-                    <SelectItem value="referral">Referido</SelectItem>
-                    <SelectItem value="social_media">Redes Sociales</SelectItem>
-                    <SelectItem value="advertisement">Publicidad</SelectItem>
-                    <SelectItem value="cold_call">Llamada en Frío</SelectItem>
-                    <SelectItem value="event">Evento</SelectItem>
-                    <SelectItem value="partner">Socio</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {formData.lead_source === 'commercial_alliance' && (
-                <div className="space-y-2">
-                  <Label htmlFor="alliance_id">Alianza Comercial *</Label>
-                  <Select value={formData.alliance_id} onValueChange={(value) => handleInputChange('alliance_id', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar alianza comercial" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {commercialAlliances.map((alliance) => (
-                        <SelectItem key={alliance.id} value={alliance.id}>
-                          {alliance.name} {alliance.contact_person && `(${alliance.contact_person})`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              {formData.lead_source === 'referral' && (
-                <div className="space-y-2">
-                  <Label htmlFor="lead_referral_details">¿Quién lo refirió?</Label>
-                  <Input
-                    id="lead_referral_details"
-                    value={formData.lead_referral_details}
-                    onChange={(e) => handleInputChange('lead_referral_details', e.target.value)}
-                    placeholder="Nombre de la persona que lo refirió"
-                  />
-                </div>
-              )}
-
             </div>
           </div>
 

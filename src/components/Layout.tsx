@@ -1,7 +1,5 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { CRMNotifications } from "@/components/CRMNotifications";
-import { SmartReminders } from "@/components/SmartReminders";
 import { ClientRedirect } from "@/components/ClientRedirect";
 import { ReactNode } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -26,8 +24,6 @@ export default function Layout({ children }: LayoutProps) {
           
           <main className={`flex-1 ${isMobile ? 'p-2 sm:p-4' : 'p-6'} bg-background`}>
             {children}
-            <CRMNotifications />
-            <SmartReminders />
           </main>
         </div>
       </div>

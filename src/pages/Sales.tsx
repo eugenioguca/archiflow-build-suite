@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ClientNotesDialog } from "@/components/ClientNotesDialog";
-import { CRMActivityTimeline } from "@/components/CRMActivityTimeline";
 import { EditableField } from "@/components/EditableField";
 import { PaymentPlanManager } from "@/components/PaymentPlanManager";
 import { ProjectDocumentManager } from "@/components/ProjectDocumentManager";
@@ -392,9 +391,8 @@ export default function Sales() {
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <h3 className="text-lg font-semibold">{client.full_name}</h3>
-                            {/* SalesPhaseManager component simplified - no props needed */}
                             <div className="text-sm text-muted-foreground">
-                              Sistema actualizado - usar módulo de Proyectos
+                              Migrado al módulo de Proyectos
                             </div>
                           </div>
 
@@ -607,18 +605,15 @@ export default function Sales() {
               {/* Document Validation and Sales Tools */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-6">
-                  {/* Interfaz unificada de documentos legales */}
-                  {/* SalesDocumentValidator component simplified */}
                   <SalesDocumentValidator />
                 </div>
 
                 <div className="space-y-6">
                   <PaymentPlanManager />
 
-                  <ContractTemplateManager
-                    clientId={selectedClient.id}
-                    clientData={selectedClient}
-                  />
+                  <div className="text-center text-muted-foreground p-8">
+                    Gestión de contratos migrada al módulo de Proyectos
+                  </div>
                 </div>
               </div>
 
@@ -629,8 +624,10 @@ export default function Sales() {
                 currentDepartment="sales"
               />
 
-              {/* Timeline de actividades */}
-              <CRMActivityTimeline />
+              {/* Timeline de actividades - migrado al módulo de Proyectos */}
+              <div className="text-center text-muted-foreground p-8">
+                Timeline de actividades migrado al módulo de Proyectos
+              </div>
             </div>
           )}
         </DialogContent>
