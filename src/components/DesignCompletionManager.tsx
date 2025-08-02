@@ -188,7 +188,8 @@ export function DesignCompletionManager({
       const { error } = await supabase
         .from("client_projects")
         .update({
-          status: 'budget_accepted',
+          status: 'construction',
+          moved_to_construction_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
         .eq("id", projectId);
@@ -197,7 +198,7 @@ export function DesignCompletionManager({
 
       toast({
         title: "Presupuesto Aceptado",
-        description: "El proyecto ha sido marcado como presupuesto aceptado",
+        description: "El proyecto ha pasado automáticamente al módulo de construcción",
       });
 
       // Refresh to reflect changes

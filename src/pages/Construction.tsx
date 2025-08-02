@@ -67,7 +67,7 @@ export function Construction() {
             full_name
           )
         `)
-        .in("status", ["construction", "design_completed"])
+        .in("status", ["construction", "design_completed", "budget_accepted"])
         .order("created_at", { ascending: false });
 
       if (error) {
