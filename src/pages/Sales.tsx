@@ -665,36 +665,32 @@ export default function Sales() {
               {/* Document Validation and Sales Tools */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-6">
-                  {/* Cliente Lead - Documentos sensibles */}
-                  {selectedClient.status === 'nuevo_lead' && (
-                    <ClientDocumentUploader
-                      clientId={selectedClient.id}
-                      clientName={selectedClient.full_name}
-                      onDocumentUploaded={() => {
-                        toast({
-                          title: "Documento subido",
-                          description: "El documento se guardará en el expediente del cliente",
-                        });
-                      }}
-                    />
-                  )}
+                  {/* Subida de documentos sensibles - siempre disponible */}
+                  <ClientDocumentUploader
+                    clientId={selectedClient.id}
+                    clientName={selectedClient.full_name}
+                    onDocumentUploaded={() => {
+                      toast({
+                        title: "Documento subido",
+                        description: "El documento se guardará en el expediente del cliente",
+                      });
+                    }}
+                  />
                   
-                  {/* Cliente en proceso - Validación de documentos */}
-                  {selectedClient.status !== 'nuevo_lead' && (
-                    <SalesDocumentValidator
-                      clientId={selectedClient.id}
-                      clientData={selectedClient}
-                      onClientUpdate={(updates) => {
-                        setSelectedClient(prev => prev ? { ...prev, ...updates } : null);
-                      }}
-                      onValidationComplete={() => {
-                        toast({
-                          title: "Documentos completos",
-                          description: "Todos los documentos legales están listos",
-                        });
-                      }}
-                    />
-                  )}
+                  {/* Validación visual de documentos - indicador de progreso */}
+                  <SalesDocumentValidator
+                    clientId={selectedClient.id}
+                    clientData={selectedClient}
+                    onClientUpdate={(updates) => {
+                      setSelectedClient(prev => prev ? { ...prev, ...updates } : null);
+                    }}
+                    onValidationComplete={() => {
+                      toast({
+                        title: "Documentos completos",
+                        description: "Todos los documentos legales están listos",
+                      });
+                    }}
+                  />
                 </div>
 
                 <div className="space-y-6">
