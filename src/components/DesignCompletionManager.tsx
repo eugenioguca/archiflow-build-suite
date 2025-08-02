@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-// import { RevertConstructionDialog } from './RevertConstructionDialog';
+import { RevertConstructionDialog } from './RevertConstructionDialog';
+import { transitionToConstruction, validateConstructionTransition } from '@/utils/projectTransitions';
 import { 
   CheckCircle, 
   ArrowRight, 
@@ -149,20 +150,29 @@ export function DesignCompletionManager({
   const handleMoveToConstruction = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from("client_projects")
-        .update({
-          status: 'construction',
-          moved_to_construction_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", projectId);
+      // Validate transition first
+      const validation = await validateConstructionTransition(projectId);
+      
+      if (!validation.canTransition) {
+        toast({
+          title: "No se puede transferir",
+          description: `Problemas encontrados: ${validation.reasons.join(', ')}`,
+          variant: "destructive"
+        });
+        return;
+      }
 
-      if (error) throw error;
+      // Use utility function for controlled transition
+      await transitionToConstruction({
+        projectId,
+        fromStatus: projectStatus,
+        toStatus: 'construction',
+        reason: 'Cliente acepta continuar con construcción'
+      });
 
       toast({
         title: "Proyecto Transferido",
-        description: "El proyecto se ha movido al módulo de construcción",
+        description: "El proyecto se ha movido al módulo de construcción exitosamente",
       });
 
       // Refresh page or redirect
@@ -209,6 +219,15 @@ export function DesignCompletionManager({
   const handleBudgetAccepted = async () => {
     setLoading(true);
     try {
+      // Use controlled transition with budget_accepted status
+      await transitionToConstruction({
+        projectId,
+        fromStatus: projectStatus,
+        toStatus: 'budget_accepted',
+        reason: 'Cliente acepta presupuesto y autoriza construcción'
+      });
+
+      // Update status to budget_accepted specifically
       const { error } = await supabase
         .from("client_projects")
         .update({
@@ -411,7 +430,13 @@ export function DesignCompletionManager({
         )}
       </CardContent>
       
-      {/* RevertConstructionDialog disabled - component was removed */}
+      <RevertConstructionDialog
+        projectId={projectId}
+        projectName={projectName}
+        isOpen={revertDialogOpen}
+        onClose={() => setRevertDialogOpen(false)}
+        onSuccess={handleRevertSuccess}
+      />
     </Card>
   );
 }

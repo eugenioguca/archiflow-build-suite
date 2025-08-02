@@ -64,14 +64,14 @@ export function ConstructionProjectsGrid({ onProjectSelect }: ConstructionProjec
     try {
       setLoading(true);
       
-      // Fetch client projects with construction status and related data
+      // Fetch client projects that should appear in construction module
       const { data: constructionData, error: constructionError } = await supabase
         .from('client_projects')
         .select(`
           *,
           client:clients(full_name)
         `)
-        .eq('status', 'construction');
+        .or('status.eq.construction,status.eq.budget_accepted,has_existing_design.eq.true');
 
       if (constructionError) throw constructionError;
 
