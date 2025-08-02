@@ -669,7 +669,7 @@ export default function Sales() {
                   <SalesDocumentValidator
                     clientId={selectedClient.id}
                     clientData={selectedClient}
-                    onClientUpdate={(updates) => {
+                    onClientUpdate={(clientId, updates) => {
                       setSelectedClient(prev => prev ? { ...prev, ...updates } : null);
                     }}
                     onValidationComplete={() => {
