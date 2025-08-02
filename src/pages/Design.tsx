@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ClientInfoPanel } from "@/components/ClientInfoPanel";
 import { DesignCompletionManager } from "@/components/DesignCompletionManager";
 import { CompletedDesignsTab } from "@/components/CompletedDesignsTab";
-import { DesignDocumentUploader } from "@/components/DesignDocumentUploader";
+import { DesignDocumentManager } from "@/components/DesignDocumentManager";
 import { 
   Clock, 
   User, 
@@ -738,7 +738,11 @@ export default function Design() {
 
         <TabsContent value="documents">
           <div className="bg-card rounded-lg p-4 border">
-            <DesignDocumentUploader projectId={projectId} teamMembers={teamMembers} />
+            <DesignDocumentManager 
+              projectId={projectId}
+              clientId={project?.client_id || ''}
+              teamMembers={teamMembers}
+            />
           </div>
         </TabsContent>
 
