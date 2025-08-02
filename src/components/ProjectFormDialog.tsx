@@ -67,7 +67,6 @@ export function ProjectFormDialog({ open, onOpenChange, onSubmit }: ProjectFormD
       const { data, error } = await supabase
         .from('clients')
         .select('id, full_name, email, phone')
-        .in('status', ['existing', 'active', 'potential'])
         .order('full_name');
 
       if (error) throw error;

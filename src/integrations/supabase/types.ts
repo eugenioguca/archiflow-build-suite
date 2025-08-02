@@ -2716,6 +2716,104 @@ export type Database = {
           },
         ]
       }
+      payment_installments: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          due_date: string
+          id: string
+          installment_number: number
+          paid_date: string | null
+          payment_plan_id: string
+          reference_number: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          due_date: string
+          id?: string
+          installment_number: number
+          paid_date?: string | null
+          payment_plan_id: string
+          reference_number?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          due_date?: string
+          id?: string
+          installment_number?: number
+          paid_date?: string | null
+          payment_plan_id?: string
+          reference_number?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_installments_payment_plan_id_fkey"
+            columns: ["payment_plan_id"]
+            isOneToOne: false
+            referencedRelation: "payment_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_plans: {
+        Row: {
+          client_project_id: string
+          created_at: string
+          created_by: string
+          currency: string
+          end_date: string | null
+          id: string
+          notes: string | null
+          payment_frequency: string
+          plan_name: string
+          start_date: string
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          client_project_id: string
+          created_at?: string
+          created_by: string
+          currency?: string
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          payment_frequency?: string
+          plan_name: string
+          start_date: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          client_project_id?: string
+          created_at?: string
+          created_by?: string
+          currency?: string
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          payment_frequency?: string
+          plan_name?: string
+          start_date?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           created_at: string
