@@ -51,13 +51,6 @@ export function SmartCombobox({
   const [editLabel, setEditLabel] = useState("")
   const { toast } = useToast()
 
-  const dropdownHeight = useMemo(() => {
-    const itemCount = items.length;
-    if (itemCount <= 20) return 'max-h-48';
-    if (itemCount <= 100) return 'max-h-72'; 
-    if (itemCount <= 200) return 'max-h-96';
-    return 'max-h-[50vh]';
-  }, [items.length])
 
   const selectedItem = items.find(item => item.value === value)
 
@@ -199,7 +192,7 @@ export function SmartCombobox({
           >
             <Command>
               <CommandInput placeholder="Buscar..." />
-              <ScrollArea className={dropdownHeight}>
+              <ScrollArea className="h-60">
                 <CommandList>
                   <CommandEmpty>{emptyText}</CommandEmpty>
                   <CommandGroup>
