@@ -165,18 +165,51 @@ export function Construction() {
     </Card>
   );
 
-  const tabOptions = [
-    { value: "dashboard", label: "Dashboard", icon: BarChart3 },
-    { value: "budget", label: "Presupuesto", icon: FileText },
-    { value: "timeline", label: "Cronograma", icon: CalendarDays },
-    { value: "equipment", label: "Equipos", icon: Wrench },
-    { value: "photos", label: "Fotos", icon: Camera },
-    { value: "quality", label: "Calidad", icon: Building2 },
-    { value: "reports", label: "Reportes", icon: FileText },
-    { value: "materials", label: "Materiales", icon: Building2 },
-    { value: "teams", label: "Equipos", icon: Users },
-    { value: "analytics", label: "Análisis", icon: BarChart3 },
-  ];
+  // Categorized navigation structure
+  const navigationCategories = {
+    principal: {
+      label: "Principal",
+      tabs: [
+        { value: "dashboard", label: "Dashboard", icon: BarChart3 },
+        { value: "budget", label: "Presupuesto", icon: FileText },
+        { value: "timeline", label: "Cronograma", icon: CalendarDays },
+      ]
+    },
+    gestion: {
+      label: "Gestión",
+      tabs: [
+        { value: "equipment", label: "Equipos", icon: Wrench },
+        { value: "materials", label: "Materiales", icon: Building2 },
+        { value: "teams", label: "Equipos", icon: Users },
+        { value: "quality", label: "Calidad", icon: Building2 },
+      ]
+    },
+    documentacion: {
+      label: "Documentación",
+      tabs: [
+        { value: "photos", label: "Fotos", icon: Camera },
+        { value: "reports", label: "Reportes", icon: FileText },
+        { value: "analytics", label: "Análisis", icon: BarChart3 },
+      ]
+    }
+  };
+
+  // Flat array for mobile dropdown
+  const tabOptions = Object.values(navigationCategories).flatMap(category => category.tabs);
+
+  // State for active category in tablet view
+  const [activeCategory, setActiveCategory] = useState<keyof typeof navigationCategories>("principal");
+
+  // Find which category contains the active tab
+  useEffect(() => {
+    const categoryKey = Object.keys(navigationCategories).find(key => 
+      navigationCategories[key as keyof typeof navigationCategories].tabs.some(tab => tab.value === activeTab)
+    ) as keyof typeof navigationCategories;
+    
+    if (categoryKey) {
+      setActiveCategory(categoryKey);
+    }
+  }, [activeTab]);
 
   return (
     <div className="container mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
@@ -306,8 +339,9 @@ export function Construction() {
                 </Card>
               )}
 
-              {/* Navigation - Mobile Dropdown, Desktop Tabs */}
+              {/* Adaptive Navigation System */}
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                {/* Mobile: Dropdown */}
                 {isMobile ? (
                   <div className="space-y-4">
                     <Select value={activeTab} onValueChange={setActiveTab}>
@@ -317,60 +351,86 @@ export function Construction() {
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        {tabOptions.map((tab) => (
-                          <SelectItem key={tab.value} value={tab.value}>
-                            <div className="flex items-center gap-2">
-                              <tab.icon className="h-4 w-4" />
-                              {tab.label}
+                        {Object.entries(navigationCategories).map(([categoryKey, category]) => (
+                          <div key={categoryKey}>
+                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
+                              {category.label}
                             </div>
-                          </SelectItem>
+                            {category.tabs.map((tab) => (
+                              <SelectItem key={tab.value} value={tab.value}>
+                                <div className="flex items-center gap-2">
+                                  <tab.icon className="h-4 w-4" />
+                                  {tab.label}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </div>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                 ) : (
-                  <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10">
-                    <TabsTrigger value="dashboard" className="flex items-center gap-2">
-                      <BarChart3 className="h-4 w-4" />
-                      <span className="hidden sm:inline">Dashboard</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="budget" className="flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      <span className="hidden sm:inline">Presupuesto</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="timeline" className="flex items-center gap-2">
-                      <CalendarDays className="h-4 w-4" />
-                      <span className="hidden sm:inline">Cronograma</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="equipment" className="flex items-center gap-2">
-                      <Wrench className="h-4 w-4" />
-                      <span className="hidden sm:inline">Equipos</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="photos" className="flex items-center gap-2">
-                      <Camera className="h-4 w-4" />
-                      <span className="hidden sm:inline">Fotos</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="quality" className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4" />
-                      <span className="hidden sm:inline">Calidad</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="reports" className="flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      <span className="hidden sm:inline">Reportes</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="materials" className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4" />
-                      <span className="hidden sm:inline">Materiales</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="teams" className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      <span className="hidden sm:inline">Equipos</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="analytics" className="flex items-center gap-2">
-                      <BarChart3 className="h-4 w-4" />
-                      <span className="hidden sm:inline">Análisis</span>
-                    </TabsTrigger>
-                  </TabsList>
+                  /* Tablet & Desktop: Categorized Navigation */
+                  <div className="space-y-4">
+                    {/* Category Selection - Hidden on Desktop */}
+                    <div className="block md:hidden">
+                      <div className="flex space-x-1 p-1 bg-muted rounded-lg">
+                        {Object.entries(navigationCategories).map(([categoryKey, category]) => (
+                          <Button
+                            key={categoryKey}
+                            variant={activeCategory === categoryKey ? "default" : "ghost"}
+                            size="sm"
+                            className="flex-1 text-xs"
+                            onClick={() => setActiveCategory(categoryKey as keyof typeof navigationCategories)}
+                          >
+                            {category.label}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Tab Lists */}
+                    <div className="space-y-3">
+                      {/* Desktop: All categories visible */}
+                      <div className="hidden md:block space-y-6">
+                        {Object.entries(navigationCategories).map(([categoryKey, category]) => (
+                          <div key={categoryKey} className="space-y-2">
+                            <h3 className="text-sm font-medium text-muted-foreground px-1">
+                              {category.label}
+                            </h3>
+                            <TabsList className="grid w-full grid-cols-3 h-auto">
+                              {category.tabs.map((tab) => (
+                                <TabsTrigger 
+                                  key={tab.value} 
+                                  value={tab.value} 
+                                  className="flex items-center gap-2 text-xs py-2 px-3"
+                                >
+                                  <tab.icon className="h-4 w-4" />
+                                  <span>{tab.label}</span>
+                                </TabsTrigger>
+                              ))}
+                            </TabsList>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Tablet: Active category only */}
+                      <div className="block md:hidden">
+                        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1">
+                          {navigationCategories[activeCategory].tabs.map((tab) => (
+                            <TabsTrigger 
+                              key={tab.value} 
+                              value={tab.value} 
+                              className="flex flex-col items-center gap-1 text-xs py-2 px-2 h-auto"
+                            >
+                              <tab.icon className="h-4 w-4" />
+                              <span className="text-xs truncate">{tab.label}</span>
+                            </TabsTrigger>
+                          ))}
+                        </TabsList>
+                      </div>
+                    </div>
+                  </div>
                 )}
 
                 <TabsContent value="dashboard" className="mt-6">
