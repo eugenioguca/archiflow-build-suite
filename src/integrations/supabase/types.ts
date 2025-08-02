@@ -1224,6 +1224,687 @@ export type Database = {
         }
         Relationships: []
       }
+      construction_deliveries: {
+        Row: {
+          actual_arrival_time: string | null
+          construction_project_id: string
+          created_at: string | null
+          created_by: string
+          delivery_date: string
+          delivery_note_number: string | null
+          delivery_person_contact: string | null
+          delivery_person_name: string | null
+          delivery_photos: Json | null
+          delivery_status: string | null
+          id: string
+          inspection_notes: string | null
+          inspection_passed: boolean | null
+          materials_delivered: Json
+          received_at: string | null
+          received_by: string | null
+          scheduled_time: string | null
+          special_instructions: string | null
+          supplier_id: string | null
+          total_items: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          actual_arrival_time?: string | null
+          construction_project_id: string
+          created_at?: string | null
+          created_by: string
+          delivery_date: string
+          delivery_note_number?: string | null
+          delivery_person_contact?: string | null
+          delivery_person_name?: string | null
+          delivery_photos?: Json | null
+          delivery_status?: string | null
+          id?: string
+          inspection_notes?: string | null
+          inspection_passed?: boolean | null
+          materials_delivered?: Json
+          received_at?: string | null
+          received_by?: string | null
+          scheduled_time?: string | null
+          special_instructions?: string | null
+          supplier_id?: string | null
+          total_items?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          actual_arrival_time?: string | null
+          construction_project_id?: string
+          created_at?: string | null
+          created_by?: string
+          delivery_date?: string
+          delivery_note_number?: string | null
+          delivery_person_contact?: string | null
+          delivery_person_name?: string | null
+          delivery_photos?: Json | null
+          delivery_status?: string | null
+          id?: string
+          inspection_notes?: string | null
+          inspection_passed?: boolean | null
+          materials_delivered?: Json
+          received_at?: string | null
+          received_by?: string | null
+          scheduled_time?: string | null
+          special_instructions?: string | null
+          supplier_id?: string | null
+          total_items?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "construction_deliveries_construction_project_id_fkey"
+            columns: ["construction_project_id"]
+            isOneToOne: false
+            referencedRelation: "construction_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_deliveries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_deliveries_received_by_fkey"
+            columns: ["received_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_deliveries_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      construction_expenses: {
+        Row: {
+          authorized_at: string | null
+          authorized_by: string | null
+          construction_project_id: string
+          created_at: string | null
+          created_by: string
+          currency: string | null
+          description: string
+          expense_date: string
+          expense_type: string
+          id: string
+          invoice_number: string | null
+          invoice_url: string | null
+          notes: string | null
+          partida_id: string | null
+          payment_method: string | null
+          phase_id: string | null
+          quantity: number
+          receipt_url: string | null
+          status: Database["public"]["Enums"]["expense_status"] | null
+          supplier_id: string | null
+          total_amount: number
+          unit_price: number
+          updated_at: string | null
+        }
+        Insert: {
+          authorized_at?: string | null
+          authorized_by?: string | null
+          construction_project_id: string
+          created_at?: string | null
+          created_by: string
+          currency?: string | null
+          description: string
+          expense_date?: string
+          expense_type: string
+          id?: string
+          invoice_number?: string | null
+          invoice_url?: string | null
+          notes?: string | null
+          partida_id?: string | null
+          payment_method?: string | null
+          phase_id?: string | null
+          quantity?: number
+          receipt_url?: string | null
+          status?: Database["public"]["Enums"]["expense_status"] | null
+          supplier_id?: string | null
+          total_amount?: number
+          unit_price?: number
+          updated_at?: string | null
+        }
+        Update: {
+          authorized_at?: string | null
+          authorized_by?: string | null
+          construction_project_id?: string
+          created_at?: string | null
+          created_by?: string
+          currency?: string | null
+          description?: string
+          expense_date?: string
+          expense_type?: string
+          id?: string
+          invoice_number?: string | null
+          invoice_url?: string | null
+          notes?: string | null
+          partida_id?: string | null
+          payment_method?: string | null
+          phase_id?: string | null
+          quantity?: number
+          receipt_url?: string | null
+          status?: Database["public"]["Enums"]["expense_status"] | null
+          supplier_id?: string | null
+          total_amount?: number
+          unit_price?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "construction_expenses_authorized_by_fkey"
+            columns: ["authorized_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_expenses_construction_project_id_fkey"
+            columns: ["construction_project_id"]
+            isOneToOne: false
+            referencedRelation: "construction_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_expenses_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_expenses_partida_id_fkey"
+            columns: ["partida_id"]
+            isOneToOne: false
+            referencedRelation: "partidas_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_expenses_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "construction_phases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_expenses_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      construction_materials: {
+        Row: {
+          certificate_url: string | null
+          construction_project_id: string
+          created_at: string | null
+          created_by: string
+          delivery_date: string | null
+          description: string | null
+          expiry_date: string | null
+          id: string
+          location_stored: string | null
+          material_code: string | null
+          material_name: string
+          notes: string | null
+          partida_id: string | null
+          quality_certified: boolean | null
+          quantity_delivered: number | null
+          quantity_ordered: number | null
+          quantity_required: number
+          quantity_used: number | null
+          status: string | null
+          supplier_id: string | null
+          total_cost: number | null
+          unit: string
+          unit_cost: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          certificate_url?: string | null
+          construction_project_id: string
+          created_at?: string | null
+          created_by: string
+          delivery_date?: string | null
+          description?: string | null
+          expiry_date?: string | null
+          id?: string
+          location_stored?: string | null
+          material_code?: string | null
+          material_name: string
+          notes?: string | null
+          partida_id?: string | null
+          quality_certified?: boolean | null
+          quantity_delivered?: number | null
+          quantity_ordered?: number | null
+          quantity_required?: number
+          quantity_used?: number | null
+          status?: string | null
+          supplier_id?: string | null
+          total_cost?: number | null
+          unit: string
+          unit_cost?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          certificate_url?: string | null
+          construction_project_id?: string
+          created_at?: string | null
+          created_by?: string
+          delivery_date?: string | null
+          description?: string | null
+          expiry_date?: string | null
+          id?: string
+          location_stored?: string | null
+          material_code?: string | null
+          material_name?: string
+          notes?: string | null
+          partida_id?: string | null
+          quality_certified?: boolean | null
+          quantity_delivered?: number | null
+          quantity_ordered?: number | null
+          quantity_required?: number
+          quantity_used?: number | null
+          status?: string | null
+          supplier_id?: string | null
+          total_cost?: number | null
+          unit?: string
+          unit_cost?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "construction_materials_construction_project_id_fkey"
+            columns: ["construction_project_id"]
+            isOneToOne: false
+            referencedRelation: "construction_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_materials_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_materials_partida_id_fkey"
+            columns: ["partida_id"]
+            isOneToOne: false
+            referencedRelation: "partidas_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_materials_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      construction_phases: {
+        Row: {
+          actual_cost: number | null
+          actual_end_date: string | null
+          actual_start_date: string | null
+          construction_project_id: string
+          created_at: string | null
+          created_by: string
+          dependencies: string[] | null
+          description: string | null
+          estimated_budget: number | null
+          estimated_end_date: string | null
+          estimated_start_date: string | null
+          id: string
+          phase_name: string
+          phase_order: number
+          phase_type: Database["public"]["Enums"]["construction_phase_type"]
+          progress_percentage: number | null
+          required_team_size: number | null
+          special_requirements: string | null
+          status:
+            | Database["public"]["Enums"]["construction_phase_status"]
+            | null
+          updated_at: string | null
+        }
+        Insert: {
+          actual_cost?: number | null
+          actual_end_date?: string | null
+          actual_start_date?: string | null
+          construction_project_id: string
+          created_at?: string | null
+          created_by: string
+          dependencies?: string[] | null
+          description?: string | null
+          estimated_budget?: number | null
+          estimated_end_date?: string | null
+          estimated_start_date?: string | null
+          id?: string
+          phase_name: string
+          phase_order: number
+          phase_type: Database["public"]["Enums"]["construction_phase_type"]
+          progress_percentage?: number | null
+          required_team_size?: number | null
+          special_requirements?: string | null
+          status?:
+            | Database["public"]["Enums"]["construction_phase_status"]
+            | null
+          updated_at?: string | null
+        }
+        Update: {
+          actual_cost?: number | null
+          actual_end_date?: string | null
+          actual_start_date?: string | null
+          construction_project_id?: string
+          created_at?: string | null
+          created_by?: string
+          dependencies?: string[] | null
+          description?: string | null
+          estimated_budget?: number | null
+          estimated_end_date?: string | null
+          estimated_start_date?: string | null
+          id?: string
+          phase_name?: string
+          phase_order?: number
+          phase_type?: Database["public"]["Enums"]["construction_phase_type"]
+          progress_percentage?: number | null
+          required_team_size?: number | null
+          special_requirements?: string | null
+          status?:
+            | Database["public"]["Enums"]["construction_phase_status"]
+            | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "construction_phases_construction_project_id_fkey"
+            columns: ["construction_project_id"]
+            isOneToOne: false
+            referencedRelation: "construction_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_phases_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      construction_projects: {
+        Row: {
+          actual_completion_date: string | null
+          construction_area: number
+          construction_supervisor_id: string | null
+          created_at: string | null
+          created_by: string
+          estimated_completion_date: string | null
+          id: string
+          location_coordinates: Json | null
+          overall_progress_percentage: number | null
+          permit_expiry_date: string | null
+          permit_status: string | null
+          project_id: string
+          project_manager_id: string | null
+          safety_requirements: string | null
+          spent_budget: number
+          start_date: string | null
+          total_budget: number
+          updated_at: string | null
+          weather_considerations: string | null
+        }
+        Insert: {
+          actual_completion_date?: string | null
+          construction_area?: number
+          construction_supervisor_id?: string | null
+          created_at?: string | null
+          created_by: string
+          estimated_completion_date?: string | null
+          id?: string
+          location_coordinates?: Json | null
+          overall_progress_percentage?: number | null
+          permit_expiry_date?: string | null
+          permit_status?: string | null
+          project_id: string
+          project_manager_id?: string | null
+          safety_requirements?: string | null
+          spent_budget?: number
+          start_date?: string | null
+          total_budget?: number
+          updated_at?: string | null
+          weather_considerations?: string | null
+        }
+        Update: {
+          actual_completion_date?: string | null
+          construction_area?: number
+          construction_supervisor_id?: string | null
+          created_at?: string | null
+          created_by?: string
+          estimated_completion_date?: string | null
+          id?: string
+          location_coordinates?: Json | null
+          overall_progress_percentage?: number | null
+          permit_expiry_date?: string | null
+          permit_status?: string | null
+          project_id?: string
+          project_manager_id?: string | null
+          safety_requirements?: string | null
+          spent_budget?: number
+          start_date?: string | null
+          total_budget?: number
+          updated_at?: string | null
+          weather_considerations?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "construction_projects_construction_supervisor_id_fkey"
+            columns: ["construction_supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_projects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_projects_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_projects_project_manager_id_fkey"
+            columns: ["project_manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      construction_teams: {
+        Row: {
+          active: boolean | null
+          assigned_phases: string[] | null
+          construction_project_id: string
+          contact_info: Json | null
+          created_at: string | null
+          created_by: string
+          daily_rate: number | null
+          hourly_rate: number | null
+          id: string
+          performance_rating: number | null
+          safety_record: string | null
+          specialization: string | null
+          team_lead_id: string | null
+          team_members: Json | null
+          team_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          assigned_phases?: string[] | null
+          construction_project_id: string
+          contact_info?: Json | null
+          created_at?: string | null
+          created_by: string
+          daily_rate?: number | null
+          hourly_rate?: number | null
+          id?: string
+          performance_rating?: number | null
+          safety_record?: string | null
+          specialization?: string | null
+          team_lead_id?: string | null
+          team_members?: Json | null
+          team_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          assigned_phases?: string[] | null
+          construction_project_id?: string
+          contact_info?: Json | null
+          created_at?: string | null
+          created_by?: string
+          daily_rate?: number | null
+          hourly_rate?: number | null
+          id?: string
+          performance_rating?: number | null
+          safety_record?: string | null
+          specialization?: string | null
+          team_lead_id?: string | null
+          team_members?: Json | null
+          team_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "construction_teams_construction_project_id_fkey"
+            columns: ["construction_project_id"]
+            isOneToOne: false
+            referencedRelation: "construction_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_teams_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_teams_team_lead_id_fkey"
+            columns: ["team_lead_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      construction_timelines: {
+        Row: {
+          activity_name: string
+          actual_end_date: string | null
+          actual_start_date: string | null
+          assigned_team_id: string | null
+          construction_project_id: string
+          created_at: string | null
+          created_by: string
+          depends_on: string[] | null
+          description: string | null
+          duration_days: number | null
+          id: string
+          is_critical_path: boolean | null
+          notes: string | null
+          phase_id: string | null
+          planned_end_date: string
+          planned_start_date: string
+          progress_percentage: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          activity_name: string
+          actual_end_date?: string | null
+          actual_start_date?: string | null
+          assigned_team_id?: string | null
+          construction_project_id: string
+          created_at?: string | null
+          created_by: string
+          depends_on?: string[] | null
+          description?: string | null
+          duration_days?: number | null
+          id?: string
+          is_critical_path?: boolean | null
+          notes?: string | null
+          phase_id?: string | null
+          planned_end_date: string
+          planned_start_date: string
+          progress_percentage?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          activity_name?: string
+          actual_end_date?: string | null
+          actual_start_date?: string | null
+          assigned_team_id?: string | null
+          construction_project_id?: string
+          created_at?: string | null
+          created_by?: string
+          depends_on?: string[] | null
+          description?: string | null
+          duration_days?: number | null
+          id?: string
+          is_critical_path?: boolean | null
+          notes?: string | null
+          phase_id?: string | null
+          planned_end_date?: string
+          planned_start_date?: string
+          progress_percentage?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "construction_timelines_construction_project_id_fkey"
+            columns: ["construction_project_id"]
+            isOneToOne: false
+            referencedRelation: "construction_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_timelines_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_timelines_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "construction_phases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contpaq_export_config: {
         Row: {
           activa: boolean | null
@@ -2576,6 +3257,84 @@ export type Database = {
         }
         Relationships: []
       }
+      partidas_catalog: {
+        Row: {
+          activo: boolean | null
+          categoria: Database["public"]["Enums"]["partida_category"]
+          codigo: string
+          created_at: string | null
+          created_by: string
+          descripcion: string | null
+          especificaciones_tecnicas: string | null
+          factor_desperdicio: number | null
+          id: string
+          incluye_mano_obra: boolean | null
+          nivel: number
+          nombre: string
+          normativa_aplicable: string | null
+          parent_id: string | null
+          precio_unitario_base: number | null
+          rendimiento_mano_obra: number | null
+          unidad: string
+          updated_at: string | null
+        }
+        Insert: {
+          activo?: boolean | null
+          categoria: Database["public"]["Enums"]["partida_category"]
+          codigo: string
+          created_at?: string | null
+          created_by: string
+          descripcion?: string | null
+          especificaciones_tecnicas?: string | null
+          factor_desperdicio?: number | null
+          id?: string
+          incluye_mano_obra?: boolean | null
+          nivel?: number
+          nombre: string
+          normativa_aplicable?: string | null
+          parent_id?: string | null
+          precio_unitario_base?: number | null
+          rendimiento_mano_obra?: number | null
+          unidad: string
+          updated_at?: string | null
+        }
+        Update: {
+          activo?: boolean | null
+          categoria?: Database["public"]["Enums"]["partida_category"]
+          codigo?: string
+          created_at?: string | null
+          created_by?: string
+          descripcion?: string | null
+          especificaciones_tecnicas?: string | null
+          factor_desperdicio?: number | null
+          id?: string
+          incluye_mano_obra?: boolean | null
+          nivel?: number
+          nombre?: string
+          normativa_aplicable?: string | null
+          parent_id?: string | null
+          precio_unitario_base?: number | null
+          rendimiento_mano_obra?: number | null
+          unidad?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partidas_catalog_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partidas_catalog_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "partidas_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_complements: {
         Row: {
           cfdi_document_id: string
@@ -3000,47 +3759,194 @@ export type Database = {
         }
         Relationships: []
       }
+      progress_milestones: {
+        Row: {
+          actual_date: string | null
+          approval_required: boolean | null
+          approved_at: string | null
+          approved_by: string | null
+          completion_percentage: number | null
+          construction_project_id: string
+          created_at: string | null
+          created_by: string
+          id: string
+          is_completed: boolean | null
+          milestone_name: string
+          milestone_type: Database["public"]["Enums"]["progress_milestone_type"]
+          notes: string | null
+          phase_id: string | null
+          responsible_person_id: string | null
+          target_date: string
+          updated_at: string | null
+          verification_criteria: string | null
+        }
+        Insert: {
+          actual_date?: string | null
+          approval_required?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          completion_percentage?: number | null
+          construction_project_id: string
+          created_at?: string | null
+          created_by: string
+          id?: string
+          is_completed?: boolean | null
+          milestone_name: string
+          milestone_type: Database["public"]["Enums"]["progress_milestone_type"]
+          notes?: string | null
+          phase_id?: string | null
+          responsible_person_id?: string | null
+          target_date: string
+          updated_at?: string | null
+          verification_criteria?: string | null
+        }
+        Update: {
+          actual_date?: string | null
+          approval_required?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          completion_percentage?: number | null
+          construction_project_id?: string
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          is_completed?: boolean | null
+          milestone_name?: string
+          milestone_type?: Database["public"]["Enums"]["progress_milestone_type"]
+          notes?: string | null
+          phase_id?: string | null
+          responsible_person_id?: string | null
+          target_date?: string
+          updated_at?: string | null
+          verification_criteria?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progress_milestones_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "progress_milestones_construction_project_id_fkey"
+            columns: ["construction_project_id"]
+            isOneToOne: false
+            referencedRelation: "construction_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "progress_milestones_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "progress_milestones_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "construction_phases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "progress_milestones_responsible_person_id_fkey"
+            columns: ["responsible_person_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       progress_photos: {
         Row: {
+          before_photo_id: string | null
+          camera_angle: string | null
+          construction_project_id: string | null
+          coordinates: Json | null
           description: string | null
           file_path: string | null
           id: string
+          is_before_photo: boolean | null
+          milestone_id: string | null
           phase_id: string | null
           photo_url: string
           project_id: string
+          tags: string[] | null
           taken_at: string
           taken_by: string
           taken_date: string | null
           title: string | null
           uploaded_by_temp: string | null
+          visibility: string | null
+          weather_conditions: string | null
         }
         Insert: {
+          before_photo_id?: string | null
+          camera_angle?: string | null
+          construction_project_id?: string | null
+          coordinates?: Json | null
           description?: string | null
           file_path?: string | null
           id?: string
+          is_before_photo?: boolean | null
+          milestone_id?: string | null
           phase_id?: string | null
           photo_url: string
           project_id: string
+          tags?: string[] | null
           taken_at?: string
           taken_by: string
           taken_date?: string | null
           title?: string | null
           uploaded_by_temp?: string | null
+          visibility?: string | null
+          weather_conditions?: string | null
         }
         Update: {
+          before_photo_id?: string | null
+          camera_angle?: string | null
+          construction_project_id?: string | null
+          coordinates?: Json | null
           description?: string | null
           file_path?: string | null
           id?: string
+          is_before_photo?: boolean | null
+          milestone_id?: string | null
           phase_id?: string | null
           photo_url?: string
           project_id?: string
+          tags?: string[] | null
           taken_at?: string
           taken_by?: string
           taken_date?: string | null
           title?: string | null
           uploaded_by_temp?: string | null
+          visibility?: string | null
+          weather_conditions?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "progress_photos_before_photo_id_fkey"
+            columns: ["before_photo_id"]
+            isOneToOne: false
+            referencedRelation: "progress_photos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "progress_photos_construction_project_id_fkey"
+            columns: ["construction_project_id"]
+            isOneToOne: false
+            referencedRelation: "construction_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "progress_photos_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "progress_milestones"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "progress_photos_project_id_fkey"
             columns: ["project_id"]
@@ -3318,6 +4224,120 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quality_checks: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          check_name: string
+          check_type: string
+          construction_project_id: string
+          corrective_actions: string | null
+          created_at: string | null
+          created_by: string
+          criteria_checked: Json | null
+          defects_found: string | null
+          description: string | null
+          documents: Json | null
+          id: string
+          inspection_date: string
+          inspector_id: string | null
+          notes: string | null
+          phase_id: string | null
+          photos: Json | null
+          reinspection_date: string | null
+          reinspection_required: boolean | null
+          score: number | null
+          status: Database["public"]["Enums"]["quality_check_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          check_name: string
+          check_type: string
+          construction_project_id: string
+          corrective_actions?: string | null
+          created_at?: string | null
+          created_by: string
+          criteria_checked?: Json | null
+          defects_found?: string | null
+          description?: string | null
+          documents?: Json | null
+          id?: string
+          inspection_date: string
+          inspector_id?: string | null
+          notes?: string | null
+          phase_id?: string | null
+          photos?: Json | null
+          reinspection_date?: string | null
+          reinspection_required?: boolean | null
+          score?: number | null
+          status?: Database["public"]["Enums"]["quality_check_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          check_name?: string
+          check_type?: string
+          construction_project_id?: string
+          corrective_actions?: string | null
+          created_at?: string | null
+          created_by?: string
+          criteria_checked?: Json | null
+          defects_found?: string | null
+          description?: string | null
+          documents?: Json | null
+          id?: string
+          inspection_date?: string
+          inspector_id?: string | null
+          notes?: string | null
+          phase_id?: string | null
+          photos?: Json | null
+          reinspection_date?: string | null
+          reinspection_required?: boolean | null
+          score?: number | null
+          status?: Database["public"]["Enums"]["quality_check_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quality_checks_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quality_checks_construction_project_id_fkey"
+            columns: ["construction_project_id"]
+            isOneToOne: false
+            referencedRelation: "construction_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quality_checks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quality_checks_inspector_id_fkey"
+            columns: ["inspector_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quality_checks_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "construction_phases"
             referencedColumns: ["id"]
           },
         ]
@@ -3807,6 +4827,21 @@ export type Database = {
         | "design_completed"
         | "design_only_completed"
         | "budget_accepted"
+      construction_phase_status:
+        | "not_started"
+        | "in_progress"
+        | "paused"
+        | "completed"
+        | "cancelled"
+      construction_phase_type:
+        | "preliminares"
+        | "cimentacion"
+        | "estructura"
+        | "albanileria"
+        | "instalaciones"
+        | "acabados"
+        | "exteriores"
+        | "limpieza"
       contact_method:
         | "phone"
         | "email"
@@ -3819,6 +4854,7 @@ export type Database = {
         | "sales"
         | "financial"
         | "construction"
+      expense_status: "pending" | "approved" | "paid" | "cancelled"
       income_category:
         | "construction_service"
         | "consultation"
@@ -3843,8 +4879,20 @@ export type Database = {
         | "finances"
         | "accounting"
         | "progress_photos"
+      partida_category:
+        | "mano_obra"
+        | "materiales"
+        | "herramientas"
+        | "transporte"
+        | "otros"
       payable_status: "pending" | "partial" | "paid" | "overdue" | "cancelled"
       priority_level: "low" | "medium" | "high" | "urgent"
+      progress_milestone_type:
+        | "start"
+        | "inspection"
+        | "delivery"
+        | "completion"
+        | "quality_check"
       project_status:
         | "planning"
         | "design"
@@ -3859,6 +4907,7 @@ export type Database = {
         | "renovation"
         | "landscape"
         | "interior_design"
+      quality_check_status: "pending" | "passed" | "failed" | "needs_rework"
       receivable_status: "pending" | "partial" | "paid" | "overdue"
       sales_pipeline_stage:
         | "nuevo_lead"
@@ -4026,6 +5075,23 @@ export const Constants = {
         "design_only_completed",
         "budget_accepted",
       ],
+      construction_phase_status: [
+        "not_started",
+        "in_progress",
+        "paused",
+        "completed",
+        "cancelled",
+      ],
+      construction_phase_type: [
+        "preliminares",
+        "cimentacion",
+        "estructura",
+        "albanileria",
+        "instalaciones",
+        "acabados",
+        "exteriores",
+        "limpieza",
+      ],
       contact_method: [
         "phone",
         "email",
@@ -4040,6 +5106,7 @@ export const Constants = {
         "financial",
         "construction",
       ],
+      expense_status: ["pending", "approved", "paid", "cancelled"],
       income_category: [
         "construction_service",
         "consultation",
@@ -4067,8 +5134,22 @@ export const Constants = {
         "accounting",
         "progress_photos",
       ],
+      partida_category: [
+        "mano_obra",
+        "materiales",
+        "herramientas",
+        "transporte",
+        "otros",
+      ],
       payable_status: ["pending", "partial", "paid", "overdue", "cancelled"],
       priority_level: ["low", "medium", "high", "urgent"],
+      progress_milestone_type: [
+        "start",
+        "inspection",
+        "delivery",
+        "completion",
+        "quality_check",
+      ],
       project_status: [
         "planning",
         "design",
@@ -4085,6 +5166,7 @@ export const Constants = {
         "landscape",
         "interior_design",
       ],
+      quality_check_status: ["pending", "passed", "failed", "needs_rework"],
       receivable_status: ["pending", "partial", "paid", "overdue"],
       sales_pipeline_stage: [
         "nuevo_lead",
