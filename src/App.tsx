@@ -11,12 +11,10 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import ClientsNew from "./pages/ClientsNew";
-import Projects from "./pages/Projects";
 import Construction from "./pages/Construction";
 import ProjectFiles from "./pages/ProjectFiles";
 import FinancesNew from "./pages/FinancesNew";
 import Accounting from "./pages/Accounting";
-import ProgressOverview from "./pages/ProgressOverview";
 import Sales from "./pages/Sales";
 import UserManagement from "./pages/UserManagement";
 import Design from "./pages/Design";
@@ -116,16 +114,6 @@ const App = () => (
               } 
             />
             <Route 
-              path="/projects" 
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <Projects />
-                  </Layout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
               path="/construction" 
               element={
                 <ProtectedRoute>
@@ -175,16 +163,6 @@ const App = () => (
               </ProtectedRoute>
             }
           />
-            <Route 
-              path="/progress-overview" 
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <ProgressOverview />
-                  </Layout>
-                </ProtectedRoute>
-              } 
-            />
             <Route 
               path="/sales" 
               element={
