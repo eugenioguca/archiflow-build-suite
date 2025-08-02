@@ -78,7 +78,7 @@ export function DesignCompletionManager({
       const { error: projectError } = await supabase
         .from("client_projects")
         .update({
-          status: 'completed', // Use valid enum value
+          status: 'design_completed',
           updated_at: new Date().toISOString()
         })
         .eq("id", projectId);
@@ -122,7 +122,7 @@ export function DesignCompletionManager({
       const { error } = await supabase
         .from("client_projects")
         .update({
-          status: 'active', // Use valid enum value
+          status: 'construction',
           moved_to_construction_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -154,7 +154,7 @@ export function DesignCompletionManager({
       const { error } = await supabase
         .from("client_projects")
         .update({
-          status: 'completed',
+          status: 'design_only_completed',
           updated_at: new Date().toISOString()
         })
         .eq("id", projectId);

@@ -38,7 +38,7 @@ export function CompletedDesignsTab() {
           created_at,
           client:clients(full_name)
         `)
-        .in('status', ['design_completed', 'budget_accepted', 'construction', 'completed'])
+        .in('status', ['design_completed', 'design_only_completed', 'budget_accepted', 'construction', 'completed'])
         .order('moved_to_construction_at', { ascending: false, nullsFirst: false });
 
       if (error) throw error;
@@ -60,13 +60,19 @@ export function CompletedDesignsTab() {
         return { 
           label: 'Diseño Completado', 
           variant: 'default' as const,
-          description: 'Solo diseño completado'
+          description: 'Diseño terminado, listo para construcción'
+        };
+      case 'design_only_completed':
+        return { 
+          label: 'Solo Diseño', 
+          variant: 'secondary' as const,
+          description: 'Proyecto completado únicamente con diseño'
         };
       case 'budget_accepted':
         return { 
           label: 'Presupuesto Aceptado', 
-          variant: 'secondary' as const,
-          description: 'Pasó a construcción'
+          variant: 'destructive' as const,
+          description: 'Presupuesto aceptado, pasó a construcción'
         };
       case 'construction':
         return { 
@@ -78,7 +84,7 @@ export function CompletedDesignsTab() {
         return { 
           label: 'Completado', 
           variant: 'default' as const,
-          description: 'Proyecto terminado'
+          description: 'Proyecto completamente terminado'
         };
       default:
         return { 
