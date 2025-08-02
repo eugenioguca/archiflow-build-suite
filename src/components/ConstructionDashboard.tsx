@@ -21,6 +21,7 @@ import {
   Shield,
   Settings
 } from "lucide-react";
+import { BudgetEditDialog } from "./BudgetEditDialog";
 import { ConstructionTimeline } from "./ConstructionTimeline";
 import { ProgressPhotos } from "./ProgressPhotos";
 import { ConstructionPhases } from "./ConstructionPhases";
@@ -137,10 +138,13 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
             {constructionProject.permit_status === "pending" && "Permisos Pendientes"}
             {constructionProject.permit_status === "expired" && "Permisos Vencidos"}
           </Badge>
-          <Button variant="outline" size="sm">
-            <Settings className="h-4 w-4 mr-2" />
-            Configurar
-          </Button>
+          <BudgetEditDialog
+            constructionProjectId={constructionProject.id}
+            currentBudget={constructionProject.total_budget}
+            currentArea={constructionProject.construction_area}
+            estimatedCompletion={constructionProject.estimated_completion_date}
+            onUpdate={fetchConstructionProject}
+          />
         </div>
       </div>
 
@@ -202,7 +206,7 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
               {new Date(constructionProject.estimated_completion_date).toLocaleDateString()}
             </div>
             <p className="text-xs text-muted-foreground">
-              Fecha de finalización
+              Fecha de finalización (editable)
             </p>
           </CardContent>
         </Card>

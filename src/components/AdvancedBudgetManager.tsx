@@ -22,6 +22,8 @@ import {
   Edit,
   Trash2
 } from 'lucide-react';
+import { BudgetEditDialog } from './BudgetEditDialog';
+import { BudgetItemDialog } from './BudgetItemDialog';
 import { toast } from '@/hooks/use-toast';
 import { 
   DropdownMenu, 
@@ -59,6 +61,7 @@ interface BudgetItem {
   supplier_name?: string;
   status: 'pending' | 'approved' | 'ordered' | 'delivered';
   notas?: string;
+  construction_project_id: string;
 }
 
 interface Supplier {
@@ -113,41 +116,28 @@ export function AdvancedBudgetManager({
   };
 
   const fetchBudgetItems = async () => {
-    // This would fetch from a budget_items table once implemented
-    // For now, we'll simulate the data structure
-    const mockData: BudgetItem[] = [
-      {
-        id: '1',
-        codigo: 'CON-001',
-        descripcion: 'Concreto premezclado f\'c=200 kg/cm²',
-        unidad: 'm³',
-        cantidad: 150,
-        precio_unitario: 2800,
-        total: 420000,
-        categoria: 'Concreto',
-        subcategoria: 'Estructural',
-        supplier_id: 'sup-1',
-        supplier_name: 'Concretos del Norte SA',
-        status: 'approved',
-        notas: 'Entrega programada para la próxima semana'
-      },
-      {
-        id: '2',
-        codigo: 'ACE-001',
-        descripcion: 'Varilla de acero #4 (1/2")',
-        unidad: 'ton',
-        cantidad: 25,
-        precio_unitario: 22000,
-        total: 550000,
-        categoria: 'Acero',
-        subcategoria: 'Refuerzo',
-        supplier_id: 'sup-2',
-        supplier_name: 'Aceros y Metales SA',
-        status: 'pending',
-        notas: 'Pendiente de cotización final'
-      }
-    ];
-    setBudgetItems(mockData);
+    try {
+      const { data, error } = await supabase
+        .from('construction_budget_items')
+        .select(`
+          *,
+          supplier:suppliers(company_name)
+        `)
+        .eq('construction_project_id', constructionProjectId)
+        .order('categoria', { ascending: true });
+
+      if (error) throw error;
+
+      const itemsWithSupplier = (data || []).map((item: any) => ({
+        ...item,
+        supplier_name: item.supplier?.company_name
+      }));
+
+      setBudgetItems(itemsWithSupplier);
+    } catch (error) {
+      console.error('Error fetching budget items:', error);
+      setBudgetItems([]);
+    }
   };
 
   const fetchSuppliers = async () => {
@@ -162,6 +152,31 @@ export function AdvancedBudgetManager({
     } catch (error) {
       console.error('Error fetching suppliers:', error);
       setSuppliers([]);
+    }
+  };
+
+  const deleteBudgetItem = async (itemId: string) => {
+    try {
+      const { error } = await supabase
+        .from('construction_budget_items')
+        .delete()
+        .eq('id', itemId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Partida eliminada",
+        description: "La partida ha sido eliminada exitosamente"
+      });
+
+      fetchBudgetItems();
+    } catch (error) {
+      console.error('Error deleting budget item:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la partida",
+        variant: "destructive"
+      });
     }
   };
 
@@ -362,10 +377,10 @@ export function AdvancedBudgetManager({
                 <Download className="h-4 w-4 mr-2" />
                 Exportar
               </Button>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Nueva Partida
-              </Button>
+              <BudgetItemDialog 
+                constructionProjectId={constructionProjectId}
+                onSave={fetchBudgetItems}
+              />
             </div>
           </div>
         </CardContent>
@@ -456,11 +471,21 @@ export function AdvancedBudgetManager({
                             <Eye className="h-4 w-4 mr-2" />
                             Ver Detalles
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">
+                          <BudgetItemDialog
+                            constructionProjectId={constructionProjectId}
+                            item={item}
+                            onSave={fetchBudgetItems}
+                            trigger={
+                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Editar
+                              </DropdownMenuItem>
+                            }
+                          />
+                          <DropdownMenuItem 
+                            className="text-red-600"
+                            onClick={() => deleteBudgetItem(item.id)}
+                          >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Eliminar
                           </DropdownMenuItem>

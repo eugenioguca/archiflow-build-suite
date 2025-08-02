@@ -1224,6 +1224,85 @@ export type Database = {
         }
         Relationships: []
       }
+      construction_budget_items: {
+        Row: {
+          cantidad: number
+          categoria: string
+          codigo: string
+          construction_project_id: string
+          created_at: string
+          created_by: string
+          descripcion: string
+          id: string
+          notas: string | null
+          precio_unitario: number
+          status: string
+          subcategoria: string | null
+          supplier_id: string | null
+          total: number
+          unidad: string
+          updated_at: string
+        }
+        Insert: {
+          cantidad?: number
+          categoria: string
+          codigo: string
+          construction_project_id: string
+          created_at?: string
+          created_by: string
+          descripcion: string
+          id?: string
+          notas?: string | null
+          precio_unitario?: number
+          status?: string
+          subcategoria?: string | null
+          supplier_id?: string | null
+          total?: number
+          unidad: string
+          updated_at?: string
+        }
+        Update: {
+          cantidad?: number
+          categoria?: string
+          codigo?: string
+          construction_project_id?: string
+          created_at?: string
+          created_by?: string
+          descripcion?: string
+          id?: string
+          notas?: string | null
+          precio_unitario?: number
+          status?: string
+          subcategoria?: string | null
+          supplier_id?: string | null
+          total?: number
+          unidad?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "construction_budget_items_construction_project_id_fkey"
+            columns: ["construction_project_id"]
+            isOneToOne: false
+            referencedRelation: "construction_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_budget_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_budget_items_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       construction_deliveries: {
         Row: {
           actual_arrival_time: string | null
@@ -4763,6 +4842,10 @@ export type Database = {
         Args: { payment_date: string }
         Returns: string
       }
+      create_construction_project_from_client: {
+        Args: { client_project_id: string }
+        Returns: string
+      }
       create_default_design_phases: {
         Args: { project_id_param: string }
         Returns: undefined
@@ -4792,6 +4875,10 @@ export type Database = {
       }
       insert_default_budget_items: {
         Args: { budget_id_param: string }
+        Returns: undefined
+      }
+      insert_default_construction_budget_items: {
+        Args: { construction_project_id_param: string }
         Returns: undefined
       }
       is_admin: {
