@@ -3209,7 +3209,6 @@ export type Database = {
         Row: {
           before_photo_id: string | null
           camera_angle: string | null
-          construction_project_id: string | null
           coordinates: Json | null
           description: string | null
           file_path: string | null
@@ -3231,7 +3230,6 @@ export type Database = {
         Insert: {
           before_photo_id?: string | null
           camera_angle?: string | null
-          construction_project_id?: string | null
           coordinates?: Json | null
           description?: string | null
           file_path?: string | null
@@ -3253,7 +3251,6 @@ export type Database = {
         Update: {
           before_photo_id?: string | null
           camera_angle?: string | null
-          construction_project_id?: string | null
           coordinates?: Json | null
           description?: string | null
           file_path?: string | null

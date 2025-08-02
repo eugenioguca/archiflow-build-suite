@@ -11,7 +11,7 @@ import { CashTransactionForm } from '@/components/CashTransactionForm';
 import { ExpenseFormDialog } from '@/components/ExpenseFormDialog';
 import ExpenseTable from '@/components/ExpenseTable';
 import FinancialReportsManager from '@/components/FinancialReportsManager';
-import BudgetControlSystem from '@/components/BudgetControlSystem';
+// import BudgetControlSystem from '@/components/BudgetControlSystem'; // Component removed
 import ProfitabilityAnalysis from '@/components/ProfitabilityAnalysis';
 import { ElectronicInvoicingDashboard } from '@/components/ElectronicInvoicingDashboard';
 import { supabase } from '@/integrations/supabase/client';
@@ -172,7 +172,9 @@ const FinancesNew: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="budgets" className="space-y-6">
-          <BudgetControlSystem />
+          <div className="p-8 text-center">
+            <p className="text-muted-foreground">Sistema de presupuestos no disponible</p>
+          </div>
         </TabsContent>
 
         <TabsContent value="profitability" className="space-y-6">

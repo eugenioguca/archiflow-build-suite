@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { BudgetPDFExporter } from "@/components/BudgetPDFExporter";
+// import { BudgetPDFExporter } from "@/components/BudgetPDFExporter"; // Component removed
 import { CurrencyInput } from "@/components/CurrencyInput";
 import { Calculator, FileText, Download, Plus, Trash2, Edit } from "lucide-react";
 
@@ -434,22 +434,22 @@ export function ProjectBudgetManager({ projectId, projectName, clientName, onBud
         )}
       </CardContent>
       
-      {/* PDF Export Section */}
+      {/* PDF Export Section - Disabled (component removed) */}
       {budget && items.length > 0 && (
         <div className="p-6 border-t">
           <div className="flex items-center justify-between">
             <div>
               <h4 className="font-medium">Exportar Presupuesto</h4>
               <p className="text-sm text-muted-foreground">
-                Genera un PDF profesional del presupuesto
+                La funcionalidad de exportación PDF estará disponible próximamente
               </p>
             </div>
-            <BudgetPDFExporter 
-              budget={budget}
-              items={items}
-              projectName={projectName || budget.budget_name}
-              clientName={clientName || "Cliente"}
-            />
+            <Button 
+              onClick={() => alert("Funcionalidad no disponible")}
+              variant="outline"
+            >
+              Exportar PDF
+            </Button>
           </div>
         </div>
       )}

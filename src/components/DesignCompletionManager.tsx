@@ -8,8 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { RevertConstructionDialog } from './RevertConstructionDialog';
-import { transitionToConstruction, validateConstructionTransition } from '@/utils/projectTransitions';
+// Construction module removed - reverting and transition features disabled
 import { 
   CheckCircle, 
   ArrowRight, 
@@ -50,7 +49,7 @@ export function DesignCompletionManager({
   const [loading, setLoading] = useState(false);
   const [completionNotes, setCompletionNotes] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [revertDialogOpen, setRevertDialogOpen] = useState(false);
+  // const [revertDialogOpen, setRevertDialogOpen] = useState(false); // Disabled - construction module removed
   const [projectStatus, setProjectStatus] = useState<string>('');
   const [projectName, setProjectName] = useState<string>('');
 
@@ -148,44 +147,11 @@ export function DesignCompletionManager({
   };
 
   const handleMoveToConstruction = async () => {
-    setLoading(true);
-    try {
-      // Validate transition first
-      const validation = await validateConstructionTransition(projectId);
-      
-      if (!validation.canTransition) {
-        toast({
-          title: "No se puede transferir",
-          description: `Problemas encontrados: ${validation.reasons.join(', ')}`,
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Use utility function for controlled transition
-      await transitionToConstruction({
-        projectId,
-        fromStatus: projectStatus,
-        toStatus: 'construction',
-        reason: 'Cliente acepta continuar con construcción'
-      });
-
-      toast({
-        title: "Proyecto Transferido",
-        description: "El proyecto se ha movido al módulo de construcción exitosamente",
-      });
-
-      // Refresh page or redirect
-      window.location.reload();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "No se pudo transferir el proyecto a construcción",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
+    toast({
+      title: "Módulo no disponible",
+      description: "El módulo de construcción ha sido deshabilitado",
+      variant: "destructive"
+    });
   };
 
   const handleCompleteDesignOnly = async () => {
@@ -219,20 +185,10 @@ export function DesignCompletionManager({
   const handleBudgetAccepted = async () => {
     setLoading(true);
     try {
-      // Use controlled transition with budget_accepted status
-      await transitionToConstruction({
-        projectId,
-        fromStatus: projectStatus,
-        toStatus: 'budget_accepted',
-        reason: 'Cliente acepta presupuesto y autoriza construcción'
-      });
-
-      // Update status to budget_accepted specifically
       const { error } = await supabase
         .from("client_projects")
         .update({
           status: 'budget_accepted',
-          moved_to_construction_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
         .eq("id", projectId);
@@ -241,7 +197,7 @@ export function DesignCompletionManager({
 
       toast({
         title: "Presupuesto Aceptado",
-        description: "El proyecto se ha movido automáticamente al módulo de construcción",
+        description: "El proyecto ha sido marcado como presupuesto aceptado",
       });
 
       // Refresh to reflect changes
@@ -408,35 +364,8 @@ export function DesignCompletionManager({
           </div>
         )}
 
-        {/* Revert from Construction Option */}
-        {(projectStatus === 'construction' || projectStatus === 'budget_accepted') && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 p-2 bg-orange-50 border border-orange-200 rounded text-sm">
-              <Building className="h-4 w-4 text-orange-600" />
-              <span className="text-orange-800 font-medium">Proyecto en Construcción</span>
-            </div>
-
-            <Button 
-              onClick={() => setRevertDialogOpen(true)}
-              disabled={loading}
-              variant="destructive"
-              size="sm"
-              className="w-full"
-            >
-              <RotateCcw className="h-4 w-4 mr-1" />
-              Revertir de Construcción
-            </Button>
-          </div>
-        )}
+        {/* Construction module removed */}
       </CardContent>
-      
-      <RevertConstructionDialog
-        projectId={projectId}
-        projectName={projectName}
-        isOpen={revertDialogOpen}
-        onClose={() => setRevertDialogOpen(false)}
-        onSuccess={handleRevertSuccess}
-      />
     </Card>
   );
 }
