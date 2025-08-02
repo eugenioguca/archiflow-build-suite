@@ -1269,41 +1269,48 @@ export type Database = {
       construction_budget_alerts: {
         Row: {
           alert_type: string
-          construction_project_id: string
           created_at: string
           current_percentage: number
           id: string
           is_read: boolean
           message: string
+          project_id: string
           read_at: string | null
           read_by: string | null
           threshold_percentage: number
         }
         Insert: {
           alert_type: string
-          construction_project_id: string
           created_at?: string
           current_percentage: number
           id?: string
           is_read?: boolean
           message: string
+          project_id: string
           read_at?: string | null
           read_by?: string | null
           threshold_percentage: number
         }
         Update: {
           alert_type?: string
-          construction_project_id?: string
           created_at?: string
           current_percentage?: number
           id?: string
           is_read?: boolean
           message?: string
+          project_id?: string
           read_at?: string | null
           read_by?: string | null
           threshold_percentage?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "construction_budget_alerts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "construction_budget_alerts_read_by_fkey"
             columns: ["read_by"]
@@ -1319,36 +1326,36 @@ export type Database = {
           change_amount: number | null
           change_percentage: number | null
           change_reason: string
-          construction_project_id: string
           created_at: string
           id: string
           new_budget: number
           notes: string | null
           previous_budget: number
+          project_id: string
         }
         Insert: {
           authorized_by: string
           change_amount?: number | null
           change_percentage?: number | null
           change_reason: string
-          construction_project_id: string
           created_at?: string
           id?: string
           new_budget: number
           notes?: string | null
           previous_budget: number
+          project_id: string
         }
         Update: {
           authorized_by?: string
           change_amount?: number | null
           change_percentage?: number | null
           change_reason?: string
-          construction_project_id?: string
           created_at?: string
           id?: string
           new_budget?: number
           notes?: string | null
           previous_budget?: number
+          project_id?: string
         }
         Relationships: [
           {
@@ -1358,6 +1365,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "construction_budget_changes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
         ]
       }
       construction_budget_items: {
@@ -1365,13 +1379,13 @@ export type Database = {
           cantidad: number
           categoria: string
           codigo: string
-          construction_project_id: string
           created_at: string
           created_by: string
           descripcion: string
           id: string
           notas: string | null
           precio_unitario: number
+          project_id: string
           status: string
           subcategoria: string | null
           supplier_id: string | null
@@ -1383,13 +1397,13 @@ export type Database = {
           cantidad?: number
           categoria: string
           codigo: string
-          construction_project_id: string
           created_at?: string
           created_by: string
           descripcion: string
           id?: string
           notas?: string | null
           precio_unitario?: number
+          project_id: string
           status?: string
           subcategoria?: string | null
           supplier_id?: string | null
@@ -1401,13 +1415,13 @@ export type Database = {
           cantidad?: number
           categoria?: string
           codigo?: string
-          construction_project_id?: string
           created_at?: string
           created_by?: string
           descripcion?: string
           id?: string
           notas?: string | null
           precio_unitario?: number
+          project_id?: string
           status?: string
           subcategoria?: string | null
           supplier_id?: string | null
@@ -1424,6 +1438,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "construction_budget_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "construction_budget_items_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
@@ -1435,7 +1456,6 @@ export type Database = {
       construction_deliveries: {
         Row: {
           actual_arrival_time: string | null
-          construction_project_id: string
           created_at: string | null
           created_by: string
           delivery_date: string
@@ -1448,6 +1468,7 @@ export type Database = {
           inspection_notes: string | null
           inspection_passed: boolean | null
           materials_delivered: Json
+          project_id: string
           received_at: string | null
           received_by: string | null
           scheduled_time: string | null
@@ -1458,7 +1479,6 @@ export type Database = {
         }
         Insert: {
           actual_arrival_time?: string | null
-          construction_project_id: string
           created_at?: string | null
           created_by: string
           delivery_date: string
@@ -1471,6 +1491,7 @@ export type Database = {
           inspection_notes?: string | null
           inspection_passed?: boolean | null
           materials_delivered?: Json
+          project_id: string
           received_at?: string | null
           received_by?: string | null
           scheduled_time?: string | null
@@ -1481,7 +1502,6 @@ export type Database = {
         }
         Update: {
           actual_arrival_time?: string | null
-          construction_project_id?: string
           created_at?: string | null
           created_by?: string
           delivery_date?: string
@@ -1494,6 +1514,7 @@ export type Database = {
           inspection_notes?: string | null
           inspection_passed?: boolean | null
           materials_delivered?: Json
+          project_id?: string
           received_at?: string | null
           received_by?: string | null
           scheduled_time?: string | null
@@ -1508,6 +1529,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_deliveries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
             referencedColumns: ["id"]
           },
           {
@@ -1530,7 +1558,6 @@ export type Database = {
         Row: {
           authorized_at: string | null
           authorized_by: string | null
-          construction_project_id: string
           created_at: string | null
           created_by: string
           currency: string | null
@@ -1544,6 +1571,7 @@ export type Database = {
           partida_id: string | null
           payment_method: string | null
           phase_id: string | null
+          project_id: string
           quantity: number
           receipt_url: string | null
           status: Database["public"]["Enums"]["expense_status"] | null
@@ -1555,7 +1583,6 @@ export type Database = {
         Insert: {
           authorized_at?: string | null
           authorized_by?: string | null
-          construction_project_id: string
           created_at?: string | null
           created_by: string
           currency?: string | null
@@ -1569,6 +1596,7 @@ export type Database = {
           partida_id?: string | null
           payment_method?: string | null
           phase_id?: string | null
+          project_id: string
           quantity?: number
           receipt_url?: string | null
           status?: Database["public"]["Enums"]["expense_status"] | null
@@ -1580,7 +1608,6 @@ export type Database = {
         Update: {
           authorized_at?: string | null
           authorized_by?: string | null
-          construction_project_id?: string
           created_at?: string | null
           created_by?: string
           currency?: string | null
@@ -1594,6 +1621,7 @@ export type Database = {
           partida_id?: string | null
           payment_method?: string | null
           phase_id?: string | null
+          project_id?: string
           quantity?: number
           receipt_url?: string | null
           status?: Database["public"]["Enums"]["expense_status"] | null
@@ -1632,6 +1660,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "construction_expenses_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "construction_expenses_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
@@ -1643,7 +1678,6 @@ export type Database = {
       construction_materials: {
         Row: {
           certificate_url: string | null
-          construction_project_id: string
           created_at: string | null
           created_by: string
           delivery_date: string | null
@@ -1655,6 +1689,7 @@ export type Database = {
           material_name: string
           notes: string | null
           partida_id: string | null
+          project_id: string
           quality_certified: boolean | null
           quantity_delivered: number | null
           quantity_ordered: number | null
@@ -1669,7 +1704,6 @@ export type Database = {
         }
         Insert: {
           certificate_url?: string | null
-          construction_project_id: string
           created_at?: string | null
           created_by: string
           delivery_date?: string | null
@@ -1681,6 +1715,7 @@ export type Database = {
           material_name: string
           notes?: string | null
           partida_id?: string | null
+          project_id: string
           quality_certified?: boolean | null
           quantity_delivered?: number | null
           quantity_ordered?: number | null
@@ -1695,7 +1730,6 @@ export type Database = {
         }
         Update: {
           certificate_url?: string | null
-          construction_project_id?: string
           created_at?: string | null
           created_by?: string
           delivery_date?: string | null
@@ -1707,6 +1741,7 @@ export type Database = {
           material_name?: string
           notes?: string | null
           partida_id?: string | null
+          project_id?: string
           quality_certified?: boolean | null
           quantity_delivered?: number | null
           quantity_ordered?: number | null
@@ -1735,6 +1770,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "construction_materials_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "construction_materials_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
@@ -1748,7 +1790,6 @@ export type Database = {
           actual_cost: number | null
           actual_end_date: string | null
           actual_start_date: string | null
-          construction_project_id: string
           created_at: string | null
           created_by: string
           dependencies: string[] | null
@@ -1761,6 +1802,7 @@ export type Database = {
           phase_order: number
           phase_type: Database["public"]["Enums"]["construction_phase_type"]
           progress_percentage: number | null
+          project_id: string
           required_team_size: number | null
           special_requirements: string | null
           status:
@@ -1772,7 +1814,6 @@ export type Database = {
           actual_cost?: number | null
           actual_end_date?: string | null
           actual_start_date?: string | null
-          construction_project_id: string
           created_at?: string | null
           created_by: string
           dependencies?: string[] | null
@@ -1785,6 +1826,7 @@ export type Database = {
           phase_order: number
           phase_type: Database["public"]["Enums"]["construction_phase_type"]
           progress_percentage?: number | null
+          project_id: string
           required_team_size?: number | null
           special_requirements?: string | null
           status?:
@@ -1796,7 +1838,6 @@ export type Database = {
           actual_cost?: number | null
           actual_end_date?: string | null
           actual_start_date?: string | null
-          construction_project_id?: string
           created_at?: string | null
           created_by?: string
           dependencies?: string[] | null
@@ -1809,6 +1850,7 @@ export type Database = {
           phase_order?: number
           phase_type?: Database["public"]["Enums"]["construction_phase_type"]
           progress_percentage?: number | null
+          project_id?: string
           required_team_size?: number | null
           special_requirements?: string | null
           status?:
@@ -1822,6 +1864,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_phases_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
             referencedColumns: ["id"]
           },
         ]
@@ -1925,7 +1974,6 @@ export type Database = {
         Row: {
           active: boolean | null
           assigned_phases: string[] | null
-          construction_project_id: string
           contact_info: Json | null
           created_at: string | null
           created_by: string
@@ -1933,6 +1981,7 @@ export type Database = {
           hourly_rate: number | null
           id: string
           performance_rating: number | null
+          project_id: string
           safety_record: string | null
           specialization: string | null
           team_lead_id: string | null
@@ -1943,7 +1992,6 @@ export type Database = {
         Insert: {
           active?: boolean | null
           assigned_phases?: string[] | null
-          construction_project_id: string
           contact_info?: Json | null
           created_at?: string | null
           created_by: string
@@ -1951,6 +1999,7 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           performance_rating?: number | null
+          project_id: string
           safety_record?: string | null
           specialization?: string | null
           team_lead_id?: string | null
@@ -1961,7 +2010,6 @@ export type Database = {
         Update: {
           active?: boolean | null
           assigned_phases?: string[] | null
-          construction_project_id?: string
           contact_info?: Json | null
           created_at?: string | null
           created_by?: string
@@ -1969,6 +2017,7 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           performance_rating?: number | null
+          project_id?: string
           safety_record?: string | null
           specialization?: string | null
           team_lead_id?: string | null
@@ -1982,6 +2031,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_teams_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
             referencedColumns: ["id"]
           },
           {
@@ -1999,7 +2055,6 @@ export type Database = {
           actual_end_date: string | null
           actual_start_date: string | null
           assigned_team_id: string | null
-          construction_project_id: string
           created_at: string | null
           created_by: string
           depends_on: string[] | null
@@ -2012,6 +2067,7 @@ export type Database = {
           planned_end_date: string
           planned_start_date: string
           progress_percentage: number | null
+          project_id: string
           updated_at: string | null
         }
         Insert: {
@@ -2019,7 +2075,6 @@ export type Database = {
           actual_end_date?: string | null
           actual_start_date?: string | null
           assigned_team_id?: string | null
-          construction_project_id: string
           created_at?: string | null
           created_by: string
           depends_on?: string[] | null
@@ -2032,6 +2087,7 @@ export type Database = {
           planned_end_date: string
           planned_start_date: string
           progress_percentage?: number | null
+          project_id: string
           updated_at?: string | null
         }
         Update: {
@@ -2039,7 +2095,6 @@ export type Database = {
           actual_end_date?: string | null
           actual_start_date?: string | null
           assigned_team_id?: string | null
-          construction_project_id?: string
           created_at?: string | null
           created_by?: string
           depends_on?: string[] | null
@@ -2052,6 +2107,7 @@ export type Database = {
           planned_end_date?: string
           planned_start_date?: string
           progress_percentage?: number | null
+          project_id?: string
           updated_at?: string | null
         }
         Relationships: [
@@ -2067,6 +2123,13 @@ export type Database = {
             columns: ["phase_id"]
             isOneToOne: false
             referencedRelation: "construction_phases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_timelines_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
             referencedColumns: ["id"]
           },
         ]
