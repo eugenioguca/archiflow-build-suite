@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { 
   Camera, 
   Plus, 
   MapPin, 
-  Grid, 
+  Grid3X3, 
   List, 
   Upload, 
   Search,
@@ -19,7 +20,8 @@ import {
   Trash2,
   Edit,
   ZoomIn,
-  Eye
+  Eye,
+  Filter
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
@@ -230,7 +232,7 @@ export function ProgressPhotosManager({ projectId }: ProgressPhotosManagerProps)
                   className="rounded-r-none"
                   onClick={() => setViewMode("grid")}
                 >
-                  <Grid className="h-4 w-4" />
+                  <Grid3X3 className="h-4 w-4" />
                 </Button>
                 <Button 
                   variant={viewMode === "list" ? "default" : "ghost"} 
