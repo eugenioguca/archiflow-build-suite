@@ -181,10 +181,10 @@ export function SmartCombobox({
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-full p-0">
+          <PopoverContent className="w-[--radix-popover-trigger-width] max-w-none p-0 z-[9999]" align="start">
             <Command>
               <CommandInput placeholder="Buscar..." />
-              <CommandList>
+              <CommandList className="max-h-[300px] overflow-y-auto">
                 <CommandEmpty>{emptyText}</CommandEmpty>
                 <CommandGroup>
                   {items.map((item) => (
