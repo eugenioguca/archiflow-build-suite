@@ -537,10 +537,12 @@ export default function Design() {
                   <p className="text-muted-foreground mb-4">
                     Los proyectos aparecerán aquí cuando pasen del módulo de ventas
                   </p>
-                  <Button variant="outline" onClick={() => window.location.href = '/sales'}>
+                  <Link to="/sales">
+                    <Button variant="outline">
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Ir a Ventas
-                  </Button>
+                    </Button>
+                  </Link>
                 </CardContent>
               </Card>
             )}

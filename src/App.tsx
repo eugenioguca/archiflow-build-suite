@@ -46,7 +46,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   // Show onboarding if user needs to complete profile
   if (needsOnboarding) {
-    return <UserOnboarding user={user} onComplete={() => window.location.reload()} />;
+    return <UserOnboarding user={user} onComplete={() => {
+      // Force re-check of auth state instead of full page reload
+      window.location.hash = '';
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }} />;
   }
 
   // Show pending approval screen for non-approved users
@@ -74,7 +78,11 @@ function ClientProtectedRoute({ children }: { children: React.ReactNode }) {
 
   // Show onboarding if user needs to complete profile
   if (needsOnboarding) {
-    return <UserOnboarding user={user} onComplete={() => window.location.reload()} />;
+    return <UserOnboarding user={user} onComplete={() => {
+      // Force re-check of auth state instead of full page reload
+      window.location.hash = '';
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }} />;
   }
 
   if (!isApproved) {

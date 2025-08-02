@@ -83,6 +83,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Auth state change:', event, session?.user?.id);
+        
+        // Always update session and user state on auth change
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -110,14 +112,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               
               console.log('Auth listener - Should be approved:', shouldBeApproved);
               console.log('Auth listener - Profile complete:', profileComplete);
-              setProfile(profile);
-              setIsApproved(shouldBeApproved);
-              setNeedsOnboarding(!profileComplete && shouldBeApproved);
+              
+              // Only update state if values actually changed
+              setProfile(prevProfile => {
+                if (JSON.stringify(prevProfile) !== JSON.stringify(profile)) {
+                  return profile;
+                }
+                return prevProfile;
+              });
+              
+              setIsApproved(prevApproved => {
+                if (prevApproved !== shouldBeApproved) {
+                  return shouldBeApproved;
+                }
+                return prevApproved;
+              });
+              
+              setNeedsOnboarding(prevOnboarding => {
+                const newOnboarding = !profileComplete && shouldBeApproved;
+                if (prevOnboarding !== newOnboarding) {
+                  return newOnboarding;
+                }
+                return prevOnboarding;
+              });
             } catch (error) {
               console.error('Error checking approval status in listener:', error);
               setIsApproved(false);
             }
-          }, 0);
+          }, 100); // Increased timeout to reduce race conditions
         } else {
           setIsApproved(false);
           setNeedsOnboarding(false);
