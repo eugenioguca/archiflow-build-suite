@@ -18,6 +18,8 @@ import { QualityInspections } from "@/components/QualityInspections";
 import { WorkReportsManager } from "@/components/WorkReportsManager";
 import { MaterialRequirements } from "@/components/MaterialRequirements";
 import { ConstructionTeamsManager } from "@/components/ConstructionTeamsManager";
+import { ConstructionReports } from "@/components/ConstructionReports";
+import { ConstructionAnalytics } from "@/components/ConstructionAnalytics";
 
 interface ConstructionProject {
   id: string;
@@ -264,9 +266,9 @@ export function Construction() {
                     <Users className="h-4 w-4" />
                     <span className="hidden sm:inline">Equipos</span>
                   </TabsTrigger>
-                  <TabsTrigger value="location" className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    <span className="hidden sm:inline">Ubicación</span>
+                  <TabsTrigger value="analytics" className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    <span className="hidden sm:inline">Análisis</span>
                   </TabsTrigger>
                 </TabsList>
 
@@ -295,6 +297,10 @@ export function Construction() {
                 </TabsContent>
 
                 <TabsContent value="reports" className="mt-6">
+                  <ConstructionReports projectId={selectedProject.id} />
+                </TabsContent>
+
+                <TabsContent value="work-reports" className="mt-6">
                   <WorkReportsManager projectId={selectedProject.id} />
                 </TabsContent>
 
@@ -306,20 +312,8 @@ export function Construction() {
                   <ConstructionTeamsManager projectId={selectedProject.id} />
                 </TabsContent>
 
-                <TabsContent value="location" className="mt-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Ubicación del Proyecto</CardTitle>
-                      <CardDescription>
-                        Geolocalización y mapas del proyecto en desarrollo
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-center text-muted-foreground py-8">
-                        Módulo de ubicación en desarrollo
-                      </div>
-                    </CardContent>
-                  </Card>
+                <TabsContent value="analytics" className="mt-6">
+                  <ConstructionAnalytics projectId={selectedProject.id} />
                 </TabsContent>
               </Tabs>
             </div>
