@@ -18,7 +18,7 @@ interface Expense {
   status_cfdi: string;
   created_at: string;
   suppliers: { company_name: string } | null;
-  projects: { name: string } | null;
+  client_projects: { project_name: string } | null;
   clients: { full_name: string } | null;
 }
 
@@ -51,7 +51,7 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({ onNewExpense, refreshTrigge
           status_cfdi,
           created_at,
           suppliers(company_name),
-          projects(name),
+          client_projects(project_name),
           clients(full_name)
         `)
         .order('created_at', { ascending: false })
@@ -173,7 +173,7 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({ onNewExpense, refreshTrigge
                       {expense.suppliers?.company_name || '-'}
                     </TableCell>
                     <TableCell>
-                      {expense.projects?.name || '-'}
+                      {expense.client_projects?.project_name || '-'}
                     </TableCell>
                     <TableCell>
                       {getStatusBadge(expense.status_cfdi)}

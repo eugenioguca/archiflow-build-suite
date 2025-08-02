@@ -192,7 +192,7 @@ const ProfitabilityAnalysis: React.FC = () => {
     const [incomesResult, expensesResult, projectsResult] = await Promise.all([
       supabase
         .from('incomes')
-        .select('amount, project_id, projects(name)')
+        .select('amount, project_id, client_projects(project_name)')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString())
         .not('project_id', 'is', null),
@@ -218,7 +218,7 @@ const ProfitabilityAnalysis: React.FC = () => {
     // Process incomes
     (incomesResult.data || []).forEach(income => {
       const projectId = income.project_id!;
-      const projectName = income.projects?.name || 'Proyecto desconocido';
+      const projectName = income.client_projects?.project_name || 'Proyecto desconocido';
       
       if (!projectMap.has(projectId)) {
         const project = (projectsResult.data || []).find(p => p.id === projectId);

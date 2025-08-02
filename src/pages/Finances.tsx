@@ -48,7 +48,7 @@ interface Expense {
   created_at: string;
   project?: {
     id: string;
-    name: string;
+    project_name: string;
   };
   client?: {
     id: string;
@@ -84,7 +84,7 @@ interface Income {
   created_at: string;
   project?: {
     id: string;
-    name: string;
+    project_name: string;
   };
   client?: {
     id: string;
@@ -107,7 +107,7 @@ interface Client {
 
 interface Project {
   id: string;
-  name: string;
+  project_name: string;
   client: {
     full_name: string;
   };
@@ -221,7 +221,7 @@ export default function Finances() {
         .from('expenses')
         .select(`
           *,
-          project:projects(id, name),
+          project:client_projects(id, project_name),
           client:clients(id, full_name),
           supplier:suppliers(id, company_name),
           created_by:profiles!expenses_created_by_fkey(id, full_name),
@@ -242,7 +242,7 @@ export default function Finances() {
         .from('incomes')
         .select(`
           *,
-          project:projects(id, name),
+          project:client_projects(id, project_name),
           client:clients(id, full_name),
           cfdi_document:cfdi_documents(*)
         `)
@@ -1176,7 +1176,7 @@ export default function Finances() {
                     <SelectItem value="none">Sin proyecto</SelectItem>
                     {projects.map((project) => (
                       <SelectItem key={project.id} value={project.id}>
-                        {project.name}
+                        {project.project_name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1337,7 +1337,7 @@ export default function Finances() {
                     <SelectItem value="none">Sin proyecto</SelectItem>
                     {projects.map((project) => (
                       <SelectItem key={project.id} value={project.id}>
-                        {project.name}
+                        {project.project_name}
                       </SelectItem>
                     ))}
                   </SelectContent>

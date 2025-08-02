@@ -80,7 +80,7 @@ const DetailedTransactionsTable: React.FC = () => {
             status_cfdi,
             created_at,
             clients(full_name),
-            projects(name)
+            client_projects(project_name)
           `)
           .gte('created_at', startDate.toISOString())
           .lte('created_at', endDate.toISOString())
@@ -98,7 +98,7 @@ const DetailedTransactionsTable: React.FC = () => {
             status_cfdi,
             created_at,
             suppliers(company_name),
-            projects(name)
+            client_projects(project_name)
           `)
           .gte('created_at', startDate.toISOString())
           .lte('created_at', endDate.toISOString())
@@ -115,7 +115,7 @@ const DetailedTransactionsTable: React.FC = () => {
         amount: income.amount || 0,
         reference: income.invoice_number || undefined,
         client: income.clients?.full_name || undefined,
-        project: income.projects?.name || undefined,
+        project: income.client_projects?.project_name || undefined,
         status: income.payment_status || undefined,
         cfdi_status: income.status_cfdi || undefined
       }));
@@ -130,7 +130,7 @@ const DetailedTransactionsTable: React.FC = () => {
         amount: expense.amount || 0,
         reference: expense.reference_number || undefined,
         supplier: expense.suppliers?.company_name || undefined,
-        project: expense.projects?.name || undefined,
+        project: expense.client_projects?.project_name || undefined,
         cfdi_status: expense.status_cfdi || undefined
       }));
 
