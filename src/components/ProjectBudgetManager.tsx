@@ -35,10 +35,12 @@ interface ProjectBudget {
 
 interface ProjectBudgetManagerProps {
   projectId: string;
+  projectName?: string;
+  clientName?: string;
   onBudgetUpdate?: (budget: ProjectBudget) => void;
 }
 
-export function ProjectBudgetManager({ projectId, onBudgetUpdate }: ProjectBudgetManagerProps) {
+export function ProjectBudgetManager({ projectId, projectName, clientName, onBudgetUpdate }: ProjectBudgetManagerProps) {
   const { toast } = useToast();
   const [budget, setBudget] = useState<ProjectBudget | null>(null);
   const [items, setItems] = useState<BudgetItem[]>([]);
@@ -445,8 +447,8 @@ export function ProjectBudgetManager({ projectId, onBudgetUpdate }: ProjectBudge
             <BudgetPDFExporter 
               budget={budget}
               items={items}
-              projectName={budget.budget_name}
-              clientName="Cliente"
+              projectName={projectName || budget.budget_name}
+              clientName={clientName || "Cliente"}
             />
           </div>
         </div>

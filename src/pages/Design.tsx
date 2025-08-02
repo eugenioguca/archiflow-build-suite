@@ -604,6 +604,8 @@ export default function Design() {
           <TabsContent value="budget">
             <ProjectBudgetManager 
               projectId={projectId}
+              projectName={project?.project_name}
+              clientName={project?.clients?.full_name}
               onBudgetUpdate={(budget) => {
                 console.log("Budget updated:", budget);
               }}

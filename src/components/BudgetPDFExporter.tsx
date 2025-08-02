@@ -51,19 +51,21 @@ export function BudgetPDFExporter({ budget, items, projectName, clientName }: Bu
     return `
       <div style="
         font-family: system-ui, -apple-system, sans-serif;
-        line-height: 1.6;
+        line-height: 1.4;
         color: #1e293b;
         background: white;
-        padding: 40px;
-        min-height: 297mm;
+        padding: 20px;
+        min-height: 279mm;
+        width: 216mm;
+        box-sizing: border-box;
       ">
         <!-- Header with Logo -->
         <div style="
           background: linear-gradient(135deg, #1e293b 0%, #475569 50%, #f97316 100%);
           color: white;
-          padding: 40px;
-          margin: -40px -40px 40px -40px;
-          border-radius: 0 0 24px 24px;
+          padding: 20px;
+          margin: -20px -20px 20px -20px;
+          border-radius: 0 0 16px 16px;
           position: relative;
           overflow: hidden;
         ">
@@ -80,21 +82,18 @@ export function BudgetPDFExporter({ budget, items, projectName, clientName }: Bu
             <img 
               src="/lovable-uploads/7a3755e3-978f-4182-af7d-1db88590b5a4.png" 
               alt="Dovita Arquitectura" 
-              style="height: 60px; width: auto; margin-bottom: 20px; filter: brightness(0) invert(1);"
+              style="height: 40px; width: auto; margin-bottom: 12px; filter: brightness(0) invert(1);"
             />
             <h1 style="
-              font-size: 32px;
+              font-size: 24px;
               font-weight: 700;
               margin: 0;
-              background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
-              -webkit-background-clip: text;
-              background-clip: text;
-              -webkit-text-fill-color: transparent;
+              color: white;
             ">PRESUPUESTO DE CONSTRUCCIÓN</h1>
             <div style="
-              font-size: 16px;
+              font-size: 14px;
               opacity: 0.9;
-              margin-top: 8px;
+              margin-top: 4px;
               color: #e2e8f0;
             ">Gestión Inteligente para Arquitectos y Constructores</div>
           </div>
@@ -104,8 +103,8 @@ export function BudgetPDFExporter({ budget, items, projectName, clientName }: Bu
         <div style="
           text-align: right;
           color: #64748b;
-          font-size: 14px;
-          margin-bottom: 24px;
+          font-size: 12px;
+          margin-bottom: 16px;
           font-style: italic;
         ">
           Generado el: ${new Date().toLocaleDateString('es-MX', {
@@ -118,35 +117,35 @@ export function BudgetPDFExporter({ budget, items, projectName, clientName }: Bu
         <!-- Project Info -->
         <div style="
           background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-          padding: 32px;
-          border-radius: 16px;
-          margin-bottom: 32px;
-          border-left: 6px solid #f97316;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+          padding: 20px;
+          border-radius: 12px;
+          margin-bottom: 20px;
+          border-left: 4px solid #f97316;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         ">
           <h2 style="
             color: #1e293b;
-            margin: 0 0 20px 0;
-            font-size: 24px;
+            margin: 0 0 16px 0;
+            font-size: 18px;
             font-weight: 700;
           ">Información del Proyecto</h2>
           <div style="
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
           ">
             <div>
               <div style="
                 font-weight: 700;
                 color: #475569;
-                margin-bottom: 6px;
-                font-size: 12px;
+                margin-bottom: 4px;
+                font-size: 10px;
                 text-transform: uppercase;
                 letter-spacing: 1px;
               ">Cliente</div>
               <div style="
                 color: #1e293b;
-                font-size: 16px;
+                font-size: 14px;
                 font-weight: 500;
               ">${clientName}</div>
             </div>
@@ -154,14 +153,14 @@ export function BudgetPDFExporter({ budget, items, projectName, clientName }: Bu
               <div style="
                 font-weight: 700;
                 color: #475569;
-                margin-bottom: 6px;
-                font-size: 12px;
+                margin-bottom: 4px;
+                font-size: 10px;
                 text-transform: uppercase;
                 letter-spacing: 1px;
               ">Proyecto</div>
               <div style="
                 color: #1e293b;
-                font-size: 16px;
+                font-size: 14px;
                 font-weight: 500;
               ">${projectName}</div>
             </div>
@@ -169,48 +168,32 @@ export function BudgetPDFExporter({ budget, items, projectName, clientName }: Bu
               <div style="
                 font-weight: 700;
                 color: #475569;
-                margin-bottom: 6px;
-                font-size: 12px;
+                margin-bottom: 4px;
+                font-size: 10px;
                 text-transform: uppercase;
                 letter-spacing: 1px;
               ">Presupuesto</div>
               <div style="
                 color: #1e293b;
-                font-size: 16px;
+                font-size: 14px;
                 font-weight: 500;
               ">${budget.budget_name}</div>
-            </div>
-            <div>
-              <div style="
-                font-weight: 700;
-                color: #475569;
-                margin-bottom: 6px;
-                font-size: 12px;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-              ">Estado</div>
-              <div style="
-                color: #1e293b;
-                font-size: 16px;
-                font-weight: 500;
-              ">${budget.status === 'draft' ? 'Borrador' : 
-                budget.status === 'approved' ? 'Aprobado' : 
-                budget.status === 'pending' ? 'Pendiente' : budget.status}</div>
             </div>
           </div>
         </div>
         
         <!-- Budget Table -->
         <div style="
-          border-radius: 12px;
+          border-radius: 8px;
           overflow: hidden;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-          margin-bottom: 32px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          margin-bottom: 20px;
         ">
           <table style="
             width: 100%;
             border-collapse: collapse;
             background: white;
+            font-size: 12px;
           ">
             <thead>
               <tr style="
@@ -218,39 +201,39 @@ export function BudgetPDFExporter({ budget, items, projectName, clientName }: Bu
                 color: white;
               ">
                 <th style="
-                  padding: 20px 16px;
+                  padding: 12px 8px;
                   text-align: left;
                   font-weight: 700;
                   text-transform: uppercase;
-                  letter-spacing: 1px;
-                  font-size: 12px;
+                  letter-spacing: 0.5px;
+                  font-size: 10px;
                   width: 40%;
                 ">Partida</th>
                 <th style="
-                  padding: 20px 16px;
+                  padding: 12px 8px;
                   text-align: center;
                   font-weight: 700;
                   text-transform: uppercase;
-                  letter-spacing: 1px;
-                  font-size: 12px;
+                  letter-spacing: 0.5px;
+                  font-size: 10px;
                   width: 15%;
                 ">Cantidad</th>
                 <th style="
-                  padding: 20px 16px;
+                  padding: 12px 8px;
                   text-align: right;
                   font-weight: 700;
                   text-transform: uppercase;
-                  letter-spacing: 1px;
-                  font-size: 12px;
+                  letter-spacing: 0.5px;
+                  font-size: 10px;
                   width: 20%;
                 ">Precio Unitario</th>
                 <th style="
-                  padding: 20px 16px;
+                  padding: 12px 8px;
                   text-align: right;
                   font-weight: 700;
                   text-transform: uppercase;
-                  letter-spacing: 1px;
-                  font-size: 12px;
+                  letter-spacing: 0.5px;
+                  font-size: 10px;
                   width: 25%;
                 ">Total</th>
               </tr>
@@ -261,34 +244,39 @@ export function BudgetPDFExporter({ budget, items, projectName, clientName }: Bu
                   background-color: ${index % 2 === 0 ? '#f8fafc' : 'white'};
                   border-bottom: 1px solid #e2e8f0;
                 ">
-                  <td style="padding: 16px;">
+                  <td style="padding: 10px 8px;">
                     <div style="
                       font-weight: 600;
                       color: #1e293b;
-                      margin-bottom: 4px;
+                      margin-bottom: 2px;
+                      font-size: 12px;
                     ">${item.item_name}</div>
                     ${item.description ? `<div style="
                       color: #64748b;
-                      font-size: 14px;
+                      font-size: 10px;
+                      line-height: 1.3;
                     ">${item.description}</div>` : ''}
                   </td>
                   <td style="
-                    padding: 16px;
+                    padding: 10px 8px;
                     text-align: center;
                     font-weight: 500;
                     color: #374151;
+                    font-size: 12px;
                   ">${item.quantity.toLocaleString()}</td>
                   <td style="
-                    padding: 16px;
+                    padding: 10px 8px;
                     text-align: right;
                     font-weight: 500;
                     color: #374151;
+                    font-size: 12px;
                   ">${formatCurrency(item.unit_price)}</td>
                   <td style="
-                    padding: 16px;
+                    padding: 10px 8px;
                     text-align: right;
                     font-weight: 600;
                     color: #1e293b;
+                    font-size: 12px;
                   ">${formatCurrency(item.total_price)}</td>
                 </tr>
               `).join('')}
@@ -297,17 +285,17 @@ export function BudgetPDFExporter({ budget, items, projectName, clientName }: Bu
                 color: white;
               ">
                 <td colspan="3" style="
-                  padding: 24px 16px;
+                  padding: 16px 8px;
                   font-weight: 700;
-                  font-size: 18px;
+                  font-size: 14px;
                   text-transform: uppercase;
                   letter-spacing: 1px;
                 ">TOTAL GENERAL</td>
                 <td style="
-                  padding: 24px 16px;
+                  padding: 16px 8px;
                   text-align: right;
                   font-weight: 700;
-                  font-size: 20px;
+                  font-size: 16px;
                 ">${formatCurrency(budget.total_amount)}</td>
               </tr>
             </tbody>
@@ -317,26 +305,27 @@ export function BudgetPDFExporter({ budget, items, projectName, clientName }: Bu
         <!-- Footer -->
         <div style="
           background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-          padding: 32px;
-          border-radius: 16px;
+          padding: 16px;
+          border-radius: 8px;
           text-align: center;
-          border-top: 6px solid #f97316;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+          border-top: 3px solid #f97316;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          margin-top: 20px;
         ">
           <div style="
             color: #475569;
-            margin-bottom: 12px;
-            font-size: 14px;
+            margin-bottom: 8px;
+            font-size: 11px;
           ">Este presupuesto es válido por 30 días a partir de la fecha de emisión</div>
           <div style="
             color: #475569;
-            margin-bottom: 12px;
-            font-size: 14px;
+            margin-bottom: 8px;
+            font-size: 11px;
           ">Todos los precios están expresados en pesos mexicanos (MXN)</div>
           <div style="
             font-weight: 700;
             color: #1e293b;
-            font-size: 16px;
+            font-size: 12px;
           ">Para más información contacta a tu asesor asignado</div>
         </div>
       </div>
@@ -368,29 +357,33 @@ export function BudgetPDFExporter({ budget, items, projectName, clientName }: Bu
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        width: 794,
-        height: 1123
+        width: 816, // Letter size width
+        height: 1056 // Letter size height
       });
 
       document.body.removeChild(tempDiv);
 
       const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdf = new jsPDF('p', 'mm', 'letter'); // Letter size instead of A4
       
-      const imgWidth = 210;
-      const pageHeight = 297;
+      const imgWidth = 216; // Letter width in mm
+      const pageHeight = 279; // Letter height in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let heightLeft = imgHeight;
       let position = 0;
 
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
+      // Only add content if there's actual content to display
+      if (imgHeight > 0) {
         pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
+
+        // Only add new pages if content actually extends beyond first page
+        while (heightLeft >= pageHeight * 0.1) { // Add threshold to avoid mostly empty pages
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
       }
 
       // Convert PDF to blob
@@ -482,29 +475,33 @@ export function BudgetPDFExporter({ budget, items, projectName, clientName }: Bu
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        width: 794,
-        height: 1123
+        width: 816, // Letter size width
+        height: 1056 // Letter size height
       });
 
       document.body.removeChild(tempDiv);
 
       const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdf = new jsPDF('p', 'mm', 'letter'); // Letter size instead of A4
       
-      const imgWidth = 210;
-      const pageHeight = 297;
+      const imgWidth = 216; // Letter width in mm
+      const pageHeight = 279; // Letter height in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let heightLeft = imgHeight;
       let position = 0;
 
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
+      // Only add content if there's actual content to display
+      if (imgHeight > 0) {
         pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
+
+        // Only add new pages if content actually extends beyond first page
+        while (heightLeft >= pageHeight * 0.1) { // Add threshold to avoid mostly empty pages
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
       }
 
       const fileName = `Presupuesto_${projectName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
