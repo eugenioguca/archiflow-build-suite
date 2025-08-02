@@ -65,7 +65,14 @@ export function ProgressPhotoForm({ projectId, onSuccess, onCancel }: ProgressPh
   };
 
   const uploadPhoto = async (file: File): Promise<string> => {
-    const fileName = `${Date.now()}-${file.name}`;
+    // Sanitize filename to remove invalid characters for storage keys
+    const sanitizedFileName = file.name
+      .replace(/[^a-zA-Z0-9.-]/g, '_') // Replace invalid chars with underscore
+      .replace(/_{2,}/g, '_') // Replace multiple underscores with single
+      .replace(/^_|_$/g, '') // Remove leading/trailing underscores
+      .toLowerCase();
+    
+    const fileName = `${Date.now()}-${sanitizedFileName}`;
     const filePath = `${projectId}/${fileName}`;
 
     const { data, error } = await supabase.storage
