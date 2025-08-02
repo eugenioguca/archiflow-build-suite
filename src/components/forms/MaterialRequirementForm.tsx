@@ -21,7 +21,7 @@ interface MaterialRequirementFormProps {
 
 export function MaterialRequirementForm({ projectId, initialData, onSuccess, onCancel }: MaterialRequirementFormProps) {
   const [loading, setLoading] = useState(false);
-  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState([]);
   const [formData, setFormData] = useState({
     material_code: initialData?.material_code || "",
     material_name: initialData?.material_name || "",
@@ -43,7 +43,7 @@ export function MaterialRequirementForm({ projectId, initialData, onSuccess, onC
 
   const categories = [
     "Cemento y Concreto",
-    "Agregados",
+    "Agregados", 
     "Acero de Refuerzo",
     "Block y Ladrillo",
     "Materiales Eléctricos",
@@ -80,27 +80,9 @@ export function MaterialRequirementForm({ projectId, initialData, onSuccess, onC
   ];
 
   useEffect(() => {
-    fetchSuppliers();
+    // Simplificar sin consulta a suppliers por ahora
+    setSuppliers([]);
   }, []);
-
-  const fetchSuppliers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("suppliers")
-        .select("id, company_name, contact_person")
-        .eq("active", true)
-        .order("company_name");
-
-      if (error) {
-        console.error("Error fetching suppliers:", error);
-        return;
-      }
-
-      setSuppliers(data || []);
-    } catch (error) {
-      console.error("Error:", error);
-    }
-  };
 
   const handleInputChange = (name: string, value: any) => {
     setFormData(prev => ({
@@ -120,15 +102,21 @@ export function MaterialRequirementForm({ projectId, initialData, onSuccess, onC
     try {
       setLoading(true);
 
-      // Get current user profile
-      const { data: user } = await supabase.auth.getUser();
-      const { data: profile } = await supabase
+      // Get current user
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
+        toast.error("Usuario no autenticado");
+        return;
+      }
+
+      // Get user profile
+      const { data: profileData } = await supabase
         .from("profiles")
         .select("id")
-        .eq("user_id", user.user?.id)
+        .eq("user_id", userData.user.id)
         .single();
 
-      if (!profile) {
+      if (!profileData) {
         toast.error("Error al obtener el perfil del usuario");
         return;
       }
@@ -139,18 +127,19 @@ export function MaterialRequirementForm({ projectId, initialData, onSuccess, onC
         phase_id: null,
         material_code: formData.material_code || `MAT-${Date.now()}`,
         material_name: formData.material_name,
+        material_type: formData.category, // Añadiendo el campo requerido
         description: formData.description || null,
         category: formData.category,
         subcategory: formData.subcategory || null,
         unit_of_measure: formData.unit_of_measure,
-        quantity_required: formData.quantity_required,
+        quantity_required: Number(formData.quantity_required),
         quantity_ordered: 0,
         quantity_delivered: 0,
         quantity_used: 0,
-        quantity_remaining: formData.quantity_required,
+        quantity_remaining: Number(formData.quantity_required),
         quantity_wasted: 0,
-        unit_cost: formData.unit_cost,
-        total_cost: formData.quantity_required * formData.unit_cost,
+        unit_cost: Number(formData.unit_cost),
+        total_cost: Number(formData.quantity_required) * Number(formData.unit_cost),
         supplier_id: formData.supplier_id || null,
         supplier_quote_url: null,
         expected_delivery_date: formData.expected_delivery_date?.toISOString().split('T')[0] || null,
@@ -167,45 +156,35 @@ export function MaterialRequirementForm({ projectId, initialData, onSuccess, onC
         waste_reason: null,
         cost_variance_percentage: 0,
         lead_time_days: null,
-        min_stock_level: formData.min_stock_level,
+        min_stock_level: Number(formData.min_stock_level),
         max_stock_level: 0,
-        reorder_point: formData.reorder_point,
-        created_by: profile.id,
-      };
+        reorder_point: Number(formData.reorder_point),
+        created_by: profileData.id,
+      } as any;
 
+      let result;
       if (initialData) {
-        // Update existing material requirement
-        const { error } = await supabase
+        result = await supabase
           .from("material_requirements")
-          .update(materialData as any)
+          .update(materialData)
           .eq("id", initialData.id);
-
-        if (error) {
-          console.error("Error updating material requirement:", error);
-          toast.error("Error al actualizar el requerimiento");
-          return;
-        }
-
-        toast.success("Requerimiento actualizado exitosamente");
       } else {
-        // Create new material requirement
-        const { error } = await supabase
+        result = await supabase
           .from("material_requirements")
-          .insert(materialData as any);
-
-        if (error) {
-          console.error("Error creating material requirement:", error);
-          toast.error("Error al crear el requerimiento");
-          return;
-        }
-
-        toast.success("Requerimiento creado exitosamente");
+          .insert(materialData);
       }
 
+      if (result.error) {
+        console.error("Database error:", result.error);
+        toast.error("Error al guardar el material");
+        return;
+      }
+
+      toast.success(initialData ? "Material actualizado exitosamente" : "Material creado exitosamente");
       onSuccess();
     } catch (error) {
       console.error("Error:", error);
-      toast.error(initialData ? "Error al actualizar el requerimiento" : "Error al crear el requerimiento");
+      toast.error("Error al procesar la solicitud");
     } finally {
       setLoading(false);
     }
@@ -216,7 +195,7 @@ export function MaterialRequirementForm({ projectId, initialData, onSuccess, onC
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium">Código de Material</label>
+            <label className="block text-sm font-medium mb-1">Código de Material</label>
             <Input
               placeholder="Ej: MAT-001 (opcional)"
               value={formData.material_code}
@@ -225,7 +204,7 @@ export function MaterialRequirementForm({ projectId, initialData, onSuccess, onC
           </div>
 
           <div>
-            <label className="text-sm font-medium">Nombre del Material *</label>
+            <label className="block text-sm font-medium mb-1">Nombre del Material *</label>
             <Input
               placeholder="Ej: Cemento Portland CPC 40"
               value={formData.material_name}
@@ -235,16 +214,16 @@ export function MaterialRequirementForm({ projectId, initialData, onSuccess, onC
           </div>
 
           <div>
-            <label className="text-sm font-medium">Descripción</label>
+            <label className="block text-sm font-medium mb-1">Descripción</label>
             <Textarea
-              placeholder="Descripción detallada del material, especificaciones técnicas..."
+              placeholder="Descripción detallada del material..."
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
             />
           </div>
 
           <div>
-            <label className="text-sm font-medium">Categoría *</label>
+            <label className="block text-sm font-medium mb-1">Categoría *</label>
             <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar categoría" />
@@ -260,7 +239,7 @@ export function MaterialRequirementForm({ projectId, initialData, onSuccess, onC
           </div>
 
           <div>
-            <label className="text-sm font-medium">Subcategoría</label>
+            <label className="block text-sm font-medium mb-1">Subcategoría</label>
             <Input
               placeholder="Ej: Tipo I, Grado A, etc."
               value={formData.subcategory}
@@ -272,7 +251,7 @@ export function MaterialRequirementForm({ projectId, initialData, onSuccess, onC
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium">Unidad *</label>
+              <label className="block text-sm font-medium mb-1">Unidad *</label>
               <Select value={formData.unit_of_measure} onValueChange={(value) => handleInputChange('unit_of_measure', value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Unidad" />
@@ -288,7 +267,7 @@ export function MaterialRequirementForm({ projectId, initialData, onSuccess, onC
             </div>
 
             <div>
-              <label className="text-sm font-medium">Cantidad Requerida *</label>
+              <label className="block text-sm font-medium mb-1">Cantidad Requerida *</label>
               <Input
                 type="number"
                 step="0.01"
@@ -301,7 +280,7 @@ export function MaterialRequirementForm({ projectId, initialData, onSuccess, onC
           </div>
 
           <div>
-            <label className="text-sm font-medium">Costo Unitario</label>
+            <label className="block text-sm font-medium mb-1">Costo Unitario</label>
             <Input
               type="number"
               step="0.01"
@@ -311,28 +290,28 @@ export function MaterialRequirementForm({ projectId, initialData, onSuccess, onC
             />
           </div>
 
-          <div>
-            <label className="text-sm font-medium">Proveedor</label>
+          {/* <div>
+            <label className="block text-sm font-medium mb-1">Proveedor</label>
             <Select value={formData.supplier_id} onValueChange={(value) => handleInputChange('supplier_id', value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar proveedor" />
               </SelectTrigger>
               <SelectContent>
-                {suppliers.map(supplier => (
+                {suppliers.map((supplier: any) => (
                   <SelectItem key={supplier.id} value={supplier.id}>
                     {supplier.company_name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </div> */}
 
           <div>
-            <label className="text-sm font-medium">Fecha de Entrega Esperada</label>
+            <label className="block text-sm font-medium mb-1">Fecha de Entrega Esperada</label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
-                  variant={"outline"}
+                  variant="outline"
                   className={cn(
                     "w-full pl-3 text-left font-normal",
                     !formData.expected_delivery_date && "text-muted-foreground"
@@ -349,7 +328,7 @@ export function MaterialRequirementForm({ projectId, initialData, onSuccess, onC
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={formData.expected_delivery_date}
+                  selected={formData.expected_delivery_date || undefined}
                   onSelect={(date) => handleInputChange('expected_delivery_date', date)}
                   disabled={(date) => date < new Date()}
                   initialFocus
@@ -360,7 +339,7 @@ export function MaterialRequirementForm({ projectId, initialData, onSuccess, onC
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium">Prioridad</label>
+              <label className="block text-sm font-medium mb-1">Prioridad</label>
               <Select value={formData.priority_level} onValueChange={(value) => handleInputChange('priority_level', value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Prioridad" />
@@ -376,7 +355,7 @@ export function MaterialRequirementForm({ projectId, initialData, onSuccess, onC
             </div>
 
             <div>
-              <label className="text-sm font-medium">Estado</label>
+              <label className="block text-sm font-medium mb-1">Estado</label>
               <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Estado" />
@@ -396,7 +375,7 @@ export function MaterialRequirementForm({ projectId, initialData, onSuccess, onC
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label className="text-sm font-medium">Notas de Procuración</label>
+          <label className="block text-sm font-medium mb-1">Notas de Procuración</label>
           <Textarea
             placeholder="Notas sobre el proceso de procuración..."
             value={formData.procurement_notes}
@@ -405,7 +384,7 @@ export function MaterialRequirementForm({ projectId, initialData, onSuccess, onC
         </div>
 
         <div>
-          <label className="text-sm font-medium">Requisitos de Almacenamiento</label>
+          <label className="block text-sm font-medium mb-1">Requisitos de Almacenamiento</label>
           <Textarea
             placeholder="Condiciones especiales de almacenamiento..."
             value={formData.storage_requirements}
@@ -416,7 +395,7 @@ export function MaterialRequirementForm({ projectId, initialData, onSuccess, onC
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label className="text-sm font-medium">Nivel Mínimo de Stock</label>
+          <label className="block text-sm font-medium mb-1">Nivel Mínimo de Stock</label>
           <Input
             type="number"
             step="0.01"
@@ -427,7 +406,7 @@ export function MaterialRequirementForm({ projectId, initialData, onSuccess, onC
         </div>
 
         <div>
-          <label className="text-sm font-medium">Punto de Reorden</label>
+          <label className="block text-sm font-medium mb-1">Punto de Reorden</label>
           <Input
             type="number"
             step="0.01"
