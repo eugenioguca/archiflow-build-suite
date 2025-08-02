@@ -2172,7 +2172,7 @@ export type Database = {
             foreignKeyName: "expenses_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
-            referencedRelation: "projects"
+            referencedRelation: "client_projects"
             referencedColumns: ["id"]
           },
           {
@@ -2321,7 +2321,7 @@ export type Database = {
             foreignKeyName: "incomes_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
-            referencedRelation: "projects"
+            referencedRelation: "client_projects"
             referencedColumns: ["id"]
           },
         ]
