@@ -70,6 +70,17 @@ export function ClientDocumentUploader({ clientId, clientName, onDocumentUploade
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuario no autenticado');
 
+      // Obtener el profile_id del usuario autenticado
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError || !profile) {
+        throw new Error('No se pudo obtener el perfil del usuario');
+      }
+
       // Crear path para el archivo
       const timestamp = Date.now();
       const sanitizedClientName = clientName.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -88,6 +99,8 @@ export function ClientDocumentUploader({ clientId, clientName, onDocumentUploade
 
       if (uploadError) throw uploadError;
 
+      console.log('Insertando documento con profile.id:', profile.id);
+
       // Guardar referencia en la base de datos
       const { error: dbError } = await supabase
         .from('client_documents')
@@ -98,7 +111,7 @@ export function ClientDocumentUploader({ clientId, clientName, onDocumentUploade
           file_path: filePath,
           file_type: getFileType(fileName).type,
           file_size: file.size,
-          uploaded_by: user.id
+          uploaded_by: profile.id
         });
 
       if (dbError) throw dbError;
