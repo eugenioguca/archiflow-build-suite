@@ -77,9 +77,9 @@ export function TimelineActivityForm({ projectId, onSuccess, onCancel }: Timelin
     defaultValues: {
       activity_name: "",
       activity_code: "",
-      activity_type: "",
-      priority: "",
-      phase_id: "",
+      activity_type: "task",
+      priority: "medium",
+      phase_id: undefined,
       estimated_duration_days: 1,
       critical_path: false,
       acceptance_criteria: "",
@@ -303,14 +303,13 @@ export function TimelineActivityForm({ projectId, onSuccess, onCancel }: Timelin
                       <SelectValue placeholder="Seleccionar fase" />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
-                    <SelectItem value="">Sin fase específica</SelectItem>
-                    {phases.map(phase => (
-                      <SelectItem key={phase.id} value={phase.id}>
-                        {phase.phase_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
+                   <SelectContent>
+                     {phases.map(phase => (
+                       <SelectItem key={phase.id} value={phase.id}>
+                         {phase.phase_name}
+                       </SelectItem>
+                     ))}
+                   </SelectContent>
                 </Select>
                 <FormMessage />
               </FormItem>
