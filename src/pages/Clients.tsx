@@ -95,26 +95,59 @@ export default function Clients() {
   };
 
   const handleDelete = async (clientId: string) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este cliente y su expediente?')) return;
+    if (!confirm('¿Estás seguro de que quieres eliminar este cliente y todo su expediente? Esta acción eliminará también todos sus proyectos y documentos asociados y no se puede deshacer.')) return;
 
     try {
-      const { error } = await supabase
+      // Primero eliminar documentos del cliente
+      const { error: documentsError } = await supabase
+        .from('client_documents')
+        .delete()
+        .eq('client_id', clientId);
+
+      if (documentsError) {
+        console.warn('Error eliminando documentos del cliente:', documentsError);
+        // No detenemos el proceso por esto, solo advertimos
+      }
+
+      // Eliminar documentos en tabla general
+      const { error: generalDocsError } = await supabase
+        .from('documents')
+        .delete()
+        .eq('client_id', clientId);
+
+      if (generalDocsError) {
+        console.warn('Error eliminando documentos generales del cliente:', generalDocsError);
+      }
+
+      // Eliminar proyectos del cliente
+      const { error: projectsError } = await supabase
+        .from('client_projects')
+        .delete()
+        .eq('client_id', clientId);
+
+      if (projectsError) {
+        console.warn('Error eliminando proyectos del cliente:', projectsError);
+      }
+
+      // Finalmente eliminar el cliente
+      const { error: clientError } = await supabase
         .from('clients')
         .delete()
         .eq('id', clientId);
 
-      if (error) throw error;
+      if (clientError) throw clientError;
 
       toast({
         title: "Cliente eliminado",
-        description: "El expediente del cliente se eliminó correctamente",
+        description: "El expediente completo del cliente se eliminó correctamente, incluyendo proyectos y documentos",
       });
       
       fetchClients();
     } catch (error: any) {
+      console.error('Error eliminando cliente:', error);
       toast({
         title: "Error",
-        description: "No se pudo eliminar el cliente",
+        description: "No se pudo eliminar el cliente. Por favor, inténtalo de nuevo.",
         variant: "destructive",
       });
     }
