@@ -22,10 +22,11 @@ import {
   Edit,
   Trash2
 } from 'lucide-react';
-import { BudgetEditDialog } from './BudgetEditDialog';
-import { BudgetItemDialog } from './BudgetItemDialog';
-import { BudgetHistoryDialog } from './BudgetHistoryDialog';
-import { BudgetAlertsPanel } from './BudgetAlertsPanel';
+// Temporalmente deshabilitados - serán refactorizados
+// import { BudgetEditDialog } from './BudgetEditDialog';
+// import { BudgetItemDialog } from './BudgetItemDialog';
+// import { BudgetHistoryDialog } from './BudgetHistoryDialog';
+// import { BudgetAlertsPanel } from './BudgetAlertsPanel';
 import { toast } from '@/hooks/use-toast';
 import { 
   DropdownMenu, 
@@ -405,11 +406,12 @@ export function AdvancedBudgetManager({
                 <Download className="h-4 w-4 mr-2" />
                 Exportar
               </Button>
-              <BudgetItemDialog 
-                projectId={projectId}
-                onSave={fetchBudgetItems}
-              />
-              {/* <BudgetHistoryDialog projectId={projectId} /> */}
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar Partida
+              </Button>
+              {/* Temporalmente deshabilitados */}
+              {/* <BudgetItemDialog projectId={projectId} onSave={fetchBudgetItems} /> */}
             </div>
           </div>
         </CardContent>
@@ -500,17 +502,10 @@ export function AdvancedBudgetManager({
                             <Eye className="h-4 w-4 mr-2" />
                             Ver Detalles
                           </DropdownMenuItem>
-                          <BudgetItemDialog
-                            projectId={projectId}
-                            item={item}
-                            onSave={fetchBudgetItems}
-                            trigger={
-                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar
-                              </DropdownMenuItem>
-                            }
-                          />
+                          <DropdownMenuItem>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Editar
+                          </DropdownMenuItem>
                           <DropdownMenuItem 
                             className="text-red-600"
                             onClick={() => deleteBudgetItem(item.id)}
