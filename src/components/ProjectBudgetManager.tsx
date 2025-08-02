@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BudgetPDFExporter } from "@/components/BudgetPDFExporter";
+import { CurrencyInput } from "@/components/CurrencyInput";
 import { Calculator, FileText, Download, Plus, Trash2, Edit } from "lucide-react";
 
 interface BudgetItem {
@@ -389,20 +390,17 @@ export function ProjectBudgetManager({ projectId, onBudgetUpdate }: ProjectBudge
                   />
                 </TableCell>
                 <TableCell>
-                  <Input
-                    type="number"
+                  <CurrencyInput
                     value={item.unit_price}
-                    onChange={(e) => {
-                      const unit_price = parseFloat(e.target.value) || 0;
+                    onChange={(unit_price) => {
                       const updatedItems = items.map(i => 
                         i.id === item.id ? { ...i, unit_price } : i
                       );
                       setItems(updatedItems);
                     }}
                     onBlur={() => updateItem(item)}
-                    className="border-none p-1 text-right w-32"
-                    min="0"
-                    step="0.01"
+                    className="border-none p-1 w-32"
+                    placeholder="$ 0.00"
                   />
                 </TableCell>
                 <TableCell className="text-right font-medium">
