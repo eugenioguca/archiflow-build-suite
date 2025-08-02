@@ -53,9 +53,9 @@ export function SmartCombobox({
 
   const dropdownHeight = useMemo(() => {
     const itemCount = items.length;
-    if (itemCount <= 20) return 'h-48';
-    if (itemCount <= 100) return 'h-72'; 
-    if (itemCount <= 200) return 'h-96';
+    if (itemCount <= 20) return 'max-h-48';
+    if (itemCount <= 100) return 'max-h-72'; 
+    if (itemCount <= 200) return 'max-h-96';
     return 'max-h-[50vh]';
   }, [items.length])
 
