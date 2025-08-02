@@ -2556,6 +2556,7 @@ export type Database = {
           department: string | null
           department_permissions: string[] | null
           description: string | null
+          design_phase: string | null
           document_status: string | null
           file_path: string
           file_size: number | null
@@ -2575,6 +2576,7 @@ export type Database = {
           department?: string | null
           department_permissions?: string[] | null
           description?: string | null
+          design_phase?: string | null
           document_status?: string | null
           file_path: string
           file_size?: number | null
@@ -2594,6 +2596,7 @@ export type Database = {
           department?: string | null
           department_permissions?: string[] | null
           description?: string | null
+          design_phase?: string | null
           document_status?: string | null
           file_path?: string
           file_size?: number | null

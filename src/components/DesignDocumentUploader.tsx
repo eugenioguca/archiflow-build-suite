@@ -218,21 +218,21 @@ export function DesignDocumentUploader({ projectId, teamMembers }: DesignDocumen
     }
   };
 
-  const downloadDocument = async (document: DesignDocument) => {
+  const downloadDocument = async (doc: DesignDocument) => {
     try {
       const { data, error } = await supabase.storage
         .from('project-documents')
-        .download(document.file_path);
+        .download(doc.file_path);
 
       if (error) throw error;
 
       const url = URL.createObjectURL(data);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = document.name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = doc.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (error: any) {
       toast({
