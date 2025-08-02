@@ -102,10 +102,51 @@ export default function Construction() {
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
-      setHasConstructionProject(!!data);
+      
+      if (!data) {
+        // Si no existe proyecto de construcción, crear uno automáticamente
+        await createConstructionProject();
+      } else {
+        setHasConstructionProject(true);
+      }
     } catch (error) {
       console.error('Error checking construction project:', error);
       setHasConstructionProject(false);
+    }
+  };
+
+  const createConstructionProject = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('construction_projects')
+        .insert({
+          project_id: selectedProject,
+          construction_area: 100, // Default value
+          total_budget: 0,
+          spent_budget: 0,
+          start_date: new Date().toISOString().split('T')[0],
+          estimated_completion_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 90 days from now
+          overall_progress_percentage: 0,
+          permit_status: 'pending',
+          created_by: (await supabase.auth.getUser()).data.user?.id || ''
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setHasConstructionProject(true);
+      toast({
+        title: "Proyecto de construcción creado",
+        description: "Se ha configurado automáticamente el proyecto para construcción",
+      });
+    } catch (error) {
+      console.error('Error creating construction project:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo crear el proyecto de construcción",
+        variant: "destructive",
+      });
     }
   };
 
