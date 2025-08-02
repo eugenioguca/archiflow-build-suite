@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { ConstructionProjectsGrid } from "@/components/ConstructionProjectsGrid";
 import { ConstructionDashboard } from "@/components/ConstructionDashboard";
 import { AdvancedBudgetManager } from "@/components/AdvancedBudgetManager";
-import { ConstructionGanttChart } from "@/components/ConstructionGanttChart";
+import { ConstructionGanttAdvanced } from "@/components/ConstructionGanttAdvanced";
 import { EquipmentManager } from "@/components/EquipmentManager";
 import { ProgressPhotosManager } from "@/components/ProgressPhotosManager";
 import { QualityInspections } from "@/components/QualityInspections";
@@ -279,7 +279,7 @@ export function Construction() {
                 </TabsContent>
 
                 <TabsContent value="timeline" className="mt-6">
-                  <ConstructionGanttChart projectId={selectedProject.id} />
+                  <ConstructionGanttAdvanced projectId={selectedProject.id} />
                 </TabsContent>
 
                 <TabsContent value="equipment" className="mt-6">
