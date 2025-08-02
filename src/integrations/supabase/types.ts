@@ -4993,7 +4993,7 @@ export type Database = {
         Returns: string
       }
       check_budget_alerts: {
-        Args: { construction_project_id_param: string }
+        Args: { project_id_param: string }
         Returns: undefined
       }
       create_construction_project_from_client: {
@@ -5032,7 +5032,7 @@ export type Database = {
         Returns: undefined
       }
       insert_default_construction_budget_items: {
-        Args: { construction_project_id_param: string }
+        Args: { project_id_param: string }
         Returns: undefined
       }
       is_admin: {

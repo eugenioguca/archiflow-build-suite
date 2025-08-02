@@ -56,16 +56,16 @@ export default function Construction() {
 
         <TabsContent value="budget">
           <AdvancedBudgetManager 
-            constructionProjectId={selectedProject}
+            projectId={selectedProject}
           />
         </TabsContent>
 
         <TabsContent value="schedule">
-          <GanttScheduler constructionProjectId={selectedProject} />
+          <GanttScheduler projectId={selectedProject} />
         </TabsContent>
 
         <TabsContent value="expenses">
-          <IntegratedExpenseManager constructionProjectId={selectedProject} />
+          <IntegratedExpenseManager projectId={selectedProject} />
         </TabsContent>
 
         <TabsContent value="reports">

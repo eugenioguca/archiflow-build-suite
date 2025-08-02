@@ -63,7 +63,7 @@ interface BudgetItem {
   supplier_name?: string;
   status: 'pending' | 'approved' | 'ordered' | 'delivered';
   notas?: string;
-  construction_project_id: string;
+  project_id: string;
 }
 
 interface Supplier {
@@ -72,12 +72,12 @@ interface Supplier {
 }
 
 interface AdvancedBudgetManagerProps {
-  constructionProjectId: string;
+  projectId: string;
   onBudgetUpdate?: (newTotal: number) => void;
 }
 
 export function AdvancedBudgetManager({ 
-  constructionProjectId, 
+  projectId, 
   onBudgetUpdate 
 }: AdvancedBudgetManagerProps) {
   const [totalBudget, setTotalBudget] = useState(0);
@@ -95,28 +95,28 @@ export function AdvancedBudgetManager({
 
   useEffect(() => {
     fetchData();
-  }, [constructionProjectId]);
+  }, [projectId]);
 
   useEffect(() => {
     filterItems();
   }, [budgetItems, searchTerm, categoryFilter, statusFilter]);
 
   const fetchData = async () => {
-    if (!constructionProjectId) return;
+    if (!projectId) return;
     
     try {
       setLoading(true);
       
-      // Fetch construction project data first
+      // Fetch client project data with construction fields
       const { data: project, error: projectError } = await supabase
-        .from('construction_projects')
-        .select('total_budget, spent_budget')
-        .eq('id', constructionProjectId)
+        .from('client_projects')
+        .select('construction_budget, spent_budget')
+        .eq('id', projectId)
         .single();
 
       if (projectError) throw projectError;
       
-      setTotalBudget(project.total_budget || 0);
+      setTotalBudget(project.construction_budget || 0);
       setSpentBudget(project.spent_budget || 0);
 
       await Promise.all([
@@ -138,7 +138,7 @@ export function AdvancedBudgetManager({
           *,
           supplier:suppliers(company_name)
         `)
-        .eq('construction_project_id', constructionProjectId)
+        .eq('project_id', projectId)
         .order('categoria', { ascending: true });
 
       if (error) throw error;
@@ -285,7 +285,7 @@ export function AdvancedBudgetManager({
   return (
     <div className="space-y-6">
       {/* Budget Alerts */}
-      <BudgetAlertsPanel constructionProjectId={constructionProjectId} />
+      <BudgetAlertsPanel projectId={projectId} />
       
       {/* Header with KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -396,10 +396,10 @@ export function AdvancedBudgetManager({
                 Exportar
               </Button>
               <BudgetItemDialog 
-                constructionProjectId={constructionProjectId}
+                projectId={projectId}
                 onSave={fetchBudgetItems}
               />
-              <BudgetHistoryDialog constructionProjectId={constructionProjectId} />
+              <BudgetHistoryDialog projectId={projectId} />
             </div>
           </div>
         </CardContent>
@@ -491,7 +491,7 @@ export function AdvancedBudgetManager({
                             Ver Detalles
                           </DropdownMenuItem>
                           <BudgetItemDialog
-                            constructionProjectId={constructionProjectId}
+                            projectId={projectId}
                             item={item}
                             onSave={fetchBudgetItems}
                             trigger={
