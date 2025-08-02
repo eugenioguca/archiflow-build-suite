@@ -18,7 +18,7 @@ interface UserProfile {
   id: string;
   user_id: string;
   full_name?: string;
-  display_name?: string;
+  
   email?: string;
   position?: string;
   department?: string;
@@ -295,7 +295,7 @@ export default function UserManagement() {
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <h3 className="font-medium">
-                              {user.full_name || user.display_name || "Sin nombre"}
+                              {user.full_name || "Sin nombre"}
                             </h3>
                             <Badge variant={user.role === 'admin' ? 'default' : user.role === 'employee' ? 'secondary' : 'outline'}>
                               {user.role}
