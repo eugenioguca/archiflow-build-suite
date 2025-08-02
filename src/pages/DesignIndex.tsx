@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
-interface Project {
+interface ClientProject {
   id: string;
-  name: string;
-  description: string | null;
+  project_name: string;
+  project_description: string | null;
   status: string;
   client: {
     id: string;
@@ -19,7 +19,7 @@ interface Project {
 }
 
 export default function DesignIndex() {
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<ClientProject[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,15 +29,15 @@ export default function DesignIndex() {
   const fetchDesignProjects = async () => {
     try {
       const { data, error } = await supabase
-        .from('projects')
+        .from('client_projects')
         .select(`
           id,
-          name,
-          description,
+          project_name,
+          project_description,
           status,
           client:clients(id, full_name)
         `)
-        .in('status', ['design', 'planning'])
+        .eq('status', 'design')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -97,9 +97,9 @@ export default function DesignIndex() {
             <Card key={project.id} className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{project.name}</CardTitle>
-                  <Badge variant={project.status === 'design' ? 'default' : 'secondary'}>
-                    {project.status === 'design' ? 'Diseño' : 'Planeación'}
+                  <CardTitle className="text-lg">{project.project_name}</CardTitle>
+                  <Badge variant="default">
+                    Diseño
                   </Badge>
                 </div>
                 <CardDescription>
@@ -108,7 +108,7 @@ export default function DesignIndex() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                  {project.description || 'Sin descripción disponible'}
+                  {project.project_description || 'Sin descripción disponible'}
                 </p>
                 
                 <div className="flex items-center justify-between">
