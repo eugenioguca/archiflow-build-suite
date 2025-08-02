@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ClientInfoPanel } from "@/components/ClientInfoPanel";
 import { DesignCompletionManager } from "@/components/DesignCompletionManager";
 import { CompletedDesignsTab } from "@/components/CompletedDesignsTab";
+import { DesignDocumentUploader } from "@/components/DesignDocumentUploader";
 import { 
   Clock, 
   User, 
@@ -35,7 +36,8 @@ import {
   Palette,
   Plus,
   ChevronRight,
-  ArrowLeft
+  ArrowLeft,
+  FileText
 } from "lucide-react";
 
 interface DesignPhase {
@@ -367,8 +369,8 @@ export default function Design() {
 
     if (architects.length === 0) {
       toast({
-        title: "Advertencia",
-        description: "Se requiere al menos un arquitecto asignado al proyecto",
+        title: "⚠️ Arquitecto Requerido",
+        description: "Se requiere al menos un arquitecto asignado al proyecto para subir documentos de diseño",
         variant: "destructive"
       });
     }
@@ -599,7 +601,7 @@ export default function Design() {
 
       {/* Main Content with Tabs */}
       <Tabs defaultValue="phases" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5 bg-muted h-9">
+        <TabsList className="grid w-full grid-cols-6 bg-muted h-9">
           <TabsTrigger value="phases" className="text-xs">
             <Layers className="h-3 w-3 mr-1" />
             Fases
@@ -615,6 +617,10 @@ export default function Design() {
           <TabsTrigger value="budget" className="text-xs">
             <DollarSign className="h-3 w-3 mr-1" />
             Presupuesto
+          </TabsTrigger>
+          <TabsTrigger value="documents" className="text-xs">
+            <FileText className="h-3 w-3 mr-1" />
+            Documentos
           </TabsTrigger>
           <TabsTrigger value="client" className="text-xs">
             <FileUser className="h-3 w-3 mr-1" />
@@ -727,6 +733,12 @@ export default function Design() {
         <TabsContent value="budget">
           <div className="bg-card rounded-lg p-4 border">
             <ProjectBudgetManager projectId={projectId} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="documents">
+          <div className="bg-card rounded-lg p-4 border">
+            <DesignDocumentUploader projectId={projectId} teamMembers={teamMembers} />
           </div>
         </TabsContent>
 
