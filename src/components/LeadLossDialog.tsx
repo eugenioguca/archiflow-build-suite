@@ -61,10 +61,8 @@ export function LeadLossDialog({
       const { error: updateError } = await supabase
         .from('clients')
         .update({ 
-          status: 'lead_perdido',
-          conversion_date: new Date().toISOString().split('T')[0],
-          conversion_notes: `Perdido: ${LOSS_REASONS.find(r => r.value === lossReason)?.label}. ${comments}`,
-          sales_pipeline_stage: 'closed'
+          // Project-specific fields moved to client_projects table
+          notes: `Lead perdido: ${LOSS_REASONS.find(r => r.value === lossReason)?.label}. ${comments}`
         })
         .eq('id', clientId);
 

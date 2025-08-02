@@ -162,21 +162,12 @@ export default function Sales() {
 
       if (clientsError) throw clientsError;
 
-      // Separate clients by status
-      const allClients = (clientsData || []).map(client => ({
-        ...client,
-        advisor_name: client.assigned_advisor?.full_name || 'Sin asignar'
-      }));
+      // For now, just set basic client data (project-specific data moved to client_projects)
+      const allClients = (clientsData || []);
       
-      const activeClients = allClients.filter(client => 
-        ['nuevo_lead', 'en_contacto'].includes(client.status)
-      );
-      const closedClientsData = allClients.filter(client => 
-        client.status === 'cliente_cerrado'
-      );
-      const lostLeadsData = allClients.filter(client => 
-        client.status === 'lead_perdido'
-      );
+      const activeClients = allClients;
+      const closedClientsData = [];
+      const lostLeadsData = [];
 
       setClients(activeClients);
       setClosedClients(closedClientsData);
@@ -215,7 +206,10 @@ export default function Sales() {
     try {
       const { error } = await supabase
         .from('clients')
-        .update({ assigned_advisor_id: advisorId })
+        .update({ 
+          // assigned_advisor_id moved to client_projects
+          notes: `Asesor asignado: ${advisorId ? employees.find(e => e.id === advisorId)?.full_name : 'Sin asignar'}`
+        })
         .eq('id', clientId);
 
       if (error) throw error;

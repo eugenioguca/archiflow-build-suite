@@ -231,8 +231,8 @@ export default function Design() {
 
       let teamMembersData = data || [];
 
-      // Check if sales advisor is in the team
-      const salesAdvisorId = projectData?.clients?.assigned_advisor_id;
+      // Check if sales advisor is in the team (from client_projects)
+      const salesAdvisorId = projectData?.assigned_advisor_id;
       if (salesAdvisorId) {
         const salesAdvisorInTeam = teamMembersData.find(
           member => member.user_id === salesAdvisorId && member.role === "sales_advisor"

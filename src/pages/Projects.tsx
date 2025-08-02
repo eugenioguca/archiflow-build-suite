@@ -194,8 +194,7 @@ export default function Projects() {
       console.log('Fetching clients...');
       const { data, error } = await supabase
         .from('clients')
-        .select('id, full_name, email, phone, status')
-        .in('status', ['existing', 'active', 'potential'])
+        .select('id, full_name, email, phone')
         .order('full_name');
 
       if (error) {
