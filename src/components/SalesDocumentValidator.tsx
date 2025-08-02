@@ -182,14 +182,33 @@ export function SalesDocumentValidator({
   };
 
   const handleDocumentUpload = async (file: File, requirementId: string) => {
+    console.log('🔄 Starting document upload:', { file: file.name, requirementId, clientId });
+    
+    if (!clientId) {
+      console.error('❌ No client ID provided');
+      toast({
+        title: "Error",
+        description: "No se puede subir el documento: Cliente no identificado",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuario no autenticado');
+      if (!user) {
+        console.error('❌ User not authenticated');
+        throw new Error('Usuario no autenticado');
+      }
+
+      console.log('✅ User authenticated:', user.id);
 
       let filePath: string;
 
       // Documentos sensibles van a client_documents bucket
       if (['constancia_fiscal', 'identificacion'].includes(requirementId)) {
+        console.log('📋 Uploading sensitive document to client_documents');
+        
         const result = await uploadClientDocument(
           file, 
           clientId, 
@@ -197,24 +216,39 @@ export function SalesDocumentValidator({
           requirementId
         );
         filePath = result.filePath;
+        console.log('✅ File uploaded to storage:', filePath);
 
         // Also save to client_documents table for sensitive docs
-        await supabase
+        const insertData = {
+          client_id: clientId,
+          document_type: requirementId,
+          document_name: file.name,
+          file_path: filePath,
+          file_type: getFileType(file.name).type,
+          file_size: file.size,
+          uploaded_by: user.id
+        };
+        
+        console.log('💾 Inserting to client_documents table:', insertData);
+        
+        const { error: insertError } = await supabase
           .from('client_documents')
-          .insert({
-            client_id: clientId,
-            document_type: requirementId,
-            document_name: file.name,
-            file_path: filePath,
-            file_type: getFileType(file.name).type,
-            file_size: file.size,
-            uploaded_by: user.id
-          });
+          .insert(insertData);
+
+        if (insertError) {
+          console.error('❌ Error inserting to client_documents:', insertError);
+          throw insertError;
+        }
+        
+        console.log('✅ Successfully inserted to client_documents table');
       } else {
+        console.log('📄 Uploading project document');
+        
         // Get or create project for non-sensitive documents
         let projectId = clientData?.project_id;
         
         if (!projectId) {
+          console.log('🔍 Looking for existing project for client');
           // Check if client has an existing project
           const { data: projects } = await supabase
             .from('projects')
@@ -224,7 +258,9 @@ export function SalesDocumentValidator({
           
           if (projects && projects.length > 0) {
             projectId = projects[0].id;
+            console.log('✅ Found existing project:', projectId);
           } else {
+            console.log('🆕 Creating new project for client');
             // Create a basic project for the client
             const { data: newProject, error: projectError } = await supabase
               .from('projects')
@@ -238,43 +274,58 @@ export function SalesDocumentValidator({
               .single();
             
             if (projectError || !newProject) {
+              console.error('❌ Error creating project:', projectError);
               throw new Error('No se pudo crear el proyecto para el documento');
             }
             
             projectId = newProject.id;
+            console.log('✅ Created new project:', projectId);
           }
         }
 
         // Documentos del proyecto van al bucket público
         const result = await uploadProjectDocument(file, projectId, 'sales');
         filePath = result.filePath;
+        console.log('✅ File uploaded to project storage:', filePath);
 
         // Save to documents table
-        await supabase
+        const insertData = {
+          project_id: projectId,
+          client_id: clientId,
+          name: file.name,
+          file_path: filePath,
+          file_type: getFileType(file.name).type,
+          file_size: file.size,
+          category: requirementId,
+          tags: [requirementId],
+          department: 'sales',
+          uploaded_by: user.id,
+          access_level: 'internal'
+        };
+        
+        console.log('💾 Inserting to documents table:', insertData);
+        
+        const { error: insertError } = await supabase
           .from('documents')
-          .insert({
-            project_id: projectId,
-            client_id: clientId,
-            name: file.name,
-            file_path: filePath,
-            file_type: getFileType(file.name).type,
-            file_size: file.size,
-            category: requirementId,
-            tags: [requirementId],
-            department: 'sales',
-            uploaded_by: user.id,
-            access_level: 'internal'
-          });
+          .insert(insertData);
+
+        if (insertError) {
+          console.error('❌ Error inserting to documents:', insertError);
+          throw insertError;
+        }
+        
+        console.log('✅ Successfully inserted to documents table');
       }
 
-      markDocumentAsUploaded(requirementId, filePath);
+      await markDocumentAsUploaded(requirementId, filePath);
+      console.log('✅ Document marked as uploaded');
       
       toast({
         title: "Documento subido",
         description: `${file.name} se ha subido correctamente`,
       });
     } catch (error) {
-      console.error('Error uploading document:', error);
+      console.error('❌ Error uploading document:', error);
       toast({
         title: "Error",
         description: `No se pudo subir el documento: ${error instanceof Error ? error.message : 'Error desconocido'}`,
