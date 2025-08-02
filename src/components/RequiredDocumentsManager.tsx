@@ -73,7 +73,7 @@ const REQUIRED_DOCUMENTS: RequiredDocument[] = [
     id: 'contract',
     name: 'Contrato Firmado',
     type: 'contract',
-    required_for_stages: ['cliente_cerrado'],
+    required_for_stages: ['en_contacto', 'cliente_cerrado'],
     description: 'Contrato de servicios firmado por el cliente',
     icon: FileText
   },
