@@ -9,15 +9,24 @@ import { es } from "date-fns/locale";
 
 interface ProgressPhoto {
   id: string;
+  construction_project_id: string;
+  file_path: string;
+  description: string;
+  photo_date: string;
+  milestone_id: string | null;
+  phase_id: string | null;
+  is_before_photo: boolean;
+  before_photo_id: string | null;
+  camera_angle: string | null;
+  coordinates: any;
+  weather_conditions: string | null;
+  taken_at: string;
+  tags: string[];
+  visibility: string;
   photo_url: string;
   thumbnail_url?: string;
   caption?: string;
   location_description?: string;
-  camera_angle?: string;
-  weather_conditions?: string;
-  taken_at: string;
-  tags: string[];
-  visibility: string;
   phase?: {
     phase_name: string;
   } | null;
@@ -46,10 +55,22 @@ export function ProgressPhotos({ constructionProjectId }: ProgressPhotosProps) {
           milestone:progress_milestones(milestone_name)
         `)
         .eq("construction_project_id", constructionProjectId)
-        .order("taken_at", { ascending: false });
+        .order("photo_date", { ascending: false });
 
       if (error) throw error;
-      setPhotos(data || []);
+      
+      // Transform database response to match interface
+      const transformedPhotos = (data || []).map((photo: any) => ({
+        ...photo,
+        photo_url: photo.file_path,
+        photo_date: photo.photo_date || new Date().toISOString(),
+        taken_at: photo.photo_date || new Date().toISOString(),
+        caption: photo.description,
+        tags: photo.tags || [],
+        visibility: photo.visibility || "internal"
+      })) as ProgressPhoto[];
+      
+      setPhotos(transformedPhotos);
     } catch (error) {
       console.error("Error fetching progress photos:", error);
     } finally {
