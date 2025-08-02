@@ -901,6 +901,140 @@ export type Database = {
           },
         ]
       }
+      client_projects: {
+        Row: {
+          alliance_id: string | null
+          assigned_advisor_id: string | null
+          branch_office_id: string | null
+          budget: number | null
+          client_id: string
+          conversion_date: string | null
+          conversion_notes: string | null
+          created_at: string
+          curp: string | null
+          estimated_value: number | null
+          id: string
+          land_square_meters: number | null
+          last_activity_date: string | null
+          last_contact_date: string | null
+          lead_referral_details: string | null
+          location_details: Json | null
+          next_contact_date: string | null
+          notes: string | null
+          payment_plan: Json | null
+          priority: Database["public"]["Enums"]["priority_level"] | null
+          probability_percentage: number | null
+          project_description: string | null
+          project_location: string | null
+          project_name: string
+          project_size: string | null
+          project_type: Database["public"]["Enums"]["project_type"] | null
+          sales_pipeline_stage: string | null
+          service_type: string | null
+          status: Database["public"]["Enums"]["client_status"] | null
+          tags: string[] | null
+          timeline_months: number | null
+          updated_at: string
+        }
+        Insert: {
+          alliance_id?: string | null
+          assigned_advisor_id?: string | null
+          branch_office_id?: string | null
+          budget?: number | null
+          client_id: string
+          conversion_date?: string | null
+          conversion_notes?: string | null
+          created_at?: string
+          curp?: string | null
+          estimated_value?: number | null
+          id?: string
+          land_square_meters?: number | null
+          last_activity_date?: string | null
+          last_contact_date?: string | null
+          lead_referral_details?: string | null
+          location_details?: Json | null
+          next_contact_date?: string | null
+          notes?: string | null
+          payment_plan?: Json | null
+          priority?: Database["public"]["Enums"]["priority_level"] | null
+          probability_percentage?: number | null
+          project_description?: string | null
+          project_location?: string | null
+          project_name: string
+          project_size?: string | null
+          project_type?: Database["public"]["Enums"]["project_type"] | null
+          sales_pipeline_stage?: string | null
+          service_type?: string | null
+          status?: Database["public"]["Enums"]["client_status"] | null
+          tags?: string[] | null
+          timeline_months?: number | null
+          updated_at?: string
+        }
+        Update: {
+          alliance_id?: string | null
+          assigned_advisor_id?: string | null
+          branch_office_id?: string | null
+          budget?: number | null
+          client_id?: string
+          conversion_date?: string | null
+          conversion_notes?: string | null
+          created_at?: string
+          curp?: string | null
+          estimated_value?: number | null
+          id?: string
+          land_square_meters?: number | null
+          last_activity_date?: string | null
+          last_contact_date?: string | null
+          lead_referral_details?: string | null
+          location_details?: Json | null
+          next_contact_date?: string | null
+          notes?: string | null
+          payment_plan?: Json | null
+          priority?: Database["public"]["Enums"]["priority_level"] | null
+          probability_percentage?: number | null
+          project_description?: string | null
+          project_location?: string | null
+          project_name?: string
+          project_size?: string | null
+          project_type?: Database["public"]["Enums"]["project_type"] | null
+          sales_pipeline_stage?: string | null
+          service_type?: string | null
+          status?: Database["public"]["Enums"]["client_status"] | null
+          tags?: string[] | null
+          timeline_months?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_projects_alliance_id_fkey"
+            columns: ["alliance_id"]
+            isOneToOne: false
+            referencedRelation: "commercial_alliances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_projects_assigned_advisor_id_fkey"
+            columns: ["assigned_advisor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_projects_branch_office_id_fkey"
+            columns: ["branch_office_id"]
+            isOneToOne: false
+            referencedRelation: "branch_offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
