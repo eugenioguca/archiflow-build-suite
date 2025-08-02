@@ -22,7 +22,7 @@ interface ConstructionPhase {
   estimated_budget: number;
   actual_cost: number;
   progress_percentage: number;
-  status: string;
+  status: 'not_started' | 'in_progress' | 'paused' | 'completed' | 'cancelled';
   required_team_size: number;
   special_requirements?: string;
   dependencies?: string[];
@@ -146,7 +146,7 @@ export function ConstructionPhaseDialog({
       if (!isEditing) {
         setFormData({
           phase_name: '',
-          phase_type: 'foundation',
+          phase_type: 'cimentacion',
           phase_order: 1,
           description: '',
           estimated_budget: 0,
@@ -230,7 +230,7 @@ export function ConstructionPhaseDialog({
               <Label htmlFor="phase_type">Tipo de Fase *</Label>
               <Select 
                 value={formData.phase_type} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, phase_type: value }))}
+                onValueChange={(value: any) => setFormData(prev => ({ ...prev, phase_type: value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecciona tipo" />
@@ -272,7 +272,7 @@ export function ConstructionPhaseDialog({
               <Label htmlFor="status">Estado</Label>
               <Select 
                 value={formData.status} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+                onValueChange={(value: any) => setFormData(prev => ({ ...prev, status: value }))}
               >
                 <SelectTrigger>
                   <SelectValue />

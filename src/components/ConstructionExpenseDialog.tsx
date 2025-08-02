@@ -208,7 +208,7 @@ export function ConstructionExpenseDialog({
     { value: 'pending', label: 'Pendiente' },
     { value: 'approved', label: 'Aprobado' },
     { value: 'paid', label: 'Pagado' },
-    { value: 'rejected', label: 'Rechazado' }
+    { value: 'cancelled', label: 'Cancelado' }
   ];
 
   const paymentMethods = [
@@ -382,7 +382,7 @@ export function ConstructionExpenseDialog({
               <Label htmlFor="status">Estado</Label>
               <Select 
                 value={formData.status} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+                onValueChange={(value: any) => setFormData(prev => ({ ...prev, status: value }))}
               >
                 <SelectTrigger>
                   <SelectValue />

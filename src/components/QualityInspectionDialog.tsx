@@ -12,10 +12,11 @@ import { Plus, Edit, Shield } from 'lucide-react';
 interface QualityInspection {
   id?: string;
   check_name: string;
+  check_type: string;
   description?: string;
   inspection_date: string;
   inspector_name: string;
-  status: 'pending' | 'passed' | 'failed' | 'needs_review';
+  status: 'pending' | 'passed' | 'failed' | 'needs_rework';
   phase?: string;
   location?: string;
   checklist_items?: { item: string; passed: boolean; notes?: string }[];
@@ -43,6 +44,7 @@ export function QualityInspectionDialog({
   
   const [formData, setFormData] = useState<QualityInspection>({
     check_name: '',
+    check_type: 'quality_inspection',
     description: '',
     inspection_date: new Date().toISOString().split('T')[0],
     inspector_name: '',
@@ -79,13 +81,14 @@ export function QualityInspectionDialog({
       const inspectionData = {
         construction_project_id: constructionProjectId,
         check_name: formData.check_name,
+        check_type: formData.check_type,
         description: formData.description,
         inspection_date: formData.inspection_date,
         inspector_name: formData.inspector_name,
         status: formData.status,
         phase: formData.phase,
         location: formData.location,
-        checklist_items: formData.checklist_items,
+        criteria_checked: formData.checklist_items,
         findings: formData.findings,
         corrective_actions: formData.corrective_actions,
         next_inspection_date: formData.next_inspection_date || null,
@@ -119,6 +122,7 @@ export function QualityInspectionDialog({
       if (!isEditing) {
         setFormData({
           check_name: '',
+          check_type: 'quality_inspection',
           description: '',
           inspection_date: new Date().toISOString().split('T')[0],
           inspector_name: '',
@@ -168,7 +172,7 @@ export function QualityInspectionDialog({
     { value: 'pending', label: 'Pendiente' },
     { value: 'passed', label: 'Aprobado' },
     { value: 'failed', label: 'Rechazado' },
-    { value: 'needs_review', label: 'Requiere Revisión' }
+    { value: 'needs_rework', label: 'Requiere Retrabajo' }
   ];
 
   return (

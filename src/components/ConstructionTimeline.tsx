@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Calendar, Clock, AlertTriangle, CheckCircle, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { TimelineActivityDialog } from './TimelineActivityDialog';
 
 interface TimelineActivity {
   id: string;
