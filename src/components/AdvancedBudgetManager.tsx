@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import { BudgetEditDialog } from './BudgetEditDialog';
 import { BudgetItemDialog } from './BudgetItemDialog';
+import { BudgetHistoryDialog } from './BudgetHistoryDialog';
+import { BudgetAlertsPanel } from './BudgetAlertsPanel';
 import { toast } from '@/hooks/use-toast';
 import { 
   DropdownMenu, 
@@ -269,6 +271,9 @@ export function AdvancedBudgetManager({
 
   return (
     <div className="space-y-6">
+      {/* Budget Alerts */}
+      <BudgetAlertsPanel constructionProjectId={constructionProjectId} />
+      
       {/* Header with KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -381,6 +386,7 @@ export function AdvancedBudgetManager({
                 constructionProjectId={constructionProjectId}
                 onSave={fetchBudgetItems}
               />
+              <BudgetHistoryDialog constructionProjectId={constructionProjectId} />
             </div>
           </div>
         </CardContent>

@@ -20,6 +20,7 @@ import {
   Building,
   Users
 } from 'lucide-react';
+import { ExpenseIntegrationManager } from './ExpenseIntegrationManager';
 import { toast } from '@/hooks/use-toast';
 import {
   Select,

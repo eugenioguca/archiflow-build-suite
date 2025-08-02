@@ -39,6 +39,18 @@ export function BudgetEditDialog({
     setLoading(true);
 
     try {
+      const userData = await supabase.auth.getUser();
+      const userId = userData.data.user?.id;
+      if (!userId) throw new Error('Usuario no autenticado');
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+
+      if (profileError) throw profileError;
+
       // Update construction project
       const { error: constructionError } = await supabase
         .from('construction_projects')
@@ -52,16 +64,24 @@ export function BudgetEditDialog({
 
       if (constructionError) throw constructionError;
 
-      // Log budget change in notes (table doesn't exist yet)
-      console.log('Budget changed:', {
-        construction_project_id: constructionProjectId,
-        previous_budget: currentBudget,
-        new_budget: formData.total_budget,
-        change_reason: formData.reason,
-        notes: formData.notes
-      });
+      // Create budget change log
+      const { error: logError } = await supabase
+        .from('construction_budget_changes')
+        .insert({
+          construction_project_id: constructionProjectId,
+          previous_budget: currentBudget,
+          new_budget: formData.total_budget,
+          change_reason: formData.reason,
+          notes: formData.notes,
+          authorized_by: profile.id
+        });
 
-      
+      if (logError) console.warn('Budget change log error:', logError);
+
+      // Check for budget alerts
+      await supabase.rpc('check_budget_alerts', {
+        construction_project_id_param: constructionProjectId
+      });
 
       toast({
         title: "Presupuesto actualizado",

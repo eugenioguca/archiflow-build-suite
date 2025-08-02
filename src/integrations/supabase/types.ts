@@ -1224,6 +1224,114 @@ export type Database = {
         }
         Relationships: []
       }
+      construction_budget_alerts: {
+        Row: {
+          alert_type: string
+          construction_project_id: string
+          created_at: string
+          current_percentage: number
+          id: string
+          is_read: boolean
+          message: string
+          read_at: string | null
+          read_by: string | null
+          threshold_percentage: number
+        }
+        Insert: {
+          alert_type: string
+          construction_project_id: string
+          created_at?: string
+          current_percentage: number
+          id?: string
+          is_read?: boolean
+          message: string
+          read_at?: string | null
+          read_by?: string | null
+          threshold_percentage: number
+        }
+        Update: {
+          alert_type?: string
+          construction_project_id?: string
+          created_at?: string
+          current_percentage?: number
+          id?: string
+          is_read?: boolean
+          message?: string
+          read_at?: string | null
+          read_by?: string | null
+          threshold_percentage?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "construction_budget_alerts_construction_project_id_fkey"
+            columns: ["construction_project_id"]
+            isOneToOne: false
+            referencedRelation: "construction_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_budget_alerts_read_by_fkey"
+            columns: ["read_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      construction_budget_changes: {
+        Row: {
+          authorized_by: string
+          change_amount: number | null
+          change_percentage: number | null
+          change_reason: string
+          construction_project_id: string
+          created_at: string
+          id: string
+          new_budget: number
+          notes: string | null
+          previous_budget: number
+        }
+        Insert: {
+          authorized_by: string
+          change_amount?: number | null
+          change_percentage?: number | null
+          change_reason: string
+          construction_project_id: string
+          created_at?: string
+          id?: string
+          new_budget: number
+          notes?: string | null
+          previous_budget: number
+        }
+        Update: {
+          authorized_by?: string
+          change_amount?: number | null
+          change_percentage?: number | null
+          change_reason?: string
+          construction_project_id?: string
+          created_at?: string
+          id?: string
+          new_budget?: number
+          notes?: string | null
+          previous_budget?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "construction_budget_changes_authorized_by_fkey"
+            columns: ["authorized_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_budget_changes_construction_project_id_fkey"
+            columns: ["construction_project_id"]
+            isOneToOne: false
+            referencedRelation: "construction_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       construction_budget_items: {
         Row: {
           cantidad: number
@@ -4841,6 +4949,10 @@ export type Database = {
       calculate_complement_due_date: {
         Args: { payment_date: string }
         Returns: string
+      }
+      check_budget_alerts: {
+        Args: { construction_project_id_param: string }
+        Returns: undefined
       }
       create_construction_project_from_client: {
         Args: { client_project_id: string }
