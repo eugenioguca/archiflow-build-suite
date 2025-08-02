@@ -47,12 +47,30 @@ export function Construction() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<"principal" | "gestion" | "documentacion">("principal");
 
   useEffect(() => {
     if (user) {
       fetchConstructionProjects();
     }
   }, [user]);
+
+  // Find which category contains the active tab
+  useEffect(() => {
+    const navigationCategories = {
+      principal: ["dashboard", "budget", "timeline"],
+      gestion: ["equipment", "materials", "teams", "quality"],
+      documentacion: ["photos", "reports", "analytics"]
+    };
+    
+    const categoryKey = Object.keys(navigationCategories).find(key => 
+      navigationCategories[key as keyof typeof navigationCategories].includes(activeTab)
+    ) as "principal" | "gestion" | "documentacion";
+    
+    if (categoryKey) {
+      setActiveCategory(categoryKey);
+    }
+  }, [activeTab]);
 
   const fetchConstructionProjects = async () => {
     try {
@@ -196,20 +214,6 @@ export function Construction() {
 
   // Flat array for mobile dropdown
   const tabOptions = Object.values(navigationCategories).flatMap(category => category.tabs);
-
-  // State for active category in tablet view
-  const [activeCategory, setActiveCategory] = useState<keyof typeof navigationCategories>("principal");
-
-  // Find which category contains the active tab
-  useEffect(() => {
-    const categoryKey = Object.keys(navigationCategories).find(key => 
-      navigationCategories[key as keyof typeof navigationCategories].tabs.some(tab => tab.value === activeTab)
-    ) as keyof typeof navigationCategories;
-    
-    if (categoryKey) {
-      setActiveCategory(categoryKey);
-    }
-  }, [activeTab]);
 
   return (
     <div className="container mx-auto p-3 sm:p-6 space-y-4 sm:space-y-6">
