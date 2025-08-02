@@ -744,7 +744,14 @@ export default function Sales() {
                   <RequiredDocumentsManager
                     clientProjectId={selectedProject.id}
                     clientProject={selectedProject}
-                    onDocumentUpdate={() => fetchData()}
+                    onDocumentUpdate={async () => {
+                      await fetchData();
+                      // Actualizar el proyecto seleccionado con los datos más recientes
+                      const updatedProject = clientProjects.find(p => p.id === selectedProject.id);
+                      if (updatedProject) {
+                        setSelectedProject(updatedProject);
+                      }
+                    }}
                   />
                 ) : (
                   <Card>
