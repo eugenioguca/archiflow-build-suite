@@ -32,41 +32,48 @@ import { es } from "date-fns/locale";
 interface MaterialRequirement {
   id: string;
   project_id: string;
-  budget_item_id: string | null;
   phase_id: string | null;
-  material_code: string | null;
+  budget_item_id: string | null;
   material_name: string;
-  description: string | null;
-  category: string;
-  subcategory: string | null;
+  material_code: string | null;
+  material_type: string;
+  brand: string | null;
+  model: string | null;
+  specifications: any;
   unit_of_measure: string;
   quantity_required: number;
-  quantity_ordered: number;
-  quantity_delivered: number;
-  quantity_used: number;
-  quantity_remaining: number;
-  quantity_wasted: number;
-  unit_cost: number;
-  total_cost: number;
+  quantity_ordered: number | null;
+  quantity_delivered: number | null;
+  quantity_used: number | null;
+  quantity_wasted: number | null;
+  quantity_remaining: number | null;
+  unit_cost: number | null;
+  total_cost: number | null;
   supplier_id: string | null;
-  supplier_quote_url: string | null;
-  expected_delivery_date: string | null;
-  actual_delivery_date: string | null;
-  priority_level: string;
+  purchase_order_number: string | null;
+  delivery_date_required: string | null;
+  delivery_date_actual: string | null;
+  storage_location: string | null;
+  storage_requirements: any;
+  quality_standards: any;
+  environmental_impact: any;
+  sustainability_rating: number | null;
+  certifications: any;
+  warranty_period: number | null;
+  warranty_terms: string | null;
   status: string;
-  procurement_notes: string | null;
-  quality_approved: boolean;
-  quality_approved_by: string | null;
-  quality_approved_at: string | null;
-  waste_reason: string | null;
-  cost_variance_percentage: number;
-  lead_time_days: number | null;
-  min_stock_level: number;
-  max_stock_level: number;
-  reorder_point: number;
+  priority: string;
+  notes: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
+  // New fields from our migration
+  cuenta_mayor: string | null;
+  partida: string | null;
+  sub_partida: number | null;
+  descripcion_producto: string | null;
+  notas_procuracion: string | null;
+  requisito_almacenamiento: string | null;
 }
 
 interface MaterialRequirementsProps {
@@ -146,10 +153,10 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
   const filteredMaterials = materials.filter(material => {
     const matchesSearch = !searchTerm || 
       material.material_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      material.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      material.descripcion_producto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       material.material_code?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = !categoryFilter || material.category === categoryFilter;
+    const matchesCategory = !categoryFilter || material.cuenta_mayor === categoryFilter;
     const matchesStatus = !statusFilter || material.status === statusFilter;
     
     return matchesSearch && matchesCategory && matchesStatus;
@@ -158,9 +165,11 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
   // Calculate statistics
   const totalMaterials = materials.length;
   const requiredCount = materials.filter(m => m.status === 'required').length;
-  const orderedCount = materials.filter(m => m.status === 'ordered').length;
+  const orderedCount = materials.filter(m => m.status === 'ordered' || m.status === 'quoted').length;
   const deliveredCount = materials.filter(m => m.status === 'delivered').length;
-  const lowStockCount = materials.filter(m => m.quantity_remaining <= m.min_stock_level).length;
+  const lowStockCount = materials.filter(m => 
+    (m.quantity_remaining || 0) <= 5 // Using a simple threshold since some fields might be null
+  ).length;
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
@@ -290,12 +299,12 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
 
                 <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Filtrar por categoría" />
+                    <SelectValue placeholder="Filtrar por cuenta mayor" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas las categorías</SelectItem>
-                    {Array.from(new Set(materials.map(m => m.category))).map(category => (
-                      <SelectItem key={category} value={category}>{category}</SelectItem>
+                    <SelectItem value="">Todas las cuentas</SelectItem>
+                    {Array.from(new Set(materials.map(m => m.cuenta_mayor).filter(Boolean))).map(cuenta => (
+                      <SelectItem key={cuenta} value={cuenta!}>{cuenta}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -332,7 +341,7 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                     <thead>
                       <tr className="border-b">
                         <th className="text-left p-2">Material</th>
-                        <th className="text-left p-2">Categoría</th>
+                        <th className="text-left p-2">Cuenta Mayor</th>
                         <th className="text-left p-2">Cantidad</th>
                         <th className="text-left p-2">Estado</th>
                         <th className="text-left p-2">Prioridad</th>
@@ -349,16 +358,19 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                               {material.material_code && (
                                 <p className="text-sm text-muted-foreground">{material.material_code}</p>
                               )}
+                              {material.descripcion_producto && (
+                                <p className="text-sm text-muted-foreground">{material.descripcion_producto}</p>
+                              )}
                             </div>
                           </td>
-                          <td className="p-2">{material.category}</td>
+                          <td className="p-2">{material.cuenta_mayor || material.material_type}</td>
                           <td className="p-2">
                             {material.quantity_required} {material.unit_of_measure}
                           </td>
                           <td className="p-2">{getStatusBadge(material.status)}</td>
-                          <td className="p-2">{getPriorityBadge(material.priority_level)}</td>
+                          <td className="p-2">{getPriorityBadge(material.priority)}</td>
                           <td className="p-2">
-                            ${(material.unit_cost * material.quantity_required).toLocaleString()}
+                            ${((material.unit_cost || 0) * material.quantity_required).toLocaleString()}
                           </td>
                           <td className="p-2">
                             <div className="flex justify-center gap-1">
