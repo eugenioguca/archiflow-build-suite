@@ -182,15 +182,15 @@ export function SmartCombobox({
             </Button>
           </PopoverTrigger>
           <PopoverContent 
-            className="w-[--radix-popover-trigger-width] max-w-none p-0 z-[9999]" 
+            className="w-[--radix-popover-trigger-width] max-w-none p-0 z-[10000]" 
             align="start"
             side="bottom"
-            avoidCollisions={true}
-            sticky="always"
+            avoidCollisions={false}
+            container={document.body}
           >
             <Command>
               <CommandInput placeholder="Buscar..." />
-              <CommandList className="max-h-[400px] overflow-y-auto">
+              <CommandList className="max-h-60 overflow-y-auto border-0 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
                 <CommandEmpty>{emptyText}</CommandEmpty>
                 <CommandGroup>
                   {items.map((item) => (
