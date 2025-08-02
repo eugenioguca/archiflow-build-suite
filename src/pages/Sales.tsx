@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { SmartCRM } from "@/components/SmartCRM";
 import { ClientProjectManager } from "@/components/ClientProjectManager";
+import { RequiredDocumentsManager } from "@/components/RequiredDocumentsManager";
+import { PaymentPlanBuilder } from "@/components/PaymentPlanBuilder";
 import { SalesDesignCalendar } from "@/components/SalesDesignCalendar";
 import { SalesExecutiveDashboard } from "@/components/SalesExecutiveDashboard";
 import { ContractTemplateManager } from "@/components/ContractTemplateManager";
@@ -414,6 +416,34 @@ export default function Sales() {
                             )}
                           </div>
                           
+                          {/* Indicadores de progreso */}
+                          {project.sales_pipeline_stage !== 'nuevo_lead' && (
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-muted-foreground flex items-center gap-1">
+                                  <FileText className="h-3 w-3" />
+                                  Docs
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  {project.curp && <div className="w-2 h-2 bg-green-500 rounded-full" />}
+                                  {project.constancia_situacion_fiscal_uploaded && <div className="w-2 h-2 bg-green-500 rounded-full" />}
+                                  {(!project.curp || !project.constancia_situacion_fiscal_uploaded) && (
+                                    <div className="w-2 h-2 bg-yellow-500 rounded-full" />
+                                  )}
+                                </div>
+                              </div>
+                              {['en_contacto', 'cliente_cerrado'].includes(project.sales_pipeline_stage) && (
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-muted-foreground flex items-center gap-1">
+                                    <DollarSign className="h-3 w-3" />
+                                    Plan
+                                  </span>
+                                  <div className="w-2 h-2 bg-gray-400 rounded-full" />
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
                           <div className="flex items-center gap-1">
                             <Select 
                               value={project.assigned_advisor_id || "unassigned"} 
@@ -609,95 +639,157 @@ export default function Sales() {
           </DialogHeader>
           
           {selectedProject && (
-            <div className="space-y-6">
-              {/* Información básica y SmartCRM */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Briefcase className="h-5 w-5" />
-                      Información del Proyecto
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Cliente</p>
-                        <p className="font-medium">{selectedProject.clients?.full_name}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Proyecto</p>
-                        <p className="font-medium">{selectedProject.project_name}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Fase Actual</p>
-                        <Badge className={statusConfig[selectedProject.sales_pipeline_stage].color}>
-                          {statusConfig[selectedProject.sales_pipeline_stage].label}
-                        </Badge>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Asesor</p>
-                        <p className="font-medium">
-                          {selectedProject.assigned_advisor?.full_name || 'Sin asignar'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Presupuesto</p>
-                        <p className="font-medium">
-                          {selectedProject.budget ? `$${selectedProject.budget.toLocaleString()}` : 'No definido'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Probabilidad</p>
-                        <div className="flex items-center gap-2">
-                          <Progress value={selectedProject.probability_percentage || 0} className="flex-1" />
-                          <span className="text-sm">{selectedProject.probability_percentage || 0}%</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <p className="text-sm text-muted-foreground">Contacto</p>
-                      <div className="flex items-center gap-4 mt-1">
-                        <div className="flex items-center gap-1">
-                          <Mail className="h-4 w-4" />
-                          <span className="text-sm">{selectedProject.clients?.email}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Phone className="h-4 w-4" />
-                          <span className="text-sm">{selectedProject.clients?.phone}</span>
-                        </div>
-                      </div>
-                    </div>
+            <Tabs defaultValue="crm" className="w-full">
+              <TabsList className="grid grid-cols-4 w-full">
+                <TabsTrigger value="crm">CRM & Información</TabsTrigger>
+                <TabsTrigger 
+                  value="documents" 
+                  disabled={selectedProject.sales_pipeline_stage === 'nuevo_lead'}
+                  className={selectedProject.sales_pipeline_stage === 'nuevo_lead' ? 'opacity-50' : ''}
+                >
+                  Documentos Requeridos
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="payments"
+                  disabled={!['en_contacto', 'cliente_cerrado'].includes(selectedProject.sales_pipeline_stage)}
+                  className={!['en_contacto', 'cliente_cerrado'].includes(selectedProject.sales_pipeline_stage) ? 'opacity-50' : ''}
+                >
+                  Plan de Pagos
+                </TabsTrigger>
+                <TabsTrigger value="projects">Gestión de Proyectos</TabsTrigger>
+              </TabsList>
 
-                    {selectedProject.project_description && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Descripción</p>
-                        <p className="text-sm">{selectedProject.project_description}</p>
+              <TabsContent value="crm" className="space-y-6 mt-6">
+                {/* Información básica y SmartCRM */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Briefcase className="h-5 w-5" />
+                        Información del Proyecto
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Cliente</p>
+                          <p className="font-medium">{selectedProject.clients?.full_name}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Proyecto</p>
+                          <p className="font-medium">{selectedProject.project_name}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Fase Actual</p>
+                          <Badge className={statusConfig[selectedProject.sales_pipeline_stage].color}>
+                            {statusConfig[selectedProject.sales_pipeline_stage].label}
+                          </Badge>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Asesor</p>
+                          <p className="font-medium">
+                            {selectedProject.assigned_advisor?.full_name || 'Sin asignar'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Presupuesto</p>
+                          <p className="font-medium">
+                            {selectedProject.budget ? `$${selectedProject.budget.toLocaleString()}` : 'No definido'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Probabilidad</p>
+                          <div className="flex items-center gap-2">
+                            <Progress value={selectedProject.probability_percentage || 0} className="flex-1" />
+                            <span className="text-sm">{selectedProject.probability_percentage || 0}%</span>
+                          </div>
+                        </div>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
+                      
+                      <div>
+                        <p className="text-sm text-muted-foreground">Contacto</p>
+                        <div className="flex items-center gap-4 mt-1">
+                          <div className="flex items-center gap-1">
+                            <Mail className="h-4 w-4" />
+                            <span className="text-sm">{selectedProject.clients?.email}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Phone className="h-4 w-4" />
+                            <span className="text-sm">{selectedProject.clients?.phone}</span>
+                          </div>
+                        </div>
+                      </div>
 
-                <SmartCRM
+                      {selectedProject.project_description && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">Descripción</p>
+                          <p className="text-sm">{selectedProject.project_description}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <SmartCRM
+                    clientId={selectedProject.client_id}
+                    clientName={selectedProject.clients?.full_name || ''}
+                    lastContactDate={selectedProject.last_contact_date}
+                    leadScore={selectedProject.probability_percentage || 0}
+                    status={selectedProject.sales_pipeline_stage}
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="documents" className="mt-6">
+                {selectedProject.sales_pipeline_stage !== 'nuevo_lead' ? (
+                  <RequiredDocumentsManager
+                    clientProjectId={selectedProject.id}
+                    clientProject={selectedProject}
+                    onDocumentUpdate={() => fetchData()}
+                  />
+                ) : (
+                  <Card>
+                    <CardContent className="p-8 text-center">
+                      <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                      <h3 className="text-lg font-medium">Documentos no disponibles</h3>
+                      <p className="text-muted-foreground">
+                        Los documentos requeridos se activan cuando el cliente pasa a la fase "En Contacto"
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+
+              <TabsContent value="payments" className="mt-6">
+                {['en_contacto', 'cliente_cerrado'].includes(selectedProject.sales_pipeline_stage) ? (
+                  <PaymentPlanBuilder
+                    clientProjectId={selectedProject.id}
+                    totalBudget={selectedProject.budget || 0}
+                    clientName={selectedProject.clients?.full_name || ''}
+                    onPlanUpdate={() => fetchData()}
+                  />
+                ) : (
+                  <Card>
+                    <CardContent className="p-8 text-center">
+                      <DollarSign className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                      <h3 className="text-lg font-medium">Plan de pagos no disponible</h3>
+                      <p className="text-muted-foreground">
+                        El plan de pagos se activa cuando el cliente está en fase "En Contacto" o "Cliente Cerrado"
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+
+              <TabsContent value="projects" className="mt-6">
+                <ClientProjectManager
                   clientId={selectedProject.client_id}
                   clientName={selectedProject.clients?.full_name || ''}
-                  lastContactDate={selectedProject.last_contact_date}
-                  leadScore={selectedProject.probability_percentage || 0}
-                  status={selectedProject.sales_pipeline_stage}
+                  onProjectSelected={(projectId) => {
+                    console.log('Proyecto seleccionado:', projectId);
+                  }}
                 />
-              </div>
-
-              {/* Gestión de proyectos del cliente */}
-              <ClientProjectManager
-                clientId={selectedProject.client_id}
-                clientName={selectedProject.clients?.full_name || ''}
-                onProjectSelected={(projectId) => {
-                  // Aquí podrías redirigir al módulo de proyectos si es necesario
-                  console.log('Proyecto seleccionado:', projectId);
-                }}
-              />
-            </div>
+              </TabsContent>
+            </Tabs>
           )}
         </DialogContent>
       </Dialog>
