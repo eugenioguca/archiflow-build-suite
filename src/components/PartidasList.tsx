@@ -118,7 +118,7 @@ export function PartidasList({ partidas, suppliers, onPartidasUpdate }: Partidas
                   </TableCell>
                   <TableCell>
                     <Select
-                      value={partida.supplier_id || ""}
+                      value={partida.supplier_id || undefined}
                       onValueChange={(value) => assignSupplier(partida.id, value)}
                     >
                       <SelectTrigger className="w-40">
