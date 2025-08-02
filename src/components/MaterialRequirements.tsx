@@ -156,8 +156,8 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
       material.descripcion_producto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       material.material_code?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = !categoryFilter || material.cuenta_mayor === categoryFilter;
-    const matchesStatus = !statusFilter || material.status === statusFilter;
+    const matchesCategory = !categoryFilter || categoryFilter === "all" || material.cuenta_mayor === categoryFilter;
+    const matchesStatus = !statusFilter || statusFilter === "all" || material.status === statusFilter;
     
     return matchesSearch && matchesCategory && matchesStatus;
   });
@@ -302,7 +302,7 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                     <SelectValue placeholder="Filtrar por cuenta mayor" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas las cuentas</SelectItem>
+                    <SelectItem value="all">Todas las cuentas</SelectItem>
                     {Array.from(new Set(materials.map(m => m.cuenta_mayor).filter(Boolean))).map(cuenta => (
                       <SelectItem key={cuenta} value={cuenta!}>{cuenta}</SelectItem>
                     ))}
@@ -314,7 +314,7 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                     <SelectValue placeholder="Filtrar por estado" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos los estados</SelectItem>
+                    <SelectItem value="all">Todos los estados</SelectItem>
                     <SelectItem value="required">Requerido</SelectItem>
                     <SelectItem value="quoted">Cotizado</SelectItem>
                     <SelectItem value="ordered">Ordenado</SelectItem>
