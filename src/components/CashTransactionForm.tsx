@@ -78,7 +78,6 @@ export function CashTransactionForm() {
         supabase
           .from('clients')
           .select('id, full_name')
-          .eq('status', 'active')
           .order('full_name'),
           
         supabase
