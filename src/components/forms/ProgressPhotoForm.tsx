@@ -134,24 +134,27 @@ export function ProgressPhotoForm({ projectId, onSuccess, onCancel }: ProgressPh
           const photoData = {
             project_id: projectId,
             photo_url: photoUrl,
-            file_name: file.name,
-            file_size: file.size,
-            file_type: file.type,
-            title: selectedFiles.length > 1 ? `${data.title} (${index + 1})` : data.title,
             description: data.description || null,
-            category: data.category,
+            taken_by: profile.id,
             phase_id: data.phase_id || null,
-            latitude,
-            longitude,
-            gps_accuracy: gpsAccuracy,
+            title: selectedFiles.length > 1 ? `${data.title} (${index + 1})` : data.title,
+            coordinates: latitude && longitude ? { latitude, longitude, accuracy: gpsAccuracy } : null,
+            weather_conditions: null,
+            tags: [],
             is_before_photo: data.is_before_photo,
-            is_after_photo: data.is_after_photo,
-            metadata: {
+            before_photo_id: null,
+            visibility: "internal",
+            photo_type: "progress",
+            geolocation: latitude && longitude ? { latitude, longitude, accuracy: gpsAccuracy } : {},
+            photographer_name: null,
+            camera_settings: {},
+            markup_data: {},
+            quality_rating: 5,
+            technical_specifications: {
               upload_source: "web",
               user_agent: navigator.userAgent,
               timestamp: new Date().toISOString()
-            },
-            created_by: profile.id
+            }
           };
 
           return supabase

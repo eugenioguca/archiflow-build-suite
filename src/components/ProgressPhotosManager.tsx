@@ -30,25 +30,30 @@ interface ProgressPhoto {
   id: string;
   project_id: string;
   photo_url: string;
-  thumbnail_url: string | null;
-  file_name: string;
-  file_size: bigint | null;
-  file_type: string | null;
-  category: string;
-  title: string | null;
   description: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  gps_accuracy: number | null;
+  taken_by: string;
   taken_at: string;
-  upload_date: string;
+  phase_id: string | null;
+  title: string | null;
+  file_path: string | null;
+  taken_date: string | null;
+  coordinates: any;
+  camera_angle: string | null;
+  weather_conditions: string | null;
   tags: string[] | null;
   is_before_photo: boolean;
-  is_after_photo: boolean;
-  quality_score: number;
-  approved: boolean;
-  created_by: string;
-  created_at: string;
+  before_photo_id: string | null;
+  visibility: string;
+  work_report_id: string | null;
+  inspection_id: string | null;
+  equipment_id: string | null;
+  photo_type: string;
+  geolocation: any;
+  photographer_name: string | null;
+  camera_settings: any;
+  markup_data: any;
+  quality_rating: number | null;
+  technical_specifications: any;
 }
 
 interface ProgressPhotosManagerProps {
