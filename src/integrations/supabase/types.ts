@@ -765,6 +765,7 @@ export type Database = {
           file_size: number | null
           file_type: string | null
           id: string
+          project_id: string | null
           updated_at: string
           uploaded_by: string
         }
@@ -777,6 +778,7 @@ export type Database = {
           file_size?: number | null
           file_type?: string | null
           id?: string
+          project_id?: string | null
           updated_at?: string
           uploaded_by: string
         }
@@ -789,6 +791,7 @@ export type Database = {
           file_size?: number | null
           file_type?: string | null
           id?: string
+          project_id?: string | null
           updated_at?: string
           uploaded_by?: string
         }
@@ -798,6 +801,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
             referencedColumns: ["id"]
           },
           {
