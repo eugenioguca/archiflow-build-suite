@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,13 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { RevertConstructionDialog } from './RevertConstructionDialog';
 import { 
   CheckCircle, 
   ArrowRight, 
   Building, 
   FileText, 
   Clock,
-  AlertCircle 
+  AlertCircle,
+  RotateCcw
 } from "lucide-react";
 
 interface DesignPhase {
@@ -47,6 +49,9 @@ export function DesignCompletionManager({
   const [loading, setLoading] = useState(false);
   const [completionNotes, setCompletionNotes] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [revertDialogOpen, setRevertDialogOpen] = useState(false);
+  const [projectStatus, setProjectStatus] = useState<string>('');
+  const [projectName, setProjectName] = useState<string>('');
 
   const isDesignCompleted = phases.every(phase => 
     phase.phase_name === 'Diseño Completado' ? phase.status === 'completed' : true
@@ -56,6 +61,31 @@ export function DesignCompletionManager({
   const isReadyForCompletion = phases
     .filter(phase => phase.phase_name !== 'Diseño Completado')
     .every(phase => phase.status === 'completed');
+
+  useEffect(() => {
+    fetchProjectStatus();
+  }, [projectId]);
+
+  const fetchProjectStatus = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('client_projects')
+        .select('status, project_name')
+        .eq('id', projectId)
+        .single();
+
+      if (error) throw error;
+      setProjectStatus(data.status);
+      setProjectName(data.project_name);
+    } catch (error) {
+      console.error('Error fetching project status:', error);
+    }
+  };
+
+  const handleRevertSuccess = () => {
+    fetchProjectStatus(); // Refresh project status
+    window.location.reload(); // Refresh the entire view
+  };
 
   const handleCompleteDesign = async () => {
     if (!finalPhase) return;
@@ -358,7 +388,36 @@ export function DesignCompletionManager({
             </div>
           </div>
         )}
+
+        {/* Revert from Construction Option */}
+        {(projectStatus === 'construction' || projectStatus === 'budget_accepted') && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 p-2 bg-orange-50 border border-orange-200 rounded text-sm">
+              <Building className="h-4 w-4 text-orange-600" />
+              <span className="text-orange-800 font-medium">Proyecto en Construcción</span>
+            </div>
+
+            <Button 
+              onClick={() => setRevertDialogOpen(true)}
+              disabled={loading}
+              variant="destructive"
+              size="sm"
+              className="w-full"
+            >
+              <RotateCcw className="h-4 w-4 mr-1" />
+              Revertir de Construcción
+            </Button>
+          </div>
+        )}
       </CardContent>
+      
+      <RevertConstructionDialog
+        open={revertDialogOpen}
+        onOpenChange={setRevertDialogOpen}
+        projectId={projectId}
+        projectName={projectName}
+        onRevertSuccess={handleRevertSuccess}
+      />
     </Card>
   );
 }

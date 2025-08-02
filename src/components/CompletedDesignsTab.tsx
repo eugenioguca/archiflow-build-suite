@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Eye, ArrowRight, Building2 } from 'lucide-react';
+import { CheckCircle, Eye, ArrowRight, Building2, RotateCcw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
+import { RevertConstructionDialog } from './RevertConstructionDialog';
 
 interface CompletedProject {
   id: string;
@@ -12,6 +14,8 @@ interface CompletedProject {
   status: string;
   moved_to_construction_at: string | null;
   created_at: string;
+  budget: number;
+  construction_area: number;
   client: {
     full_name: string;
   };
@@ -20,7 +24,10 @@ interface CompletedProject {
 export function CompletedDesignsTab() {
   const [completedProjects, setCompletedProjects] = useState<CompletedProject[]>([]);
   const [loading, setLoading] = useState(true);
+  const [revertDialogOpen, setRevertDialogOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<CompletedProject | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchCompletedProjects();
@@ -36,6 +43,8 @@ export function CompletedDesignsTab() {
           status,
           moved_to_construction_at,
           created_at,
+          budget,
+          construction_area,
           client:clients(full_name)
         `)
         .in('status', ['design_completed', 'design_only_completed', 'budget_accepted', 'construction', 'completed'])
@@ -95,6 +104,19 @@ export function CompletedDesignsTab() {
     }
   };
 
+  const handleViewProject = (projectId: string) => {
+    navigate(`/design?project=${projectId}`);
+  };
+
+  const handleRevertProject = (project: CompletedProject) => {
+    setSelectedProject(project);
+    setRevertDialogOpen(true);
+  };
+
+  const handleRevertSuccess = () => {
+    fetchCompletedProjects(); // Refresh the list
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -146,33 +168,61 @@ export function CompletedDesignsTab() {
                     Pasó a construcción: {new Date(project.moved_to_construction_at).toLocaleDateString('es-MX')}
                   </p>
                 )}
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <div className="text-xs">
+                    <span className="text-muted-foreground">Presupuesto:</span>
+                    <div className="font-medium">${project.budget?.toLocaleString() || 'N/A'}</div>
+                  </div>
+                  <div className="text-xs">
+                    <span className="text-muted-foreground">Área:</span>
+                    <div className="font-medium">{project.construction_area || 'N/A'} m²</div>
+                  </div>
+                </div>
               </div>
 
               <div className="flex gap-2">
                 <Button 
                   size="sm" 
                   variant="outline"
-                  onClick={() => window.location.href = `/design?projectId=${project.id}`}
+                  onClick={() => handleViewProject(project.id)}
                   className="flex-1"
                 >
                   <Eye className="h-4 w-4 mr-1" />
                   Ver Diseño
                 </Button>
                 {(project.status === 'construction' || project.status === 'budget_accepted') && (
-                  <Button 
-                    size="sm" 
-                    onClick={() => window.location.href = `/construction`}
-                    className="flex-1"
-                  >
-                    <ArrowRight className="h-4 w-4 mr-1" />
-                    Construcción
-                  </Button>
+                  <>
+                    <Button 
+                      size="sm" 
+                      onClick={() => navigate('/construction')}
+                      className="flex-1"
+                    >
+                      <ArrowRight className="h-4 w-4 mr-1" />
+                      Construcción
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="destructive"
+                      onClick={() => handleRevertProject(project)}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                    </Button>
+                  </>
                 )}
               </div>
             </CardContent>
           </Card>
         );
       })}
+      {selectedProject && (
+        <RevertConstructionDialog
+          open={revertDialogOpen}
+          onOpenChange={setRevertDialogOpen}
+          projectId={selectedProject.id}
+          projectName={selectedProject.project_name}
+          onRevertSuccess={handleRevertSuccess}
+        />
+      )}
     </div>
   );
 }
