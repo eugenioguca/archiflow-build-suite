@@ -32,20 +32,32 @@ import { ConstructionTeams } from "./ConstructionTeams";
 
 interface ConstructionProject {
   id: string;
-  project_id: string;
-  construction_area: number;
-  total_budget: number;
+  project_name: string;
+  budget: number;
+  construction_budget: number;
   spent_budget: number;
-  start_date: string;
-  estimated_completion_date: string;
-  overall_progress_percentage: number;
-  permit_status: string;
-  project: {
-    project_name: string;
-    client: {
-      full_name: string;
-    };
+  construction_area: number;
+  land_square_meters: number;
+  client: {
+    full_name: string;
   };
+  construction_project?: {
+    id: string;
+    construction_area: number;
+    total_budget: number;
+    spent_budget: number;
+    start_date: string;
+    estimated_completion_date: string;
+    overall_progress_percentage: number;
+    permit_status: string;
+    project_manager_id?: string;
+    construction_supervisor_id?: string;
+    location_coordinates?: any;
+    safety_requirements?: string;
+    weather_considerations?: string;
+    permit_expiry_date?: string;
+    actual_completion_date?: string;
+  }[];
 }
 
 interface ConstructionDashboardProps {
@@ -61,16 +73,30 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from("construction_projects")
+        .from("client_projects")
         .select(`
           *,
-          project:client_projects(
-            project_name,
-            client:clients(full_name)
+          client:clients(full_name),
+          construction_project:construction_projects(
+            id,
+            construction_area,
+            total_budget,
+            spent_budget,
+            start_date,
+            estimated_completion_date,
+            overall_progress_percentage,
+            permit_status,
+            project_manager_id,
+            construction_supervisor_id,
+            location_coordinates,
+            safety_requirements,
+            weather_considerations,
+            permit_expiry_date,
+            actual_completion_date
           )
         `)
-        .eq("project_id", projectId)
-        .single();
+        .eq("id", projectId)
+        .maybeSingle();
 
       if (error) throw error;
       setConstructionProject(data);
@@ -109,15 +135,23 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
     );
   }
 
-  const progressColor = constructionProject.overall_progress_percentage >= 75 
+  const constructionData = constructionProject.construction_project?.[0];
+  const progressPercentage = constructionData?.overall_progress_percentage || 0;
+  const permitStatus = constructionData?.permit_status || "pending";
+  const totalBudget = constructionProject.budget || constructionData?.total_budget || 0;
+  const spentBudget = constructionProject.spent_budget || constructionData?.spent_budget || 0;
+  const constructionArea = constructionData?.construction_area || constructionProject.construction_area || (constructionProject.land_square_meters * 0.8);
+  const estimatedCompletion = constructionData?.estimated_completion_date;
+
+  const progressColor = progressPercentage >= 75 
     ? "bg-green-500" 
-    : constructionProject.overall_progress_percentage >= 50 
+    : progressPercentage >= 50 
     ? "bg-yellow-500" 
     : "bg-red-500";
 
-  const permitStatusColor = constructionProject.permit_status === "approved" 
+  const permitStatusColor = permitStatus === "approved" 
     ? "bg-green-100 text-green-800" 
-    : constructionProject.permit_status === "pending" 
+    : permitStatus === "pending" 
     ? "bg-yellow-100 text-yellow-800" 
     : "bg-red-100 text-red-800";
 
@@ -126,23 +160,23 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
       {/* Header Section */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold">{constructionProject.project.project_name}</h1>
+          <h1 className="text-3xl font-bold">{constructionProject.project_name}</h1>
           <p className="text-muted-foreground">
-            Cliente: {constructionProject.project.client.full_name}
+            Cliente: {constructionProject.client.full_name}
           </p>
         </div>
         <div className="flex gap-2">
           <Badge className={permitStatusColor}>
             <Shield className="h-3 w-3 mr-1" />
-            {constructionProject.permit_status === "approved" && "Permisos Aprobados"}
-            {constructionProject.permit_status === "pending" && "Permisos Pendientes"}
-            {constructionProject.permit_status === "expired" && "Permisos Vencidos"}
+            {permitStatus === "approved" && "Permisos Aprobados"}
+            {permitStatus === "pending" && "Permisos Pendientes"}
+            {permitStatus === "expired" && "Permisos Vencidos"}
           </Badge>
           <BudgetEditDialog
-            projectId={constructionProject.project_id}
-            currentBudget={constructionProject.total_budget}
-            currentArea={constructionProject.construction_area}
-            estimatedCompletion={constructionProject.estimated_completion_date}
+            projectId={constructionProject.id}
+            currentBudget={totalBudget}
+            currentArea={constructionArea}
+            estimatedCompletion={estimatedCompletion}
             onUpdate={fetchConstructionProject}
           />
         </div>
@@ -157,10 +191,10 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold mb-2">
-              {constructionProject.overall_progress_percentage}%
+              {progressPercentage}%
             </div>
             <Progress 
-              value={constructionProject.overall_progress_percentage} 
+              value={progressPercentage} 
               className="h-2"
             />
           </CardContent>
@@ -173,10 +207,10 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${constructionProject.spent_budget.toLocaleString()}
+              ${spentBudget.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">
-              de ${constructionProject.total_budget.toLocaleString()}
+              de ${totalBudget.toLocaleString()}
             </p>
           </CardContent>
         </Card>
@@ -188,7 +222,7 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {constructionProject.construction_area} m²
+              {constructionArea} m²
             </div>
             <p className="text-xs text-muted-foreground">
               Área total a construir
@@ -203,7 +237,7 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {new Date(constructionProject.estimated_completion_date).toLocaleDateString()}
+              {estimatedCompletion ? new Date(estimatedCompletion).toLocaleDateString() : 'Sin fecha'}
             </div>
             <p className="text-xs text-muted-foreground">
               Fecha de finalización (editable)

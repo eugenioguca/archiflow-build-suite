@@ -18,21 +18,26 @@ import {
 
 interface ConstructionProject {
   id: string;
-  project_id: string;
-  construction_area: number;
-  total_budget: number;
+  project_name: string;
+  budget: number;
+  construction_budget: number;
   spent_budget: number;
-  start_date: string;
-  estimated_completion_date: string;
-  overall_progress_percentage: number;
-  permit_status: string;
-  project: {
-    project_name: string;
-    client: {
-      full_name: string;
-    };
-    assigned_advisor_id?: string;
+  construction_area: number;
+  land_square_meters: number;
+  assigned_advisor_id?: string;
+  client: {
+    full_name: string;
   };
+  construction_project?: {
+    id: string;
+    construction_area: number;
+    total_budget: number;
+    spent_budget: number;
+    start_date: string;
+    estimated_completion_date: string;
+    overall_progress_percentage: number;
+    permit_status: string;
+  }[];
   active_phases_count?: number;
   pending_deliveries?: number;
   safety_incidents?: number;
@@ -45,13 +50,21 @@ interface ConstructionProjectCardProps {
 }
 
 export function ConstructionProjectCard({ project, onOpenProject }: ConstructionProjectCardProps) {
-  const budgetPercentage = project.total_budget > 0 
-    ? (project.spent_budget / project.total_budget) * 100 
+  const constructionData = project.construction_project?.[0];
+  const totalBudget = project.budget || constructionData?.total_budget || 0;
+  const spentBudget = project.spent_budget || constructionData?.spent_budget || 0;
+  const progressPercentage = constructionData?.overall_progress_percentage || 0;
+  const permitStatus = constructionData?.permit_status || "pending";
+  const estimatedCompletion = constructionData?.estimated_completion_date;
+  const constructionArea = constructionData?.construction_area || project.construction_area || (project.land_square_meters * 0.8);
+
+  const budgetPercentage = totalBudget > 0 
+    ? (spentBudget / totalBudget) * 100 
     : 0;
 
-  const daysRemaining = Math.ceil(
-    (new Date(project.estimated_completion_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-  );
+  const daysRemaining = estimatedCompletion 
+    ? Math.ceil((new Date(estimatedCompletion).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+    : 0;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -63,9 +76,9 @@ export function ConstructionProjectCard({ project, onOpenProject }: Construction
   };
 
   const getProgressColor = () => {
-    if (project.overall_progress_percentage >= 80) return 'bg-emerald-500';
-    if (project.overall_progress_percentage >= 60) return 'bg-blue-500';
-    if (project.overall_progress_percentage >= 40) return 'bg-amber-500';
+    if (progressPercentage >= 80) return 'bg-emerald-500';
+    if (progressPercentage >= 60) return 'bg-blue-500';
+    if (progressPercentage >= 40) return 'bg-amber-500';
     return 'bg-red-500';
   };
 
@@ -77,7 +90,7 @@ export function ConstructionProjectCard({ project, onOpenProject }: Construction
 
   const getUrgencyIndicators = () => {
     const indicators = [];
-    if (daysRemaining <= 7) indicators.push({ type: 'urgent', text: 'Entrega próxima' });
+    if (daysRemaining <= 7 && daysRemaining > 0) indicators.push({ type: 'urgent', text: 'Entrega próxima' });
     if (budgetPercentage > 90) indicators.push({ type: 'budget', text: 'Presupuesto excedido' });
     if (project.pending_deliveries && project.pending_deliveries > 0) {
       indicators.push({ type: 'delivery', text: `${project.pending_deliveries} entregas pendientes` });
@@ -91,21 +104,21 @@ export function ConstructionProjectCard({ project, onOpenProject }: Construction
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
             <CardTitle className="text-lg font-semibold mb-1 truncate">
-              {project.project.project_name}
+              {project.project_name}
             </CardTitle>
             <p className="text-sm text-muted-foreground truncate">
-              Cliente: {project.project.client.full_name}
+              Cliente: {project.client.full_name}
             </p>
           </div>
           <div className="flex flex-col gap-1 ml-4">
             <Badge 
               variant="outline" 
-              className={`text-xs ${getStatusColor(project.permit_status)}`}
+              className={`text-xs ${getStatusColor(permitStatus)}`}
             >
               <Shield className="h-3 w-3 mr-1" />
-              {project.permit_status === 'approved' && 'Aprobado'}
-              {project.permit_status === 'pending' && 'Pendiente'}
-              {project.permit_status === 'expired' && 'Vencido'}
+              {permitStatus === 'approved' && 'Aprobado'}
+              {permitStatus === 'pending' && 'Pendiente'}
+              {permitStatus === 'expired' && 'Vencido'}
             </Badge>
           </div>
         </div>
@@ -116,10 +129,10 @@ export function ConstructionProjectCard({ project, onOpenProject }: Construction
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Progreso General</span>
-            <span className="font-medium">{project.overall_progress_percentage}%</span>
+            <span className="font-medium">{progressPercentage}%</span>
           </div>
           <Progress 
-            value={project.overall_progress_percentage} 
+            value={progressPercentage} 
             className="h-2"
             style={{ '--progress-background': getProgressColor() } as React.CSSProperties}
           />
@@ -133,10 +146,10 @@ export function ConstructionProjectCard({ project, onOpenProject }: Construction
               Presupuesto
             </div>
             <div className={`text-sm font-medium ${getBudgetColor()}`}>
-              ${project.spent_budget.toLocaleString()}
+              ${spentBudget.toLocaleString()}
             </div>
             <div className="text-xs text-muted-foreground">
-              de ${project.total_budget.toLocaleString()}
+              de ${totalBudget.toLocaleString()}
             </div>
           </div>
 
@@ -146,9 +159,11 @@ export function ConstructionProjectCard({ project, onOpenProject }: Construction
               Tiempo
             </div>
             <div className={`text-sm font-medium ${daysRemaining <= 7 ? 'text-red-600' : 'text-foreground'}`}>
-              {daysRemaining > 0 ? `${daysRemaining} días` : 'Vencido'}
+              {estimatedCompletion ? (daysRemaining > 0 ? `${daysRemaining} días` : 'Vencido') : 'Sin fecha'}
             </div>
-            <div className="text-xs text-muted-foreground">restantes</div>
+            <div className="text-xs text-muted-foreground">
+              {estimatedCompletion ? 'restantes' : 'definida'}
+            </div>
           </div>
 
           <div className="space-y-1">
@@ -156,7 +171,7 @@ export function ConstructionProjectCard({ project, onOpenProject }: Construction
               <MapPin className="h-3 w-3" />
               Área
             </div>
-            <div className="text-sm font-medium">{project.construction_area}m²</div>
+            <div className="text-sm font-medium">{constructionArea.toFixed(0)}m²</div>
           </div>
 
           <div className="space-y-1">
@@ -187,7 +202,7 @@ export function ConstructionProjectCard({ project, onOpenProject }: Construction
         {/* Action Buttons */}
         <div className="flex gap-2 pt-2">
           <Button 
-            onClick={() => onOpenProject(project.project_id)}
+            onClick={() => onOpenProject(project.id)}
             className="flex-1"
             size="sm"
           >

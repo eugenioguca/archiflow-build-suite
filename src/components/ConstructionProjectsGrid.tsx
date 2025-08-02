@@ -10,21 +10,26 @@ import { Button } from '@/components/ui/button';
 
 interface ConstructionProject {
   id: string;
-  project_id: string;
-  construction_area: number;
-  total_budget: number;
+  project_name: string;
+  budget: number;
+  construction_budget: number;
   spent_budget: number;
-  start_date: string;
-  estimated_completion_date: string;
-  overall_progress_percentage: number;
-  permit_status: string;
-  project: {
-    project_name: string;
-    client: {
-      full_name: string;
-    };
-    assigned_advisor_id?: string;
+  construction_area: number;
+  land_square_meters: number;
+  assigned_advisor_id?: string;
+  client: {
+    full_name: string;
   };
+  construction_project?: {
+    id: string;
+    construction_area: number;
+    total_budget: number;
+    spent_budget: number;
+    start_date: string;
+    estimated_completion_date: string;
+    overall_progress_percentage: number;
+    permit_status: string;
+  }[];
   active_phases_count?: number;
   pending_deliveries?: number;
   safety_incidents?: number;
@@ -55,17 +60,24 @@ export function ConstructionProjectsGrid({ onProjectSelect }: ConstructionProjec
     try {
       setLoading(true);
       
-      // Fetch construction projects with related data
+      // Fetch client projects with construction data
       const { data: constructionData, error: constructionError } = await supabase
-        .from('construction_projects')
+        .from('client_projects')
         .select(`
           *,
-          project:client_projects(
-            project_name,
-            client:clients(full_name),
-            assigned_advisor_id
+          client:clients(full_name),
+          construction_project:construction_projects(
+            id,
+            construction_area,
+            total_budget,
+            spent_budget,
+            start_date,
+            estimated_completion_date,
+            overall_progress_percentage,
+            permit_status
           )
-        `);
+        `)
+        .eq('status', 'construction');
 
       if (constructionError) throw constructionError;
 
@@ -117,34 +129,47 @@ export function ConstructionProjectsGrid({ onProjectSelect }: ConstructionProjec
     // Search filter
     if (searchTerm) {
       filtered = filtered.filter(project => 
-        project.project.project_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.project.client.full_name.toLowerCase().includes(searchTerm.toLowerCase())
+        project.project_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.client.full_name.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // Status filter
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(project => project.permit_status === statusFilter);
+      filtered = filtered.filter(project => {
+        const constructionData = project.construction_project?.[0];
+        return constructionData?.permit_status === statusFilter;
+      });
     }
 
     // Progress filter
     if (progressFilter !== 'all') {
       switch (progressFilter) {
         case 'not-started':
-          filtered = filtered.filter(project => project.overall_progress_percentage === 0);
+          filtered = filtered.filter(project => {
+            const constructionData = project.construction_project?.[0];
+            return (constructionData?.overall_progress_percentage || 0) === 0;
+          });
           break;
         case 'in-progress':
-          filtered = filtered.filter(project => 
-            project.overall_progress_percentage > 0 && project.overall_progress_percentage < 100
-          );
+          filtered = filtered.filter(project => {
+            const constructionData = project.construction_project?.[0];
+            const progress = constructionData?.overall_progress_percentage || 0;
+            return progress > 0 && progress < 100;
+          });
           break;
         case 'completed':
-          filtered = filtered.filter(project => project.overall_progress_percentage === 100);
+          filtered = filtered.filter(project => {
+            const constructionData = project.construction_project?.[0];
+            return (constructionData?.overall_progress_percentage || 0) === 100;
+          });
           break;
         case 'delayed':
           filtered = filtered.filter(project => {
+            const constructionData = project.construction_project?.[0];
+            if (!constructionData?.estimated_completion_date) return false;
             const daysRemaining = Math.ceil(
-              (new Date(project.estimated_completion_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+              (new Date(constructionData.estimated_completion_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
             );
             return daysRemaining < 0;
           });
@@ -157,10 +182,17 @@ export function ConstructionProjectsGrid({ onProjectSelect }: ConstructionProjec
 
   const getProjectStats = () => {
     const totalProjects = projects.length;
-    const activeProjects = projects.filter(p => p.overall_progress_percentage > 0 && p.overall_progress_percentage < 100).length;
-    const completedProjects = projects.filter(p => p.overall_progress_percentage === 100).length;
-    const totalBudget = projects.reduce((sum, p) => sum + p.total_budget, 0);
-    const spentBudget = projects.reduce((sum, p) => sum + p.spent_budget, 0);
+    const activeProjects = projects.filter(p => {
+      const constructionData = p.construction_project?.[0];
+      const progress = constructionData?.overall_progress_percentage || 0;
+      return progress > 0 && progress < 100;
+    }).length;
+    const completedProjects = projects.filter(p => {
+      const constructionData = p.construction_project?.[0];
+      return (constructionData?.overall_progress_percentage || 0) === 100;
+    }).length;
+    const totalBudget = projects.reduce((sum, p) => sum + (p.budget || 0), 0);
+    const spentBudget = projects.reduce((sum, p) => sum + (p.spent_budget || 0), 0);
     
     return { totalProjects, activeProjects, completedProjects, totalBudget, spentBudget };
   };
