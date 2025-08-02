@@ -22,7 +22,7 @@ interface Partida {
 
 interface Project {
   id: string;
-  name: string;
+  project_name: string;
   client: {
     full_name: string;
   };
@@ -48,12 +48,13 @@ export default function Construction() {
   const fetchProjects = async () => {
     try {
       const { data, error } = await supabase
-        .from('projects')
+        .from('client_projects')
         .select(`
           id,
-          name,
+          project_name,
           client:clients(full_name)
         `)
+        .in('status', ['construction', 'budget_accepted'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -134,7 +135,7 @@ export default function Construction() {
               {projects.map((project) => (
                 <SelectItem key={project.id} value={project.id}>
                   <div className="flex flex-col">
-                    <span className="font-medium">{project.name}</span>
+                    <span className="font-medium">{project.project_name}</span>
                     <span className="text-sm text-muted-foreground">
                       Cliente: {project.client?.full_name}
                     </span>
@@ -153,7 +154,7 @@ export default function Construction() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-semibold">{selectedProjectData.name}</h2>
+                  <h2 className="text-xl font-semibold">{selectedProjectData.project_name}</h2>
                   <p className="text-muted-foreground">
                     Cliente: {selectedProjectData.client?.full_name}
                   </p>

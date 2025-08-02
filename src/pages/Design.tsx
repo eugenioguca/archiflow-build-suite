@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ClientInfoPanel } from "@/components/ClientInfoPanel";
 import { DesignCompletionManager } from "@/components/DesignCompletionManager";
+import { CompletedDesignsTab } from "@/components/CompletedDesignsTab";
 import { 
   Clock, 
   User, 
@@ -33,7 +34,8 @@ import {
   Target,
   Palette,
   Plus,
-  ChevronRight
+  ChevronRight,
+  ArrowLeft
 } from "lucide-react";
 
 interface DesignPhase {
@@ -477,82 +479,75 @@ export default function Design() {
   if (!projectId) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Palette className="h-8 w-8 text-primary" />
           <div>
-            <h1 className="text-2xl font-bold">Módulo de Diseño</h1>
-            <p className="text-sm text-muted-foreground">Gestiona las fases de diseño de tus proyectos</p>
+            <h1 className="text-3xl font-bold">Diseño</h1>
+            <p className="text-muted-foreground">
+              Gestión completa de proyectos de diseño arquitectónico
+            </p>
           </div>
-          <Link to="/projects">
-            <Button size="sm">
-              <Plus className="mr-2 h-4 w-4" />
-              Nuevo Proyecto
-            </Button>
-          </Link>
         </div>
 
-        {projects.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-8">
-              <Palette className="h-8 w-8 text-muted-foreground mb-3" />
-              <h3 className="text-lg font-semibold mb-2">No hay proyectos en diseño</h3>
-              <p className="text-sm text-muted-foreground text-center mb-4">
-                Los proyectos con estado "Diseño" o "Planeación" aparecerán aquí
-              </p>
-              <Link to="/projects">
-                <Button>Ver todos los proyectos</Button>
-              </Link>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {projects.map((designProject) => (
-              <Card key={designProject.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{designProject.project_name}</CardTitle>
-                    <Badge variant="default">
-                      Diseño
-                    </Badge>
-                  </div>
-                  <CardDescription>
-                    Cliente: {designProject.client?.full_name}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                    {designProject.project_description || 'Sin descripción disponible'}
-                  </p>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                      <div className="flex items-center">
-                        <CalendarIcon className="mr-1 h-4 w-4" />
-                        <span>Fases</span>
+        <Tabs defaultValue="activos" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="activos">Proyectos Activos</TabsTrigger>
+            <TabsTrigger value="completados">Diseños Completados</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="activos" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {projects.map((project) => (
+                <Card key={project.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="space-y-1">
+                        <h3 className="font-semibold text-lg">{project.project_name}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Cliente: {project.client?.full_name}
+                        </p>
                       </div>
-                      <div className="flex items-center">
-                        <Users className="mr-1 h-4 w-4" />
-                        <span>Equipo</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Clock className="mr-1 h-4 w-4" />
-                        <span>Cronograma</span>
-                      </div>
+                      <Badge variant="default" className="text-xs">
+                        En Diseño
+                      </Badge>
                     </div>
                     
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => handleSelectProject(designProject.id)}
-                    >
-                      Abrir
-                      <ArrowRight className="ml-1 h-4 w-4" />
-                    </Button>
-                  </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleSelectProject(project.id)}
+                        className="flex-1"
+                      >
+                        <ArrowRight className="h-4 w-4 mr-1" />
+                        Ver Proyecto
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {projects.length === 0 && (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <Palette className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No hay proyectos de diseño activos</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Los proyectos aparecerán aquí cuando pasen del módulo de ventas
+                  </p>
+                  <Button variant="outline" onClick={() => window.location.href = '/sales'}>
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Ir a Ventas
+                  </Button>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        )}
+            )}
+          </TabsContent>
+
+          <TabsContent value="completados" className="space-y-4">
+            <CompletedDesignsTab />
+          </TabsContent>
+        </Tabs>
       </div>
     );
   }
