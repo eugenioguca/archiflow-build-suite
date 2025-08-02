@@ -192,8 +192,8 @@ export function SmartCombobox({
           >
             <Command>
               <CommandInput placeholder="Buscar..." />
-              <ScrollArea className="h-60">
-                <CommandList>
+              <ScrollArea className="h-60 scrollbar-thin">
+                <CommandList className="h-full">
                   <CommandEmpty>{emptyText}</CommandEmpty>
                   <CommandGroup>
                     {items.map((item) => (
