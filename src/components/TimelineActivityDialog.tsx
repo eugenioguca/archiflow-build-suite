@@ -80,7 +80,6 @@ export function TimelineActivityDialog({
           .from('construction_timelines')
           .select('id, activity_name')
           .eq('construction_project_id', constructionProjectId)
-          .neq('id', activity?.id || '')
       ]);
 
       if (phasesRes.data) setPhases(phasesRes.data);
