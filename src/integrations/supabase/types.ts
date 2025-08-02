@@ -3802,6 +3802,10 @@ export type Database = {
         | "en_contacto"
         | "lead_perdido"
         | "cliente_cerrado"
+        | "design"
+        | "construction"
+        | "design_completed"
+        | "design_only_completed"
       contact_method:
         | "phone"
         | "email"
@@ -4015,6 +4019,10 @@ export const Constants = {
         "en_contacto",
         "lead_perdido",
         "cliente_cerrado",
+        "design",
+        "construction",
+        "design_completed",
+        "design_only_completed",
       ],
       contact_method: [
         "phone",

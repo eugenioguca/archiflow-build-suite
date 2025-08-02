@@ -135,7 +135,7 @@ export function ClientInfoPanel({ projectId }: ClientInfoPanelProps) {
         const { error: statusError } = await supabase
           .from("client_projects")
           .update({ 
-            status: 'construction',
+            status: 'active', // Use valid enum value
             moved_to_construction_at: new Date().toISOString()
           })
           .eq("id", projectId);

@@ -18,13 +18,17 @@ import {
 
 interface DesignPhase {
   id: string;
+  project_id: string;
   phase_name: string;
-  status: string;
   phase_order: number;
+  status: string;
   estimated_delivery_date?: string;
   actual_completion_date?: string;
-  days_elapsed: number;
   notes?: string;
+  days_elapsed: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface DesignCompletionManagerProps {
@@ -73,7 +77,7 @@ export function DesignCompletionManager({
       const { error: projectError } = await supabase
         .from("client_projects")
         .update({
-          status: 'design_completed',
+          status: 'completed', // Use valid enum value
           updated_at: new Date().toISOString()
         })
         .eq("id", projectId);
@@ -117,7 +121,7 @@ export function DesignCompletionManager({
       const { error } = await supabase
         .from("client_projects")
         .update({
-          status: 'construction',
+          status: 'active', // Use valid enum value
           moved_to_construction_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -149,7 +153,7 @@ export function DesignCompletionManager({
       const { error } = await supabase
         .from("client_projects")
         .update({
-          status: 'design_only_completed',
+          status: 'completed', // Use valid enum value  
           updated_at: new Date().toISOString()
         })
         .eq("id", projectId);

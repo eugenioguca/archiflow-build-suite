@@ -433,6 +433,26 @@ export function ProjectBudgetManager({ projectId, onBudgetUpdate }: ProjectBudge
           </div>
         )}
       </CardContent>
+      
+      {/* PDF Export Section */}
+      {budget && items.length > 0 && (
+        <div className="p-6 border-t">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium">Exportar Presupuesto</h4>
+              <p className="text-sm text-muted-foreground">
+                Genera un PDF profesional del presupuesto
+              </p>
+            </div>
+            <BudgetPDFExporter 
+              budget={budget}
+              items={items}
+              projectName={budget.budget_name}
+              clientName="Cliente"
+            />
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
