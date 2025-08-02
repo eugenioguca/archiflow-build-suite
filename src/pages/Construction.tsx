@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { ConstructionProjectsGrid } from '@/components/ConstructionProjectsGrid';
 import { ConstructionDashboard } from '@/components/ConstructionDashboard';
 import { AdvancedBudgetManager } from '@/components/AdvancedBudgetManager';
-import { GanttScheduler } from '@/components/GanttScheduler';
-import { IntegratedExpenseManager } from '@/components/IntegratedExpenseManager';
+// import { GanttScheduler } from '@/components/GanttScheduler';
+// import { IntegratedExpenseManager } from '@/components/IntegratedExpenseManager';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -61,11 +61,15 @@ export default function Construction() {
         </TabsContent>
 
         <TabsContent value="schedule">
-          <GanttScheduler projectId={selectedProject} />
+          <div className="text-center p-8">
+            <p className="text-muted-foreground">Módulo de cronograma será refactorizado</p>
+          </div>
         </TabsContent>
 
         <TabsContent value="expenses">
-          <IntegratedExpenseManager projectId={selectedProject} />
+          <div className="text-center p-8">
+            <p className="text-muted-foreground">Módulo de gastos será refactorizado</p>
+          </div>
         </TabsContent>
 
         <TabsContent value="reports">

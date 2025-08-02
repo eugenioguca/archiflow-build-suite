@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { RevertConstructionDialog } from './RevertConstructionDialog';
+// import { RevertConstructionDialog } from './RevertConstructionDialog';
 import { 
   CheckCircle, 
   ArrowRight, 
@@ -411,13 +411,7 @@ export function DesignCompletionManager({
         )}
       </CardContent>
       
-      <RevertConstructionDialog
-        open={revertDialogOpen}
-        onOpenChange={setRevertDialogOpen}
-        projectId={projectId}
-        projectName={projectName}
-        onRevertSuccess={handleRevertSuccess}
-      />
+      {/* RevertConstructionDialog disabled - component was removed */}
     </Card>
   );
 }

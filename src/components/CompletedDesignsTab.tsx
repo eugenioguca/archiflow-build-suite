@@ -6,7 +6,7 @@ import { CheckCircle, Eye, ArrowRight, Building2, RotateCcw } from 'lucide-react
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { RevertConstructionDialog } from './RevertConstructionDialog';
+// import { RevertConstructionDialog } from './RevertConstructionDialog';
 
 interface CompletedProject {
   id: string;
@@ -214,15 +214,7 @@ export function CompletedDesignsTab() {
           </Card>
         );
       })}
-      {selectedProject && (
-        <RevertConstructionDialog
-          open={revertDialogOpen}
-          onOpenChange={setRevertDialogOpen}
-          projectId={selectedProject.id}
-          projectName={selectedProject.project_name}
-          onRevertSuccess={handleRevertSuccess}
-        />
-      )}
+      {/* RevertConstructionDialog disabled - component was removed */}
     </div>
   );
 }

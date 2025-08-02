@@ -21,14 +21,14 @@ import {
   Shield,
   Settings
 } from "lucide-react";
-import { BudgetEditDialog } from "./BudgetEditDialog";
-import { ConstructionTimeline } from "./ConstructionTimeline";
+// import { BudgetEditDialog } from "./BudgetEditDialog";
+// import { ConstructionTimeline } from "./ConstructionTimeline";
 import { ProgressPhotos } from "./ProgressPhotos";
-import { ConstructionPhases } from "./ConstructionPhases";
-import { MaterialsInventory } from "./MaterialsInventory";
-import { QualityControl } from "./QualityControl";
-import { ConstructionExpenses } from "./ConstructionExpenses";
-import { ConstructionTeams } from "./ConstructionTeams";
+// import { ConstructionPhases } from "./ConstructionPhases";
+// import { MaterialsInventory } from "./MaterialsInventory";
+// import { QualityControl } from "./QualityControl";
+// import { ConstructionExpenses } from "./ConstructionExpenses";
+// import { ConstructionTeams } from "./ConstructionTeams";
 
 interface ConstructionProject {
   id: string;
@@ -76,24 +76,7 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
         .from("client_projects")
         .select(`
           *,
-          client:clients(full_name),
-          construction_project:construction_projects(
-            id,
-            construction_area,
-            total_budget,
-            spent_budget,
-            start_date,
-            estimated_completion_date,
-            overall_progress_percentage,
-            permit_status,
-            project_manager_id,
-            construction_supervisor_id,
-            location_coordinates,
-            safety_requirements,
-            weather_considerations,
-            permit_expiry_date,
-            actual_completion_date
-          )
+          client:clients(full_name)
         `)
         .eq("id", projectId)
         .maybeSingle();
@@ -296,11 +279,15 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
         </TabsContent>
 
         <TabsContent value="timeline">
-          <ConstructionTimeline constructionProjectId={constructionProject.id} />
+          <div className="text-center text-muted-foreground py-8">
+            Funcionalidad de Timeline será refactorizada
+          </div>
         </TabsContent>
 
         <TabsContent value="phases">
-          <ConstructionPhases constructionProjectId={constructionProject.id} />
+          <div className="text-center text-muted-foreground py-8">
+            Funcionalidad de Fases será refactorizada
+          </div>
         </TabsContent>
 
         <TabsContent value="photos">
@@ -308,19 +295,27 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
         </TabsContent>
 
         <TabsContent value="materials">
-          <MaterialsInventory constructionProjectId={constructionProject.id} />
+          <div className="text-center text-muted-foreground py-8">
+            Funcionalidad de Materiales será refactorizada
+          </div>
         </TabsContent>
 
         <TabsContent value="quality">
-          <QualityControl constructionProjectId={constructionProject.id} />
+          <div className="text-center text-muted-foreground py-8">
+            Funcionalidad de Control de Calidad será refactorizada
+          </div>
         </TabsContent>
 
         <TabsContent value="expenses">
-          <ConstructionExpenses constructionProjectId={constructionProject.id} />
+          <div className="text-center text-muted-foreground py-8">
+            Funcionalidad de Gastos será refactorizada
+          </div>
         </TabsContent>
 
         <TabsContent value="teams">
-          <ConstructionTeams constructionProjectId={constructionProject.id} />
+          <div className="text-center text-muted-foreground py-8">
+            Funcionalidad de Equipos será refactorizada
+          </div>
         </TabsContent>
       </Tabs>
     </div>
