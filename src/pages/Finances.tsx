@@ -279,16 +279,16 @@ export default function Finances() {
   const fetchProjects = async () => {
     try {
       const { data, error } = await supabase
-        .from('projects')
+        .from('client_projects')
         .select(`
           id, 
-          name,
+          project_name,
           client:clients(full_name)
         `)
-        .order('name');
+        .order('project_name');
 
       if (error) throw error;
-      setProjects(data || []);
+      setProjects((data || []).map(p => ({ ...p, name: p.project_name })));
     } catch (error) {
       console.error('Error fetching projects:', error);
     }

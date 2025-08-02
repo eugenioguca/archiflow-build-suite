@@ -43,12 +43,12 @@ const FinancesNew: React.FC = () => {
     try {
       const [suppliersResult, projectsResult, clientsResult] = await Promise.all([
         supabase.from('suppliers').select('id, company_name, rfc'),
-        supabase.from('projects').select('id, name'),
+        supabase.from('client_projects').select('id, project_name'),
         supabase.from('clients').select('id, full_name')
       ]);
 
       if (suppliersResult.data) setSuppliers(suppliersResult.data);
-      if (projectsResult.data) setProjects(projectsResult.data);
+      if (projectsResult.data) setProjects(projectsResult.data.map(p => ({ ...p, name: p.project_name })));
       if (clientsResult.data) setClients(clientsResult.data);
     } catch (error) {
       console.error('Error fetching support data:', error);

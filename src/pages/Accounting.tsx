@@ -199,7 +199,7 @@ export default function Accounting() {
         .from('expenses')
         .select(`
           *,
-          project:projects(name),
+          project:client_projects(project_name),
           client:clients(full_name),
           supplier:suppliers(company_name, rfc),
           cfdi_document:cfdi_documents!expenses_cfdi_document_id_fkey(*)
@@ -223,7 +223,12 @@ export default function Accounting() {
       const { data, error } = await query;
 
       if (error) throw error;
-      setExpenses(data || []);
+      // Transform project_name to name for compatibility
+      const transformedData = (data || []).map(expense => ({
+        ...expense,
+        project: expense.project ? { name: expense.project.project_name } : undefined
+      }));
+      setExpenses(transformedData);
     } catch (error) {
       console.error('Error fetching expenses:', error);
     }
@@ -235,7 +240,7 @@ export default function Accounting() {
         .from('incomes')
         .select(`
           *,
-          project:projects(name),
+          project:client_projects(project_name),
           client:clients(full_name),
           cfdi_document:cfdi_documents!incomes_cfdi_document_id_fkey(*)
         `)
@@ -258,7 +263,12 @@ export default function Accounting() {
       const { data, error } = await query;
 
       if (error) throw error;
-      setIncomes(data || []);
+      // Transform project_name to name for compatibility  
+      const transformedData = (data || []).map(income => ({
+        ...income,
+        project: income.project ? { name: income.project.project_name } : undefined
+      }));
+      setIncomes(transformedData);
     } catch (error) {
       console.error('Error fetching incomes:', error);
     }
