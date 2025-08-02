@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Calendar, Plus, Filter, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { TimelineActivityForm } from "@/components/forms/TimelineActivityForm";
 import { toast } from "sonner";
 
 interface TimelineActivity {
@@ -189,10 +191,29 @@ export function ConstructionGanttChart({ projectId }: ConstructionGanttChartProp
                 Filtrar
               </Button>
               
-              <Button variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Nueva Actividad
-              </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nueva Actividad
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Nueva Actividad</DialogTitle>
+                    <DialogDescription>
+                      Agregar una nueva actividad al cronograma de construcción
+                    </DialogDescription>
+                  </DialogHeader>
+                  <TimelineActivityForm
+                    projectId={projectId}
+                    onSuccess={() => {
+                      fetchTimelineActivities();
+                    }}
+                    onCancel={() => {}}
+                  />
+                </DialogContent>
+              </Dialog>
               
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />

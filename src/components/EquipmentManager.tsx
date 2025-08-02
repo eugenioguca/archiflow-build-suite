@@ -18,6 +18,7 @@ import {
   MoreHorizontal
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { EquipmentForm } from "@/components/forms/EquipmentForm";
 import { toast } from "sonner";
 
 interface Equipment {
@@ -220,17 +221,22 @@ export function EquipmentManager({ projectId }: EquipmentManagerProps) {
                   Agregar Equipo
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Nuevo Equipo</DialogTitle>
-                  <DialogDescription>
-                    Agregar un nuevo equipo al inventario del proyecto
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="text-center text-muted-foreground py-8">
-                  Formulario de nuevo equipo en desarrollo
-                </div>
-              </DialogContent>
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Nuevo Equipo</DialogTitle>
+                    <DialogDescription>
+                      Agregar un nuevo equipo al inventario del proyecto
+                    </DialogDescription>
+                  </DialogHeader>
+                  <EquipmentForm
+                    projectId={projectId}
+                    onSuccess={() => {
+                      setNewEquipmentDialog(false);
+                      fetchEquipment();
+                    }}
+                    onCancel={() => setNewEquipmentDialog(false)}
+                  />
+                </DialogContent>
             </Dialog>
           </div>
         </CardHeader>

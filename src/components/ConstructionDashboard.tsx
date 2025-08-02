@@ -15,6 +15,8 @@ import {
   Wrench,
   Camera
 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { EquipmentForm } from "@/components/forms/EquipmentForm";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -320,34 +322,114 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
       </div>
 
       {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Acciones Rápidas</CardTitle>
-          <CardDescription>
-            Accesos directos a las funcionalidades más utilizadas
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button variant="outline" className="h-20 flex-col gap-2">
-              <Building2 className="h-6 w-6" />
-              <span className="text-sm">Nueva Fase</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col gap-2">
-              <Calendar className="h-6 w-6" />
-              <span className="text-sm">Programar Hito</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col gap-2">
-              <Wrench className="h-6 w-6" />
-              <span className="text-sm">Asignar Equipo</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col gap-2">
-              <Camera className="h-6 w-6" />
-              <span className="text-sm">Subir Foto</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <QuickActions projectId={projectId} />
     </div>
+  );
+}
+
+interface QuickActionsProps {
+  projectId: string;
+}
+
+function QuickActions({ projectId }: QuickActionsProps) {
+  const [newPhaseDialog, setNewPhaseDialog] = useState(false);
+  const [newMilestoneDialog, setNewMilestoneDialog] = useState(false);
+  const [newEquipmentDialog, setNewEquipmentDialog] = useState(false);
+  const [uploadPhotoDialog, setUploadPhotoDialog] = useState(false);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Acciones Rápidas</CardTitle>
+        <CardDescription>
+          Accesos directos a las funcionalidades más utilizadas
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Dialog open={newPhaseDialog} onOpenChange={setNewPhaseDialog}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="h-20 flex-col gap-2">
+                <Building2 className="h-6 w-6" />
+                <span className="text-sm">Nueva Fase</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Nueva Fase de Construcción</DialogTitle>
+                <DialogDescription>
+                  Crear una nueva fase para organizar las actividades del proyecto
+                </DialogDescription>
+              </DialogHeader>
+              <div className="text-center text-muted-foreground py-8">
+                Formulario de nueva fase en desarrollo
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={newMilestoneDialog} onOpenChange={setNewMilestoneDialog}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="h-20 flex-col gap-2">
+                <Calendar className="h-6 w-6" />
+                <span className="text-sm">Programar Hito</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Nuevo Hito</DialogTitle>
+                <DialogDescription>
+                  Programar un nuevo hito importante en el cronograma
+                </DialogDescription>
+              </DialogHeader>
+              <div className="text-center text-muted-foreground py-8">
+                Formulario de nuevo hito en desarrollo
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={newEquipmentDialog} onOpenChange={setNewEquipmentDialog}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="h-20 flex-col gap-2">
+                <Wrench className="h-6 w-6" />
+                <span className="text-sm">Asignar Equipo</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Nuevo Equipo</DialogTitle>
+                <DialogDescription>
+                  Agregar un nuevo equipo al inventario del proyecto
+                </DialogDescription>
+              </DialogHeader>
+              <EquipmentForm
+                projectId={projectId}
+                onSuccess={() => setNewEquipmentDialog(false)}
+                onCancel={() => setNewEquipmentDialog(false)}
+              />
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={uploadPhotoDialog} onOpenChange={setUploadPhotoDialog}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="h-20 flex-col gap-2">
+                <Camera className="h-6 w-6" />
+                <span className="text-sm">Subir Foto</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Subir Foto de Progreso</DialogTitle>
+                <DialogDescription>
+                  Agregar fotos del avance de la construcción
+                </DialogDescription>
+              </DialogHeader>
+              <div className="text-center text-muted-foreground py-8">
+                Formulario de subida de fotos en desarrollo
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

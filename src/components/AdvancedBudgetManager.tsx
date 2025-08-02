@@ -24,6 +24,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { DragDropUploader } from "@/components/ui/drag-drop-uploader";
+import { BudgetItemForm } from "@/components/forms/BudgetItemForm";
 import * as XLSX from "xlsx";
 
 interface BudgetItem {
@@ -364,16 +365,22 @@ export function AdvancedBudgetManager({ projectId }: AdvancedBudgetManagerProps)
                     Nueva Partida
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Nueva Partida del Presupuesto</DialogTitle>
                     <DialogDescription>
                       Agregar una nueva partida al presupuesto de construcción
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="text-center text-muted-foreground py-8">
-                    Formulario de nueva partida en desarrollo
-                  </div>
+                  <BudgetItemForm
+                    projectId={projectId}
+                    budgetVersion={currentBudgetVersion}
+                    onSuccess={() => {
+                      setNewItemDialog(false);
+                      fetchBudgetItems();
+                    }}
+                    onCancel={() => setNewItemDialog(false)}
+                  />
                 </DialogContent>
               </Dialog>
             </div>
