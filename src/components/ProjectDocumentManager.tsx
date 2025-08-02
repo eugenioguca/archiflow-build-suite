@@ -81,9 +81,9 @@ export function ProjectDocumentManager({ clientId, clientName, currentDepartment
     try {
       setLoading(true);
       
-      // Buscar el proyecto del cliente
+      // Buscar el proyecto del cliente usando la nueva tabla client_projects
       const { data: project, error: projectError } = await supabase
-        .from('projects')
+        .from('client_projects')
         .select('id')
         .eq('client_id', clientId)
         .single();

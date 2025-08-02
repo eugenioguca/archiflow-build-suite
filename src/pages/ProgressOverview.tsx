@@ -212,9 +212,9 @@ export default function ProgressOverview() {
     try {
       setLoading(true);
       
-      // Obtener proyectos reales de Supabase
+      // Obtener proyectos reales de Supabase usando la nueva tabla client_projects
       const { data: projectsData, error } = await supabase
-        .from('projects')
+        .from('client_projects')
         .select(`
           *,
           client:clients(id, full_name, email, phone)
@@ -224,23 +224,37 @@ export default function ProgressOverview() {
       if (error) throw error;
 
       // Convertir y enriquecer los datos de Supabase
-      const enrichedProjects = projectsData?.map(project => ({
-        id: project.id,
-        name: project.name,
-        description: project.description || '',
-        location: project.location || '',
-        progress_percentage: project.progress_percentage || 0,
-        status: project.status,
-        budget: project.budget,
-        total_cost: project.total_cost,
-        start_date: project.start_date,
-        estimated_completion: project.estimated_completion,
-        created_at: project.created_at,
-        client: project.client || { id: '', full_name: 'Cliente no encontrado' },
-        assigned_team: generateTeamForProject(project.id),
-        phases: generatePhasesForProject(project.id, project.status, project.progress_percentage),
-        estimated_dates: generateEstimatedDates(project.start_date, project.estimated_completion)
-      })) || [];
+      const enrichedProjects = projectsData?.map(project => {
+        // Mapear status de client_projects a ProjectOverview status
+        let mappedStatus: 'planning' | 'construction' | 'design' | 'permits' | 'completed' | 'cancelled' = 'planning';
+        if (project.status === 'completed' || project.status === 'cliente_cerrado') {
+          mappedStatus = 'completed';
+        } else if (project.status === 'lead_perdido') {
+          mappedStatus = 'cancelled';
+        } else if (project.status === 'en_contacto') {
+          mappedStatus = 'design';
+        } else {
+          mappedStatus = 'planning';
+        }
+
+        return {
+          id: project.id,
+          name: project.project_name,
+          description: project.project_description || '',
+          location: project.project_location || '',
+          progress_percentage: project.probability_percentage || 0,
+          status: mappedStatus,
+          budget: project.budget || project.estimated_value,
+          total_cost: null, // No hay campo equivalent en client_projects
+          start_date: project.conversion_date,
+          estimated_completion: null, // Calcular basado en timeline_months si existe
+          created_at: project.created_at,
+          client: project.client || { id: '', full_name: 'Cliente no encontrado' },
+          assigned_team: generateTeamForProject(project.id),
+          phases: generatePhasesForProject(project.id, mappedStatus, project.probability_percentage),
+          estimated_dates: generateEstimatedDates(project.conversion_date, null)
+        };
+      }) || [];
 
       // Separar proyectos activos y completados
       setActiveProjects(enrichedProjects.filter(p => p.status !== 'completed' && p.status !== 'cancelled'));

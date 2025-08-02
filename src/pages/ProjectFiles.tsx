@@ -12,7 +12,6 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { uploadFileToStorage, getFileUrl, downloadFile, getFileType, formatFileSize } from '@/lib/fileUtils';
 import { DocumentViewer } from '@/components/DocumentViewer';
-// Photo gallery removed
 
 interface ProjectFile {
   id: string;
@@ -36,7 +35,7 @@ interface ProjectFile {
   project?: { id: string; name: string };
   client?: { id: string; full_name: string };
   uploaded_by_profile?: { id: string; full_name: string };
-  public_url?: string; // Pre-generated public URL
+  public_url?: string;
 }
 
 interface Client {
@@ -104,8 +103,6 @@ export default function ProjectFiles() {
     fileType: ''
   });
 
-  // Photo gallery removed
-
   useEffect(() => {
     fetchData();
   }, []);
@@ -132,49 +129,36 @@ export default function ProjectFiles() {
 
   const fetchFiles = async () => {
     const { data, error } = await supabase
-      .from('project_files')
-      .select(`
-        *,
-        project:projects(id, name),
-        client:clients(id, full_name),
-        uploaded_by_profile:profiles!project_files_uploaded_by_fkey(id, full_name)
-      `)
+      .from('documents')
+      .select('*')
       .eq('document_status', 'active')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
 
-    // Pre-generate public URLs for all files (same as ProgressOverview)
-    const filesWithUrls = await Promise.all(
-      (data || []).map(async (file) => {
-        if (!file.file_path) {
-          return { ...file, public_url: null };
-        }
-        
-        // If already a complete URL, use it directly
-        if (file.file_path.startsWith('http')) {
-          return { ...file, public_url: file.file_path };
-        }
-        
-        // Determine bucket based on file path and category
-        let bucket = 'project-documents';
-        if (file.file_path.includes('progress-photos/') || file.category === 'progress') {
-          bucket = 'progress-photos';
-        }
-        
-        // Get public URL from Storage
-        const { data: urlData } = supabase.storage
-          .from(bucket)
-          .getPublicUrl(file.file_path);
-          
-        return {
-          ...file,
-          public_url: urlData.publicUrl
-        };
-      })
-    );
+    // Transform documents to match ProjectFile interface
+    const transformedFiles = (data || []).map(doc => ({
+      id: doc.id,
+      name: doc.name,
+      description: doc.description,
+      file_path: doc.file_path,
+      file_type: doc.file_type || 'application/octet-stream',
+      file_category: (doc.file_type?.includes('image') ? 'photo' : 'document') as 'document' | 'photo' | 'video' | 'other',
+      category: doc.category,
+      project_id: doc.project_id,
+      client_id: doc.client_id,
+      uploaded_by: doc.uploaded_by,
+      file_size: doc.file_size,
+      version: doc.version || 1,
+      document_status: doc.document_status,
+      access_level: doc.access_level || 'internal',
+      tags: doc.tags || [],
+      created_at: doc.created_at,
+      updated_at: doc.created_at, // Use created_at as fallback
+      public_url: doc.file_path // Will be processed later if needed
+    }));
 
-    setFiles(filesWithUrls as ProjectFile[]);
+    setFiles(transformedFiles);
   };
 
   const fetchClients = async () => {
@@ -189,12 +173,12 @@ export default function ProjectFiles() {
 
   const fetchProjects = async () => {
     const { data, error } = await supabase
-      .from('projects')
-      .select('id, name, client_id')
-      .order('name');
+      .from('client_projects')
+      .select('id, project_name, client_id')
+      .order('project_name');
 
     if (error) throw error;
-    setProjects(data || []);
+    setProjects(data?.map(p => ({ id: p.id, name: p.project_name, client_id: p.client_id })) || []);
   };
 
   const handleFileUpload = async () => {
@@ -221,33 +205,28 @@ export default function ProjectFiles() {
       if (!profile) throw new Error('Perfil no encontrado');
 
       // Subir archivo a Supabase Storage
-      const { filePath, publicUrl } = await uploadFileToStorage(uploadData.file, {
+      const { filePath } = await uploadFileToStorage(uploadData.file, {
         bucket: 'project-documents',
         folder: uploadData.projectId ? `projects/${uploadData.projectId}` : `clients/${uploadData.clientId}`,
         generatePublicUrl: true
       });
 
-      // Determinar categoría de archivo
-      const { type: detectedType } = getFileType(uploadData.file.name);
-      const fileCategory = detectedType === 'image' ? 'photo' : 
-                          detectedType === 'pdf' || detectedType === 'document' ? 'document' : 
-                          'other';
-
       // Insertar en base de datos
       const { error: insertError } = await supabase
-        .from('project_files')
+        .from('documents')
         .insert({
           name: uploadData.name || uploadData.file.name,
           description: uploadData.description,
           file_path: filePath,
           file_type: uploadData.file.type,
-          file_category: fileCategory,
           category: uploadData.category,
           project_id: uploadData.projectId || null,
           client_id: uploadData.clientId || null,
           uploaded_by: profile.id,
           file_size: uploadData.file.size,
-          access_level: uploadData.access_level
+          access_level: uploadData.access_level,
+          department: 'general',
+          department_permissions: ['all']
         });
 
       if (insertError) throw insertError;
@@ -282,12 +261,23 @@ export default function ProjectFiles() {
 
   const handleView = async (file: ProjectFile) => {
     try {
-      console.log('Viewing file:', file.name, 'Using pre-generated URL:', file.public_url);
+      // Determine correct bucket
+      let bucket = 'project-documents';
+      if (file.file_path.includes('client-documents/')) {
+        bucket = 'client-documents';
+      } else if (file.file_path.includes('progress-photos/') || file.category === 'progress') {
+        bucket = 'progress-photos';
+      }
+
+      // Get public URL if not already available
+      let url = file.public_url;
+      if (!url || !url.startsWith('http')) {
+        const { data } = supabase.storage
+          .from(bucket)
+          .getPublicUrl(file.file_path);
+        url = data.publicUrl;
+      }
       
-      // Use pre-generated public URL (same as ProgressOverview)
-      const url = file.public_url || file.file_path;
-      
-      // Use DocumentViewer for all file types (photos removed)
       setDocumentViewer({
         isOpen: true,
         documentUrl: url,
@@ -306,8 +296,23 @@ export default function ProjectFiles() {
 
   const handleDownload = async (file: ProjectFile) => {
     try {
-      // Use pre-generated public URL (same as ProgressOverview)
-      const url = file.public_url || file.file_path;
+      // Determine correct bucket
+      let bucket = 'project-documents';
+      if (file.file_path.includes('client-documents/')) {
+        bucket = 'client-documents';
+      } else if (file.file_path.includes('progress-photos/') || file.category === 'progress') {
+        bucket = 'progress-photos';
+      }
+
+      // Get public URL if not already available
+      let url = file.public_url;
+      if (!url || !url.startsWith('http')) {
+        const { data } = supabase.storage
+          .from(bucket)
+          .getPublicUrl(file.file_path);
+        url = data.publicUrl;
+      }
+
       await downloadFile(url, file.name);
     } catch (error) {
       console.error('Error downloading file:', error);
@@ -324,7 +329,7 @@ export default function ProjectFiles() {
 
     try {
       const { error } = await supabase
-        .from('project_files')
+        .from('documents')
         .update({ document_status: 'deleted' })
         .eq('id', fileId);
 
@@ -585,11 +590,6 @@ export default function ProjectFiles() {
                           <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{file.description}</p>
                         )}
                         <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                          <span>
-                            {file.project?.name && `Proyecto: ${file.project.name}`}
-                            {file.client?.full_name && `Cliente: ${file.client.full_name}`}
-                          </span>
-                          <span>•</span>
                           <span>{formatDate(file.created_at)}</span>
                           {file.file_size && (
                             <>
@@ -597,8 +597,6 @@ export default function ProjectFiles() {
                               <span>{formatFileSize(file.file_size)}</span>
                             </>
                           )}
-                          <span>•</span>
-                          <span>Subido por {file.uploaded_by_profile?.full_name}</span>
                         </div>
                       </div>
                     </div>
@@ -642,8 +640,6 @@ export default function ProjectFiles() {
         documentName={documentViewer.documentName}
         fileType={documentViewer.fileType}
       />
-
-      {/* Photo gallery removed */}
     </div>
   );
 }
