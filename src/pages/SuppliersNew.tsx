@@ -759,11 +759,38 @@ export default function SuppliersNew() {
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-60 overflow-y-auto">
+                        {/* Gastos e Inversiones Generales */}
                         <SelectItem value="G01">G01 - Adquisición de mercancías</SelectItem>
                         <SelectItem value="G02">G02 - Devoluciones, descuentos o bonificaciones</SelectItem>
                         <SelectItem value="G03">G03 - Gastos en general</SelectItem>
-                        <SelectItem value="P01">P01 - Por definir</SelectItem>
+                        
+                        {/* Inversiones */}
+                        <SelectItem value="I01">I01 - Construcciones</SelectItem>
+                        <SelectItem value="I02">I02 - Mobiliario y equipo de oficina por inversiones</SelectItem>
+                        <SelectItem value="I03">I03 - Equipo de transporte</SelectItem>
+                        <SelectItem value="I04">I04 - Equipo de cómputo y accesorios</SelectItem>
+                        <SelectItem value="I05">I05 - Dados, troqueles, moldes, matrices y herramental</SelectItem>
+                        <SelectItem value="I06">I06 - Comunicaciones telefónicas</SelectItem>
+                        <SelectItem value="I07">I07 - Comunicaciones satelitales</SelectItem>
+                        <SelectItem value="I08">I08 - Otra maquinaria y equipo</SelectItem>
+                        
+                        {/* Deducciones Personales (Personas Físicas) */}
+                        <SelectItem value="D01">D01 - Honorarios médicos, dentales y hospitalarios</SelectItem>
+                        <SelectItem value="D02">D02 - Gastos médicos por incapacidad o discapacidad</SelectItem>
+                        <SelectItem value="D03">D03 - Gastos funerales</SelectItem>
+                        <SelectItem value="D04">D04 - Donativos</SelectItem>
+                        <SelectItem value="D05">D05 - Intereses reales pagados por créditos hipotecarios</SelectItem>
+                        <SelectItem value="D06">D06 - Aportaciones voluntarias al SAR</SelectItem>
+                        <SelectItem value="D07">D07 - Primas de seguros de gastos médicos</SelectItem>
+                        <SelectItem value="D08">D08 - Gastos de transportación escolar obligatoria</SelectItem>
+                        <SelectItem value="D09">D09 - Depósitos en cuentas para el ahorro, primas que tengan como base planes de pensiones</SelectItem>
+                        <SelectItem value="D10">D10 - Pagos por servicios educativos (colegiaturas)</SelectItem>
+                        
+                        {/* Usos Especiales */}
+                        <SelectItem value="S01">S01 - Sin efectos fiscales</SelectItem>
+                        <SelectItem value="CP01">CP01 - Pagos</SelectItem>
+                        <SelectItem value="CN01">CN01 - Nómina</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
