@@ -87,13 +87,7 @@ export function DesignDocumentUploader({ projectId, teamMembers }: DesignDocumen
           design_phase,
           created_at,
           client_id,
-          profiles:uploaded_by (full_name),
-          client_projects!inner (
-            client_id,
-            clients!inner (
-              full_name
-            )
-          )
+          profiles:uploaded_by (full_name)
         `)
         .eq('project_id', projectId)
         .eq('department', 'design')
@@ -180,9 +174,10 @@ export function DesignDocumentUploader({ projectId, teamMembers }: DesignDocumen
       if (projectError || !projectData) throw new Error("No se pudo obtener información del proyecto");
 
       for (const file of selectedFiles) {
-        // Upload file to storage
+        // Upload file to storage with sanitized filename
         const fileExt = file.name.split('.').pop();
-        const fileName = `${projectId}/${Date.now()}_${file.name}`;
+        const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const fileName = `${projectData.client_id}/${projectId}/${Date.now()}_${sanitizedName}`;
         
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('project-documents')
@@ -340,11 +335,11 @@ export function DesignDocumentUploader({ projectId, teamMembers }: DesignDocumen
 
       {/* Upload Dialog */}
       <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" aria-describedby="upload-dialog-description">
           <DialogHeader>
             <DialogTitle>Detalles del Documento</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div id="upload-dialog-description" className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="document-name">Nombre del Documento *</Label>
               <Input
