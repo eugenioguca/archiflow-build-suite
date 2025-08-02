@@ -18,7 +18,7 @@ import Accounting from "./pages/Accounting";
 import Sales from "./pages/Sales";
 import UserManagement from "./pages/UserManagement";
 import Design from "./pages/Design";
-import DesignIndex from "./pages/DesignIndex";
+
 import SuppliersNew from "./pages/SuppliersNew";
 import ClientPortal from "./pages/ClientPortal";
 import CommercialAlliances from "./pages/CommercialAlliances";
@@ -193,26 +193,16 @@ const App = () => (
                   </ProtectedRoute>
                 } 
               />
-             <Route 
-               path="/design" 
-               element={
-                 <ProtectedRoute>
-                   <Layout>
-                     <DesignIndex />
-                   </Layout>
-                 </ProtectedRoute>
-               } 
-             />
-             <Route 
-               path="/design/:projectId" 
-               element={
-                 <ProtectedRoute>
-                   <Layout>
-                     <Design />
-                   </Layout>
-                 </ProtectedRoute>
-               } 
-             />
+          <Route 
+            path="/design" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Design />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
              <Route 
                path="/client-portal" 
                element={

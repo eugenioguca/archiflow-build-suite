@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useSearchParams, Link } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import Layout from "../components/Layout";
 import { TeamMemberSelector } from "@/components/TeamMemberSelector";
 import { DesignCalendar } from "@/components/DesignCalendar";
 import { ProjectBudgetManager } from "@/components/ProjectBudgetManager";
@@ -31,7 +30,10 @@ import {
   Layers,
   Users,
   DollarSign,
-  Target
+  Target,
+  Palette,
+  Plus,
+  ChevronRight
 } from "lucide-react";
 
 interface DesignPhase {
@@ -76,14 +78,27 @@ interface Project {
   };
 }
 
+interface ClientProject {
+  id: string;
+  project_name: string;
+  project_description: string | null;
+  status: string;
+  client: {
+    id: string;
+    full_name: string;
+  };
+}
+
 export default function Design() {
-  const { projectId } = useParams<{ projectId: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const projectId = searchParams.get('project');
   const { toast } = useToast();
   
   // State management
   const [project, setProject] = useState<Project | null>(null);
   const [phases, setPhases] = useState<DesignPhase[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [projects, setProjects] = useState<ClientProject[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Design phases definition
@@ -100,11 +115,46 @@ export default function Design() {
       fetchProjectData();
       fetchDesignPhases();
       fetchTeamMembers();
-      
-      // Update days elapsed for phases
       updateDaysElapsed();
+    } else {
+      fetchDesignProjects();
     }
   }, [projectId]);
+
+  const handleSelectProject = (selectedProjectId: string) => {
+    setSearchParams({ project: selectedProjectId });
+  };
+
+  const handleBackToList = () => {
+    setSearchParams({});
+  };
+
+  const fetchDesignProjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('client_projects')
+        .select(`
+          id,
+          project_name,
+          project_description,
+          status,
+          client:clients(id, full_name)
+        `)
+        .eq('status', 'design')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setProjects(data || []);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los proyectos de diseño",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const updateDaysElapsed = async () => {
     try {
@@ -115,6 +165,8 @@ export default function Design() {
   };
 
   const fetchProjectData = async () => {
+    if (!projectId) return;
+    
     try {
       const { data, error } = await supabase
         .from("client_projects")
@@ -151,6 +203,8 @@ export default function Design() {
   };
 
   const fetchDesignPhases = async () => {
+    if (!projectId) return;
+    
     try {
       const { data, error } = await supabase
         .from("design_phases")
@@ -161,7 +215,6 @@ export default function Design() {
       if (error) throw error;
       
       if (!data || data.length === 0) {
-        // Create default phases if none exist
         await createDefaultPhases();
       } else {
         setPhases(data);
@@ -215,8 +268,9 @@ export default function Design() {
   };
 
   const fetchTeamMembers = async () => {
+    if (!projectId) return;
+    
     try {
-      // Ensure sales advisor is in the team first
       await ensureSalesAdvisorInTeam();
 
       const { data, error } = await supabase
@@ -255,8 +309,6 @@ export default function Design() {
       })) || [];
 
       setTeamMembers(members);
-
-      // Validate required roles
       validateTeamComposition(members);
     } catch (error: any) {
       toast({
@@ -269,7 +321,6 @@ export default function Design() {
 
   const ensureSalesAdvisorInTeam = async () => {
     try {
-      // Get the project's assigned advisor from client_projects
       const { data: projectData, error: projectError } = await supabase
         .from("client_projects")
         .select("assigned_advisor_id")
@@ -278,7 +329,6 @@ export default function Design() {
 
       if (projectError || !projectData?.assigned_advisor_id) return;
 
-      // Check if advisor is already in the team
       const { data: existingMember } = await supabase
         .from("project_team_members")
         .select("id")
@@ -287,7 +337,6 @@ export default function Design() {
         .single();
 
       if (!existingMember) {
-        // Add the sales advisor to the team
         await supabase
           .from("project_team_members")
           .insert({
@@ -330,7 +379,6 @@ export default function Design() {
         updated_at: new Date().toISOString()
       };
 
-      // If marking as completed, set completion date
       if (status === 'completed') {
         updateData.actual_completion_date = new Date().toISOString().split('T')[0];
       } else if (status !== 'completed') {
@@ -344,7 +392,6 @@ export default function Design() {
 
       if (error) throw error;
 
-      // Update local state
       setPhases(phases.map(phase => 
         phase.id === phaseId 
           ? { ...phase, ...updateData }
@@ -420,271 +467,344 @@ export default function Design() {
 
   if (loading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center min-h-96">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
     );
   }
 
+  // Show project list if no project is selected
   if (!projectId) {
     return (
-      <Layout>
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-destructive mb-4">Proyecto no encontrado</h1>
-            <p className="text-muted-foreground">No se ha especificado un ID de proyecto válido.</p>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Módulo de Diseño</h1>
+            <p className="text-muted-foreground">
+              Gestiona las fases de diseño de tus proyectos
+            </p>
           </div>
-        </div>
-      </Layout>
-    );
-  }
-
-  return (
-    <Layout>
-      <div className="container mx-auto px-4 py-6">
-        {/* Breadcrumb Navigation */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-          <Link to="/dashboard" className="hover:text-foreground transition-colors">
-            <Home className="h-4 w-4" />
+          <Link to="/projects">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Nuevo Proyecto
+            </Button>
           </Link>
-          <ArrowRight className="h-3 w-3" />
-          <span className="text-foreground font-medium">Diseño</span>
-          <ArrowRight className="h-3 w-3" />
-          <span className="truncate max-w-[200px]">{project?.project_name}</span>
         </div>
 
-        {/* Header Section */}
-        <div className="bg-card rounded-lg p-6 mb-6 border">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Layers className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold">{project?.project_name}</h1>
-                  <p className="text-muted-foreground">Módulo de Diseño Arquitectónico</p>
-                </div>
-              </div>
-              
-              <div className="flex flex-wrap items-center gap-3">
-                <Badge variant="outline" className="px-3 py-1">
-                  <User className="h-4 w-4 mr-2" />
-                  {project?.clients?.full_name}
-                </Badge>
-                <Badge variant="secondary" className="px-3 py-1">
-                  <Target className="h-4 w-4 mr-2" />
-                  {getPhaseProgress()}% Completado
-                </Badge>
-              </div>
-            </div>
-            
-            {/* Progress Overview */}
-            <div className="bg-muted/50 rounded-lg p-4 lg:min-w-[280px]">
-              <div className="flex items-center gap-3 mb-3">
-                <Calculator className="h-5 w-5 text-primary" />
-                <span className="font-medium">Progreso General</span>
-              </div>
-              <Progress value={getPhaseProgress()} className="h-2 mb-2" />
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <span>Fases completadas</span>
-                <span>{phases.filter(p => p.status === 'completed').length} / {phases.length}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content with Tabs */}
-        <Tabs defaultValue="phases" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 bg-muted">
-            <TabsTrigger value="phases" className="flex items-center gap-2">
-              <Layers className="h-4 w-4" />
-              Fases
-            </TabsTrigger>
-            <TabsTrigger value="team" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Equipo
-            </TabsTrigger>
-            <TabsTrigger value="calendar" className="flex items-center gap-2">
-              <CalendarIcon className="h-4 w-4" />
-              Calendario
-            </TabsTrigger>
-            <TabsTrigger value="budget" className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Presupuesto
-            </TabsTrigger>
-            <TabsTrigger value="client" className="flex items-center gap-2">
-              <FileUser className="h-4 w-4" />
-              Cliente
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="phases" className="space-y-6">
-            {/* Horizontal Timeline */}
-            <div className="bg-card rounded-lg p-6 border">
-              <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-                <Timer className="h-5 w-5 text-primary" />
-                Timeline de Fases de Diseño
-              </h2>
-              
-              <div className="relative">
-                <div className="flex justify-between items-center mb-8">
-                  {phases.slice(0, 4).map((phase, index) => (
-                    <div key={phase.id} className="flex flex-col items-center flex-1">
-                      <div className={`w-8 h-8 rounded-full border-2 ${
-                        phase.status === 'completed' 
-                          ? 'bg-green-500 border-green-500 text-white' 
-                          : phase.status === 'in_progress'
-                          ? 'bg-yellow-500 border-yellow-500 text-white'
-                          : 'bg-background border-muted text-muted-foreground'
-                      } flex items-center justify-center font-semibold text-sm`}>
-                        {index + 1}
+        {projects.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Palette className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-xl font-semibold mb-2">No hay proyectos en diseño</h3>
+              <p className="text-muted-foreground text-center mb-4">
+                Los proyectos con estado "Diseño" o "Planeación" aparecerán aquí
+              </p>
+              <Link to="/projects">
+                <Button>Ver todos los proyectos</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {projects.map((designProject) => (
+              <Card key={designProject.id} className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">{designProject.project_name}</CardTitle>
+                    <Badge variant="default">
+                      Diseño
+                    </Badge>
+                  </div>
+                  <CardDescription>
+                    Cliente: {designProject.client?.full_name}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                    {designProject.project_description || 'Sin descripción disponible'}
+                  </p>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                      <div className="flex items-center">
+                        <CalendarIcon className="mr-1 h-4 w-4" />
+                        <span>Fases</span>
                       </div>
-                      <div className="text-center mt-2 max-w-[120px]">
-                        <div className="font-medium text-sm">{phase.phase_name}</div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {phase.days_elapsed} días
-                        </div>
+                      <div className="flex items-center">
+                        <Users className="mr-1 h-4 w-4" />
+                        <span>Equipo</span>
                       </div>
-                      {index < 3 && (
-                        <div className={`absolute top-4 w-full h-0.5 ${
-                          phases[index + 1]?.status === 'completed' ? 'bg-green-500' : 'bg-muted'
-                        }`} 
-                        style={{
-                          left: `${((index + 1) / 4) * 100}%`,
-                          width: `${(1 / 4) * 100}%`,
-                          transform: 'translateX(-50%)'
-                        }} />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Phase Cards */}
-            <div className="grid gap-6">
-              {phases.map((phase) => (
-                <Card key={phase.id} className="hover:shadow-lg transition-all duration-300">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {getStatusIcon(phase.status)}
-                        <div>
-                          <CardTitle className="text-lg">{phase.phase_name}</CardTitle>
-                          <p className="text-sm text-muted-foreground">
-                            Fase {phase.phase_order} • {phase.days_elapsed} días transcurridos
-                          </p>
-                        </div>
-                      </div>
-                      <Badge variant="outline" className={`${
-                        phase.status === 'completed' ? 'border-green-500 text-green-700' :
-                        phase.status === 'in_progress' ? 'border-yellow-500 text-yellow-700' :
-                        'border-gray-300 text-gray-600'
-                      }`}>
-                        {phase.status === 'completed' ? 'Completada' :
-                         phase.status === 'in_progress' ? 'En Progreso' : 'Pendiente'}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground mb-2 block">Estado</label>
-                        <Select 
-                          value={phase.status} 
-                          onValueChange={(value) => updatePhaseStatus(phase.id, value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">Pendiente</SelectItem>
-                            <SelectItem value="in_progress">En Progreso</SelectItem>
-                            <SelectItem value="completed">Completada</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground mb-2 block">Fecha Estimada</label>
-                        <Input
-                          type="date"
-                          value={phase.estimated_delivery_date || ''}
-                          onChange={(e) => updatePhaseDate(phase.id, e.target.value)}
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground mb-2 block">Fecha de Finalización</label>
-                        <Input
-                          type="date"
-                          value={phase.actual_completion_date || ''}
-                          disabled
-                          className="bg-muted/50"
-                        />
+                      <div className="flex items-center">
+                        <Clock className="mr-1 h-4 w-4" />
+                        <span>Cronograma</span>
                       </div>
                     </div>
                     
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleSelectProject(designProject.id)}
+                    >
+                      Abrir
+                      <ArrowRight className="ml-1 h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Show project detail view
+  return (
+    <div className="space-y-6">
+      {/* Breadcrumb */}
+      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={handleBackToList}
+          className="p-0 h-auto text-muted-foreground hover:text-foreground"
+        >
+          Diseño
+        </Button>
+        <ChevronRight className="h-4 w-4" />
+        <span className="font-medium text-foreground">{project?.project_name}</span>
+      </div>
+
+      {/* Header Section */}
+      <div className="bg-card rounded-lg p-6 border">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Layers className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold">{project?.project_name}</h1>
+                <p className="text-muted-foreground">Módulo de Diseño Arquitectónico</p>
+              </div>
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-3">
+              <Badge variant="outline" className="px-3 py-1">
+                <User className="h-4 w-4 mr-2" />
+                {project?.clients?.full_name}
+              </Badge>
+              <Badge variant="secondary" className="px-3 py-1">
+                <Target className="h-4 w-4 mr-2" />
+                {getPhaseProgress()}% Completado
+              </Badge>
+            </div>
+          </div>
+          
+          {/* Progress Overview */}
+          <div className="bg-muted/50 rounded-lg p-4 lg:min-w-[280px]">
+            <div className="flex items-center gap-3 mb-3">
+              <Calculator className="h-5 w-5 text-primary" />
+              <span className="font-medium">Progreso General</span>
+            </div>
+            <Progress value={getPhaseProgress()} className="h-2 mb-2" />
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>Fases completadas</span>
+              <span>{phases.filter(p => p.status === 'completed').length} / {phases.length}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content with Tabs */}
+      <Tabs defaultValue="phases" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5 bg-muted">
+          <TabsTrigger value="phases" className="flex items-center gap-2">
+            <Layers className="h-4 w-4" />
+            Fases
+          </TabsTrigger>
+          <TabsTrigger value="team" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Equipo
+          </TabsTrigger>
+          <TabsTrigger value="calendar" className="flex items-center gap-2">
+            <CalendarIcon className="h-4 w-4" />
+            Calendario
+          </TabsTrigger>
+          <TabsTrigger value="budget" className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4" />
+            Presupuesto
+          </TabsTrigger>
+          <TabsTrigger value="client" className="flex items-center gap-2">
+            <FileUser className="h-4 w-4" />
+            Cliente
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="phases" className="space-y-6">
+          {/* Horizontal Timeline */}
+          <div className="bg-card rounded-lg p-6 border">
+            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+              <Timer className="h-5 w-5 text-primary" />
+              Timeline de Fases de Diseño
+            </h2>
+            
+            <div className="relative">
+              <div className="flex justify-between items-center mb-8">
+                {phases.slice(0, 4).map((phase, index) => (
+                  <div key={phase.id} className="flex flex-col items-center flex-1">
+                    <div className={`w-8 h-8 rounded-full border-2 ${
+                      phase.status === 'completed' 
+                        ? 'bg-green-500 border-green-500 text-white' 
+                        : phase.status === 'in_progress'
+                        ? 'bg-yellow-500 border-yellow-500 text-white'
+                        : 'bg-background border-muted text-muted-foreground'
+                    } flex items-center justify-center font-semibold text-sm`}>
+                      {index + 1}
+                    </div>
+                    <div className="text-center mt-2 max-w-[120px]">
+                      <div className="font-medium text-sm">{phase.phase_name}</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {phase.days_elapsed} días
+                      </div>
+                    </div>
+                    {index < 3 && (
+                      <div className={`absolute top-4 w-full h-0.5 ${
+                        phases[index + 1]?.status === 'completed' ? 'bg-green-500' : 'bg-muted'
+                      }`} 
+                      style={{
+                        left: `${((index + 1) / 4) * 100}%`,
+                        width: `${(1 / 4) * 100}%`,
+                        transform: 'translateX(-50%)'
+                      }} />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Phase Cards */}
+          <div className="grid gap-6">
+            {phases.map((phase) => (
+              <Card key={phase.id} className="hover:shadow-lg transition-all duration-300">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {getStatusIcon(phase.status)}
+                      <div>
+                        <CardTitle className="text-lg">{phase.phase_name}</CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                          Fase {phase.phase_order} • {phase.days_elapsed} días transcurridos
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className={`${
+                      phase.status === 'completed' ? 'border-green-500 text-green-700' :
+                      phase.status === 'in_progress' ? 'border-yellow-500 text-yellow-700' :
+                      'border-gray-300 text-gray-600'
+                    }`}>
+                      {phase.status === 'completed' ? 'Completada' :
+                       phase.status === 'in_progress' ? 'En Progreso' : 'Pendiente'}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground mb-2 block">Notas</label>
-                      <Textarea
-                        placeholder="Agregar notas sobre esta fase..."
-                        value={phase.notes || ''}
-                        className="min-h-[80px]"
-                        readOnly
+                      <label className="text-sm font-medium text-muted-foreground mb-2 block">Estado</label>
+                      <Select 
+                        value={phase.status} 
+                        onValueChange={(value) => updatePhaseStatus(phase.id, value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pendiente</SelectItem>
+                          <SelectItem value="in_progress">En Progreso</SelectItem>
+                          <SelectItem value="completed">Completada</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground mb-2 block">Fecha Estimada</label>
+                      <Input
+                        type="date"
+                        value={phase.estimated_delivery_date || ''}
+                        onChange={(e) => updatePhaseDate(phase.id, e.target.value)}
                       />
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground mb-2 block">Fecha de Finalización</label>
+                      <Input
+                        type="date"
+                        value={phase.actual_completion_date || ''}
+                        disabled
+                        className="bg-muted/50"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">Notas</label>
+                    <Textarea
+                      placeholder="Agregar notas sobre esta fase..."
+                      value={phase.notes || ''}
+                      className="min-h-[80px]"
+                      readOnly
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-            {/* Design Completion Manager */}
-            <div className="mt-8">
-              <DesignCompletionManager 
-                projectId={projectId} 
-                phases={phases}
-                onPhaseUpdate={fetchDesignPhases}
-              />
-            </div>
-          </TabsContent>
+          {/* Design Completion Manager */}
+          <div className="mt-8">
+            <DesignCompletionManager 
+              projectId={projectId} 
+              phases={phases}
+              onPhaseUpdate={fetchDesignPhases}
+            />
+          </div>
+        </TabsContent>
 
-          <TabsContent value="team">
-            <div className="bg-card rounded-lg p-6 border">
-              <TeamMemberSelector 
-                projectId={projectId} 
-                teamMembers={teamMembers}
-                onTeamUpdate={setTeamMembers}
-              />
-            </div>
-          </TabsContent>
+        <TabsContent value="team">
+          <div className="bg-card rounded-lg p-6 border">
+            <TeamMemberSelector 
+              projectId={projectId} 
+              teamMembers={teamMembers}
+              onTeamUpdate={setTeamMembers}
+            />
+          </div>
+        </TabsContent>
 
-          <TabsContent value="calendar">
-            <div className="bg-card rounded-lg p-6 border">
-              <DesignCalendar projectId={projectId} teamMembers={teamMembers.map(member => ({
-                id: member.profile.id,
-                full_name: member.profile.full_name,
-                avatar_url: member.profile.avatar_url
-              }))} />
-            </div>
-          </TabsContent>
+        <TabsContent value="calendar">
+          <div className="bg-card rounded-lg p-6 border">
+            <DesignCalendar projectId={projectId} teamMembers={teamMembers.map(member => ({
+              id: member.profile.id,
+              full_name: member.profile.full_name,
+              avatar_url: member.profile.avatar_url
+            }))} />
+          </div>
+        </TabsContent>
 
-          <TabsContent value="budget">
-            <div className="bg-card rounded-lg p-6 border">
-              <ProjectBudgetManager projectId={projectId} />
-            </div>
-          </TabsContent>
+        <TabsContent value="budget">
+          <div className="bg-card rounded-lg p-6 border">
+            <ProjectBudgetManager projectId={projectId} />
+          </div>
+        </TabsContent>
 
-          <TabsContent value="client">
-            <div className="bg-card rounded-lg p-6 border">
-              <ClientInfoPanel projectId={projectId} />
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </Layout>
+        <TabsContent value="client">
+          <div className="bg-card rounded-lg p-6 border">
+            <ClientInfoPanel projectId={projectId} />
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
