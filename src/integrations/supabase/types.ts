@@ -918,6 +918,8 @@ export type Database = {
           branch_office_id: string | null
           budget: number | null
           client_id: string
+          constancia_situacion_fiscal_uploaded: boolean | null
+          constancia_situacion_fiscal_url: string | null
           conversion_date: string | null
           conversion_notes: string | null
           created_at: string
@@ -941,7 +943,9 @@ export type Database = {
           project_name: string
           project_size: string | null
           project_type: Database["public"]["Enums"]["project_type"] | null
-          sales_pipeline_stage: string | null
+          sales_pipeline_stage:
+            | Database["public"]["Enums"]["sales_pipeline_stage"]
+            | null
           service_type: string | null
           status: Database["public"]["Enums"]["client_status"] | null
           tags: string[] | null
@@ -954,6 +958,8 @@ export type Database = {
           branch_office_id?: string | null
           budget?: number | null
           client_id: string
+          constancia_situacion_fiscal_uploaded?: boolean | null
+          constancia_situacion_fiscal_url?: string | null
           conversion_date?: string | null
           conversion_notes?: string | null
           created_at?: string
@@ -977,7 +983,9 @@ export type Database = {
           project_name: string
           project_size?: string | null
           project_type?: Database["public"]["Enums"]["project_type"] | null
-          sales_pipeline_stage?: string | null
+          sales_pipeline_stage?:
+            | Database["public"]["Enums"]["sales_pipeline_stage"]
+            | null
           service_type?: string | null
           status?: Database["public"]["Enums"]["client_status"] | null
           tags?: string[] | null
@@ -990,6 +998,8 @@ export type Database = {
           branch_office_id?: string | null
           budget?: number | null
           client_id?: string
+          constancia_situacion_fiscal_uploaded?: boolean | null
+          constancia_situacion_fiscal_url?: string | null
           conversion_date?: string | null
           conversion_notes?: string | null
           created_at?: string
@@ -1013,7 +1023,9 @@ export type Database = {
           project_name?: string
           project_size?: string | null
           project_type?: Database["public"]["Enums"]["project_type"] | null
-          sales_pipeline_stage?: string | null
+          sales_pipeline_stage?:
+            | Database["public"]["Enums"]["sales_pipeline_stage"]
+            | null
           service_type?: string | null
           status?: Database["public"]["Enums"]["client_status"] | null
           tags?: string[] | null
@@ -3725,6 +3737,11 @@ export type Database = {
         | "landscape"
         | "interior_design"
       receivable_status: "pending" | "partial" | "paid" | "overdue"
+      sales_pipeline_stage:
+        | "nuevo_lead"
+        | "en_contacto"
+        | "lead_perdido"
+        | "cliente_cerrado"
       supplier_category:
         | "materials"
         | "equipment"
@@ -3941,6 +3958,12 @@ export const Constants = {
         "interior_design",
       ],
       receivable_status: ["pending", "partial", "paid", "overdue"],
+      sales_pipeline_stage: [
+        "nuevo_lead",
+        "en_contacto",
+        "lead_perdido",
+        "cliente_cerrado",
+      ],
       supplier_category: [
         "materials",
         "equipment",

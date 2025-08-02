@@ -21,6 +21,8 @@ interface ClientProject {
   created_at: string;
   updated_at: string;
   assigned_advisor_id?: string;
+  // Otros campos de la tabla que pueden estar presentes
+  [key: string]: any;
 }
 
 interface Client {
@@ -66,7 +68,7 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
     budget: 0,
     service_type: 'diseño',
     status: 'potential' as 'potential' | 'active' | 'existing' | 'completed',
-    sales_pipeline_stage: 'lead'
+    sales_pipeline_stage: 'nuevo_lead' as 'nuevo_lead' | 'en_contacto' | 'lead_perdido' | 'cliente_cerrado'
   });
   const { toast } = useToast();
 
@@ -128,7 +130,7 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
         budget: 0,
         service_type: 'diseño',
         status: 'potential',
-        sales_pipeline_stage: 'lead'
+        sales_pipeline_stage: 'nuevo_lead'
       });
       fetchProjects();
     } catch (error) {
