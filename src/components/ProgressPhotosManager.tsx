@@ -33,14 +33,12 @@ interface ProgressPhoto {
   description: string | null;
   taken_by: string;
   taken_at: string;
-  phase_id: string | null;
   title: string | null;
   file_path: string | null;
   taken_date: string | null;
   coordinates: any;
   camera_angle: string | null;
   weather_conditions: string | null;
-  tags: string[] | null;
   is_before_photo: boolean;
   before_photo_id: string | null;
   visibility: string;
@@ -138,9 +136,9 @@ export function ProgressPhotosManager({ projectId }: ProgressPhotosManagerProps)
   const filteredPhotos = photos.filter(photo => {
     const matchesSearch = photo.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          photo.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         photo.category.toLowerCase().includes(searchTerm.toLowerCase());
+                         photo.photo_type?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = categoryFilter === "all" || photo.category === categoryFilter;
+    const matchesCategory = categoryFilter === "all" || photo.photo_type === categoryFilter;
     
     return matchesSearch && matchesCategory;
   });
@@ -156,7 +154,7 @@ export function ProgressPhotosManager({ projectId }: ProgressPhotosManagerProps)
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
       return new Date(p.taken_at) >= weekAgo;
     }).length,
-    withGPS: photos.filter(p => p.latitude && p.longitude).length
+    withGPS: photos.filter(p => p.geolocation).length
   };
 
   if (loading) {
@@ -325,12 +323,7 @@ export function ProgressPhotosManager({ projectId }: ProgressPhotosManagerProps)
                       Antes
                     </Badge>
                   )}
-                  {photo.is_after_photo && (
-                    <Badge variant="secondary" className="text-xs">
-                      Después
-                    </Badge>
-                  )}
-                  {photo.latitude && photo.longitude && (
+                  {photo.geolocation && (
                     <Badge variant="outline" className="text-xs">
                       <MapPin className="h-3 w-3" />
                     </Badge>
@@ -338,7 +331,7 @@ export function ProgressPhotosManager({ projectId }: ProgressPhotosManagerProps)
                 </div>
                 <div className="absolute bottom-2 left-2">
                   <Badge variant="outline" className="text-xs bg-white/90">
-                    {photo.category}
+                    {photo.photo_type}
                   </Badge>
                 </div>
               </div>
@@ -352,7 +345,7 @@ export function ProgressPhotosManager({ projectId }: ProgressPhotosManagerProps)
                 </p>
                 <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
                   <span>{format(new Date(photo.taken_at), "dd/MM/yyyy", { locale: es })}</span>
-                  <span>{Math.round((photo.file_size as number || 0) / 1024)} KB</span>
+                  <span>{photo.photo_type}</span>
                 </div>
                 
                 <div className="flex gap-1">
@@ -412,13 +405,13 @@ export function ProgressPhotosManager({ projectId }: ProgressPhotosManagerProps)
                         </div>
                       </td>
                       <td className="p-4">
-                        <Badge variant="outline">{photo.category}</Badge>
+                        <Badge variant="outline">{photo.photo_type}</Badge>
                       </td>
                       <td className="p-4 text-sm">
                         {format(new Date(photo.taken_at), "dd/MM/yyyy HH:mm", { locale: es })}
                       </td>
                       <td className="p-4">
-                        {photo.latitude && photo.longitude ? (
+                        {photo.geolocation ? (
                           <MapPin className="h-4 w-4 text-green-600" />
                         ) : (
                           <span className="text-muted-foreground">-</span>
@@ -471,28 +464,23 @@ export function ProgressPhotosManager({ projectId }: ProgressPhotosManagerProps)
                 />
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <h4 className="font-medium mb-2">Detalles</h4>
                   <div className="space-y-2 text-sm">
-                    <div><strong>Categoría:</strong> {selectedPhoto.category}</div>
-                    <div><strong>Tamaño:</strong> {Math.round((selectedPhoto.file_size as number || 0) / 1024)} KB</div>
-                    <div><strong>Tipo:</strong> {selectedPhoto.file_type}</div>
+                    <div><strong>Tipo:</strong> {selectedPhoto.photo_type}</div>
+                    <div><strong>Tomada por:</strong> {selectedPhoto.photographer_name || selectedPhoto.taken_by}</div>
                     {selectedPhoto.description && (
                       <div><strong>Descripción:</strong> {selectedPhoto.description}</div>
                     )}
                   </div>
                 </div>
                 
-                {selectedPhoto.latitude && selectedPhoto.longitude && (
+                {selectedPhoto.geolocation && (
                   <div>
                     <h4 className="font-medium mb-2">Ubicación GPS</h4>
                     <div className="space-y-2 text-sm">
-                      <div><strong>Latitud:</strong> {selectedPhoto.latitude}</div>
-                      <div><strong>Longitud:</strong> {selectedPhoto.longitude}</div>
-                      {selectedPhoto.gps_accuracy && (
-                        <div><strong>Precisión:</strong> {selectedPhoto.gps_accuracy}m</div>
-                      )}
+                      <div><strong>Coordenadas:</strong> {JSON.stringify(selectedPhoto.geolocation)}</div>
                     </div>
                   </div>
                 )}

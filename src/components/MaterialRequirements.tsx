@@ -29,41 +29,23 @@ import { es } from "date-fns/locale";
 interface MaterialRequirement {
   id: string;
   project_id: string;
-  phase_id: string | null;
   budget_item_id: string | null;
   material_name: string;
-  material_code: string | null;
-  material_type: string;
-  brand: string | null;
-  model: string | null;
-  specifications: any;
+  category: string;
   unit_of_measure: string;
   quantity_required: number;
   quantity_ordered: number;
   quantity_delivered: number;
-  quantity_used: number;
-  quantity_wasted: number;
   quantity_remaining: number;
   unit_cost: number;
   total_cost: number;
   supplier_id: string | null;
-  purchase_order_number: string | null;
-  delivery_date_required: string | null;
-  delivery_date_actual: string | null;
-  storage_location: string | null;
-  storage_requirements: any;
-  quality_standards: any;
-  environmental_impact: any;
-  sustainability_rating: number | null;
-  certifications: any;
-  warranty_period: number | null;
-  warranty_terms: string | null;
+  expected_delivery_date: string | null;
+  priority_level: string;
   status: string;
-  priority: string;
-  notes: string | null;
-  created_by: string;
   created_at: string;
   updated_at: string;
+  created_by: string;
 }
 
 interface MaterialRequirementsProps {
@@ -199,12 +181,11 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
   };
 
   const isLowStock = (material: MaterialRequirement) => {
-    return material.quantity_remaining <= material.reorder_point;
+    return material.quantity_remaining < material.quantity_required * 0.2;
   };
 
   const filteredMaterials = materials.filter(material => {
     const matchesSearch = material.material_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         material.material_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          material.category.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesCategory = categoryFilter === "all" || material.category === categoryFilter;
@@ -219,7 +200,7 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
     ordered: materials.filter(m => m.status === 'ordered').length,
     delivered: materials.filter(m => m.status === 'delivered').length,
     missing: materials.filter(m => isLowStock(m)).length,
-    totalCost: materials.reduce((sum, m) => sum + m.total_cost, 0)
+    totalCost: materials.reduce((sum, m) => sum + (m.unit_cost || 0) * m.quantity_required, 0)
   };
 
   if (loading) {
@@ -395,7 +376,7 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                           <div>
                             <div className="font-medium">{material.material_name}</div>
                             <div className="text-sm text-muted-foreground">
-                              {material.material_code}
+                              {material.category}
                             </div>
                             {isLowStock(material) && (
                               <div className="flex items-center gap-1 text-red-600 text-xs mt-1">
@@ -417,7 +398,7 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                           </div>
                           <Progress 
                             value={material.quantity_required > 0 ? 
-                              ((material.quantity_required - material.quantity_remaining) / material.quantity_required) * 100 : 0} 
+                              (material.quantity_remaining / material.quantity_required) * 100 : 0} 
                             className="h-2 w-20" 
                           />
                         </div>
@@ -431,7 +412,7 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                       <td className="p-4 text-right">
                         <div className="font-medium">${material.total_cost.toLocaleString()}</div>
                         <div className="text-sm text-muted-foreground">
-                          ${material.unit_cost} / {material.unit_of_measure}
+                          ${material.unit_cost || 0} / {material.unit_of_measure}
                         </div>
                       </td>
                       <td className="p-4">
