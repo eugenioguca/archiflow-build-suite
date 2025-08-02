@@ -192,7 +192,7 @@ export function SmartCombobox({
             <Command>
               <CommandInput placeholder="Buscar..." />
               <ScrollArea className="h-60 w-full">
-                <CommandList className="overflow-visible">
+                <CommandList className="overflow-hidden">
                   <CommandEmpty>{emptyText}</CommandEmpty>
                   <CommandGroup>
                     {items.map((item) => (
