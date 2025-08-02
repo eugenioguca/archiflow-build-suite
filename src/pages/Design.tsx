@@ -209,25 +209,31 @@ export default function Design() {
 
   const fetchTeamMembers = async () => {
     try {
+      // Ensure sales advisor is in the team first
+      await ensureSalesAdvisorInTeam();
+
       const { data, error } = await supabase
         .from("project_team_members")
         .select(`
+          id,
           user_id,
+          role,
+          responsibilities,
           profiles (
             id,
             full_name,
-            avatar_url
+            avatar_url,
+            position,
+            department,
+            skills
           )
         `)
         .eq("project_id", projectId);
 
       if (error) throw error;
 
-      // Ensure sales advisor is in the team
-      await ensureSalesAdvisorInTeam();
-
       const members = data?.map((member: any) => ({
-        id: member.user_id,
+        id: member.id,
         user_id: member.user_id,
         role: member.role || 'team_member',
         responsibilities: member.responsibilities,
@@ -242,6 +248,9 @@ export default function Design() {
       })) || [];
 
       setTeamMembers(members);
+
+      // Validate required roles
+      validateTeamComposition(members);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -277,11 +286,33 @@ export default function Design() {
           .insert({
             project_id: projectId,
             user_id: projectData.assigned_advisor_id,
-            role: "sales_advisor"
+            role: "sales_advisor",
+            responsibilities: "Asesor de ventas que cerró al cliente"
           });
       }
     } catch (error) {
       console.error("Error ensuring sales advisor in team:", error);
+    }
+  };
+
+  const validateTeamComposition = (members: any[]) => {
+    const architects = members.filter(member => member.role === 'architect');
+    const salesAdvisor = members.find(member => member.role === 'sales_advisor');
+
+    if (!salesAdvisor) {
+      toast({
+        title: "Advertencia",
+        description: "No se encontró el asesor de ventas en el equipo",
+        variant: "destructive"
+      });
+    }
+
+    if (architects.length === 0) {
+      toast({
+        title: "Advertencia",
+        description: "Se requiere al menos un arquitecto asignado al proyecto",
+        variant: "destructive"
+      });
     }
   };
 
