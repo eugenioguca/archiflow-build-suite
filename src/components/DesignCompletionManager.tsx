@@ -84,7 +84,7 @@ export function DesignCompletionManager({
 
   const handleRevertSuccess = () => {
     fetchProjectStatus(); // Refresh project status
-    // Remove page reload - let component state handle the update
+    window.location.reload(); // Refresh the entire view
   };
 
   const handleCompleteDesign = async () => {
@@ -201,8 +201,8 @@ export function DesignCompletionManager({
         description: "El proyecto ha pasado automáticamente al módulo de construcción",
       });
 
-      // Refresh component state instead of full page reload
-      fetchProjectStatus();
+      // Refresh to reflect changes
+      window.location.reload();
     } catch (error: any) {
       toast({
         title: "Error",

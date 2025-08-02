@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -50,7 +50,6 @@ export function SmartCombobox({
   const [editingItem, setEditingItem] = useState<ComboboxItem | null>(null)
   const [editLabel, setEditLabel] = useState("")
   const { toast } = useToast()
-
 
   const selectedItem = items.find(item => item.value === value)
 
@@ -192,8 +191,8 @@ export function SmartCombobox({
           >
             <Command>
               <CommandInput placeholder="Buscar..." />
-              <ScrollArea className="h-60 scrollbar-thin">
-                <CommandList className="h-full">
+              <ScrollArea className="h-60 w-full">
+                <CommandList className="overflow-visible">
                   <CommandEmpty>{emptyText}</CommandEmpty>
                   <CommandGroup>
                     {items.map((item) => (
