@@ -3113,7 +3113,7 @@ export type Database = {
             foreignKeyName: "project_budgets_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
-            referencedRelation: "projects"
+            referencedRelation: "client_projects"
             referencedColumns: ["id"]
           },
         ]
