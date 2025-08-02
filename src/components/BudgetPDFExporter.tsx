@@ -47,290 +47,339 @@ export function BudgetPDFExporter({ budget, items, projectName, clientName }: Bu
     }).format(amount);
   };
 
-  const generateHtmlContent = () => {
+  const generatePageContent = (pageItems: BudgetItem[], pageNumber: number, totalPages: number, isLastPage: boolean) => {
     return `
       <div style="
         font-family: system-ui, -apple-system, sans-serif;
         line-height: 1.4;
         color: #1e293b;
         background: white;
-        padding: 20px;
+        padding: 15mm;
         min-height: 279mm;
         width: 216mm;
         box-sizing: border-box;
+        page-break-after: avoid;
       ">
-        <!-- Header with Logo -->
+        <!-- Header -->
         <div style="
           background: linear-gradient(135deg, #1e293b 0%, #475569 50%, #f97316 100%);
           color: white;
-          padding: 20px;
-          margin: -20px -20px 20px -20px;
-          border-radius: 0 0 16px 16px;
+          padding: ${pageNumber === 1 ? '16px' : '12px'};
+          margin: -15mm -15mm 16px -15mm;
+          border-radius: 0 0 12px 12px;
           position: relative;
-          overflow: hidden;
         ">
-          <div style="
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="40" r="1.5" fill="rgba(255,255,255,0.08)"/><circle cx="40" cy="80" r="1" fill="rgba(255,255,255,0.06)"/></svg>');
-          "></div>
-          
           <div style="text-align: center; position: relative; z-index: 2;">
-            <img 
-              src="/lovable-uploads/7a3755e3-978f-4182-af7d-1db88590b5a4.png" 
-              alt="Dovita Arquitectura" 
-              style="height: 40px; width: auto; margin-bottom: 12px; filter: brightness(0) invert(1);"
-            />
-            <h1 style="
-              font-size: 24px;
-              font-weight: 700;
-              margin: 0;
-              color: white;
-            ">PRESUPUESTO DE CONSTRUCCIÓN</h1>
-            <div style="
-              font-size: 14px;
-              opacity: 0.9;
-              margin-top: 4px;
-              color: #e2e8f0;
-            ">Gestión Inteligente para Arquitectos y Constructores</div>
+            ${pageNumber === 1 ? `
+              <img 
+                src="/lovable-uploads/7a3755e3-978f-4182-af7d-1db88590b5a4.png" 
+                alt="Dovita Arquitectura" 
+                style="height: 32px; width: auto; margin-bottom: 8px; filter: brightness(0) invert(1);"
+              />
+              <h1 style="
+                font-size: 20px;
+                font-weight: 700;
+                margin: 0;
+                color: white;
+              ">PRESUPUESTO DE CONSTRUCCIÓN</h1>
+              <div style="
+                font-size: 12px;
+                opacity: 0.9;
+                margin-top: 4px;
+                color: #e2e8f0;
+              ">Gestión Inteligente para Arquitectos y Constructores</div>
+            ` : `
+              <h2 style="
+                font-size: 16px;
+                font-weight: 700;
+                margin: 0;
+                color: white;
+              ">PRESUPUESTO DE CONSTRUCCIÓN - Página ${pageNumber}</h2>
+            `}
           </div>
+          ${totalPages > 1 ? `
+            <div style="
+              position: absolute;
+              top: 12px;
+              right: 16px;
+              font-size: 10px;
+              color: rgba(255,255,255,0.8);
+            ">Página ${pageNumber} de ${totalPages}</div>
+          ` : ''}
         </div>
 
-        <!-- Date -->
-        <div style="
-          text-align: right;
-          color: #64748b;
-          font-size: 12px;
-          margin-bottom: 16px;
-          font-style: italic;
-        ">
-          Generado el: ${new Date().toLocaleDateString('es-MX', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })}
-        </div>
-        
-        <!-- Project Info -->
-        <div style="
-          background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-          padding: 20px;
-          border-radius: 12px;
-          margin-bottom: 20px;
-          border-left: 4px solid #f97316;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        ">
-          <h2 style="
-            color: #1e293b;
-            margin: 0 0 16px 0;
-            font-size: 18px;
-            font-weight: 700;
-          ">Información del Proyecto</h2>
+        ${pageNumber === 1 ? `
+          <!-- Date -->
           <div style="
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 16px;
+            text-align: right;
+            color: #64748b;
+            font-size: 11px;
+            margin-bottom: 12px;
+            font-style: italic;
           ">
-            <div>
-              <div style="
-                font-weight: 700;
-                color: #475569;
-                margin-bottom: 4px;
-                font-size: 10px;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-              ">Cliente</div>
-              <div style="
-                color: #1e293b;
-                font-size: 14px;
-                font-weight: 500;
-              ">${clientName}</div>
-            </div>
-            <div>
-              <div style="
-                font-weight: 700;
-                color: #475569;
-                margin-bottom: 4px;
-                font-size: 10px;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-              ">Proyecto</div>
-              <div style="
-                color: #1e293b;
-                font-size: 14px;
-                font-weight: 500;
-              ">${projectName}</div>
-            </div>
-            <div>
-              <div style="
-                font-weight: 700;
-                color: #475569;
-                margin-bottom: 4px;
-                font-size: 10px;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-              ">Presupuesto</div>
-              <div style="
-                color: #1e293b;
-                font-size: 14px;
-                font-weight: 500;
-              ">${budget.budget_name}</div>
+            Generado el: ${new Date().toLocaleDateString('es-MX', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}
+          </div>
+          
+          <!-- Project Info -->
+          <div style="
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border-left: 4px solid #f97316;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          ">
+            <h2 style="
+              color: #1e293b;
+              margin: 0 0 12px 0;
+              font-size: 16px;
+              font-weight: 700;
+            ">Información del Proyecto</h2>
+            <div style="
+              display: grid;
+              grid-template-columns: 1fr 1fr 1fr;
+              gap: 12px;
+            ">
+              <div>
+                <div style="
+                  font-weight: 700;
+                  color: #475569;
+                  margin-bottom: 4px;
+                  font-size: 9px;
+                  text-transform: uppercase;
+                  letter-spacing: 1px;
+                ">Cliente</div>
+                <div style="
+                  color: #1e293b;
+                  font-size: 13px;
+                  font-weight: 500;
+                ">${clientName}</div>
+              </div>
+              <div>
+                <div style="
+                  font-weight: 700;
+                  color: #475569;
+                  margin-bottom: 4px;
+                  font-size: 9px;
+                  text-transform: uppercase;
+                  letter-spacing: 1px;
+                ">Proyecto</div>
+                <div style="
+                  color: #1e293b;
+                  font-size: 13px;
+                  font-weight: 500;
+                ">${projectName}</div>
+              </div>
+              <div>
+                <div style="
+                  font-weight: 700;
+                  color: #475569;
+                  margin-bottom: 4px;
+                  font-size: 9px;
+                  text-transform: uppercase;
+                  letter-spacing: 1px;
+                ">Presupuesto</div>
+                <div style="
+                  color: #1e293b;
+                  font-size: 13px;
+                  font-weight: 500;
+                ">${budget.budget_name}</div>
+              </div>
             </div>
           </div>
-        </div>
+        ` : ''}
         
         <!-- Budget Table -->
         <div style="
-          border-radius: 8px;
+          border-radius: 6px;
           overflow: hidden;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-          margin-bottom: 20px;
+          margin-bottom: ${isLastPage ? '16px' : '0'};
         ">
           <table style="
             width: 100%;
             border-collapse: collapse;
             background: white;
-            font-size: 12px;
+            font-size: 11px;
           ">
-            <thead>
-              <tr style="
-                background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
-                color: white;
-              ">
-                <th style="
-                  padding: 12px 8px;
-                  text-align: left;
-                  font-weight: 700;
-                  text-transform: uppercase;
-                  letter-spacing: 0.5px;
-                  font-size: 10px;
-                  width: 40%;
-                ">Partida</th>
-                <th style="
-                  padding: 12px 8px;
-                  text-align: center;
-                  font-weight: 700;
-                  text-transform: uppercase;
-                  letter-spacing: 0.5px;
-                  font-size: 10px;
-                  width: 15%;
-                ">Cantidad</th>
-                <th style="
-                  padding: 12px 8px;
-                  text-align: right;
-                  font-weight: 700;
-                  text-transform: uppercase;
-                  letter-spacing: 0.5px;
-                  font-size: 10px;
-                  width: 20%;
-                ">Precio Unitario</th>
-                <th style="
-                  padding: 12px 8px;
-                  text-align: right;
-                  font-weight: 700;
-                  text-transform: uppercase;
-                  letter-spacing: 0.5px;
-                  font-size: 10px;
-                  width: 25%;
-                ">Total</th>
-              </tr>
-            </thead>
+            ${pageNumber === 1 || pageItems.length > 0 ? `
+              <thead>
+                <tr style="
+                  background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
+                  color: white;
+                ">
+                  <th style="
+                    padding: 10px 6px;
+                    text-align: left;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    font-size: 9px;
+                    width: 40%;
+                  ">Partida</th>
+                  <th style="
+                    padding: 10px 6px;
+                    text-align: center;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    font-size: 9px;
+                    width: 15%;
+                  ">Cantidad</th>
+                  <th style="
+                    padding: 10px 6px;
+                    text-align: right;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    font-size: 9px;
+                    width: 20%;
+                  ">Precio Unitario</th>
+                  <th style="
+                    padding: 10px 6px;
+                    text-align: right;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    font-size: 9px;
+                    width: 25%;
+                  ">Total</th>
+                </tr>
+              </thead>
+            ` : ''}
             <tbody>
-              ${items.map((item, index) => `
+              ${pageItems.map((item, index) => `
                 <tr style="
                   background-color: ${index % 2 === 0 ? '#f8fafc' : 'white'};
                   border-bottom: 1px solid #e2e8f0;
                 ">
-                  <td style="padding: 10px 8px;">
+                  <td style="padding: 8px 6px;">
                     <div style="
                       font-weight: 600;
                       color: #1e293b;
                       margin-bottom: 2px;
-                      font-size: 12px;
+                      font-size: 11px;
                     ">${item.item_name}</div>
                     ${item.description ? `<div style="
                       color: #64748b;
-                      font-size: 10px;
+                      font-size: 9px;
                       line-height: 1.3;
                     ">${item.description}</div>` : ''}
                   </td>
                   <td style="
-                    padding: 10px 8px;
+                    padding: 8px 6px;
                     text-align: center;
                     font-weight: 500;
                     color: #374151;
-                    font-size: 12px;
+                    font-size: 11px;
                   ">${item.quantity.toLocaleString()}</td>
                   <td style="
-                    padding: 10px 8px;
+                    padding: 8px 6px;
                     text-align: right;
                     font-weight: 500;
                     color: #374151;
-                    font-size: 12px;
+                    font-size: 11px;
                   ">${formatCurrency(item.unit_price)}</td>
                   <td style="
-                    padding: 10px 8px;
+                    padding: 8px 6px;
                     text-align: right;
                     font-weight: 600;
                     color: #1e293b;
-                    font-size: 12px;
+                    font-size: 11px;
                   ">${formatCurrency(item.total_price)}</td>
                 </tr>
               `).join('')}
-              <tr style="
-                background: linear-gradient(135deg, #1e293b 0%, #f97316 100%);
-                color: white;
-              ">
-                <td colspan="3" style="
-                  padding: 16px 8px;
-                  font-weight: 700;
-                  font-size: 14px;
-                  text-transform: uppercase;
-                  letter-spacing: 1px;
-                ">TOTAL GENERAL</td>
-                <td style="
-                  padding: 16px 8px;
-                  text-align: right;
-                  font-weight: 700;
-                  font-size: 16px;
-                ">${formatCurrency(budget.total_amount)}</td>
-              </tr>
+              ${isLastPage ? `
+                <tr style="
+                  background: linear-gradient(135deg, #1e293b 0%, #f97316 100%);
+                  color: white;
+                ">
+                  <td colspan="3" style="
+                    padding: 12px 6px;
+                    font-weight: 700;
+                    font-size: 13px;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                  ">TOTAL GENERAL</td>
+                  <td style="
+                    padding: 12px 6px;
+                    text-align: right;
+                    font-weight: 700;
+                    font-size: 14px;
+                  ">${formatCurrency(budget.total_amount)}</td>
+                </tr>
+              ` : ''}
             </tbody>
           </table>
         </div>
         
-        <!-- Footer -->
-        <div style="
-          background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-          padding: 16px;
-          border-radius: 8px;
-          text-align: center;
-          border-top: 3px solid #f97316;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-          margin-top: 20px;
-        ">
+        ${isLastPage ? `
+          <!-- Footer -->
           <div style="
-            color: #475569;
-            margin-bottom: 8px;
-            font-size: 11px;
-          ">Este presupuesto es válido por 30 días a partir de la fecha de emisión</div>
-          <div style="
-            color: #475569;
-            margin-bottom: 8px;
-            font-size: 11px;
-          ">Todos los precios están expresados en pesos mexicanos (MXN)</div>
-          <div style="
-            font-weight: 700;
-            color: #1e293b;
-            font-size: 12px;
-          ">Para más información contacta a tu asesor asignado</div>
-        </div>
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+            border-top: 3px solid #f97316;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-top: 16px;
+          ">
+            <div style="
+              color: #475569;
+              margin-bottom: 6px;
+              font-size: 10px;
+            ">Este presupuesto es válido por 30 días a partir de la fecha de emisión</div>
+            <div style="
+              color: #475569;
+              margin-bottom: 6px;
+              font-size: 10px;
+            ">Todos los precios están expresados en pesos mexicanos (MXN)</div>
+            <div style="
+              font-weight: 700;
+              color: #1e293b;
+              font-size: 11px;
+            ">Para más información contacta a tu asesor asignado</div>
+          </div>
+        ` : ''}
       </div>
     `;
   };
+
+  const generateHtmlContent = () => {
+    const ITEMS_PER_PAGE = 13; // Adjusted for letter size with compact layout
+    const pages: BudgetItem[][] = [];
+    
+    // First page has less space due to header and project info
+    const FIRST_PAGE_ITEMS = 8;
+    
+    if (items.length <= FIRST_PAGE_ITEMS) {
+      // All items fit on first page
+      pages.push(items);
+    } else {
+      // Split items across multiple pages
+      pages.push(items.slice(0, FIRST_PAGE_ITEMS));
+      
+      let remainingItems = items.slice(FIRST_PAGE_ITEMS);
+      while (remainingItems.length > 0) {
+        pages.push(remainingItems.slice(0, ITEMS_PER_PAGE));
+        remainingItems = remainingItems.slice(ITEMS_PER_PAGE);
+      }
+    }
+
+    return pages.map((pageItems, index) => 
+      generatePageContent(
+        pageItems, 
+        index + 1, 
+        pages.length, 
+        index === pages.length - 1
+      )
+    ).join('');
+  };
+
 
   const showPreview = () => {
     const htmlContent = generateHtmlContent();
@@ -341,49 +390,43 @@ export function BudgetPDFExporter({ budget, items, projectName, clientName }: Bu
   const saveBudgetToProject = async () => {
     setSaving(true);
     try {
-      // Generate PDF first
-      const tempDiv = document.createElement('div');
-      tempDiv.style.position = 'absolute';
-      tempDiv.style.left = '-9999px';
-      tempDiv.style.top = '0';
-      tempDiv.style.width = '210mm';
-      tempDiv.style.backgroundColor = 'white';
-      tempDiv.innerHTML = generateHtmlContent();
-
-      document.body.appendChild(tempDiv);
-
-      const canvas = await html2canvas(tempDiv, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        width: 816, // Letter size width
-        height: 1056 // Letter size height
-      });
-
-      document.body.removeChild(tempDiv);
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'letter'); // Letter size instead of A4
+      // Generate PDF with intelligent pagination
+      const pdf = new jsPDF('p', 'mm', 'letter');
+      const htmlContent = generateHtmlContent();
       
-      const imgWidth = 216; // Letter width in mm
-      const pageHeight = 279; // Letter height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
+      // Split content by pages
+      const pages = htmlContent.split('</div>').filter(page => page.trim());
+      
+      for (let i = 0; i < pages.length; i++) {
+        if (i > 0) pdf.addPage();
+        
+        const tempDiv = document.createElement('div');
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        tempDiv.style.top = '0';
+        tempDiv.style.width = '216mm';
+        tempDiv.style.height = '279mm';
+        tempDiv.style.backgroundColor = 'white';
+        tempDiv.innerHTML = pages[i] + '</div>';
 
-      // Only add content if there's actual content to display
-      if (imgHeight > 0) {
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+        document.body.appendChild(tempDiv);
 
-        // Only add new pages if content actually extends beyond first page
-        while (heightLeft >= pageHeight * 0.1) { // Add threshold to avoid mostly empty pages
-          position = heightLeft - imgHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-        }
+        const canvas = await html2canvas(tempDiv, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          width: 816, // Letter size width in pixels
+          height: 1056 // Letter size height in pixels
+        });
+
+        document.body.removeChild(tempDiv);
+
+        const imgData = canvas.toDataURL('image/png');
+        const imgWidth = 216; // Letter width in mm
+        const imgHeight = 279; // Letter height in mm
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
       }
 
       // Convert PDF to blob
@@ -460,48 +503,43 @@ export function BudgetPDFExporter({ budget, items, projectName, clientName }: Bu
 
   const generatePDF = async () => {
     try {
-      const tempDiv = document.createElement('div');
-      tempDiv.style.position = 'absolute';
-      tempDiv.style.left = '-9999px';
-      tempDiv.style.top = '0';
-      tempDiv.style.width = '210mm';
-      tempDiv.style.backgroundColor = 'white';
-      tempDiv.innerHTML = generateHtmlContent();
-
-      document.body.appendChild(tempDiv);
-
-      const canvas = await html2canvas(tempDiv, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        width: 816, // Letter size width
-        height: 1056 // Letter size height
-      });
-
-      document.body.removeChild(tempDiv);
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'letter'); // Letter size instead of A4
+      // Generate PDF with intelligent pagination
+      const pdf = new jsPDF('p', 'mm', 'letter');
+      const htmlContent = generateHtmlContent();
       
-      const imgWidth = 216; // Letter width in mm
-      const pageHeight = 279; // Letter height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
+      // Split content by pages
+      const pages = htmlContent.split('</div>').filter(page => page.trim());
+      
+      for (let i = 0; i < pages.length; i++) {
+        if (i > 0) pdf.addPage();
+        
+        const tempDiv = document.createElement('div');
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        tempDiv.style.top = '0';
+        tempDiv.style.width = '216mm';
+        tempDiv.style.height = '279mm';
+        tempDiv.style.backgroundColor = 'white';
+        tempDiv.innerHTML = pages[i] + '</div>';
 
-      // Only add content if there's actual content to display
-      if (imgHeight > 0) {
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+        document.body.appendChild(tempDiv);
 
-        // Only add new pages if content actually extends beyond first page
-        while (heightLeft >= pageHeight * 0.1) { // Add threshold to avoid mostly empty pages
-          position = heightLeft - imgHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-        }
+        const canvas = await html2canvas(tempDiv, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          width: 816, // Letter size width in pixels
+          height: 1056 // Letter size height in pixels
+        });
+
+        document.body.removeChild(tempDiv);
+
+        const imgData = canvas.toDataURL('image/png');
+        const imgWidth = 216; // Letter width in mm
+        const imgHeight = 279; // Letter height in mm
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
       }
 
       const fileName = `Presupuesto_${projectName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
