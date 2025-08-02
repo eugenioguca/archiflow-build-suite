@@ -73,17 +73,15 @@ interface Supplier {
 
 interface AdvancedBudgetManagerProps {
   constructionProjectId: string;
-  totalBudget: number;
-  spentBudget: number;
   onBudgetUpdate?: (newTotal: number) => void;
 }
 
 export function AdvancedBudgetManager({ 
   constructionProjectId, 
-  totalBudget, 
-  spentBudget,
   onBudgetUpdate 
 }: AdvancedBudgetManagerProps) {
+  const [totalBudget, setTotalBudget] = useState(0);
+  const [spentBudget, setSpentBudget] = useState(0);
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<BudgetItem[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -104,8 +102,23 @@ export function AdvancedBudgetManager({
   }, [budgetItems, searchTerm, categoryFilter, statusFilter]);
 
   const fetchData = async () => {
+    if (!constructionProjectId) return;
+    
     try {
       setLoading(true);
+      
+      // Fetch construction project data first
+      const { data: project, error: projectError } = await supabase
+        .from('construction_projects')
+        .select('total_budget, spent_budget')
+        .eq('id', constructionProjectId)
+        .single();
+
+      if (projectError) throw projectError;
+      
+      setTotalBudget(project.total_budget || 0);
+      setSpentBudget(project.spent_budget || 0);
+
       await Promise.all([
         fetchBudgetItems(),
         fetchSuppliers()
@@ -144,13 +157,13 @@ export function AdvancedBudgetManager({
 
   const fetchSuppliers = async () => {
     try {
-      // Mock suppliers data for now to avoid TypeScript complexity
-      const mockSuppliers: Supplier[] = [
-        { id: 'sup-1', company_name: 'Concretos del Norte SA' },
-        { id: 'sup-2', company_name: 'Aceros y Metales SA' },
-        { id: 'sup-3', company_name: 'Materiales Construcción López' }
-      ];
-      setSuppliers(mockSuppliers);
+      const { data, error } = await supabase
+        .from('suppliers')
+        .select('id, company_name')
+        .order('company_name');
+
+      if (error) throw error;
+      setSuppliers(data || []);
     } catch (error) {
       console.error('Error fetching suppliers:', error);
       setSuppliers([]);

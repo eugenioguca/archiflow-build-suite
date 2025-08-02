@@ -236,21 +236,9 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-green-500 rounded-full" />
-                    <span className="text-sm">Fase de cimentación completada</span>
-                    <span className="text-xs text-muted-foreground ml-auto">Hace 2 días</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                    <span className="text-sm">Entrega de materiales programada</span>
-                    <span className="text-xs text-muted-foreground ml-auto">Hace 1 día</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full" />
-                    <span className="text-sm">Inspección de calidad pendiente</span>
-                    <span className="text-xs text-muted-foreground ml-auto">Hoy</span>
-                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Las actividades recientes aparecerán aquí cuando se registren cambios en el proyecto.
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -264,20 +252,9 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium">Retraso en entrega de cemento</p>
-                      <p className="text-xs text-muted-foreground">Contactar al proveedor urgente</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Clock className="h-4 w-4 text-yellow-500 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium">Inspección municipal programada</p>
-                      <p className="text-xs text-muted-foreground">Mañana a las 10:00 AM</p>
-                    </div>
-                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Las alertas del proyecto aparecerán aquí cuando se detecten problemas o fechas importantes.
+                  </p>
                 </div>
               </CardContent>
             </Card>

@@ -57,11 +57,6 @@ export default function Construction() {
         <TabsContent value="budget">
           <AdvancedBudgetManager 
             constructionProjectId={selectedProject}
-            totalBudget={0}
-            spentBudget={0}
-            onBudgetUpdate={(newTotal) => {
-              console.log('Budget updated to:', newTotal);
-            }}
           />
         </TabsContent>
 
