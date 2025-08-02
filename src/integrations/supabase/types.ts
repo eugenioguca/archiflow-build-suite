@@ -1637,7 +1637,7 @@ export type Database = {
         Row: {
           actual_completion_date: string | null
           created_at: string
-          created_by: string
+          created_by: string | null
           days_elapsed: number | null
           estimated_delivery_date: string | null
           id: string
@@ -1651,7 +1651,7 @@ export type Database = {
         Insert: {
           actual_completion_date?: string | null
           created_at?: string
-          created_by: string
+          created_by?: string | null
           days_elapsed?: number | null
           estimated_delivery_date?: string | null
           id?: string
@@ -1665,7 +1665,7 @@ export type Database = {
         Update: {
           actual_completion_date?: string | null
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           days_elapsed?: number | null
           estimated_delivery_date?: string | null
           id?: string
@@ -1688,7 +1688,7 @@ export type Database = {
             foreignKeyName: "design_phases_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
-            referencedRelation: "projects"
+            referencedRelation: "client_projects"
             referencedColumns: ["id"]
           },
         ]
