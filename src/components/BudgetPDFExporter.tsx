@@ -47,6 +47,13 @@ export function BudgetPDFExporter({ budget, items, projectName, clientName }: Bu
     }).format(amount);
   };
 
+  const calculateTotals = () => {
+    const subtotal = items.reduce((sum, item) => sum + item.total_price, 0);
+    const iva = subtotal * 0.16; // 16% IVA
+    const total = subtotal + iva;
+    return { subtotal, iva, total };
+  };
+
   const generatePageContent = (pageItems: BudgetItem[], pageNumber: number, totalPages: number, isLastPage: boolean) => {
     return `
       <div style="
@@ -293,26 +300,69 @@ export function BudgetPDFExporter({ budget, items, projectName, clientName }: Bu
                   ">${formatCurrency(item.total_price)}</td>
                 </tr>
               `).join('')}
-              ${isLastPage ? `
-                <tr style="
-                  background: linear-gradient(135deg, #1e293b 0%, #f97316 100%);
-                  color: white;
-                ">
-                  <td colspan="3" style="
-                    padding: 12px 6px;
-                    font-weight: 700;
-                    font-size: 13px;
-                    text-transform: uppercase;
-                    letter-spacing: 1px;
-                  ">TOTAL GENERAL</td>
-                  <td style="
-                    padding: 12px 6px;
-                    text-align: right;
-                    font-weight: 700;
-                    font-size: 14px;
-                  ">${formatCurrency(budget.total_amount)}</td>
-                </tr>
-              ` : ''}
+              ${isLastPage ? (() => {
+                const { subtotal, iva, total } = calculateTotals();
+                return `
+                  <tr style="
+                    background: #f8fafc;
+                    border-bottom: 1px solid #e2e8f0;
+                  ">
+                    <td colspan="3" style="
+                      padding: 10px 6px;
+                      font-weight: 600;
+                      font-size: 12px;
+                      text-transform: uppercase;
+                      letter-spacing: 0.5px;
+                      color: #374151;
+                    ">SUBTOTAL</td>
+                    <td style="
+                      padding: 10px 6px;
+                      text-align: right;
+                      font-weight: 600;
+                      color: #374151;
+                      font-size: 12px;
+                    ">${formatCurrency(subtotal)}</td>
+                  </tr>
+                  <tr style="
+                    background: #f8fafc;
+                    border-bottom: 1px solid #e2e8f0;
+                  ">
+                    <td colspan="3" style="
+                      padding: 10px 6px;
+                      font-weight: 600;
+                      font-size: 12px;
+                      text-transform: uppercase;
+                      letter-spacing: 0.5px;
+                      color: #374151;
+                    ">IVA (16%)</td>
+                    <td style="
+                      padding: 10px 6px;
+                      text-align: right;
+                      font-weight: 600;
+                      color: #374151;
+                      font-size: 12px;
+                    ">${formatCurrency(iva)}</td>
+                  </tr>
+                  <tr style="
+                    background: linear-gradient(135deg, #1e293b 0%, #f97316 100%);
+                    color: white;
+                  ">
+                    <td colspan="3" style="
+                      padding: 12px 6px;
+                      font-weight: 700;
+                      font-size: 13px;
+                      text-transform: uppercase;
+                      letter-spacing: 1px;
+                    ">TOTAL GENERAL</td>
+                    <td style="
+                      padding: 12px 6px;
+                      text-align: right;
+                      font-weight: 700;
+                      font-size: 14px;
+                    ">${formatCurrency(total)}</td>
+                  </tr>
+                `;
+              })() : ''}
             </tbody>
           </table>
         </div>
