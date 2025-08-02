@@ -170,11 +170,21 @@ export function TeamMemberSelector({ projectId, teamMembers, onTeamUpdate }: Tea
   };
 
   const removeTeamMember = async (memberId: string, memberRole: string) => {
-    // Prevent removal of sales advisor
     if (memberRole === "sales_advisor") {
       toast({
-        title: "No se puede eliminar",
-        description: "El asesor de ventas original no puede ser removido del equipo ya que conoce todo el expediente del cliente",
+        title: "Error", 
+        description: "No se puede remover al asesor de ventas del equipo",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check if removing the last architect
+    const architects = teamMembers.filter(member => member.role === 'architect');
+    if (memberRole === 'architect' && architects.length === 1) {
+      toast({
+        title: "Error",
+        description: "Debe haber al menos un arquitecto asignado al proyecto",
         variant: "destructive"
       });
       return;
