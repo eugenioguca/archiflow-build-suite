@@ -745,9 +745,29 @@ export default function Sales() {
                     clientProjectId={selectedProject.id}
                     clientProject={selectedProject}
                     onDocumentUpdate={async () => {
+                      // Refrescar datos
                       await fetchData();
-                      // Actualizar el proyecto seleccionado con los datos más recientes
-                      const updatedProject = clientProjects.find(p => p.id === selectedProject.id);
+                      
+                      // Obtener los datos actualizados directamente de la base de datos
+                      const { data: updatedProject } = await supabase
+                        .from('client_projects')
+                        .select(`
+                          *,
+                          clients!client_projects_client_id_fkey (
+                            id,
+                            full_name,
+                            email,
+                            phone,
+                            address
+                          ),
+                          assigned_advisor:profiles!client_projects_assigned_advisor_id_fkey (
+                            id,
+                            full_name
+                          )
+                        `)
+                        .eq('id', selectedProject.id)
+                        .single();
+                        
                       if (updatedProject) {
                         setSelectedProject(updatedProject);
                       }
