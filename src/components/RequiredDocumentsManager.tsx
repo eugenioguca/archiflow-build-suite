@@ -95,7 +95,45 @@ export const RequiredDocumentsManager = ({
   const [uploading, setUploading] = useState(false);
   const [curpValue, setCurpValue] = useState(clientProject.curp || '');
   const [showCurpDialog, setShowCurpDialog] = useState(false);
+  const [paymentPlanData, setPaymentPlanData] = useState<any>(null);
   const { toast } = useToast();
+
+  // Cargar datos del plan de pagos al montar el componente
+  useEffect(() => {
+    const fetchPaymentPlan = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('client_projects')
+          .select('payment_plan')
+          .eq('id', clientProjectId)
+          .single();
+
+        if (error) throw error;
+        setPaymentPlanData(data?.payment_plan);
+      } catch (error) {
+        console.error('Error fetching payment plan:', error);
+      }
+    };
+
+    fetchPaymentPlan();
+  }, [clientProjectId]);
+
+  const checkPaymentPlanCompleted = () => {
+    if (!paymentPlanData) return false;
+
+    try {
+      const plans = Array.isArray(paymentPlanData) ? paymentPlanData : [paymentPlanData];
+      
+      // Verificar si al menos un plan tiene un pago marcado como pagado
+      return plans.some((plan: any) => {
+        if (!Array.isArray(plan.payments)) return false;
+        return plan.payments.some((payment: any) => payment.paid === true);
+      });
+    } catch (error) {
+      console.error('Error checking payment plan:', error);
+      return false;
+    }
+  };
 
   const getCurrentStageRequiredDocs = () => {
     return REQUIRED_DOCUMENTS.filter(doc => 
@@ -125,8 +163,8 @@ export const RequiredDocumentsManager = ({
         };
       case 'payment_plan':
         return {
-          completed: false, // TODO: Implementar validación de plan de pagos
-          value: null,
+          completed: checkPaymentPlanCompleted(),
+          value: checkPaymentPlanCompleted() ? 'Plan de pagos con primer pago realizado' : null,
           canEdit: true
         };
       default:
