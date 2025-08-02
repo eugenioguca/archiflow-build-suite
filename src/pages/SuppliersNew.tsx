@@ -148,7 +148,7 @@ export default function SuppliersNew() {
     dias_credito: 30,
     limite_credito: 0,
     supplier_category: "materials" as "materials" | "equipment" | "services" | "subcontractor" | "utilities" | "other",
-    rating: 0,
+    rating: 5,
     notes: "",
     website: ""
   });
@@ -411,7 +411,7 @@ export default function SuppliersNew() {
       dias_credito: 30,
       limite_credito: 0,
       supplier_category: "materials",
-      rating: 0,
+      rating: 5,
       notes: "",
       website: ""
     });
