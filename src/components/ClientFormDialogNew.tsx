@@ -102,6 +102,7 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
     notes: '',
     
     // Datos del proyecto/lead
+    budget: '',
     land_square_meters: '',
     branch_office_id: '',
     lead_source: '',
@@ -123,6 +124,7 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
         address: client.address || '',
         state: client.state || '',
         notes: client.notes || '',
+        budget: '',
         land_square_meters: '',
         branch_office_id: '',
         lead_source: '',
@@ -138,6 +140,7 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
         address: '',
         state: '',
         notes: '',
+        budget: '',
         land_square_meters: '',
         branch_office_id: '',
         lead_source: '',
@@ -219,6 +222,7 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
           project_name: `Proyecto Principal - ${formData.full_name}`,
           project_description: 'Primer proyecto del cliente',
           service_type: 'diseño',
+          budget: formData.budget ? parseFloat(formData.budget) : null,
           land_square_meters: formData.land_square_meters ? parseFloat(formData.land_square_meters) : null,
           branch_office_id: formData.branch_office_id || null,
           alliance_id: formData.lead_source === 'alianzas' ? formData.alliance_id || null : null,
@@ -340,6 +344,19 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
               <h3 className="text-lg font-semibold">Información del Proyecto</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="budget">Presupuesto Estimado</Label>
+                  <Input
+                    id="budget"
+                    type="number"
+                    value={formData.budget}
+                    onChange={(e) => handleInputChange('budget', e.target.value)}
+                    placeholder="Ej: 1500000"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="land_square_meters">Metros Cuadrados del Terreno</Label>
                   <Input
