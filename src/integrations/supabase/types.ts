@@ -3293,6 +3293,42 @@ export type Database = {
         }
         Relationships: []
       }
+      material_dropdown_options: {
+        Row: {
+          created_at: string
+          created_by: string
+          dropdown_type: string
+          id: string
+          is_active: boolean
+          option_label: string
+          option_value: string
+          order_index: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          dropdown_type: string
+          id?: string
+          is_active?: boolean
+          option_label: string
+          option_value: string
+          order_index?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          dropdown_type?: string
+          id?: string
+          is_active?: boolean
+          option_label?: string
+          option_value?: string
+          order_index?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       material_requirements: {
         Row: {
           brand: string | null
@@ -3300,15 +3336,19 @@ export type Database = {
           certifications: Json | null
           created_at: string
           created_by: string
+          cuenta_mayor: string | null
           delivery_date_actual: string | null
           delivery_date_required: string | null
+          descripcion_producto: string | null
           environmental_impact: Json | null
           id: string
           material_code: string | null
           material_name: string
           material_type: string
           model: string | null
+          notas_procuracion: string | null
           notes: string | null
+          partida: string | null
           phase_id: string | null
           priority: string | null
           project_id: string
@@ -3320,10 +3360,12 @@ export type Database = {
           quantity_required: number
           quantity_used: number | null
           quantity_wasted: number | null
+          requisito_almacenamiento: string | null
           specifications: Json | null
           status: string | null
           storage_location: string | null
           storage_requirements: Json | null
+          sub_partida: number | null
           supplier_id: string | null
           sustainability_rating: number | null
           total_cost: number | null
@@ -3339,15 +3381,19 @@ export type Database = {
           certifications?: Json | null
           created_at?: string
           created_by: string
+          cuenta_mayor?: string | null
           delivery_date_actual?: string | null
           delivery_date_required?: string | null
+          descripcion_producto?: string | null
           environmental_impact?: Json | null
           id?: string
           material_code?: string | null
           material_name: string
           material_type: string
           model?: string | null
+          notas_procuracion?: string | null
           notes?: string | null
+          partida?: string | null
           phase_id?: string | null
           priority?: string | null
           project_id: string
@@ -3359,10 +3405,12 @@ export type Database = {
           quantity_required?: number
           quantity_used?: number | null
           quantity_wasted?: number | null
+          requisito_almacenamiento?: string | null
           specifications?: Json | null
           status?: string | null
           storage_location?: string | null
           storage_requirements?: Json | null
+          sub_partida?: number | null
           supplier_id?: string | null
           sustainability_rating?: number | null
           total_cost?: number | null
@@ -3378,15 +3426,19 @@ export type Database = {
           certifications?: Json | null
           created_at?: string
           created_by?: string
+          cuenta_mayor?: string | null
           delivery_date_actual?: string | null
           delivery_date_required?: string | null
+          descripcion_producto?: string | null
           environmental_impact?: Json | null
           id?: string
           material_code?: string | null
           material_name?: string
           material_type?: string
           model?: string | null
+          notas_procuracion?: string | null
           notes?: string | null
+          partida?: string | null
           phase_id?: string | null
           priority?: string | null
           project_id?: string
@@ -3398,10 +3450,12 @@ export type Database = {
           quantity_required?: number
           quantity_used?: number | null
           quantity_wasted?: number | null
+          requisito_almacenamiento?: string | null
           specifications?: Json | null
           status?: string | null
           storage_location?: string | null
           storage_requirements?: Json | null
+          sub_partida?: number | null
           supplier_id?: string | null
           sustainability_rating?: number | null
           total_cost?: number | null

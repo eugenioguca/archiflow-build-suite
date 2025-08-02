@@ -1,433 +1,327 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { SmartCombobox } from "@/components/SmartCombobox"
+import { CurrencyInput } from "@/components/CurrencyInput"
+import { supabase } from "@/integrations/supabase/client"
+import { useToast } from "@/hooks/use-toast"
 
 interface MaterialRequirementFormProps {
-  projectId: string;
-  initialData?: any;
-  onSuccess: () => void;
-  onCancel: () => void;
+  projectId: string
+  initialData?: any
+  onSuccess: () => void
+  onCancel: () => void
 }
 
-export function MaterialRequirementForm({ projectId, initialData, onSuccess, onCancel }: MaterialRequirementFormProps) {
-  const [loading, setLoading] = useState(false);
-  const [suppliers, setSuppliers] = useState([]);
+interface DropdownOption {
+  value: string
+  label: string
+  id?: string
+}
+
+export function MaterialRequirementForm({ 
+  projectId, 
+  initialData, 
+  onSuccess, 
+  onCancel 
+}: MaterialRequirementFormProps) {
+  const [loading, setLoading] = useState(false)
+  const [cuentasMayorOptions, setCuentasMayorOptions] = useState<DropdownOption[]>([])
+  const [partidasOptions, setPartidasOptions] = useState<DropdownOption[]>([])
+  const [descripcionesOptions, setDescripcionesOptions] = useState<DropdownOption[]>([])
+  const { toast } = useToast()
+
   const [formData, setFormData] = useState({
-    material_code: initialData?.material_code || "",
-    material_name: initialData?.material_name || "",
-    description: initialData?.description || "",
-    category: initialData?.category || "",
-    subcategory: initialData?.subcategory || "",
+    cuenta_mayor: initialData?.cuenta_mayor || "",
+    partida: initialData?.partida || "",
+    sub_partida: initialData?.sub_partida || "",
+    descripcion_producto: initialData?.descripcion_producto || "",
     unit_of_measure: initialData?.unit_of_measure || "",
-    quantity_required: initialData?.quantity_required || 0,
-    unit_cost: initialData?.unit_cost || 0,
-    supplier_id: initialData?.supplier_id || "",
-    expected_delivery_date: initialData?.expected_delivery_date ? new Date(initialData.expected_delivery_date) : null,
-    priority_level: initialData?.priority_level || "medium",
-    status: initialData?.status || "required",
-    procurement_notes: initialData?.procurement_notes || "",
-    storage_requirements: initialData?.storage_requirements || "",
-    min_stock_level: initialData?.min_stock_level || 0,
-    reorder_point: initialData?.reorder_point || 0,
-  });
+    quantity_required: initialData?.quantity_required || "",
+    unit_cost: initialData?.unit_cost || "",
+    notas_procuracion: initialData?.notas_procuracion || "",
+    requisito_almacenamiento: initialData?.requisito_almacenamiento || "",
+  })
 
-  const categories = [
-    "Cemento y Concreto",
-    "Agregados", 
-    "Acero de Refuerzo",
-    "Block y Ladrillo",
-    "Materiales Eléctricos",
-    "Materiales Hidráulicos",
-    "Impermeabilizantes",
-    "Acabados",
-    "Herrería",
-    "Carpintería",
-    "Vidrio y Cancelería",
-    "Pintura",
-    "Herramientas",
-    "Equipo de Seguridad",
-    "Otros"
-  ];
-
-  const units = [
-    "PZA", "M2", "M3", "ML", "KG", "TON", "LT", "GL", "BULTO", "CAJA", "ROLLO", "JUEGO", "LOTE"
-  ];
-
-  const priorityLevels = [
-    { value: "low", label: "Baja" },
-    { value: "medium", label: "Media" },
-    { value: "high", label: "Alta" },
-    { value: "urgent", label: "Urgente" }
-  ];
-
-  const statusOptions = [
-    { value: "required", label: "Requerido" },
-    { value: "quoted", label: "Cotizado" },
-    { value: "ordered", label: "Ordenado" },
-    { value: "partial_delivery", label: "Entrega Parcial" },
-    { value: "delivered", label: "Entregado" },
-    { value: "cancelled", label: "Cancelado" }
-  ];
-
+  // Load dropdown options
   useEffect(() => {
-    // Simplificar sin consulta a suppliers por ahora
-    setSuppliers([]);
-  }, []);
+    fetchDropdownOptions()
+  }, [])
 
-  const handleInputChange = (name: string, value: any) => {
+  const fetchDropdownOptions = async () => {
+    try {
+      const { data: options, error } = await supabase
+        .from('material_dropdown_options')
+        .select('id, dropdown_type, option_value, option_label')
+        .eq('is_active', true)
+        .order('order_index')
+
+      if (error) throw error
+
+      const cuentasMayor = options
+        ?.filter(opt => opt.dropdown_type === 'cuentas_mayor')
+        ?.map(opt => ({ value: opt.option_value, label: opt.option_label, id: opt.id })) || []
+
+      const partidas = options
+        ?.filter(opt => opt.dropdown_type === 'partidas')
+        ?.map(opt => ({ value: opt.option_value, label: opt.option_label, id: opt.id })) || []
+
+      const descripciones = options
+        ?.filter(opt => opt.dropdown_type === 'descripciones_producto')
+        ?.map(opt => ({ value: opt.option_value, label: opt.option_label, id: opt.id })) || []
+
+      setCuentasMayorOptions(cuentasMayor)
+      setPartidasOptions(partidas)
+      setDescripcionesOptions(descripciones)
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Error al cargar las opciones: " + error.message,
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
-      [name]: value
-    }));
-  };
+      [field]: value
+    }))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.material_name || !formData.category || !formData.unit_of_measure) {
-      toast.error("Por favor complete los campos requeridos");
-      return;
-    }
+    e.preventDefault()
+    setLoading(true)
 
     try {
-      setLoading(true);
+      // Get current user's profile
+      const { data: userData } = await supabase.auth.getUser()
+      if (!userData.user) throw new Error("No authenticated user")
 
-      // Get current user
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) {
-        toast.error("Usuario no autenticado");
-        return;
-      }
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', userData.user.id)
+        .single()
 
-      // Get user profile
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("user_id", userData.user.id)
-        .single();
+      if (!profile) throw new Error("Profile not found")
 
-      if (!profileData) {
-        toast.error("Error al obtener el perfil del usuario");
-        return;
-      }
-
+      // Prepare material data
       const materialData = {
         project_id: projectId,
-        budget_item_id: null,
-        phase_id: null,
-        material_code: formData.material_code || `MAT-${Date.now()}`,
-        material_name: formData.material_name,
-        material_type: formData.category, // Añadiendo el campo requerido
-        description: formData.description || null,
-        category: formData.category,
-        subcategory: formData.subcategory || null,
+        cuenta_mayor: formData.cuenta_mayor,
+        partida: formData.partida || null,
+        sub_partida: parseInt(formData.sub_partida) || null,
+        descripcion_producto: formData.descripcion_producto,
         unit_of_measure: formData.unit_of_measure,
-        quantity_required: Number(formData.quantity_required),
-        quantity_ordered: 0,
-        quantity_delivered: 0,
-        quantity_used: 0,
-        quantity_remaining: Number(formData.quantity_required),
-        quantity_wasted: 0,
-        unit_cost: Number(formData.unit_cost),
-        total_cost: Number(formData.quantity_required) * Number(formData.unit_cost),
-        supplier_id: formData.supplier_id || null,
-        supplier_quote_url: null,
-        expected_delivery_date: formData.expected_delivery_date?.toISOString().split('T')[0] || null,
-        actual_delivery_date: null,
-        quality_specifications: {},
-        safety_requirements: {},
-        storage_requirements: formData.storage_requirements || null,
-        priority_level: formData.priority_level,
-        status: formData.status,
-        procurement_notes: formData.procurement_notes || null,
-        quality_approved: false,
-        quality_approved_by: null,
-        quality_approved_at: null,
-        waste_reason: null,
-        cost_variance_percentage: 0,
-        lead_time_days: null,
-        min_stock_level: Number(formData.min_stock_level),
-        max_stock_level: 0,
-        reorder_point: Number(formData.reorder_point),
-        created_by: profileData.id,
-      } as any;
+        quantity_required: parseFloat(formData.quantity_required) || 0,
+        unit_cost: parseFloat(formData.unit_cost) || 0,
+        notas_procuracion: formData.notas_procuracion || null,
+        requisito_almacenamiento: formData.requisito_almacenamiento || null,
+        material_name: formData.descripcion_producto, // For compatibility
+        material_type: formData.cuenta_mayor || 'general', // For compatibility
+        created_by: profile.id
+      }
 
-      let result;
-      if (initialData) {
-        result = await supabase
-          .from("material_requirements")
+      if (initialData?.id) {
+        // Update existing material
+        const { error } = await supabase
+          .from('material_requirements')
           .update(materialData)
-          .eq("id", initialData.id);
+          .eq('id', initialData.id)
+
+        if (error) throw error
+
+        toast({
+          title: "Material actualizado",
+          description: "Los datos del material han sido actualizados exitosamente.",
+        })
       } else {
-        result = await supabase
-          .from("material_requirements")
-          .insert(materialData);
+        // Create new material
+        const { error } = await supabase
+          .from('material_requirements')
+          .insert(materialData)
+
+        if (error) throw error
+
+        toast({
+          title: "Material creado",
+          description: "El nuevo material ha sido creado exitosamente.",
+        })
       }
 
-      if (result.error) {
-        console.error("Database error:", result.error);
-        toast.error("Error al guardar el material");
-        return;
-      }
-
-      toast.success(initialData ? "Material actualizado exitosamente" : "Material creado exitosamente");
-      onSuccess();
-    } catch (error) {
-      console.error("Error:", error);
-      toast.error("Error al procesar la solicitud");
+      onSuccess()
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Ocurrió un error al procesar la solicitud.",
+        variant: "destructive",
+      })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Código de Material</label>
-            <Input
-              placeholder="Ej: MAT-001 (opcional)"
-              value={formData.material_code}
-              onChange={(e) => handleInputChange('material_code', e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Nombre del Material *</label>
-            <Input
-              placeholder="Ej: Cemento Portland CPC 40"
-              value={formData.material_name}
-              onChange={(e) => handleInputChange('material_name', e.target.value)}
+    <Card className="w-full max-w-4xl mx-auto">
+      <CardHeader>
+        <CardTitle>
+          {initialData ? "Editar Material" : "Nuevo Material"}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Main Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <SmartCombobox
+              label="Cuentas de Mayor"
+              value={formData.cuenta_mayor}
+              onValueChange={(value) => handleInputChange("cuenta_mayor", value)}
+              items={cuentasMayorOptions}
+              placeholder="Seleccione cuenta de mayor"
+              dropdownType="cuentas_mayor"
+              onItemsChange={fetchDropdownOptions}
+              allowEdit
               required
             />
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Descripción</label>
-            <Textarea
-              placeholder="Descripción detallada del material..."
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
+            <SmartCombobox
+              label="Partida"
+              value={formData.partida}
+              onValueChange={(value) => handleInputChange("partida", value)}
+              items={partidasOptions}
+              placeholder="Seleccione partida"
+              dropdownType="partidas"
+              onItemsChange={fetchDropdownOptions}
+              allowEdit
             />
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Categoría *</label>
-            <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar categoría" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map(category => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Subcategoría</label>
-            <Input
-              placeholder="Ej: Tipo I, Grado A, etc."
-              value={formData.subcategory}
-              onChange={(e) => handleInputChange('subcategory', e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Unidad *</label>
-              <Select value={formData.unit_of_measure} onValueChange={(value) => handleInputChange('unit_of_measure', value)}>
+            <div className="space-y-2">
+              <Label htmlFor="sub_partida">Sub Partida</Label>
+              <Select 
+                value={formData.sub_partida.toString()} 
+                onValueChange={(value) => handleInputChange("sub_partida", value)}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Unidad" />
+                  <SelectValue placeholder="Seleccione sub partida" />
                 </SelectTrigger>
                 <SelectContent>
-                  {units.map(unit => (
-                    <SelectItem key={unit} value={unit}>
-                      {unit}
+                  {Array.from({ length: 40 }, (_, i) => i + 1).map((num) => (
+                    <SelectItem key={num} value={num.toString()}>
+                      {num}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Cantidad Requerida *</label>
+            <SmartCombobox
+              label="Descripción del Producto"
+              value={formData.descripcion_producto}
+              onValueChange={(value) => handleInputChange("descripcion_producto", value)}
+              items={descripcionesOptions}
+              placeholder="Seleccione descripción"
+              dropdownType="descripciones_producto"
+              onItemsChange={fetchDropdownOptions}
+              allowEdit
+              required
+            />
+
+            <div className="space-y-2">
+              <Label htmlFor="unit_of_measure">Unidad *</Label>
+              <Select 
+                value={formData.unit_of_measure} 
+                onValueChange={(value) => handleInputChange("unit_of_measure", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccione unidad" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PZA">Pieza (PZA)</SelectItem>
+                  <SelectItem value="M2">Metro cuadrado (M2)</SelectItem>
+                  <SelectItem value="M3">Metro cúbico (M3)</SelectItem>
+                  <SelectItem value="ML">Metro lineal (ML)</SelectItem>
+                  <SelectItem value="KG">Kilogramo (KG)</SelectItem>
+                  <SelectItem value="TON">Tonelada (TON)</SelectItem>
+                  <SelectItem value="LT">Litro (LT)</SelectItem>
+                  <SelectItem value="GLN">Galón (GLN)</SelectItem>
+                  <SelectItem value="M">Metro (M)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="quantity_required">Cantidad Requerida *</Label>
               <Input
+                id="quantity_required"
                 type="number"
                 step="0.01"
-                placeholder="0"
+                min="0"
                 value={formData.quantity_required}
-                onChange={(e) => handleInputChange('quantity_required', parseFloat(e.target.value) || 0)}
+                onChange={(e) => handleInputChange("quantity_required", e.target.value)}
+                placeholder="0.00"
                 required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="unit_cost">Costo Unitario</Label>
+              <CurrencyInput
+                value={formData.unit_cost}
+                onChange={(value) => handleInputChange("unit_cost", value)}
+                placeholder="$0.00"
               />
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Costo Unitario</label>
-            <Input
-              type="number"
-              step="0.01"
-              placeholder="0.00"
-              value={formData.unit_cost}
-              onChange={(e) => handleInputChange('unit_cost', parseFloat(e.target.value) || 0)}
-            />
-          </div>
-
-          {/* <div>
-            <label className="block text-sm font-medium mb-1">Proveedor</label>
-            <Select value={formData.supplier_id} onValueChange={(value) => handleInputChange('supplier_id', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar proveedor" />
-              </SelectTrigger>
-              <SelectContent>
-                {suppliers.map((supplier: any) => (
-                  <SelectItem key={supplier.id} value={supplier.id}>
-                    {supplier.company_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div> */}
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Fecha de Entrega Esperada</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full pl-3 text-left font-normal",
-                    !formData.expected_delivery_date && "text-muted-foreground"
-                  )}
-                >
-                  {formData.expected_delivery_date ? (
-                    format(formData.expected_delivery_date, "PPP", { locale: es })
-                  ) : (
-                    <span>Seleccionar fecha</span>
-                  )}
-                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={formData.expected_delivery_date || undefined}
-                  onSelect={(date) => handleInputChange('expected_delivery_date', date)}
-                  disabled={(date) => date < new Date()}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Prioridad</label>
-              <Select value={formData.priority_level} onValueChange={(value) => handleInputChange('priority_level', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Prioridad" />
-                </SelectTrigger>
-                <SelectContent>
-                  {priorityLevels.map(level => (
-                    <SelectItem key={level.value} value={level.value}>
-                      {level.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Optional Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="notas_procuracion">Notas de Procuración</Label>
+              <Textarea
+                id="notas_procuracion"
+                value={formData.notas_procuracion}
+                onChange={(e) => handleInputChange("notas_procuracion", e.target.value)}
+                placeholder="Notas sobre procuración (opcional)"
+                rows={3}
+              />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Estado</label>
-              <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusOptions.map(status => (
-                    <SelectItem key={status.value} value={status.value}>
-                      {status.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="space-y-2">
+              <Label htmlFor="requisito_almacenamiento">Requisito de Almacenamiento</Label>
+              <Textarea
+                id="requisito_almacenamiento"
+                value={formData.requisito_almacenamiento}
+                onChange={(e) => handleInputChange("requisito_almacenamiento", e.target.value)}
+                placeholder="Requisitos especiales de almacenamiento (opcional)"
+                rows={3}
+              />
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium mb-1">Notas de Procuración</label>
-          <Textarea
-            placeholder="Notas sobre el proceso de procuración..."
-            value={formData.procurement_notes}
-            onChange={(e) => handleInputChange('procurement_notes', e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Requisitos de Almacenamiento</label>
-          <Textarea
-            placeholder="Condiciones especiales de almacenamiento..."
-            value={formData.storage_requirements}
-            onChange={(e) => handleInputChange('storage_requirements', e.target.value)}
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium mb-1">Nivel Mínimo de Stock</label>
-          <Input
-            type="number"
-            step="0.01"
-            placeholder="0"
-            value={formData.min_stock_level}
-            onChange={(e) => handleInputChange('min_stock_level', parseFloat(e.target.value) || 0)}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Punto de Reorden</label>
-          <Input
-            type="number"
-            step="0.01"
-            placeholder="0"
-            value={formData.reorder_point}
-            onChange={(e) => handleInputChange('reorder_point', parseFloat(e.target.value) || 0)}
-          />
-        </div>
-      </div>
-
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
-        </Button>
-        <Button type="submit" disabled={loading}>
-          {loading 
-            ? (initialData ? "Actualizando..." : "Creando...") 
-            : (initialData ? "Actualizar Material" : "Crear Material")
-          }
-        </Button>
-      </div>
-    </form>
-  );
+          {/* Action Buttons */}
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading}
+            >
+              {loading ? "Guardando..." : (initialData ? "Actualizar Material" : "Crear Material")}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  )
 }
