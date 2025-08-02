@@ -13,23 +13,18 @@ interface MaterialExcelManagerProps {
   onImportComplete?: () => void
 }
 
-interface MaterialImportData {
-  cuenta_mayor: string
-  partida: string
-  sub_partida: number
-  descripcion_producto: string
-  unit_of_measure: string
-  quantity_required: number
-  unit_cost: number
-  notas_procuracion?: string
-  requisito_almacenamiento?: string
+interface DropdownImportResult {
+  type: string
+  new_options: string[]
+  duplicates_ignored: number
+  total_processed: number
 }
 
 interface ImportResult {
   success: boolean
   errors: string[]
-  imported: number
-  total: number
+  dropdown_results: DropdownImportResult[]
+  total_rows: number
 }
 
 export function MaterialExcelManager({ projectId, onImportComplete }: MaterialExcelManagerProps) {
@@ -241,15 +236,11 @@ export function MaterialExcelManager({ projectId, onImportComplete }: MaterialEx
         throw new Error("El archivo debe contener al menos una fila de datos además del encabezado")
       }
 
-      // Validate headers
+      // Validate headers - only check for the dropdown columns
       const expectedHeaders = [
         "Cuentas de Mayor",
         "Partida", 
-        "Sub Partida",
-        "Descripción del Producto",
-        "Unidad",
-        "Cantidad Requerida",
-        "Costo Unitario"
+        "Descripción del Producto"
       ]
 
       const headers = (jsonData[0] as string[]) || []
@@ -258,7 +249,7 @@ export function MaterialExcelManager({ projectId, onImportComplete }: MaterialEx
       )
 
       if (missingHeaders.length > 0) {
-        throw new Error(`Faltan las siguientes columnas: ${missingHeaders.join(', ')}`)
+        throw new Error(`Faltan las siguientes columnas para alimentar dropdowns: ${missingHeaders.join(', ')}`)
       }
 
       // Get user profile
@@ -272,85 +263,111 @@ export function MaterialExcelManager({ projectId, onImportComplete }: MaterialEx
         throw new Error("No se pudo obtener el perfil del usuario")
       }
 
-      // Process data
+      // Get existing dropdown options to prevent duplicates
+      const { data: existingOptions } = await supabase
+        .from('material_dropdown_options')
+        .select('dropdown_type, option_label')
+        .eq('is_active', true)
+
+      const existingMap = new Map<string, Set<string>>()
+      existingOptions?.forEach(option => {
+        if (!existingMap.has(option.dropdown_type)) {
+          existingMap.set(option.dropdown_type, new Set())
+        }
+        existingMap.get(option.dropdown_type)?.add(option.option_label.toLowerCase())
+      })
+
+      // Process data to feed dropdowns
       const errors: string[] = []
-      const materialsToInsert: any[] = []
+      const dropdownResults: DropdownImportResult[] = []
+      
+      // Column mappings
+      const columnMappings = [
+        { index: 0, type: 'cuentas_mayor', name: 'Cuentas de Mayor' },
+        { index: 1, type: 'partidas', name: 'Partida' },
+        { index: 3, type: 'descripciones_producto', name: 'Descripción del Producto' }
+      ]
 
-      for (let i = 1; i < jsonData.length; i++) {
-        const row = jsonData[i] as any[]
-        if (!row || row.every(cell => !cell)) continue // Skip empty rows
+      for (const mapping of columnMappings) {
+        const uniqueValues = new Set<string>()
+        const newOptions: string[] = []
+        let duplicatesIgnored = 0
+        let totalProcessed = 0
 
-        try {
-          const material = {
-            project_id: projectId,
-            cuenta_mayor: row[0]?.toString().trim() || null,
-            partida: row[1]?.toString().trim() || null,
-            sub_partida: row[2] ? parseInt(row[2].toString()) : null,
-            descripcion_producto: row[3]?.toString().trim() || null,
-            unit_of_measure: row[4]?.toString().trim() || null,
-            quantity_required: row[5] ? parseFloat(row[5].toString()) : 0,
-            unit_cost: row[6] ? parseFloat(row[6].toString()) : 0,
-            notas_procuracion: row[7]?.toString().trim() || null,
-            requisito_almacenamiento: row[8]?.toString().trim() || null,
-            material_name: row[3]?.toString().trim() || `Material ${i}`,
-            material_type: row[0]?.toString().trim() || 'general',
+        // Extract unique values from the column
+        for (let i = 1; i < jsonData.length; i++) {
+          const row = jsonData[i] as any[]
+          const cellValue = row[mapping.index]?.toString().trim()
+          
+          if (cellValue && cellValue !== '') {
+            totalProcessed++
+            const lowerValue = cellValue.toLowerCase()
+            
+            // Check if it's not a duplicate within this import
+            if (!uniqueValues.has(lowerValue)) {
+              uniqueValues.add(lowerValue)
+              
+              // Check if it already exists in database
+              const existingSet = existingMap.get(mapping.type)
+              if (!existingSet?.has(lowerValue)) {
+                newOptions.push(cellValue)
+              } else {
+                duplicatesIgnored++
+              }
+            } else {
+              duplicatesIgnored++
+            }
+          }
+        }
+
+        // Insert new options
+        if (newOptions.length > 0) {
+          const optionsToInsert = newOptions.map((option, index) => ({
+            dropdown_type: mapping.type,
+            option_label: option,
+            option_value: option.toLowerCase().replace(/\s+/g, '_'),
+            order_index: index + 1000, // Add to end of existing options
+            is_active: true,
             created_by: profile.id
+          }))
+
+          const { error: insertError } = await supabase
+            .from('material_dropdown_options')
+            .insert(optionsToInsert)
+
+          if (insertError) {
+            errors.push(`Error al insertar opciones para ${mapping.name}: ${insertError.message}`)
           }
-
-          // Basic validation
-          if (!material.cuenta_mayor) {
-            errors.push(`Fila ${i + 1}: Cuentas de Mayor es obligatorio`)
-            continue
-          }
-
-          if (!material.descripcion_producto) {
-            errors.push(`Fila ${i + 1}: Descripción del Producto es obligatorio`)
-            continue
-          }
-
-          if (!material.unit_of_measure) {
-            errors.push(`Fila ${i + 1}: Unidad es obligatorio`)
-            continue
-          }
-
-          if (material.quantity_required <= 0) {
-            errors.push(`Fila ${i + 1}: Cantidad Requerida debe ser mayor a 0`)
-            continue
-          }
-
-          materialsToInsert.push(material)
-        } catch (error: any) {
-          errors.push(`Fila ${i + 1}: ${error.message}`)
-        }
-      }
-
-      // Insert materials
-      let imported = 0
-      if (materialsToInsert.length > 0) {
-        const { error: insertError } = await supabase
-          .from('material_requirements')
-          .insert(materialsToInsert)
-
-        if (insertError) {
-          throw insertError
         }
 
-        imported = materialsToInsert.length
+        dropdownResults.push({
+          type: mapping.name,
+          new_options: newOptions,
+          duplicates_ignored: duplicatesIgnored,
+          total_processed: totalProcessed
+        })
       }
 
       setImportResult({
         success: errors.length === 0,
         errors,
-        imported,
-        total: jsonData.length - 1
+        dropdown_results: dropdownResults,
+        total_rows: jsonData.length - 1
       })
 
-      if (imported > 0) {
+      const totalNewOptions = dropdownResults.reduce((sum, result) => sum + result.new_options.length, 0)
+      
+      if (totalNewOptions > 0) {
         toast({
-          title: "Importación completada",
-          description: `Se importaron ${imported} materiales exitosamente.`,
+          title: "Dropdowns actualizados",
+          description: `Se agregaron ${totalNewOptions} nuevas opciones a los dropdowns.`,
         })
         onImportComplete?.()
+      } else {
+        toast({
+          title: "Sin cambios",
+          description: "No se encontraron nuevas opciones para agregar.",
+        })
       }
 
       if (errors.length > 0) {
@@ -370,8 +387,8 @@ export function MaterialExcelManager({ projectId, onImportComplete }: MaterialEx
       setImportResult({
         success: false,
         errors: [error.message],
-        imported: 0,
-        total: 0
+        dropdown_results: [],
+        total_rows: 0
       })
     } finally {
       setImporting(false)
@@ -387,7 +404,7 @@ export function MaterialExcelManager({ projectId, onImportComplete }: MaterialEx
           Gestión de Excel
         </CardTitle>
         <CardDescription>
-          Importa y exporta materiales usando archivos de Excel
+          Alimenta los dropdowns con opciones desde Excel. No carga materiales, solo actualiza las opciones disponibles.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -439,7 +456,7 @@ export function MaterialExcelManager({ projectId, onImportComplete }: MaterialEx
               <div>
                 <h4 className="text-sm font-medium mb-2">Subir Archivo Excel</h4>
                 <p className="text-xs text-muted-foreground mb-4">
-                  Selecciona un archivo Excel con el formato del template para importar materiales
+                  Selecciona un archivo Excel para alimentar los dropdowns. Solo las columnas "Cuentas de Mayor", "Partida" y "Descripción del Producto" serán procesadas.
                 </p>
                 <div className="flex items-center space-x-2">
                   <input
@@ -474,9 +491,23 @@ export function MaterialExcelManager({ projectId, onImportComplete }: MaterialEx
                     </h5>
                   </div>
                   
-                  <div className="text-sm space-y-1">
-                    <p>Total de filas procesadas: {importResult.total}</p>
-                    <p>Materiales importados: {importResult.imported}</p>
+                  <div className="text-sm space-y-3">
+                    <p>Total de filas procesadas: {importResult.total_rows}</p>
+                    
+                    {importResult.dropdown_results.map((result, index) => (
+                      <div key={index} className="border-l-2 border-blue-200 pl-3">
+                        <p className="font-medium text-sm">{result.type}:</p>
+                        <p className="text-xs">• {result.new_options.length} nuevas opciones agregadas</p>
+                        <p className="text-xs">• {result.duplicates_ignored} duplicados ignorados</p>
+                        <p className="text-xs">• {result.total_processed} valores procesados</p>
+                        {result.new_options.length > 0 && (
+                          <p className="text-xs text-green-600 mt-1">
+                            Agregadas: {result.new_options.join(', ')}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                    
                     {importResult.errors.length > 0 && (
                       <p>Errores encontrados: {importResult.errors.length}</p>
                     )}
