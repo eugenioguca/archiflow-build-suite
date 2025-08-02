@@ -77,68 +77,205 @@ export function SmartCRM({ clientId, clientName, lastContactDate, leadScore = 0,
     }
   };
 
-  const generateAIInsights = () => {
+  const generateAIInsights = async () => {
     const generatedInsights: AIInsight[] = [];
 
-    // Follow-up insights based on last contact
-    if (lastContactDate) {
-      const daysSinceContact = Math.floor(
-        (new Date().getTime() - new Date(lastContactDate).getTime()) / (1000 * 60 * 60 * 24)
-      );
+    try {
+      // Get project data for this client
+      const { data: projectData } = await supabase
+        .from("client_projects")
+        .select("created_at, last_contact_date, last_activity_date, sales_pipeline_stage")
+        .eq("client_id", clientId)
+        .single();
 
-      if (daysSinceContact > 7) {
+      // Get CRM activities for this client
+      const { data: activitiesData } = await supabase
+        .from("crm_activities")
+        .select("created_at, is_completed, activity_type, scheduled_date")
+        .eq("client_id", clientId)
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      const now = new Date();
+      const projectCreated = projectData?.created_at ? new Date(projectData.created_at) : null;
+      const lastContact = projectData?.last_contact_date ? new Date(projectData.last_contact_date) : null;
+      const lastActivity = projectData?.last_activity_date ? new Date(projectData.last_activity_date) : null;
+      
+      // Calculate time metrics
+      const hoursSinceCreation = projectCreated ? Math.floor((now.getTime() - projectCreated.getTime()) / (1000 * 60 * 60)) : 0;
+      const daysSinceCreation = Math.floor(hoursSinceCreation / 24);
+      const daysSinceLastContact = lastContact ? Math.floor((now.getTime() - lastContact.getTime()) / (1000 * 60 * 60 * 24)) : 999;
+      const daysSinceLastActivity = lastActivity ? Math.floor((now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24)) : 999;
+
+      // Check for activities and completion rates
+      const totalActivities = activitiesData?.length || 0;
+      const completedActivities = activitiesData?.filter(a => a.is_completed).length || 0;
+      const pendingActivities = activitiesData?.filter(a => !a.is_completed && a.scheduled_date && new Date(a.scheduled_date) < now).length || 0;
+
+      // 1. LEAD ABANDONMENT INSIGHTS
+      if (hoursSinceCreation > 24 && !lastContact) {
         generatedInsights.push({
-          type: "follow_up",
-          title: "Seguimiento Requerido",
-          description: `Han pasado ${daysSinceContact} días desde el último contacto con ${clientName}`,
-          priority: daysSinceContact > 14 ? "high" : "medium",
+          type: "risk",
+          title: "Lead Sin Contacto Inicial",
+          description: `Han pasado ${hoursSinceCreation} horas desde que se generó el lead y no se ha realizado contacto inicial.`,
+          priority: hoursSinceCreation > 48 ? "high" : "medium",
           suggested_actions: [
-            "Llamar para conocer el estado actual del proyecto",
-            "Enviar actualización de servicios disponibles",
-            "Programar reunión de seguimiento"
+            "Realizar llamada de bienvenida inmediatamente",
+            "Enviar email de presentación con portfolio",
+            "Programar primera cita de consulta",
+            "Asignar asesor específico para seguimiento"
           ]
         });
       }
-    }
 
-    // Lead score insights
-    if (leadScore < 30) {
-      generatedInsights.push({
-        type: "risk",
-        title: "Cliente en Riesgo",
-        description: `El puntaje del lead es bajo (${leadScore}/100). Riesgo de pérdida del cliente.`,
-        priority: "high",
-        suggested_actions: [
-          "Revisar necesidades específicas del cliente",
-          "Ofrecer propuesta personalizada",
-          "Asignar asesor especializado"
-        ]
-      });
-    } else if (leadScore > 70) {
-      generatedInsights.push({
-        type: "opportunity",
-        title: "Oportunidad de Cierre",
-        description: `El cliente tiene un puntaje alto (${leadScore}/100). Excelente oportunidad de cierre.`,
-        priority: "high",
-        suggested_actions: [
-          "Programar presentación de propuesta final",
-          "Preparar contrato de servicios",
-          "Ofrecer descuentos por pronto pago"
-        ]
-      });
-    }
+      if (daysSinceLastContact > 3 && projectData?.sales_pipeline_stage !== "cliente_cerrado") {
+        const priority = daysSinceLastContact > 7 ? "high" : daysSinceLastContact > 5 ? "medium" : "low";
+        const severity = daysSinceLastContact > 14 ? "ABANDONADO" : 
+                        daysSinceLastContact > 7 ? "FRÍO" : "TIBIO";
+        
+        generatedInsights.push({
+          type: "follow_up",
+          title: `Lead ${severity}`,
+          description: `${daysSinceLastContact} días sin contacto. Riesgo de pérdida de oportunidad comercial.`,
+          priority,
+          suggested_actions: [
+            daysSinceLastContact > 14 ? "Campaña de reactivación urgente" : "Llamada de seguimiento prioritaria",
+            "Revisar historial de interacciones previas",
+            "Enviar propuesta actualizada con ofertas especiales",
+            "Programar reunión presencial si es posible"
+          ]
+        });
+      }
 
-    // Status-based insights
-    if (status === "potential") {
+      // 2. ACTIVITY-BASED INSIGHTS
+      if (totalActivities === 0 && daysSinceCreation > 1) {
+        generatedInsights.push({
+          type: "risk",
+          title: "Sin Actividades CRM Registradas",
+          description: "No se han registrado actividades de seguimiento para este cliente.",
+          priority: "high",
+          suggested_actions: [
+            "Crear plan de seguimiento estructurado",
+            "Registrar primera actividad de contacto",
+            "Establecer calendario de seguimientos",
+            "Definir objetivos específicos del cliente"
+          ]
+        });
+      }
+
+      if (pendingActivities > 0) {
+        generatedInsights.push({
+          type: "follow_up",
+          title: "Actividades Vencidas",
+          description: `${pendingActivities} actividades programadas están vencidas y requieren atención.`,
+          priority: "high",
+          suggested_actions: [
+            "Completar actividades pendientes inmediatamente",
+            "Reprogramar actividades vencidas",
+            "Contactar al cliente para explicar el retraso",
+            "Actualizar cronograma de seguimiento"
+          ]
+        });
+      }
+
+      if (totalActivities > 0 && completedActivities / totalActivities < 0.5) {
+        generatedInsights.push({
+          type: "risk",
+          title: "Baja Tasa de Completación",
+          description: `Solo ${Math.round((completedActivities / totalActivities) * 100)}% de las actividades han sido completadas.`,
+          priority: "medium",
+          suggested_actions: [
+            "Revisar carga de trabajo del asesor",
+            "Simplificar procesos de seguimiento",
+            "Establecer recordatorios automáticos",
+            "Capacitación en gestión de tiempo"
+          ]
+        });
+      }
+
+      // 3. PIPELINE STAGNATION INSIGHTS
+      const stageMap = {
+        "nuevo_lead": { maxDays: 2, nextStage: "en_contacto" },
+        "en_contacto": { maxDays: 7, nextStage: "cliente_cerrado" }
+      };
+
+      const currentStage = projectData?.sales_pipeline_stage;
+      const stageInfo = currentStage ? stageMap[currentStage as keyof typeof stageMap] : null;
+      
+      if (stageInfo && daysSinceCreation > stageInfo.maxDays) {
+        generatedInsights.push({
+          type: "milestone",
+          title: "Estancamiento en Pipeline",
+          description: `El cliente lleva ${daysSinceCreation} días en la etapa "${currentStage}". Tiempo recomendado: ${stageInfo.maxDays} días.`,
+          priority: daysSinceCreation > stageInfo.maxDays * 2 ? "high" : "medium",
+          suggested_actions: [
+            `Evaluar requisitos para avanzar a "${stageInfo.nextStage}"`,
+            "Identificar obstáculos específicos",
+            "Programar reunión de definición de siguiente paso",
+            "Revisar propuesta de valor actual"
+          ]
+        });
+      }
+
+      // 4. OPPORTUNITY INSIGHTS
+      if (currentStage === "en_contacto" && daysSinceLastContact <= 2 && totalActivities > 2) {
+        generatedInsights.push({
+          type: "opportunity",
+          title: "Cliente Comprometido",
+          description: "Cliente en contacto activo con múltiples interacciones. Buen momento para avanzar.",
+          priority: "high",
+          suggested_actions: [
+            "Preparar propuesta detallada",
+            "Programar reunión para presentar servicios",
+            "Enviar portfolio de proyectos similares",
+            "Solicitar reunión presencial o virtual"
+          ]
+        });
+      }
+
+      if (totalActivities > 3 && completedActivities / totalActivities > 0.8) {
+        generatedInsights.push({
+          type: "opportunity",
+          title: "Cliente Bien Atendido",
+          description: "Excelente seguimiento registrado. Cliente con alta probabilidad de conversión.",
+          priority: "medium",
+          suggested_actions: [
+            "Mantener el nivel de atención actual",
+            "Presentar propuesta premium",
+            "Solicitar referencias a otros potenciales clientes",
+            "Documenta las mejores prácticas aplicadas"
+          ]
+        });
+      }
+
+      // 5. TIME-CRITICAL INSIGHTS
+      if (daysSinceCreation === 0) {
+        generatedInsights.push({
+          type: "milestone",
+          title: "Lead Nuevo - Acción Inmediata",
+          description: "Lead creado hoy. Primera impresión es crucial para el éxito.",
+          priority: "high",
+          suggested_actions: [
+            "Contactar en las próximas 2 horas",
+            "Enviar mensaje de bienvenida personalizado",
+            "Programar cita inicial dentro de 24-48h",
+            "Registrar fuente del lead y expectativas"
+          ]
+        });
+      }
+
+    } catch (error) {
+      console.error("Error generating insights:", error);
+      // Fallback insight if there's an error
       generatedInsights.push({
-        type: "milestone",
-        title: "Cliente Potencial",
-        description: "Cliente en fase inicial. Momento clave para establecer confianza.",
+        type: "follow_up",
+        title: "Revisar Cliente",
+        description: "Se recomienda revisar el estado actual de este cliente y planificar próximos pasos.",
         priority: "medium",
         suggested_actions: [
-          "Enviar portfolio de proyectos similares",
-          "Programar visita a obra en curso",
-          "Proporcionar referencias de clientes satisfechos"
+          "Revisar historial de interacciones",
+          "Contactar al cliente para actualizar información",
+          "Planificar estrategia de seguimiento"
         ]
       });
     }
