@@ -12,7 +12,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import ClientsNew from "./pages/ClientsNew";
 
-import ProjectFiles from "./pages/ProjectFiles";
+
 import FinancesNew from "./pages/FinancesNew";
 import Accounting from "./pages/Accounting";
 import Sales from "./pages/Sales";
@@ -110,16 +110,6 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <ClientsNew />
-                  </Layout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/project-files" 
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <ProjectFiles />
                   </Layout>
                 </ProtectedRoute>
               } 
