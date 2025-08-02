@@ -144,7 +144,12 @@ export const PaymentPlanBuilder = ({
       if (projectData?.payment_plan && typeof projectData.payment_plan === 'object') {
         try {
           const plans = Array.isArray(projectData.payment_plan) ? projectData.payment_plan : [projectData.payment_plan];
-          setPaymentPlans(plans as unknown as PaymentPlan[]);
+          // Asegurar que cada plan tenga un array de payments válido
+          const validPlans = plans.map((plan: any) => ({
+            ...plan,
+            payments: Array.isArray(plan.payments) ? plan.payments : []
+          }));
+          setPaymentPlans(validPlans as unknown as PaymentPlan[]);
         } catch (e) {
           console.error('Error parsing payment plans:', e);
           setPaymentPlans([]);
@@ -400,12 +405,18 @@ export const PaymentPlanBuilder = ({
   };
 
   const getTotalPaid = (payments: PaymentInstallment[]) => {
+    if (!payments || !Array.isArray(payments)) {
+      return 0;
+    }
     return payments.reduce((sum, payment) => {
       return sum + (payment.paid_amount || 0);
     }, 0);
   };
 
   const getPaymentProgress = (payments: PaymentInstallment[], totalAmount: number) => {
+    if (!payments || !Array.isArray(payments) || totalAmount === 0) {
+      return 0;
+    }
     const totalPaid = getTotalPaid(payments);
     return Math.round((totalPaid / totalAmount) * 100);
   };
@@ -624,8 +635,9 @@ export const PaymentPlanBuilder = ({
           </Card>
         ) : (
           paymentPlans.map((plan) => {
-            const progress = getPaymentProgress(plan.payments, plan.total_amount);
-            const totalPaid = getTotalPaid(plan.payments);
+            const payments = Array.isArray(plan.payments) ? plan.payments : [];
+            const progress = getPaymentProgress(payments, plan.total_amount);
+            const totalPaid = getTotalPaid(payments);
             
             return (
               <Card key={plan.id}>
@@ -641,7 +653,7 @@ export const PaymentPlanBuilder = ({
                           {plan.status === 'completed' && 'Completado'}
                         </Badge>
                         <span className="text-sm text-muted-foreground">
-                          {plan.payments.length} cuotas
+                          {payments.length} cuotas
                         </span>
                       </div>
                     </div>
@@ -677,7 +689,7 @@ export const PaymentPlanBuilder = ({
 
                     {/* Lista de cuotas */}
                     <div className="space-y-2">
-                      {plan.payments.map((payment) => (
+                      {payments.map((payment) => (
                         <div
                           key={payment.id}
                           className="flex items-center justify-between p-3 border rounded-lg"
