@@ -15,7 +15,8 @@ import {
   DollarSign,
   MapPin,
   Settings,
-  MoreHorizontal
+  MoreHorizontal,
+  Trash2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { EquipmentForm } from "@/components/forms/EquipmentForm";
@@ -53,6 +54,8 @@ export function EquipmentManager({ projectId }: EquipmentManagerProps) {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [newEquipmentDialog, setNewEquipmentDialog] = useState(false);
+  const [editEquipmentDialog, setEditEquipmentDialog] = useState(false);
+  const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
 
   const equipmentTypes = [
     "Maquinaria Pesada",
@@ -127,6 +130,36 @@ export function EquipmentManager({ projectId }: EquipmentManagerProps) {
     const today = new Date();
     const diffDays = Math.ceil((nextMaintenance.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     return diffDays <= 7; // Due within 7 days
+  };
+
+  const handleEditEquipment = (equipment: Equipment) => {
+    setSelectedEquipment(equipment);
+    setEditEquipmentDialog(true);
+  };
+
+  const handleDeleteEquipment = async (equipmentId: string) => {
+    if (!confirm("¿Estás seguro de que quieres eliminar este equipo?")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("construction_equipment")
+        .delete()
+        .eq("id", equipmentId);
+
+      if (error) {
+        console.error("Error deleting equipment:", error);
+        toast.error("Error al eliminar el equipo");
+        return;
+      }
+
+      toast.success("Equipo eliminado exitosamente");
+      fetchEquipment();
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Error al eliminar el equipo");
+    }
   };
 
   const filteredEquipment = equipment.filter(eq => {
@@ -236,7 +269,34 @@ export function EquipmentManager({ projectId }: EquipmentManagerProps) {
                     }}
                     onCancel={() => setNewEquipmentDialog(false)}
                   />
-                </DialogContent>
+                 </DialogContent>
+            </Dialog>
+
+            {/* Edit Equipment Dialog */}
+            <Dialog open={editEquipmentDialog} onOpenChange={setEditEquipmentDialog}>
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Editar Equipo</DialogTitle>
+                  <DialogDescription>
+                    Modificar los detalles del equipo seleccionado
+                  </DialogDescription>
+                </DialogHeader>
+                {selectedEquipment && (
+                  <EquipmentForm
+                    projectId={projectId}
+                    initialData={selectedEquipment}
+                    onSuccess={() => {
+                      setEditEquipmentDialog(false);
+                      setSelectedEquipment(null);
+                      fetchEquipment();
+                    }}
+                    onCancel={() => {
+                      setEditEquipmentDialog(false);
+                      setSelectedEquipment(null);
+                    }}
+                  />
+                )}
+              </DialogContent>
             </Dialog>
           </div>
         </CardHeader>
@@ -363,12 +423,21 @@ export function EquipmentManager({ projectId }: EquipmentManagerProps) {
               </div>
               
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => handleEditEquipment(eq)}
+                >
                   <Settings className="h-4 w-4 mr-2" />
                   Editar
                 </Button>
-                <Button variant="outline" size="sm">
-                  <MoreHorizontal className="h-4 w-4" />
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleDeleteEquipment(eq.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             </CardContent>

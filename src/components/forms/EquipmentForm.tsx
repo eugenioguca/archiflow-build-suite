@@ -40,11 +40,12 @@ type EquipmentFormData = z.infer<typeof equipmentSchema>;
 
 interface EquipmentFormProps {
   projectId: string;
+  initialData?: any;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
-export function EquipmentForm({ projectId, onSuccess, onCancel }: EquipmentFormProps) {
+export function EquipmentForm({ projectId, initialData, onSuccess, onCancel }: EquipmentFormProps) {
   const [loading, setLoading] = useState(false);
 
   const equipmentTypes = [
@@ -68,14 +69,19 @@ export function EquipmentForm({ projectId, onSuccess, onCancel }: EquipmentFormP
 
   const form = useForm<EquipmentFormData>({
     resolver: zodResolver(equipmentSchema),
-    defaultValues: {
+    defaultValues: initialData ? {
+      ...initialData,
+      acquisition_date: initialData.acquisition_date ? new Date(initialData.acquisition_date) : undefined,
+      last_maintenance_date: initialData.last_maintenance_date ? new Date(initialData.last_maintenance_date) : undefined,
+      next_maintenance_date: initialData.next_maintenance_date ? new Date(initialData.next_maintenance_date) : undefined,
+    } : {
       equipment_name: "",
       equipment_code: "",
       equipment_type: "",
       brand: "",
       model: "",
       serial_number: "",
-      status: "",
+      status: "available",
       condition_rating: 5,
       location: "",
       hourly_rate: 0,
@@ -112,38 +118,56 @@ export function EquipmentForm({ projectId, onSuccess, onCancel }: EquipmentFormP
         monthly_rate: data.monthly_rate,
         notes: data.notes || '',
         created_by: profile?.id || '',
-        operating_hours_total: 0,
-        current_value: 0,
-        maintenance_cost_total: 0,
-        depreciation_rate: 0,
-        fuel_consumption_per_hour: 0,
-        acquisition_cost: 0,
+        operating_hours_total: initialData?.operating_hours_total || 0,
+        current_value: initialData?.current_value || 0,
+        maintenance_cost_total: initialData?.maintenance_cost_total || 0,
+        depreciation_rate: initialData?.depreciation_rate || 0,
+        fuel_consumption_per_hour: initialData?.fuel_consumption_per_hour || 0,
+        acquisition_cost: initialData?.acquisition_cost || 0,
         acquisition_date: data.acquisition_date?.toISOString().split('T')[0] || null,
         last_maintenance_date: data.last_maintenance_date?.toISOString().split('T')[0] || null,
         next_maintenance_date: data.next_maintenance_date?.toISOString().split('T')[0] || null,
-        photos: [],
-        documents: [],
-        maintenance_schedule: {},
-        operator_requirements: [],
-        safety_certifications: [],
-        usage_log: [],
+        photos: initialData?.photos || [],
+        documents: initialData?.documents || [],
+        maintenance_schedule: initialData?.maintenance_schedule || {},
+        operator_requirements: initialData?.operator_requirements || [],
+        safety_certifications: initialData?.safety_certifications || [],
+        usage_log: initialData?.usage_log || [],
       };
 
-      const { error } = await supabase
-        .from("construction_equipment")
-        .insert(equipmentData);
+      if (initialData) {
+        // Update existing equipment
+        const { error } = await supabase
+          .from("construction_equipment")
+          .update(equipmentData)
+          .eq("id", initialData.id);
 
-      if (error) {
-        console.error("Error creating equipment:", error);
-        toast.error("Error al crear el equipo");
-        return;
+        if (error) {
+          console.error("Error updating equipment:", error);
+          toast.error("Error al actualizar el equipo");
+          return;
+        }
+
+        toast.success("Equipo actualizado exitosamente");
+      } else {
+        // Create new equipment
+        const { error } = await supabase
+          .from("construction_equipment")
+          .insert(equipmentData);
+
+        if (error) {
+          console.error("Error creating equipment:", error);
+          toast.error("Error al crear el equipo");
+          return;
+        }
+
+        toast.success("Equipo creado exitosamente");
       }
 
-      toast.success("Equipo creado exitosamente");
       onSuccess();
     } catch (error) {
       console.error("Error:", error);
-      toast.error("Error al crear el equipo");
+      toast.error(initialData ? "Error al actualizar el equipo" : "Error al crear el equipo");
     } finally {
       setLoading(false);
     }
@@ -534,9 +558,12 @@ export function EquipmentForm({ projectId, onSuccess, onCancel }: EquipmentFormP
           <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={loading}>
-            {loading ? "Creando..." : "Crear Equipo"}
-          </Button>
+        <Button type="submit" disabled={loading}>
+          {loading 
+            ? (initialData ? "Actualizando..." : "Creando...") 
+            : (initialData ? "Actualizar Equipo" : "Crear Equipo")
+          }
+        </Button>
         </div>
       </form>
     </Form>

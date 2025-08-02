@@ -33,11 +33,12 @@ type BudgetItemFormData = z.infer<typeof budgetItemSchema>;
 interface BudgetItemFormProps {
   projectId: string;
   budgetVersion: number;
+  initialData?: any;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
-export function BudgetItemForm({ projectId, budgetVersion, onSuccess, onCancel }: BudgetItemFormProps) {
+export function BudgetItemForm({ projectId, budgetVersion, initialData, onSuccess, onCancel }: BudgetItemFormProps) {
   const [loading, setLoading] = useState(false);
 
   const categories = [
@@ -70,7 +71,7 @@ export function BudgetItemForm({ projectId, budgetVersion, onSuccess, onCancel }
 
   const form = useForm<BudgetItemFormData>({
     resolver: zodResolver(budgetItemSchema),
-    defaultValues: {
+    defaultValues: initialData || {
       item_code: "",
       item_name: "",
       item_description: "",
@@ -106,24 +107,12 @@ export function BudgetItemForm({ projectId, budgetVersion, onSuccess, onCancel }
         .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
         .single();
 
-      // Get next item order
-      const { data: lastItem } = await supabase
-        .from("construction_budget_items")
-        .select("item_order")
-        .eq("project_id", projectId)
-        .eq("budget_version", budgetVersion)
-        .order("item_order", { ascending: false })
-        .limit(1)
-        .single();
-
-      const nextOrder = (lastItem?.item_order || 0) + 1;
-
       const totalPrice = calculateTotalPrice(data);
 
-      const budgetItem = {
+      const budgetItemData = {
         project_id: projectId,
         budget_version: budgetVersion,
-        item_code: data.item_code || `AUTO-${nextOrder}`,
+        item_code: data.item_code || (initialData?.item_code || `AUTO-${Date.now()}`),
         item_name: data.item_name,
         item_description: data.item_description || '',
         category: data.category,
@@ -138,31 +127,64 @@ export function BudgetItemForm({ projectId, budgetVersion, onSuccess, onCancel }
         overhead_percentage: data.overhead_percentage,
         profit_percentage: data.profit_percentage,
         total_price: totalPrice,
-        executed_quantity: 0,
-        remaining_quantity: data.quantity,
-        executed_amount: 0,
-        item_order: nextOrder,
-        parent_item_id: null,
-        level_depth: 0,
-        status: 'pending' as const,
+        executed_quantity: initialData?.executed_quantity || 0,
+        remaining_quantity: data.quantity - (initialData?.executed_quantity || 0),
+        executed_amount: initialData?.executed_amount || 0,
+        status: initialData?.status || 'pending',
         created_by: profile?.id || '',
       };
 
-      const { error } = await supabase
-        .from("construction_budget_items")
-        .insert(budgetItem);
+      if (initialData) {
+        // Update existing item
+        const { error } = await supabase
+          .from("construction_budget_items")
+          .update(budgetItemData)
+          .eq("id", initialData.id);
 
-      if (error) {
-        console.error("Error creating budget item:", error);
-        toast.error("Error al crear la partida");
-        return;
+        if (error) {
+          console.error("Error updating budget item:", error);
+          toast.error("Error al actualizar la partida");
+          return;
+        }
+
+        toast.success("Partida actualizada exitosamente");
+      } else {
+        // Create new item - get next order
+        const { data: lastItem } = await supabase
+          .from("construction_budget_items")
+          .select("item_order")
+          .eq("project_id", projectId)
+          .eq("budget_version", budgetVersion)
+          .order("item_order", { ascending: false })
+          .limit(1)
+          .single();
+
+        const nextOrder = (lastItem?.item_order || 0) + 1;
+
+        const newBudgetItem = {
+          ...budgetItemData,
+          item_order: nextOrder,
+          parent_item_id: null,
+          level_depth: 0,
+        };
+
+        const { error } = await supabase
+          .from("construction_budget_items")
+          .insert(newBudgetItem);
+
+        if (error) {
+          console.error("Error creating budget item:", error);
+          toast.error("Error al crear la partida");
+          return;
+        }
+
+        toast.success("Partida creada exitosamente");
       }
 
-      toast.success("Partida creada exitosamente");
       onSuccess();
     } catch (error) {
       console.error("Error:", error);
-      toast.error("Error al crear la partida");
+      toast.error(initialData ? "Error al actualizar la partida" : "Error al crear la partida");
     } finally {
       setLoading(false);
     }
@@ -464,9 +486,12 @@ export function BudgetItemForm({ projectId, budgetVersion, onSuccess, onCancel }
           <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={loading}>
-            {loading ? "Creando..." : "Crear Partida"}
-          </Button>
+        <Button type="submit" disabled={loading}>
+          {loading 
+            ? (initialData ? "Actualizando..." : "Creando...") 
+            : (initialData ? "Actualizar Partida" : "Crear Partida")
+          }
+        </Button>
         </div>
       </form>
     </Form>

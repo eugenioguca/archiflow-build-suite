@@ -64,8 +64,10 @@ export function AdvancedBudgetManager({ projectId }: AdvancedBudgetManagerProps)
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [newItemDialog, setNewItemDialog] = useState(false);
+  const [editItemDialog, setEditItemDialog] = useState(false);
   const [importDialog, setImportDialog] = useState(false);
   const [currentBudgetVersion, setCurrentBudgetVersion] = useState(1);
+  const [selectedItem, setSelectedItem] = useState<BudgetItem | null>(null);
 
   const categories = [
     "Preliminares",
@@ -250,6 +252,36 @@ export function AdvancedBudgetManager({ projectId }: AdvancedBudgetManagerProps)
     }
   };
 
+  const handleEditItem = (item: BudgetItem) => {
+    setSelectedItem(item);
+    setEditItemDialog(true);
+  };
+
+  const handleDeleteItem = async (itemId: string) => {
+    if (!confirm("¿Estás seguro de que quieres eliminar esta partida?")) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("construction_budget_items")
+        .delete()
+        .eq("id", itemId);
+
+      if (error) {
+        console.error("Error deleting budget item:", error);
+        toast.error("Error al eliminar la partida");
+        return;
+      }
+
+      toast.success("Partida eliminada exitosamente");
+      fetchBudgetItems();
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Error al eliminar la partida");
+    }
+  };
+
   const totals = calculateTotals();
   const filteredItems = selectedCategory === "all" 
     ? budgetItems 
@@ -383,6 +415,34 @@ export function AdvancedBudgetManager({ projectId }: AdvancedBudgetManagerProps)
                   />
                 </DialogContent>
               </Dialog>
+
+              {/* Edit Item Dialog */}
+              <Dialog open={editItemDialog} onOpenChange={setEditItemDialog}>
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Editar Partida del Presupuesto</DialogTitle>
+                    <DialogDescription>
+                      Modificar los detalles de la partida seleccionada
+                    </DialogDescription>
+                  </DialogHeader>
+                  {selectedItem && (
+                    <BudgetItemForm
+                      projectId={projectId}
+                      budgetVersion={currentBudgetVersion}
+                      initialData={selectedItem}
+                      onSuccess={() => {
+                        setEditItemDialog(false);
+                        setSelectedItem(null);
+                        fetchBudgetItems();
+                      }}
+                      onCancel={() => {
+                        setEditItemDialog(false);
+                        setSelectedItem(null);
+                      }}
+                    />
+                  )}
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </CardHeader>
@@ -465,14 +525,22 @@ export function AdvancedBudgetManager({ projectId }: AdvancedBudgetManagerProps)
                         </Badge>
                       </td>
                       <td className="p-4">
-                        <div className="flex justify-center gap-1">
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                      <div className="flex justify-center gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleEditItem(item)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleDeleteItem(item.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                       </td>
                     </tr>
                   ))}
