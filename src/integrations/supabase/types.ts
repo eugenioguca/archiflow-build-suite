@@ -913,6 +913,7 @@ export type Database = {
       }
       client_projects: {
         Row: {
+          actual_completion_date: string | null
           alliance_id: string | null
           assigned_advisor_id: string | null
           branch_office_id: string | null
@@ -920,12 +921,17 @@ export type Database = {
           client_id: string
           constancia_situacion_fiscal_uploaded: boolean | null
           constancia_situacion_fiscal_url: string | null
+          construction_area: number | null
+          construction_budget: number | null
+          construction_start_date: string | null
+          construction_supervisor_id: string | null
           contract_uploaded: boolean | null
           contract_url: string | null
           conversion_date: string | null
           conversion_notes: string | null
           created_at: string
           curp: string | null
+          estimated_completion_date: string | null
           estimated_value: number | null
           has_existing_design: boolean | null
           id: string
@@ -935,28 +941,37 @@ export type Database = {
           lead_referral_details: string | null
           lead_source: string | null
           lead_source_details: string | null
+          location_coordinates: Json | null
           location_details: Json | null
           moved_to_construction_at: string | null
           next_contact_date: string | null
           notes: string | null
+          overall_progress_percentage: number | null
           payment_plan: Json | null
+          permit_expiry_date: string | null
+          permit_status: string | null
           priority: Database["public"]["Enums"]["priority_level"] | null
           probability_percentage: number | null
           project_description: string | null
           project_location: string | null
+          project_manager_id: string | null
           project_name: string
           project_size: string | null
           project_type: Database["public"]["Enums"]["project_type"] | null
+          safety_requirements: string | null
           sales_pipeline_stage:
             | Database["public"]["Enums"]["sales_pipeline_stage"]
             | null
           service_type: string | null
+          spent_budget: number | null
           status: Database["public"]["Enums"]["client_status"] | null
           tags: string[] | null
           timeline_months: number | null
           updated_at: string
+          weather_considerations: string | null
         }
         Insert: {
+          actual_completion_date?: string | null
           alliance_id?: string | null
           assigned_advisor_id?: string | null
           branch_office_id?: string | null
@@ -964,12 +979,17 @@ export type Database = {
           client_id: string
           constancia_situacion_fiscal_uploaded?: boolean | null
           constancia_situacion_fiscal_url?: string | null
+          construction_area?: number | null
+          construction_budget?: number | null
+          construction_start_date?: string | null
+          construction_supervisor_id?: string | null
           contract_uploaded?: boolean | null
           contract_url?: string | null
           conversion_date?: string | null
           conversion_notes?: string | null
           created_at?: string
           curp?: string | null
+          estimated_completion_date?: string | null
           estimated_value?: number | null
           has_existing_design?: boolean | null
           id?: string
@@ -979,28 +999,37 @@ export type Database = {
           lead_referral_details?: string | null
           lead_source?: string | null
           lead_source_details?: string | null
+          location_coordinates?: Json | null
           location_details?: Json | null
           moved_to_construction_at?: string | null
           next_contact_date?: string | null
           notes?: string | null
+          overall_progress_percentage?: number | null
           payment_plan?: Json | null
+          permit_expiry_date?: string | null
+          permit_status?: string | null
           priority?: Database["public"]["Enums"]["priority_level"] | null
           probability_percentage?: number | null
           project_description?: string | null
           project_location?: string | null
+          project_manager_id?: string | null
           project_name: string
           project_size?: string | null
           project_type?: Database["public"]["Enums"]["project_type"] | null
+          safety_requirements?: string | null
           sales_pipeline_stage?:
             | Database["public"]["Enums"]["sales_pipeline_stage"]
             | null
           service_type?: string | null
+          spent_budget?: number | null
           status?: Database["public"]["Enums"]["client_status"] | null
           tags?: string[] | null
           timeline_months?: number | null
           updated_at?: string
+          weather_considerations?: string | null
         }
         Update: {
+          actual_completion_date?: string | null
           alliance_id?: string | null
           assigned_advisor_id?: string | null
           branch_office_id?: string | null
@@ -1008,12 +1037,17 @@ export type Database = {
           client_id?: string
           constancia_situacion_fiscal_uploaded?: boolean | null
           constancia_situacion_fiscal_url?: string | null
+          construction_area?: number | null
+          construction_budget?: number | null
+          construction_start_date?: string | null
+          construction_supervisor_id?: string | null
           contract_uploaded?: boolean | null
           contract_url?: string | null
           conversion_date?: string | null
           conversion_notes?: string | null
           created_at?: string
           curp?: string | null
+          estimated_completion_date?: string | null
           estimated_value?: number | null
           has_existing_design?: boolean | null
           id?: string
@@ -1023,26 +1057,34 @@ export type Database = {
           lead_referral_details?: string | null
           lead_source?: string | null
           lead_source_details?: string | null
+          location_coordinates?: Json | null
           location_details?: Json | null
           moved_to_construction_at?: string | null
           next_contact_date?: string | null
           notes?: string | null
+          overall_progress_percentage?: number | null
           payment_plan?: Json | null
+          permit_expiry_date?: string | null
+          permit_status?: string | null
           priority?: Database["public"]["Enums"]["priority_level"] | null
           probability_percentage?: number | null
           project_description?: string | null
           project_location?: string | null
+          project_manager_id?: string | null
           project_name?: string
           project_size?: string | null
           project_type?: Database["public"]["Enums"]["project_type"] | null
+          safety_requirements?: string | null
           sales_pipeline_stage?:
             | Database["public"]["Enums"]["sales_pipeline_stage"]
             | null
           service_type?: string | null
+          spent_budget?: number | null
           status?: Database["public"]["Enums"]["client_status"] | null
           tags?: string[] | null
           timeline_months?: number | null
           updated_at?: string
+          weather_considerations?: string | null
         }
         Relationships: [
           {
@@ -1263,13 +1305,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "construction_budget_alerts_construction_project_id_fkey"
-            columns: ["construction_project_id"]
-            isOneToOne: false
-            referencedRelation: "construction_projects"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "construction_budget_alerts_read_by_fkey"
             columns: ["read_by"]
             isOneToOne: false
@@ -1321,13 +1356,6 @@ export type Database = {
             columns: ["authorized_by"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "construction_budget_changes_construction_project_id_fkey"
-            columns: ["construction_project_id"]
-            isOneToOne: false
-            referencedRelation: "construction_projects"
             referencedColumns: ["id"]
           },
         ]
@@ -1388,13 +1416,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "construction_budget_items_construction_project_id_fkey"
-            columns: ["construction_project_id"]
-            isOneToOne: false
-            referencedRelation: "construction_projects"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "construction_budget_items_created_by_fkey"
             columns: ["created_by"]
@@ -1482,13 +1503,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "construction_deliveries_construction_project_id_fkey"
-            columns: ["construction_project_id"]
-            isOneToOne: false
-            referencedRelation: "construction_projects"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "construction_deliveries_created_by_fkey"
             columns: ["created_by"]
@@ -1594,13 +1608,6 @@ export type Database = {
             columns: ["authorized_by"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "construction_expenses_construction_project_id_fkey"
-            columns: ["construction_project_id"]
-            isOneToOne: false
-            referencedRelation: "construction_projects"
             referencedColumns: ["id"]
           },
           {
@@ -1714,13 +1721,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "construction_materials_construction_project_id_fkey"
-            columns: ["construction_project_id"]
-            isOneToOne: false
-            referencedRelation: "construction_projects"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "construction_materials_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -1817,13 +1817,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "construction_phases_construction_project_id_fkey"
-            columns: ["construction_project_id"]
-            isOneToOne: false
-            referencedRelation: "construction_projects"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "construction_phases_created_by_fkey"
             columns: ["created_by"]
@@ -1985,13 +1978,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "construction_teams_construction_project_id_fkey"
-            columns: ["construction_project_id"]
-            isOneToOne: false
-            referencedRelation: "construction_projects"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "construction_teams_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -2069,13 +2055,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "construction_timelines_construction_project_id_fkey"
-            columns: ["construction_project_id"]
-            isOneToOne: false
-            referencedRelation: "construction_projects"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "construction_timelines_created_by_fkey"
             columns: ["created_by"]
