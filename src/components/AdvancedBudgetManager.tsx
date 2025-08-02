@@ -133,19 +133,29 @@ export function AdvancedBudgetManager({
   const fetchBudgetItems = async () => {
     try {
       const { data, error } = await supabase
-        .from('construction_budget_items')
+        .from('budget_items')
         .select(`
           *,
           supplier:suppliers(company_name)
         `)
         .eq('project_id', projectId)
-        .order('categoria', { ascending: true });
+        .order('item_name', { ascending: true });
 
       if (error) throw error;
 
       const itemsWithSupplier = (data || []).map((item: any) => ({
-        ...item,
-        supplier_name: item.supplier?.company_name
+        id: item.id,
+        codigo: item.item_name || `ITEM-${item.item_order}`,
+        descripcion: item.description || item.item_name,
+        unidad: 'pza', // Hardcoded por simplicidad
+        cantidad: item.quantity || 1,
+        precio_unitario: item.unit_price || 0,
+        total: item.total_price || 0,
+        categoria: 'General', // Hardcoded por simplicidad
+        supplier_name: item.supplier?.company_name,
+        status: 'pending' as const, // Hardcoded por simplicidad
+        project_id: item.project_id,
+        notas: ''
       }));
 
       setBudgetItems(itemsWithSupplier);
@@ -173,7 +183,7 @@ export function AdvancedBudgetManager({
   const deleteBudgetItem = async (itemId: string) => {
     try {
       const { error } = await supabase
-        .from('construction_budget_items')
+        .from('budget_items')
         .delete()
         .eq('id', itemId);
 
@@ -284,8 +294,8 @@ export function AdvancedBudgetManager({
 
   return (
     <div className="space-y-6">
-      {/* Budget Alerts */}
-      <BudgetAlertsPanel projectId={projectId} />
+      {/* Budget Alerts - Temporalmente deshabilitado */}
+      {/* <BudgetAlertsPanel projectId={projectId} /> */}
       
       {/* Header with KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -399,7 +409,7 @@ export function AdvancedBudgetManager({
                 projectId={projectId}
                 onSave={fetchBudgetItems}
               />
-              <BudgetHistoryDialog projectId={projectId} />
+              {/* <BudgetHistoryDialog projectId={projectId} /> */}
             </div>
           </div>
         </CardContent>

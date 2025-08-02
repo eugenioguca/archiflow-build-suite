@@ -172,13 +172,13 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
             {permitStatus === "pending" && "Permisos Pendientes"}
             {permitStatus === "expired" && "Permisos Vencidos"}
           </Badge>
-          <BudgetEditDialog
+          {/* <BudgetEditDialog
             projectId={constructionProject.id}
             currentBudget={totalBudget}
             currentArea={constructionArea}
             estimatedCompletion={estimatedCompletion}
             onUpdate={fetchConstructionProject}
-          />
+          /> */}
         </div>
       </div>
 
