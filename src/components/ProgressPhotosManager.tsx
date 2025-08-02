@@ -89,7 +89,10 @@ export function ProgressPhotosManager({ projectId }: ProgressPhotosManagerProps)
       
       const { data, error } = await supabase
         .from("progress_photos")
-        .select("*")
+        .select(`
+          *,
+          profiles!progress_photos_taken_by_fkey(full_name)
+        `)
         .eq("project_id", projectId)
         .order("taken_at", { ascending: false });
 
@@ -469,7 +472,7 @@ export function ProgressPhotosManager({ projectId }: ProgressPhotosManagerProps)
                   <h4 className="font-medium mb-2">Detalles</h4>
                   <div className="space-y-2 text-sm">
                     <div><strong>Tipo:</strong> {selectedPhoto.photo_type}</div>
-                    <div><strong>Tomada por:</strong> {selectedPhoto.photographer_name || selectedPhoto.taken_by}</div>
+                    <div><strong>Tomada por:</strong> {selectedPhoto.photographer_name || (selectedPhoto as any).profiles?.full_name || "Usuario desconocido"}</div>
                     {selectedPhoto.description && (
                       <div><strong>Descripción:</strong> {selectedPhoto.description}</div>
                     )}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,6 +16,7 @@ const photoSchema = z.object({
   title: z.string().min(1, "El título es requerido"),
   description: z.string().optional(),
   category: z.string().min(1, "La categoría es requerida"),
+  photographer_name: z.string().min(1, "El nombre del fotógrafo es requerido"),
   phase_id: z.string().optional(),
   is_before_photo: z.boolean().default(false),
   is_after_photo: z.boolean().default(false),
@@ -51,11 +52,32 @@ export function ProgressPhotoForm({ projectId, onSuccess, onCancel }: ProgressPh
       title: "",
       description: "",
       category: "General",
+      photographer_name: "",
       phase_id: undefined,
       is_before_photo: false,
       is_after_photo: false,
     },
   });
+
+  // Fetch current user profile and set photographer_name
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (profile?.full_name && !form.getValues("photographer_name")) {
+          form.setValue("photographer_name", profile.full_name);
+        }
+      }
+    };
+
+    fetchUserProfile();
+  }, [form]);
 
   const handleFilesSelected = (files: File[]) => {
     setSelectedFiles(files);
@@ -153,7 +175,7 @@ export function ProgressPhotoForm({ projectId, onSuccess, onCancel }: ProgressPh
             visibility: "internal",
             photo_type: "progress",
             geolocation: latitude && longitude ? { latitude, longitude, accuracy: gpsAccuracy } : {},
-            photographer_name: null,
+            photographer_name: data.photographer_name,
             camera_settings: {},
             markup_data: {},
             quality_rating: 5,
@@ -264,6 +286,23 @@ export function ProgressPhotoForm({ projectId, onSuccess, onCancel }: ProgressPh
                     ))}
                   </SelectContent>
                 </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="photographer_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tomada por</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Nombre del fotógrafo"
+                    {...field}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
