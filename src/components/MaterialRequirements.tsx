@@ -229,61 +229,71 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Package className="h-5 w-5 text-blue-600" />
-              <div>
-                <p className="text-sm font-medium">Total</p>
-                <p className="text-2xl font-bold">{totalMaterials}</p>
+        <Card className="shadow-sm border-border/50 hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Total</p>
+                <p className="text-2xl font-bold text-foreground">{totalMaterials}</p>
+              </div>
+              <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Package className="h-6 w-6 text-blue-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <AlertTriangle className="h-5 w-5 text-orange-600" />
-              <div>
-                <p className="text-sm font-medium">Requeridos</p>
-                <p className="text-2xl font-bold">{requiredCount}</p>
+        <Card className="shadow-sm border-border/50 hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Requeridos</p>
+                <p className="text-2xl font-bold text-orange-600">{requiredCount}</p>
+              </div>
+              <div className="h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                <AlertTriangle className="h-6 w-6 text-orange-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Truck className="h-5 w-5 text-blue-600" />
-              <div>
-                <p className="text-sm font-medium">Ordenados</p>
-                <p className="text-2xl font-bold">{orderedCount}</p>
+        <Card className="shadow-sm border-border/50 hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Ordenados</p>
+                <p className="text-2xl font-bold text-blue-600">{orderedCount}</p>
+              </div>
+              <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Truck className="h-6 w-6 text-blue-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <div>
-                <p className="text-sm font-medium">Entregados</p>
-                <p className="text-2xl font-bold">{deliveredCount}</p>
+        <Card className="shadow-sm border-border/50 hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Entregados</p>
+                <p className="text-2xl font-bold text-green-600">{deliveredCount}</p>
+              </div>
+              <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <CheckCircle className="h-6 w-6 text-green-600" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <TrendingDown className="h-5 w-5 text-red-600" />
-              <div>
-                <p className="text-sm font-medium">Stock Bajo</p>
-                <p className="text-2xl font-bold">{lowStockCount}</p>
+        <Card className="shadow-sm border-border/50 hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Stock Bajo</p>
+                <p className="text-2xl font-bold text-red-600">{lowStockCount}</p>
+              </div>
+              <div className="h-12 w-12 bg-red-100 rounded-lg flex items-center justify-center">
+                <TrendingDown className="h-6 w-6 text-red-600" />
               </div>
             </div>
           </CardContent>
@@ -301,11 +311,19 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
         </TabsList>
 
         <TabsContent value="materials">
-          <Card>
-            <CardHeader>
+          <Card className="shadow-sm border-border/50">
+            <CardHeader className="border-b border-border/50 bg-gradient-to-r from-background to-muted/30">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <CardTitle>Lista de Materiales</CardTitle>
-                <Button onClick={() => { setSelectedMaterial(null); setEditMaterialDialog(true); }}>
+                <div className="space-y-1">
+                  <CardTitle className="text-xl font-bold text-foreground">Lista de Materiales</CardTitle>
+                  <CardDescription className="text-muted-foreground">
+                    Gestión completa de materiales de construcción
+                  </CardDescription>
+                </div>
+                <Button 
+                  onClick={() => { setSelectedMaterial(null); setEditMaterialDialog(true); }}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Agregar Material
                 </Button>
@@ -367,48 +385,57 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                 <div className="space-y-4">
                   {/* Desktop Table View */}
                   <div className="hidden lg:block">
-                    <div className="border border-border rounded-lg overflow-hidden bg-card">
+                    <div className="border border-border/50 rounded-xl overflow-hidden bg-card shadow-sm">
                       <table className="w-full">
-                        <thead className="bg-muted/50">
+                        <thead className="bg-gradient-to-r from-muted/80 to-muted/60 border-b border-border/50">
                           <tr>
-                            <th className="text-left p-4 font-semibold text-foreground">Material</th>
-                            <th className="text-left p-4 font-semibold text-foreground">Cantidad</th>
-                            <th className="text-left p-4 font-semibold text-foreground">Estado</th>
-                            <th className="text-left p-4 font-semibold text-foreground">Prioridad</th>
-                            <th className="text-left p-4 font-semibold text-foreground">Costo Final</th>
-                            <th className="text-center p-4 font-semibold text-foreground">Entregado</th>
-                            <th className="text-center p-4 font-semibold text-foreground">Acciones</th>
+                            <th className="text-left px-6 py-4 font-semibold text-foreground text-sm tracking-wide">Material</th>
+                            <th className="text-left px-6 py-4 font-semibold text-foreground text-sm tracking-wide">Cantidad</th>
+                            <th className="text-left px-6 py-4 font-semibold text-foreground text-sm tracking-wide">Estado</th>
+                            <th className="text-left px-6 py-4 font-semibold text-foreground text-sm tracking-wide">Prioridad</th>
+                            <th className="text-right px-6 py-4 font-semibold text-foreground text-sm tracking-wide">Costo Final</th>
+                            <th className="text-center px-6 py-4 font-semibold text-foreground text-sm tracking-wide">Entregado</th>
+                            <th className="text-center px-6 py-4 font-semibold text-foreground text-sm tracking-wide">Acciones</th>
                           </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-border/30">
                           {filteredMaterials.map((material, index) => (
-                            <tr key={material.id} className={`${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'} hover:bg-muted/50 transition-colors border-b border-border/50`}>
-                              <td className="p-4">
-                                <div className="space-y-1">
-                                  <p className="font-semibold text-foreground">{material.material_name}</p>
+                            <tr key={material.id} className={`group ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'} hover:bg-muted/40 transition-all duration-200`}>
+                              <td className="px-6 py-4">
+                                <div className="space-y-1.5">
+                                  <p className="font-semibold text-foreground leading-tight">{material.material_name}</p>
                                   {material.material_code && (
-                                    <p className="text-sm text-muted-foreground">{material.material_code}</p>
+                                    <p className="text-sm text-muted-foreground font-mono bg-muted/50 px-2 py-0.5 rounded inline-block">
+                                      {material.material_code}
+                                    </p>
                                   )}
                                   {material.descripcion_producto && (
-                                    <p className="text-sm text-muted-foreground">{material.descripcion_producto}</p>
+                                    <p className="text-sm text-muted-foreground leading-relaxed">{material.descripcion_producto}</p>
                                   )}
-                                  <p className="text-xs text-muted-foreground">{material.cuenta_mayor || material.material_type}</p>
+                                  <p className="text-xs text-muted-foreground/80 font-medium uppercase tracking-wide">
+                                    {material.cuenta_mayor || material.material_type}
+                                  </p>
                                 </div>
                               </td>
-                              <td className="p-4">
-                                <div className="font-medium text-foreground">
-                                  {material.quantity_required} {material.unit_of_measure}
+                              <td className="px-6 py-4">
+                                <div className="flex flex-col">
+                                  <span className="font-semibold text-foreground text-lg">
+                                    {material.quantity_required}
+                                  </span>
+                                  <span className="text-sm text-muted-foreground font-medium">
+                                    {material.unit_of_measure}
+                                  </span>
                                 </div>
                               </td>
-                              <td className="p-4">
+                              <td className="px-6 py-4">
                                 <Select
                                   value={material.status}
                                   onValueChange={(newValue) => handleUpdateMaterial(material.id, 'status', newValue)}
                                 >
-                                  <SelectTrigger className="w-32">
+                                  <SelectTrigger className="w-36 h-9 border-border/50 bg-background hover:border-border transition-colors">
                                     <SelectValue />
                                   </SelectTrigger>
-                                  <SelectContent>
+                                  <SelectContent className="bg-popover border-border/50">
                                     <SelectItem value="cotizado">Cotizado</SelectItem>
                                     <SelectItem value="requerido">Requerido</SelectItem>
                                     <SelectItem value="ordenado">Ordenado</SelectItem>
@@ -416,12 +443,12 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                                   </SelectContent>
                                 </Select>
                               </td>
-                              <td className="p-4">
+                              <td className="px-6 py-4">
                                 <Select
                                   value={material.priority}
                                   onValueChange={(newValue) => handleUpdateMaterial(material.id, 'priority', newValue)}
                                 >
-                                  <SelectTrigger className="w-28">
+                                  <SelectTrigger className="w-32 h-9 border-border/50 bg-background hover:border-border transition-colors">
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -432,32 +459,32 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                                   </SelectContent>
                                 </Select>
                               </td>
-                              <td className="p-4">
+                              <td className="px-6 py-4 text-right">
                                 <div className="space-y-1">
-                                  <div className="font-bold text-green-700">
+                                  <div className="font-bold text-green-700 text-lg">
                                     ${(((material.unit_cost || 0) + (material.adjustment_additive || 0) - (material.adjustment_deductive || 0)) * material.quantity_required).toLocaleString()}
                                   </div>
-                                  <div className="text-xs text-muted-foreground">
+                                  <div className="text-xs text-muted-foreground font-medium">
                                     ${((material.unit_cost || 0) + (material.adjustment_additive || 0) - (material.adjustment_deductive || 0)).toLocaleString()} / {material.unit_of_measure}
                                   </div>
                                 </div>
                               </td>
-                              <td className="p-4">
+                              <td className="px-6 py-4">
                                 <div className="flex justify-center">
                                   <Checkbox
                                     checked={material.is_delivered}
                                     onCheckedChange={(checked) => handleDeliveryToggle(material.id, !!checked)}
-                                    className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                                    className="h-5 w-5 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
                                   />
                                 </div>
                               </td>
-                              <td className="p-4">
-                                <div className="flex justify-center gap-1">
+                              <td className="px-6 py-4">
+                                <div className="flex justify-center gap-2">
                                   <Button 
                                     variant="ghost" 
                                     size="sm"
                                     onClick={() => handleEditMaterial(material)}
-                                    className="h-8 w-8 p-0"
+                                    className="h-9 w-9 p-0 hover:bg-primary/10 hover:text-primary transition-colors"
                                   >
                                     <Edit className="h-4 w-4" />
                                   </Button>
@@ -465,7 +492,7 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                                     variant="ghost" 
                                     size="sm"
                                     onClick={() => handleDeleteMaterial(material.id)}
-                                    className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
+                                    className="h-9 w-9 p-0 hover:bg-red-100 hover:text-red-600 transition-colors"
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
