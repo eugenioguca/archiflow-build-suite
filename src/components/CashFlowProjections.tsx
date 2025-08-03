@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { ClientProjectSelector } from './ClientProjectSelector';
 
 interface CashFlowProjection {
   id: string;
@@ -37,13 +38,20 @@ interface Project {
   name: string;
 }
 
-export function CashFlowProjections() {
+interface CashFlowProjectionsProps {
+  selectedClientId?: string;
+  selectedProjectId?: string;
+}
+
+export function CashFlowProjections({ selectedClientId, selectedProjectId }: CashFlowProjectionsProps) {
   const [projections, setProjections] = useState<CashFlowProjection[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingProjection, setEditingProjection] = useState<CashFlowProjection | null>(null);
   const { toast } = useToast();
+  const [internalClientId, setInternalClientId] = useState<string>(selectedClientId || '');
+  const [internalProjectId, setInternalProjectId] = useState<string>(selectedProjectId || '');
 
   const [formData, setFormData] = useState({
     project_id: '',
@@ -58,19 +66,25 @@ export function CashFlowProjections() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [internalClientId, internalProjectId]);
 
   const fetchData = async () => {
     try {
+      // Build projections query with filters
+      let projectionsQuery = supabase
+        .from('cash_flow_projections')
+        .select(`
+          *,
+          project:projects(name)
+        `);
+
+      // Apply filters
+      if (internalProjectId) {
+        projectionsQuery = projectionsQuery.eq('project_id', internalProjectId);
+      }
+
       const [projectionsResult, projectsResult] = await Promise.all([
-        supabase
-          .from('cash_flow_projections')
-          .select(`
-            *,
-            project:projects(name)
-          `)
-          .order('period_start', { ascending: false }),
-          
+        projectionsQuery.order('period_start', { ascending: false }),
         supabase
           .from('projects')
           .select('id, name')
@@ -236,6 +250,16 @@ export function CashFlowProjections() {
 
   return (
     <div className="space-y-6">
+      {/* Filtros Cliente-Proyecto */}
+      <ClientProjectSelector
+        selectedClientId={internalClientId}
+        selectedProjectId={internalProjectId}
+        onClientChange={(clientId) => setInternalClientId(clientId || '')}
+        onProjectChange={(projectId) => setInternalProjectId(projectId || '')}
+        showAllOption={true}
+        showProjectFilter={true}
+      />
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Proyecciones de Flujo de Efectivo</h2>

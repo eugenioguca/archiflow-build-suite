@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { Search, Download, Filter, Calendar, DollarSign } from 'lucide-react';
+import { ClientProjectSelector } from './ClientProjectSelector';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -37,7 +38,12 @@ interface Filters {
   maxAmount?: number;
 }
 
-const DetailedTransactionsTable: React.FC = () => {
+interface DetailedTransactionsTableProps {
+  selectedClientId?: string;
+  selectedProjectId?: string;
+}
+
+const DetailedTransactionsTable: React.FC<DetailedTransactionsTableProps> = ({ selectedClientId, selectedProjectId }) => {
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<TransactionRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,10 +56,12 @@ const DetailedTransactionsTable: React.FC = () => {
   });
   const [customStartDate, setCustomStartDate] = useState<Date | null>(null);
   const [customEndDate, setCustomEndDate] = useState<Date | null>(null);
+  const [internalClientId, setInternalClientId] = useState<string>(selectedClientId || '');
+  const [internalProjectId, setInternalProjectId] = useState<string>(selectedProjectId || '');
 
   useEffect(() => {
     fetchTransactions();
-  }, [filters.period, customStartDate, customEndDate]);
+  }, [filters.period, customStartDate, customEndDate, internalClientId, internalProjectId]);
 
   useEffect(() => {
     applyFilters();
@@ -65,44 +73,55 @@ const DetailedTransactionsTable: React.FC = () => {
       
       const { startDate, endDate } = getDateRange();
       
+      // Build queries with filters
+      let incomesQuery = supabase
+        .from('incomes')
+        .select(`
+          id,
+          description,
+          amount,
+          category,
+          invoice_date,
+          invoice_number,
+          payment_status,
+          status_cfdi,
+          created_at,
+          clients(full_name),
+          client_projects(project_name)
+        `)
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
+      
+      let expensesQuery = supabase
+        .from('expenses')
+        .select(`
+          id,
+          description,
+          amount,
+          category,
+          invoice_date,
+          reference_number,
+          status_cfdi,
+          created_at,
+          suppliers(company_name),
+          client_projects(project_name)
+        `)
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
+
+      // Apply filters
+      if (internalProjectId) {
+        incomesQuery = incomesQuery.eq('project_id', internalProjectId);
+        expensesQuery = expensesQuery.eq('project_id', internalProjectId);
+      } else if (internalClientId) {
+        incomesQuery = incomesQuery.eq('client_id', internalClientId);
+        expensesQuery = expensesQuery.eq('client_id', internalClientId);
+      }
+
       // Fetch incomes and expenses in parallel
       const [incomesResult, expensesResult] = await Promise.all([
-        supabase
-          .from('incomes')
-          .select(`
-            id,
-            description,
-            amount,
-            category,
-            invoice_date,
-            invoice_number,
-            payment_status,
-            status_cfdi,
-            created_at,
-            clients(full_name),
-            client_projects(project_name)
-          `)
-          .gte('created_at', startDate.toISOString())
-          .lte('created_at', endDate.toISOString())
-          .order('created_at', { ascending: false }),
-        
-        supabase
-          .from('expenses')
-          .select(`
-            id,
-            description,
-            amount,
-            category,
-            invoice_date,
-            reference_number,
-            status_cfdi,
-            created_at,
-            suppliers(company_name),
-            client_projects(project_name)
-          `)
-          .gte('created_at', startDate.toISOString())
-          .lte('created_at', endDate.toISOString())
-          .order('created_at', { ascending: false })
+        incomesQuery.order('created_at', { ascending: false }),
+        expensesQuery.order('created_at', { ascending: false })
       ]);
 
       // Process incomes
@@ -302,6 +321,16 @@ const DetailedTransactionsTable: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Filtros Cliente-Proyecto */}
+      <ClientProjectSelector
+        selectedClientId={internalClientId}
+        selectedProjectId={internalProjectId}
+        onClientChange={(clientId) => setInternalClientId(clientId || '')}
+        onProjectChange={(projectId) => setInternalProjectId(projectId || '')}
+        showAllOption={true}
+        showProjectFilter={true}
+      />
+
       {/* Header and Filters */}
       <Card>
         <CardHeader>

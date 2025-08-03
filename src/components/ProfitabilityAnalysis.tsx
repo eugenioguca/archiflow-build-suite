@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
+import { ClientProjectSelector } from './ClientProjectSelector';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -54,17 +55,24 @@ interface CategoryProfitability extends ProfitabilityData {
   market_share: number;
 }
 
-const ProfitabilityAnalysis: React.FC = () => {
+interface ProfitabilityAnalysisProps {
+  selectedClientId?: string;
+  selectedProjectId?: string;
+}
+
+const ProfitabilityAnalysis: React.FC<ProfitabilityAnalysisProps> = ({ selectedClientId, selectedProjectId }) => {
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState<string>('current_month');
   const [selectedAnalysis, setSelectedAnalysis] = useState<'clients' | 'projects' | 'categories'>('clients');
   const [clientProfitability, setClientProfitability] = useState<ClientProfitability[]>([]);
   const [projectProfitability, setProjectProfitability] = useState<ProjectProfitability[]>([]);
   const [categoryProfitability, setCategoryProfitability] = useState<CategoryProfitability[]>([]);
+  const [internalClientId, setInternalClientId] = useState<string>(selectedClientId || '');
+  const [internalProjectId, setInternalProjectId] = useState<string>(selectedProjectId || '');
 
   useEffect(() => {
     fetchProfitabilityData();
-  }, [selectedPeriod, selectedAnalysis]);
+  }, [selectedPeriod, selectedAnalysis, internalClientId, internalProjectId]);
 
   const getPeriodDates = () => {
     const now = new Date();
@@ -109,19 +117,33 @@ const ProfitabilityAnalysis: React.FC = () => {
   };
 
   const fetchClientProfitability = async (startDate: Date, endDate: Date) => {
+    // Build queries with filters
+    let incomesQuery = supabase
+      .from('incomes')
+      .select('amount, client_id, clients(full_name)')
+      .gte('created_at', startDate.toISOString())
+      .lte('created_at', endDate.toISOString())
+      .not('client_id', 'is', null);
+    
+    let expensesQuery = supabase
+      .from('expenses')
+      .select('amount, client_id')
+      .gte('created_at', startDate.toISOString())
+      .lte('created_at', endDate.toISOString())
+      .not('client_id', 'is', null);
+
+    // Apply filters
+    if (internalProjectId) {
+      incomesQuery = incomesQuery.eq('project_id', internalProjectId);
+      expensesQuery = expensesQuery.eq('project_id', internalProjectId);
+    } else if (internalClientId) {
+      incomesQuery = incomesQuery.eq('client_id', internalClientId);
+      expensesQuery = expensesQuery.eq('client_id', internalClientId);
+    }
+
     const [incomesResult, expensesResult, clientsResult] = await Promise.all([
-      supabase
-        .from('incomes')
-        .select('amount, client_id, clients(full_name)')
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString())
-        .not('client_id', 'is', null),
-      supabase
-        .from('expenses')
-        .select('amount, client_id')
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString())
-        .not('client_id', 'is', null),
+      incomesQuery,
+      expensesQuery,
       supabase.from('clients').select('id, full_name')
     ]);
 
@@ -429,6 +451,16 @@ const ProfitabilityAnalysis: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Filtros Cliente-Proyecto */}
+      <ClientProjectSelector
+        selectedClientId={internalClientId}
+        selectedProjectId={internalProjectId}
+        onClientChange={(clientId) => setInternalClientId(clientId || '')}
+        onProjectChange={(projectId) => setInternalProjectId(projectId || '')}
+        showAllOption={true}
+        showProjectFilter={true}
+      />
+
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>

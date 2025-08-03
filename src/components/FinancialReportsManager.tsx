@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { ClientProjectSelector } from './ClientProjectSelector';
 import { 
   FileBarChart, 
   Download, 
@@ -87,17 +88,24 @@ interface ReportPeriod {
   label: string;
 }
 
-const FinancialReportsManager: React.FC = () => {
+interface FinancialReportsManagerProps {
+  selectedClientId?: string;
+  selectedProjectId?: string;
+}
+
+const FinancialReportsManager: React.FC<FinancialReportsManagerProps> = ({ selectedClientId, selectedProjectId }) => {
   const [balanceSheet, setBalanceSheet] = useState<BalanceSheetData | null>(null);
   const [incomeStatement, setIncomeStatement] = useState<IncomeStatementData | null>(null);
   const [cashFlowStatement, setCashFlowStatement] = useState<CashFlowStatementData | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<string>('current_month');
   const [reportPeriod, setReportPeriod] = useState<ReportPeriod | null>(null);
+  const [internalClientId, setInternalClientId] = useState<string>(selectedClientId || '');
+  const [internalProjectId, setInternalProjectId] = useState<string>(selectedProjectId || '');
 
   useEffect(() => {
     generateReports();
-  }, [selectedPeriod]);
+  }, [selectedPeriod, internalClientId, internalProjectId]);
 
   const getPeriodDates = (period: string): ReportPeriod => {
     const now = new Date();
@@ -164,6 +172,24 @@ const FinancialReportsManager: React.FC = () => {
   };
 
   const generateBalanceSheet = async (period: ReportPeriod) => {
+    // Build queries with client/project filters
+    let incomesQuery = supabase.from('incomes').select('amount')
+      .gte('created_at', period.startDate.toISOString())
+      .lte('created_at', period.endDate.toISOString());
+    
+    let expensesQuery = supabase.from('expenses').select('amount')
+      .gte('created_at', period.startDate.toISOString())
+      .lte('created_at', period.endDate.toISOString());
+
+    // Apply filters
+    if (internalProjectId) {
+      incomesQuery = incomesQuery.eq('project_id', internalProjectId);
+      expensesQuery = expensesQuery.eq('project_id', internalProjectId);
+    } else if (internalClientId) {
+      incomesQuery = incomesQuery.eq('client_id', internalClientId);
+      expensesQuery = expensesQuery.eq('client_id', internalClientId);
+    }
+
     const [
       cashResult,
       receivablesResult,
@@ -174,12 +200,8 @@ const FinancialReportsManager: React.FC = () => {
       supabase.from('cash_accounts').select('current_balance').eq('status', 'active'),
       supabase.from('accounts_receivable').select('amount_due, amount_paid'),
       supabase.from('accounts_payable').select('amount_due, amount_paid'),
-      supabase.from('incomes').select('amount')
-        .gte('created_at', period.startDate.toISOString())
-        .lte('created_at', period.endDate.toISOString()),
-      supabase.from('expenses').select('amount')
-        .gte('created_at', period.startDate.toISOString())
-        .lte('created_at', period.endDate.toISOString())
+      incomesQuery,
+      expensesQuery
     ]);
 
     const cash = (cashResult.data || []).reduce((sum, account) => sum + (account.current_balance || 0), 0);
@@ -219,14 +241,25 @@ const FinancialReportsManager: React.FC = () => {
   };
 
   const generateIncomeStatement = async (period: ReportPeriod) => {
-    const [incomesResult, expensesResult] = await Promise.all([
-      supabase.from('incomes').select('amount, category')
-        .gte('created_at', period.startDate.toISOString())
-        .lte('created_at', period.endDate.toISOString()),
-      supabase.from('expenses').select('amount, category')
-        .gte('created_at', period.startDate.toISOString())
-        .lte('created_at', period.endDate.toISOString())
-    ]);
+    // Build queries with filters
+    let incomesQuery = supabase.from('incomes').select('amount, category')
+      .gte('created_at', period.startDate.toISOString())
+      .lte('created_at', period.endDate.toISOString());
+    
+    let expensesQuery = supabase.from('expenses').select('amount, category')
+      .gte('created_at', period.startDate.toISOString())
+      .lte('created_at', period.endDate.toISOString());
+
+    // Apply filters
+    if (internalProjectId) {
+      incomesQuery = incomesQuery.eq('project_id', internalProjectId);
+      expensesQuery = expensesQuery.eq('project_id', internalProjectId);
+    } else if (internalClientId) {
+      incomesQuery = incomesQuery.eq('client_id', internalClientId);
+      expensesQuery = expensesQuery.eq('client_id', internalClientId);
+    }
+
+    const [incomesResult, expensesResult] = await Promise.all([incomesQuery, expensesQuery]);
 
     const sales = (incomesResult.data || [])
       .filter(income => ['construction', 'services', 'sales'].includes(income.category))
@@ -376,6 +409,16 @@ const FinancialReportsManager: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Filtros Cliente-Proyecto */}
+      <ClientProjectSelector
+        selectedClientId={internalClientId}
+        selectedProjectId={internalProjectId}
+        onClientChange={(clientId) => setInternalClientId(clientId || '')}
+        onProjectChange={(projectId) => setInternalProjectId(projectId || '')}
+        showAllOption={true}
+        showProjectFilter={true}
+      />
+
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>

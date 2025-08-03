@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
+import { ClientProjectSelector } from './ClientProjectSelector';
 
 interface CashAccount {
   id: string;
@@ -41,37 +42,61 @@ interface EmployeeAdvance {
   due_date: string;
 }
 
-export function TreasuryDashboard() {
+interface TreasuryDashboardProps {
+  selectedClientId?: string;
+  selectedProjectId?: string;
+  onFiltersChange?: (clientId: string, projectId: string) => void;
+}
+
+export function TreasuryDashboard({ selectedClientId, selectedProjectId, onFiltersChange }: TreasuryDashboardProps) {
   const [cashAccounts, setCashAccounts] = useState<CashAccount[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<CashTransaction[]>([]);
   const [pendingAdvances, setPendingAdvances] = useState<EmployeeAdvance[]>([]);
   const [loading, setLoading] = useState(true);
+  const [internalClientId, setInternalClientId] = useState<string>(selectedClientId || '');
+  const [internalProjectId, setInternalProjectId] = useState<string>(selectedProjectId || '');
 
   useEffect(() => {
     fetchTreasuryData();
-  }, []);
+  }, [internalClientId, internalProjectId]);
+
+  const handleClientProjectChange = (clientId: string, projectId: string) => {
+    setInternalClientId(clientId);
+    setInternalProjectId(projectId);
+    onFiltersChange?.(clientId, projectId);
+  };
 
   const fetchTreasuryData = async () => {
     try {
+      // Build queries with client/project filters
+      let accountsQuery = supabase
+        .from('cash_accounts')
+        .select(`
+          *,
+          projects(id, name)
+        `)
+        .eq('status', 'active');
+      
+      let transactionsQuery = supabase
+        .from('cash_transactions')
+        .select(`
+          *,
+          cash_account:cash_accounts(name)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      // Apply filters if selected
+      if (internalProjectId) {
+        accountsQuery = accountsQuery.eq('project_id', internalProjectId);
+        transactionsQuery = transactionsQuery.eq('project_id', internalProjectId);
+      } else if (internalClientId) {
+        transactionsQuery = transactionsQuery.eq('client_id', internalClientId);
+      }
+
       const [accountsResult, transactionsResult, advancesResult] = await Promise.all([
-        supabase
-          .from('cash_accounts')
-          .select(`
-            *,
-            projects(id, name)
-          `)
-          .eq('status', 'active')
-          .order('current_balance', { ascending: false }),
-          
-        supabase
-          .from('cash_transactions')
-          .select(`
-            *,
-            cash_account:cash_accounts(name)
-          `)
-          .order('created_at', { ascending: false })
-          .limit(10),
-          
+        accountsQuery.order('current_balance', { ascending: false }),
+        transactionsQuery,
         supabase
           .from('employee_advances')
           .select('*')
@@ -178,6 +203,16 @@ export function TreasuryDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Filtros Cliente-Proyecto */}
+      <ClientProjectSelector
+        selectedClientId={internalClientId}
+        selectedProjectId={internalProjectId}
+        onClientChange={(clientId) => handleClientProjectChange(clientId || '', '')}
+        onProjectChange={(projectId) => handleClientProjectChange(internalClientId, projectId || '')}
+        showAllOption={true}
+        showProjectFilter={true}
+      />
+
       {/* KPIs Principales */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>

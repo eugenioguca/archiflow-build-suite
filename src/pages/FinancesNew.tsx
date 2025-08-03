@@ -136,7 +136,14 @@ const FinancesNew: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="treasury" className="space-y-6">
-          <TreasuryDashboard />
+          <TreasuryDashboard 
+            selectedClientId={selectedClientId}
+            selectedProjectId={selectedProjectId}
+            onFiltersChange={(clientId, projectId) => {
+              setSelectedClientId(clientId);
+              setSelectedProjectId(projectId);
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="accounts" className="space-y-6">
