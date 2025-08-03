@@ -19,6 +19,7 @@ import Sales from "./pages/Sales";
 import UserManagement from "./pages/UserManagement";
 import Design from "./pages/Design";
 import { Construction } from "./pages/Construction";
+import ClientPortalPreview from "./pages/ClientPortalPreview";
 
 import SuppliersNew from "./pages/SuppliersNew";
 import ClientPortal from "./pages/ClientPortal";
@@ -200,6 +201,16 @@ const App = () => (
                  <ClientProtectedRoute>
                    <ClientPortal />
                  </ClientProtectedRoute>
+               } 
+             />
+             <Route 
+               path="/client-portal-preview" 
+               element={
+                 <ProtectedRoute>
+                   <Layout>
+                     <ClientPortalPreview />
+                   </Layout>
+                 </ProtectedRoute>
                } 
              />
              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

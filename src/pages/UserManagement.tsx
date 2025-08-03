@@ -1,57 +1,119 @@
-import { UserProfileForm } from "@/components/UserProfileForm";
-import { BranchOfficeManager } from "@/components/BranchOfficeManager";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Edit2, Users, Settings, Check, Clock, X, Building, UserX, Handshake } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import CommercialAlliancesManager from "@/components/CommercialAlliancesManager";
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { BranchOfficeManager } from '@/components/BranchOfficeManager';
+import CommercialAlliancesManager from '@/components/CommercialAlliancesManager';
+import { Loader2, UserX, Trash2, Edit3, Save, X, Link, Users, Building, Handshake } from 'lucide-react';
 
+// Interfaces
 interface UserProfile {
   id: string;
   user_id: string;
-  full_name?: string;
-  
-  email?: string;
-  position?: string;
-  department?: string;
-  phone?: string;
-  role: string;
-  approval_status: string;
+  full_name: string | null;
+  phone: string | null;
+  role: 'admin' | 'employee' | 'client';
+  approval_status: 'approved' | 'pending' | 'rejected';
   created_at: string;
-  profile_completed?: boolean;
 }
 
-export default function UserManagement() {
+interface Client {
+  id: string;
+  full_name: string;
+  profile_id: string | null;
+}
+
+interface ClientProject {
+  id: string;
+  project_name: string;
+  client_id: string;
+  status: string;
+}
+
+const UserManagement = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserRole, setCurrentUserRole] = useState<string>('');
+  const [clients, setClients] = useState<Client[]>([]);
+  const [projects, setProjects] = useState<ClientProject[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string>('');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [linkingUserId, setLinkingUserId] = useState<string>('');
+  const [editingUser, setEditingUser] = useState<string>('');
+  const [editForm, setEditForm] = useState({ display_name: '', phone: '' });
   const { toast } = useToast();
 
   useEffect(() => {
     fetchUsers();
     fetchCurrentUserRole();
+    fetchClients();
   }, []);
+
+  useEffect(() => {
+    if (selectedClientId) {
+      fetchProjectsForClient(selectedClientId);
+    } else {
+      setProjects([]);
+      setSelectedProjectId('');
+    }
+  }, [selectedClientId]);
+
+  const fetchUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setUsers(data || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudieron cargar los usuarios"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchCurrentUserRole = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase
+        const { data, error } = await supabase
           .from('profiles')
           .select('role')
           .eq('user_id', user.id)
           .single();
         
-        if (profile) {
-          setCurrentUserRole(profile.role);
+        if (data && !error) {
+          setCurrentUserRole(data.role);
         }
       }
     } catch (error) {
@@ -59,85 +121,116 @@ export default function UserManagement() {
     }
   };
 
-  const fetchUsers = async () => {
+  const fetchClients = async () => {
     try {
-      const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id, full_name, profile_id')
+        .order('full_name', { ascending: true });
+      
       if (error) throw error;
-
-      setUsers(profiles || []);
-    } catch (error: any) {
-      console.error('Error fetching users:', error);
+      setClients(data || []);
+    } catch (error) {
+      console.error('Error fetching clients:', error);
       toast({
+        variant: "destructive",
         title: "Error",
-        description: "No se pudieron cargar los usuarios",
-        variant: "destructive"
+        description: "No se pudieron cargar los clientes"
       });
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleUserUpdate = async (updatedProfile: any) => {
+  const fetchProjectsForClient = async (clientId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('client_projects')
+        .select('id, project_name, client_id, status')
+        .eq('client_id', clientId)
+        .order('project_name', { ascending: true });
+      
+      if (error) throw error;
+      setProjects(data || []);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudieron cargar los proyectos"
+      });
+    }
+  };
+
+  const handleUserUpdate = async (userId: string) => {
     try {
       const { error } = await supabase
         .from('profiles')
         .update({
-          full_name: updatedProfile.full_name,
-          position: updatedProfile.position,
-          department: updatedProfile.department,
-          phone: updatedProfile.phone,
-          profile_completed: true
+          display_name: editForm.display_name,
+          phone: editForm.phone,
         })
-        .eq('user_id', updatedProfile.user_id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Éxito",
-        description: "Usuario actualizado correctamente"
-      });
-
-      fetchUsers();
-    } catch (error: any) {
-      console.error('Error updating user:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el usuario",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleApprovalChange = async (userId: string, newStatus: string) => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ approval_status: newStatus })
         .eq('user_id', userId);
 
       if (error) throw error;
 
+      setUsers(users.map(user => 
+        user.user_id === userId 
+          ? { ...user, display_name: editForm.display_name, phone: editForm.phone }
+          : user
+      ));
+      
+      setEditingUser('');
+      setEditForm({ display_name: '', phone: '' });
+      
       toast({
-        title: "Éxito",
-        description: `Estado de aprobación actualizado a ${newStatus}`
+        title: "Usuario actualizado",
+        description: "La información del usuario ha sido actualizada exitosamente."
       });
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo actualizar el usuario"
+      });
+    }
+  };
 
-      fetchUsers();
-    } catch (error: any) {
+  const handleApprovalChange = async (userId: string, approved: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ approval_status: approved ? 'approved' : 'pending' })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      setUsers(users.map(user => 
+        user.user_id === userId ? { ...user, approval_status: approved ? 'approved' : 'pending' } : user
+      ));
+      
+      toast({
+        title: "Estado actualizado",
+        description: `Usuario ${approved ? 'aprobado' : 'rechazado'} exitosamente.`
+      });
+    } catch (error) {
       console.error('Error updating approval:', error);
       toast({
+        variant: "destructive",
         title: "Error",
-        description: "No se pudo actualizar el estado de aprobación",
-        variant: "destructive"
+        description: "No se pudo actualizar el estado de aprobación"
       });
     }
   };
 
   const handleRoleChange = async (userId: string, newRole: 'admin' | 'employee' | 'client') => {
+    // Si el rol es 'client', mostrar dropdowns para vincular
+    if (newRole === 'client') {
+      setLinkingUserId(userId);
+      setSelectedClientId('');
+      setSelectedProjectId('');
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('profiles')
@@ -146,60 +239,135 @@ export default function UserManagement() {
 
       if (error) throw error;
 
+      setUsers(users.map(user => 
+        user.user_id === userId ? { ...user, role: newRole } : user
+      ));
+      
       toast({
-        title: "Éxito",
-        description: `Rol actualizado a ${newRole}`
+        title: "Rol actualizado",
+        description: "El rol del usuario ha sido actualizado exitosamente."
       });
-
-      fetchUsers();
-    } catch (error: any) {
-      console.error('Error updating role:', error);
+    } catch (error) {
+      console.error('Error updating user role:', error);
       toast({
+        variant: "destructive",
         title: "Error",
-        description: "No se pudo actualizar el rol",
-        variant: "destructive"
+        description: "No se pudo actualizar el rol del usuario"
       });
     }
   };
 
+  const handleLinkClientToUser = async () => {
+    if (!linkingUserId || !selectedClientId) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Debe seleccionar un cliente para vincular"
+      });
+      return;
+    }
+
+    try {
+      const userProfile = users.find(user => user.user_id === linkingUserId);
+      if (!userProfile) throw new Error('Usuario no encontrado');
+
+      // 1. Actualizar el rol del usuario a 'client'
+      const { error: roleError } = await supabase
+        .from('profiles')
+        .update({ role: 'client' })
+        .eq('user_id', linkingUserId);
+
+      if (roleError) throw roleError;
+
+      // 2. Vincular el profile_id en la tabla clients
+      const { error: clientError } = await supabase
+        .from('clients')
+        .update({ profile_id: userProfile.id })
+        .eq('id', selectedClientId);
+
+      if (clientError) throw clientError;
+
+      // 3. Crear configuración del portal
+      const { error: portalError } = await supabase
+        .from('client_portal_settings')
+        .insert({
+          client_id: selectedClientId,
+          can_view_documents: true,
+          can_view_finances: true,
+          can_view_photos: true,
+          can_view_progress: true
+        });
+
+      if (portalError) throw portalError;
+
+      // Actualizar estado local
+      setUsers(users.map(user => 
+        user.user_id === linkingUserId ? { ...user, role: 'client' } : user
+      ));
+
+      // Limpiar estado
+      setLinkingUserId('');
+      setSelectedClientId('');
+      setSelectedProjectId('');
+
+      toast({
+        title: "Usuario vinculado exitosamente",
+        description: "El usuario ha sido vinculado como cliente y puede acceder a su portal."
+      });
+
+    } catch (error) {
+      console.error('Error linking client to user:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo vincular el usuario con el cliente"
+      });
+    }
+  };
+
+  const cancelLinking = () => {
+    setLinkingUserId('');
+    setSelectedClientId('');
+    setSelectedProjectId('');
+  };
+
   const handleDeactivateUser = async (userId: string) => {
     try {
-      // Marcar el perfil como rechazado y cambiar rol
       const { error } = await supabase
         .from('profiles')
         .update({ 
-          approval_status: 'rejected',
-          role: 'client' // Cambiar a rol más básico
+          approved: false,
+          role: 'client'
         })
         .eq('user_id', userId);
 
       if (error) throw error;
 
+      setUsers(users.map(user => 
+        user.user_id === userId ? { ...user, approved: false, role: 'client' } : user
+      ));
+      
       toast({
-        title: "Éxito",
-        description: "Usuario desactivado correctamente"
+        title: "Usuario desactivado",
+        description: "El usuario ha sido desactivado exitosamente."
       });
-
-      fetchUsers();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deactivating user:', error);
       toast({
+        variant: "destructive",
         title: "Error",
-        description: "No se pudo desactivar el usuario",
-        variant: "destructive"
+        description: "No se pudo desactivar el usuario"
       });
     }
   };
 
   const handleDeleteUser = async (userId: string) => {
     try {
-      // Obtener el token del usuario actual
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error('No authenticated session');
       }
 
-      // Llamar a la función Edge para eliminar el usuario
       const response = await fetch('https://ycbflvptfgrjclzzlxci.supabase.co/functions/v1/delete-user', {
         method: 'POST',
         headers: {
@@ -215,18 +383,18 @@ export default function UserManagement() {
         throw new Error(result.error || 'Failed to delete user');
       }
 
+      setUsers(users.filter(user => user.user_id !== userId));
+      
       toast({
-        title: "Éxito",
-        description: "Usuario eliminado completamente del sistema"
+        title: "Usuario eliminado",
+        description: "El usuario ha sido eliminado completamente del sistema."
       });
-
-      fetchUsers();
     } catch (error: any) {
       console.error('Error deleting user:', error);
       toast({
+        variant: "destructive",
         title: "Error",
-        description: error.message || "No se pudo eliminar el usuario",
-        variant: "destructive"
+        description: error.message || "No se pudo eliminar el usuario"
       });
     }
   };
@@ -234,215 +402,267 @@ export default function UserManagement() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Settings className="h-6 w-6" />
-          <h1 className="text-3xl font-bold">Herramientas</h1>
-        </div>
+      <div className="flex items-center gap-2">
+        <Users className="h-6 w-6" />
+        <h1 className="text-3xl font-bold">Gestión de Usuarios</h1>
       </div>
 
-      <Alert>
-        <Settings className="h-4 w-4" />
-        <AlertDescription>
-          Este módulo incluye la gestión de usuarios y sucursales. Cada usuario debe completar su tarjeta de contacto para poder ser añadido a los equipos de proyectos.
-        </AlertDescription>
-      </Alert>
+      <Tabs defaultValue="users" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="users" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Usuarios
+          </TabsTrigger>
+          <TabsTrigger value="branches" className="flex items-center gap-2">
+            <Building className="h-4 w-4" />
+            Sucursales
+          </TabsTrigger>
+          <TabsTrigger value="alliances" className="flex items-center gap-2">
+            <Handshake className="h-4 w-4" />
+            Alianzas
+          </TabsTrigger>
+        </TabsList>
 
-      {!loading && (
-        <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="users" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Gestión de Usuarios
-            </TabsTrigger>
-            <TabsTrigger value="branches" className="flex items-center gap-2">
-              <Building className="h-4 w-4" />
-              Sucursales
-            </TabsTrigger>
-            <TabsTrigger value="alliances" className="flex items-center gap-2">
-              <Handshake className="h-4 w-4" />
-              Alianzas Comerciales
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="users">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Usuarios Registrados
-                </CardTitle>
-                <CardDescription>
-                  Gestiona los usuarios de la plataforma, sus roles y estado de aprobación. Cada usuario debe completar su tarjeta de contacto para ser añadido a proyectos.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {users.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    No hay usuarios registrados
-                  </p>
-                ) : (
-                  <div className="space-y-4">
+        <TabsContent value="users">
+          <Card>
+            <CardHeader>
+              <CardTitle>Usuarios Registrados</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-4">Nombre</th>
+                      <th className="text-left p-4">Email</th>
+                      <th className="text-left p-4">Rol</th>
+                      <th className="text-left p-4">Estado</th>
+                      <th className="text-left p-4">Fecha</th>
+                      <th className="text-left p-4">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
                     {users.map((user) => (
-                      <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-medium">
-                              {user.full_name || "Sin nombre"}
-                            </h3>
-                            <Badge variant={user.role === 'admin' ? 'default' : user.role === 'employee' ? 'secondary' : 'outline'}>
-                              {user.role}
-                            </Badge>
-                            <Badge variant={
-                              user.approval_status === 'approved' ? 'default' : 
-                              user.approval_status === 'pending' ? 'secondary' : 
-                              'destructive'
-                            }>
-                              {user.approval_status === 'approved' && <Check className="h-3 w-3 mr-1" />}
-                              {user.approval_status === 'pending' && <Clock className="h-3 w-3 mr-1" />}
-                              {user.approval_status === 'rejected' && <X className="h-3 w-3 mr-1" />}
-                              {user.approval_status}
-                            </Badge>
-                            {user.profile_completed && (
-                              <Badge variant="outline" className="text-green-600 border-green-600">
-                                Perfil Completo
-                              </Badge>
+                      <tr key={user.id} className="border-b">
+                        <td className="p-4">
+                          {editingUser === user.id ? (
+                            <Input
+                              value={editForm.display_name}
+                              onChange={(e) => setEditForm({...editForm, display_name: e.target.value})}
+                              placeholder="Nombre completo"
+                            />
+                          ) : (
+                            user.full_name || 'Sin nombre'
+                          )}
+                        </td>
+                        <td className="p-4">{user.user_id}</td>
+                        <td className="p-4">
+                          <Badge 
+                            variant={user.role === 'admin' ? 'default' : 
+                                   user.role === 'employee' ? 'secondary' : 'outline'}
+                          >
+                            {user.role === 'admin' ? 'Administrador' : 
+                             user.role === 'employee' ? 'Empleado' : 'Cliente'}
+                          </Badge>
+                        </td>
+                        <td className="p-4">
+                          <Badge variant={user.approval_status === 'approved' ? 'default' : 'destructive'}>
+                            {user.approval_status === 'approved' ? 'Aprobado' : 'Pendiente'}
+                          </Badge>
+                        </td>
+                        <td className="p-4">
+                          {new Date(user.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="p-4">
+                          <div className="flex gap-2">
+                            {editingUser === user.id ? (
+                              <>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleUserUpdate(user.user_id)}
+                                >
+                                  <Save className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setEditingUser('');
+                                    setEditForm({ display_name: '', phone: '' });
+                                  }}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setEditingUser(user.id);
+                                  setEditForm({
+                                    display_name: user.display_name || '',
+                                    phone: user.phone || '',
+                                  });
+                                }}
+                              >
+                                <Edit3 className="h-4 w-4" />
+                              </Button>
+                            )}
+                            
+                            <Select
+                              value={user.approval_status === 'approved' ? "approved" : "pending"}
+                              onValueChange={(value) => 
+                                handleApprovalChange(user.user_id, value === "approved")
+                              }
+                            >
+                              <SelectTrigger className="w-[120px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="approved">Aprobado</SelectItem>
+                                <SelectItem value="pending">Pendiente</SelectItem>
+                              </SelectContent>
+                            </Select>
+
+                            <Select
+                              value={user.role}
+                              onValueChange={(value: 'admin' | 'employee' | 'client') => 
+                                handleRoleChange(user.user_id, value)
+                              }
+                            >
+                              <SelectTrigger className="w-[120px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="admin">Admin</SelectItem>
+                                <SelectItem value="employee">Empleado</SelectItem>
+                                <SelectItem value="client">Cliente</SelectItem>
+                              </SelectContent>
+                            </Select>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeactivateUser(user.user_id)}
+                            >
+                              <UserX className="h-4 w-4" />
+                            </Button>
+
+                            {currentUserRole === 'admin' && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Eliminar usuario permanentemente?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Esta acción eliminará completamente el usuario del sistema. 
+                                      Esta acción no se puede deshacer.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      onClick={() => handleDeleteUser(user.user_id)}
+                                      className="bg-destructive hover:bg-destructive/90"
+                                    >
+                                      Eliminar
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            {user.email}
-                          </p>
-                          {user.position && user.department && (
-                            <p className="text-xs text-muted-foreground">
-                              {user.position} - {user.department}
-                            </p>
-                          )}
-                          {user.phone && (
-                            <p className="text-xs text-muted-foreground">
-                              Teléfono: {user.phone}
-                            </p>
-                          )}
-                          <p className="text-xs text-muted-foreground">
-                            Registrado: {new Date(user.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm">
-                                <Edit2 className="h-4 w-4 mr-1" />
-                                Editar
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-2xl">
-                              <DialogHeader>
-                                <DialogTitle>Editar Usuario</DialogTitle>
-                                <DialogDescription>
-                                  Actualiza la información del usuario y su tarjeta de contacto
-                                </DialogDescription>
-                              </DialogHeader>
-                              <UserProfileForm 
-                                profile={user as any}
-                                onSave={handleUserUpdate}
-                                isEditing={true}
-                              />
-                            </DialogContent>
-                          </Dialog>
-                          
-                          <Select value={user.approval_status} onValueChange={(value) => handleApprovalChange(user.user_id, value)}>
-                            <SelectTrigger className="w-32">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pending">Pendiente</SelectItem>
-                              <SelectItem value="approved">Aprobado</SelectItem>
-                              <SelectItem value="rejected">Rechazado</SelectItem>
-                            </SelectContent>
-                          </Select>
-
-                          <Select value={user.role} onValueChange={(value: 'admin' | 'employee' | 'client') => handleRoleChange(user.user_id, value)}>
-                            <SelectTrigger className="w-28">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="admin">Admin</SelectItem>
-                              <SelectItem value="employee">Employee</SelectItem>
-                              <SelectItem value="client">Client</SelectItem>
-                            </SelectContent>
-                          </Select>
-
-                          {/* Botón de Desactivar Usuario */}
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm" className="border-orange-500 text-orange-600 hover:bg-orange-50">
-                                <UserX className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>¿Desactivar usuario?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Esta acción desactivará al usuario cambiando su estado a "rechazado" y su rol a "client". El usuario no será eliminado del sistema pero perderá sus permisos administrativos.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeactivateUser(user.user_id)} className="bg-orange-600 hover:bg-orange-700">
-                                  Desactivar
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-
-                          {/* Botón de Eliminar Permanentemente - Solo para Admins */}
-                          {currentUserRole === 'admin' && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="sm">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>¿Eliminar usuario permanentemente?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    <strong>¡CUIDADO!</strong> Esta acción eliminará permanentemente al usuario y todos sus datos asociados del sistema. Esta acción NO se puede deshacer.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteUser(user.user_id)} className="bg-red-600 hover:bg-red-700">
-                                    Eliminar Permanentemente
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
-                        </div>
-                      </div>
+                        </td>
+                      </tr>
                     ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Dialog para vincular cliente */}
+          {linkingUserId && (
+            <Card className="mt-6 border-primary">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Link className="h-5 w-5" />
+                  Vincular Usuario con Cliente
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Seleccionar Cliente</Label>
+                  <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione un cliente..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients.filter(client => !client.profile_id).map((client) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.full_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {selectedClientId && (
+                  <div>
+                    <Label>Proyecto Principal (Opcional)</Label>
+                    <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccione un proyecto..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {projects.map((project) => (
+                          <SelectItem key={project.id} value={project.id}>
+                            {project.project_name} - {project.status}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 )}
+
+                <div className="flex gap-2">
+                  <Button onClick={handleLinkClientToUser} disabled={!selectedClientId}>
+                    Vincular Cliente
+                  </Button>
+                  <Button variant="outline" onClick={cancelLinking}>
+                    Cancelar
+                  </Button>
+                </div>
               </CardContent>
             </Card>
-          </TabsContent>
-          
-          <TabsContent value="branches">
-            <BranchOfficeManager />
-          </TabsContent>
-          
-          <TabsContent value="alliances">
-            <CommercialAlliancesManager />
-          </TabsContent>
-        </Tabs>
-      )}
+          )}
+        </TabsContent>
+
+        <TabsContent value="branches">
+          <BranchOfficeManager />
+        </TabsContent>
+
+        <TabsContent value="alliances">
+          <CommercialAlliancesManager />
+        </TabsContent>
+      </Tabs>
     </div>
   );
-}
+};
+
+export default UserManagement;

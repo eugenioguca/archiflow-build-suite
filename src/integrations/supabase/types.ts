@@ -874,6 +874,135 @@ export type Database = {
         }
         Relationships: []
       }
+      client_portal_chat: {
+        Row: {
+          attachments: Json | null
+          client_id: string
+          created_at: string
+          id: string
+          is_client_message: boolean
+          message: string
+          project_id: string
+          read_by: Json | null
+          sender_id: string
+          updated_at: string
+        }
+        Insert: {
+          attachments?: Json | null
+          client_id: string
+          created_at?: string
+          id?: string
+          is_client_message?: boolean
+          message: string
+          project_id: string
+          read_by?: Json | null
+          sender_id: string
+          updated_at?: string
+        }
+        Update: {
+          attachments?: Json | null
+          client_id?: string
+          created_at?: string
+          id?: string
+          is_client_message?: boolean
+          message?: string
+          project_id?: string
+          read_by?: Json | null
+          sender_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_chat_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_chat_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_chat_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "financial_summary_by_client_project"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "client_portal_chat_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_portal_notifications: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          message: string
+          metadata: Json | null
+          notification_type: string
+          project_id: string
+          read: boolean | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          message: string
+          metadata?: Json | null
+          notification_type: string
+          project_id: string
+          read?: boolean | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          metadata?: Json | null
+          notification_type?: string
+          project_id?: string
+          read?: boolean | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_notifications_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_notifications_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_notifications_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "financial_summary_by_client_project"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
       client_portal_settings: {
         Row: {
           can_view_documents: boolean | null

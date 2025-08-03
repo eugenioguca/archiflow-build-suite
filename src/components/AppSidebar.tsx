@@ -15,7 +15,10 @@ import {
   Truck,
   Palette,
   Settings,
-  HardHat
+  HardHat,
+  Eye,
+  UserCheck,
+  HandHeart
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -45,7 +48,9 @@ const adminItems = [
   { title: "Proveedores", url: "/suppliers", icon: Truck, color: "text-orange" },
   { title: "Finanzas", url: "/finances", icon: DollarSign, color: "text-primary" },
   { title: "Contabilidad", url: "/accounting", icon: Calculator, color: "text-primary" },
-  { title: "Herramientas", url: "/user-management", icon: Settings, color: "text-primary" },
+  { title: "Preview Portal Cliente", url: "/client-portal-preview", icon: Eye, color: "text-info" },
+  { title: "Gestión de Usuarios", url: "/user-management", icon: UserCheck, color: "text-primary" },
+  { title: "Alianzas Comerciales", url: "/commercial-alliances", icon: HandHeart, color: "text-primary" },
 ];
 
 const clientItems = [
@@ -100,8 +105,11 @@ export function AppSidebar() {
     // Clients should be redirected to their portal, but if they somehow reach this component, show minimal items
     menuItems = clientItems;
   } else if (userRole === 'employee') {
-    // Employees don't see user management
-    menuItems = adminItems.filter(item => item.url !== '/user-management');
+    // Employees don't see user management or client portal preview
+    menuItems = adminItems.filter(item => 
+      item.url !== '/user-management' && 
+      item.url !== '/client-portal-preview'
+    );
   } else if (userRole === 'admin') {
     // Admins see everything
     menuItems = adminItems;
