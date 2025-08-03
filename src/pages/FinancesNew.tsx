@@ -35,6 +35,7 @@ import {
   Banknote
 } from 'lucide-react';
 import { MaterialFinanceRequests } from '@/components/MaterialFinanceRequests';
+import { GlobalFilters } from '@/components/GlobalFilters';
 
 const FinancesNew: React.FC = () => {
   const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false);
@@ -162,8 +163,8 @@ const FinancesNew: React.FC = () => {
             selectedClientId={selectedClientId}
             selectedProjectId={selectedProjectId}
             onFiltersChange={(clientId, projectId) => {
-              setSelectedClientId(clientId);
-              setSelectedProjectId(projectId);
+              setSelectedClientId(clientId || undefined);
+              setSelectedProjectId(projectId || undefined);
             }}
           />
         </TabsContent>

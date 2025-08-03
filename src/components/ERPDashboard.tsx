@@ -184,10 +184,12 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
       expenseQuery = expenseQuery.eq('client_id', selectedClientId);
     }
 
-    if (selectedProjectId) {
-      incomeQuery = incomeQuery.eq('project_id', selectedProjectId);
-      expenseQuery = expenseQuery.eq('project_id', selectedProjectId);
-    }
+    // Note: project_id column doesn't exist in incomes/expenses tables yet
+    // This will be implemented when the schema is updated
+    // if (selectedProjectId) {
+    //   incomeQuery = incomeQuery.eq('project_id', selectedProjectId);
+    //   expenseQuery = expenseQuery.eq('project_id', selectedProjectId);
+    // }
 
     const [
       cashResult,

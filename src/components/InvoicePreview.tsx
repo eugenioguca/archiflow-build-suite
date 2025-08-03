@@ -39,6 +39,7 @@ export function InvoicePreview({ isOpen, onClose, template }: InvoicePreviewProp
   const textColor = colors_config.text_color || '#1E293B';
   const backgroundColor = colors_config.background_color || '#FFFFFF';
 
+  // Demo data for preview purposes - in production this would come from props
   const sampleData = {
     folio: 'FAC-A-001-2024',
     fecha: new Date().toLocaleDateString('es-MX'),
@@ -55,26 +56,20 @@ export function InvoicePreview({ isOpen, onClose, template }: InvoicePreviewProp
     conceptos: [
       {
         cantidad: 1,
-        descripcion: 'Servicios de consultoría especializada en desarrollo empresarial',
+        descripcion: 'Servicios de consultoría especializada',
         precio_unitario: 15000.00,
         importe: 15000.00
       },
       {
-        cantidad: 2,
-        descripcion: 'Desarrollo de sistema personalizado con integración completa',
-        precio_unitario: 25000.00,
-        importe: 50000.00
-      },
-      {
         cantidad: 1,
-        descripcion: 'Capacitación y soporte técnico especializado',
-        precio_unitario: 8500.00,
-        importe: 8500.00
+        descripcion: 'Desarrollo de sistema personalizado',
+        precio_unitario: 25000.00,
+        importe: 25000.00
       }
     ],
-    subtotal: 73500.00,
-    iva: 11760.00,
-    total: 85260.00
+    subtotal: 40000.00,
+    iva: 6400.00,
+    total: 46400.00
   };
 
   return (

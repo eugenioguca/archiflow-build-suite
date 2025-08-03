@@ -87,7 +87,7 @@ export const PaymentPlansFinance = () => {
             )
           )
         `)
-        .eq('status', 'active')
+        .in('status', ['active', 'draft'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
