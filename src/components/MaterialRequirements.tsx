@@ -203,13 +203,14 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
-      cotizado: { label: "Cotizado", variant: "outline" as const },
-      requerido: { label: "Requerido", variant: "secondary" as const },
-      ordenado: { label: "Ordenado", variant: "default" as const }
+      cotizado: { label: "Cotizado", variant: "outline" as const, className: "" },
+      requerido: { label: "Requerido", variant: "secondary" as const, className: "bg-orange-600 text-white hover:bg-orange-700" },
+      ordenado: { label: "Ordenado", variant: "default" as const, className: "bg-green-600 text-white hover:bg-green-700" },
+      cancelado: { label: "Cancelado", variant: "destructive" as const, className: "bg-red-600 text-white hover:bg-red-700" }
     };
     
-    const config = statusMap[status as keyof typeof statusMap] || { label: status, variant: "outline" as const };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    const config = statusMap[status as keyof typeof statusMap] || { label: status, variant: "outline" as const, className: "" };
+    return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>;
   };
 
   const getPriorityBadge = (priority: string) => {
@@ -345,6 +346,7 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                     <SelectItem value="cotizado">Cotizado</SelectItem>
                     <SelectItem value="requerido">Requerido</SelectItem>
                     <SelectItem value="ordenado">Ordenado</SelectItem>
+                    <SelectItem value="cancelado">Cancelado</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -408,6 +410,7 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                                 <SelectItem value="cotizado">Cotizado</SelectItem>
                                 <SelectItem value="requerido">Requerido</SelectItem>
                                 <SelectItem value="ordenado">Ordenado</SelectItem>
+                                <SelectItem value="cancelado">Cancelado</SelectItem>
                               </SelectContent>
                             </Select>
                           </td>
