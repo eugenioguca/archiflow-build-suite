@@ -66,82 +66,80 @@ const FinancesNew: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="mb-6">
-        <h1 className="text-4xl font-bold tracking-tight">Sistema ERP Financiero</h1>
-        <p className="text-lg text-muted-foreground mt-2">
+    <div className="container mx-auto p-4 max-w-full">
+      <div className="mb-4">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Sistema ERP Financiero</h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1">
           Gestión integral de finanzas, contabilidad y tesorería empresarial
         </p>
       </div>
 
-      <Tabs defaultValue="dashboard" className="space-y-6">
-        <TabsList className="flex w-full overflow-x-auto h-auto gap-2 p-2">
-          <TabsTrigger value="dashboard" className="flex items-center gap-2 py-3">
-            <LayoutDashboard className="h-4 w-4" />
-            <span className="hidden sm:block">Dashboard</span>
-          </TabsTrigger>
-          <TabsTrigger value="treasury" className="flex items-center gap-2 py-3">
-            <Wallet className="h-4 w-4" />
-            <span className="hidden sm:block">Tesorería</span>
-          </TabsTrigger>
-          <TabsTrigger value="accounts" className="flex items-center gap-2 py-3">
-            <Building2 className="h-4 w-4" />
-            <span className="hidden sm:block">Cuentas</span>
-          </TabsTrigger>
-          <TabsTrigger value="cashflow" className="flex items-center gap-2 py-3">
-            <TrendingUp className="h-4 w-4" />
-            <span className="hidden sm:block">Flujo</span>
-          </TabsTrigger>
-          <TabsTrigger value="materials" className="flex items-center gap-2 py-3">
-            <Package className="h-4 w-4" />
-            <span className="hidden sm:block">Materiales</span>
-          </TabsTrigger>
-          <TabsTrigger value="advances" className="flex items-center gap-2 py-3">
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:block">Anticipos</span>
-          </TabsTrigger>
-          <TabsTrigger value="transactions" className="flex items-center gap-2 py-3">
-            <List className="h-4 w-4" />
-            <span className="hidden sm:block">Transacciones</span>
-          </TabsTrigger>
-          <TabsTrigger value="ppd" className="flex items-center gap-2 py-3">
-            <FileText className="h-4 w-4" />
-            <span className="hidden sm:block">PPD</span>
-          </TabsTrigger>
-          <TabsTrigger value="operations" className="flex items-center gap-2 py-3">
-            <CreditCard className="h-4 w-4" />
-            <span className="hidden sm:block">Operaciones</span>
-          </TabsTrigger>
-          <TabsTrigger value="expenses" className="flex items-center gap-2 py-3">
-            <Receipt className="h-4 w-4" />
-            <span className="hidden sm:block">Gastos</span>
-          </TabsTrigger>
-          <TabsTrigger value="reports" className="flex items-center gap-2 py-3">
-            <FileText className="h-4 w-4" />
-            <span className="hidden sm:block">Reportes</span>
-          </TabsTrigger>
-          <TabsTrigger value="budgets" className="flex items-center gap-2 py-3">
-            <Target className="h-4 w-4" />
-            <span className="hidden sm:block">Presupuestos</span>
-          </TabsTrigger>
-          <TabsTrigger value="profitability" className="flex items-center gap-2 py-3">
-            <TrendingUp className="h-4 w-4" />
-            <span className="hidden sm:block">Rentabilidad</span>
-          </TabsTrigger>
-          <TabsTrigger value="invoicing" className="flex items-center gap-2 py-3">
-            <Receipt className="h-4 w-4" />
-            <span className="hidden sm:block">Facturación</span>
-          </TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue="dashboard" className="space-y-4">
+        <div className="w-full overflow-x-auto">
+          <TabsList className="inline-flex w-auto min-w-full h-auto gap-1 p-1 bg-muted">
+            <TabsTrigger value="dashboard" className="flex items-center gap-2 py-2 px-3 text-xs sm:text-sm">
+              <LayoutDashboard className="h-4 w-4" />
+              <span className="hidden sm:block">Dashboard</span>
+            </TabsTrigger>
+            <TabsTrigger value="treasury" className="flex items-center gap-2 py-2 px-3 text-xs sm:text-sm">
+              <Wallet className="h-4 w-4" />
+              <span className="hidden sm:block">Tesorería</span>
+            </TabsTrigger>
+            <TabsTrigger value="accounts" className="flex items-center gap-2 py-2 px-3 text-xs sm:text-sm">
+              <Building2 className="h-4 w-4" />
+              <span className="hidden sm:block">Cuentas</span>
+            </TabsTrigger>
+            <TabsTrigger value="cashflow" className="flex items-center gap-2 py-2 px-3 text-xs sm:text-sm">
+              <TrendingUp className="h-4 w-4" />
+              <span className="hidden sm:block">Flujo</span>
+            </TabsTrigger>
+            <TabsTrigger value="materials" className="flex items-center gap-2 py-2 px-3 text-xs sm:text-sm">
+              <Package className="h-4 w-4" />
+              <span className="hidden sm:block">Materiales</span>
+            </TabsTrigger>
+            <TabsTrigger value="advances" className="flex items-center gap-2 py-2 px-3 text-xs sm:text-sm">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:block">Anticipos</span>
+            </TabsTrigger>
+            <TabsTrigger value="transactions" className="flex items-center gap-2 py-2 px-3 text-xs sm:text-sm">
+              <List className="h-4 w-4" />
+              <span className="hidden sm:block">Transacciones</span>
+            </TabsTrigger>
+            <TabsTrigger value="ppd" className="flex items-center gap-2 py-2 px-3 text-xs sm:text-sm">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:block">PPD</span>
+            </TabsTrigger>
+            <TabsTrigger value="operations" className="flex items-center gap-2 py-2 px-3 text-xs sm:text-sm">
+              <CreditCard className="h-4 w-4" />
+              <span className="hidden sm:block">Operaciones</span>
+            </TabsTrigger>
+            <TabsTrigger value="expenses" className="flex items-center gap-2 py-2 px-3 text-xs sm:text-sm">
+              <Receipt className="h-4 w-4" />
+              <span className="hidden sm:block">Gastos</span>
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="flex items-center gap-2 py-2 px-3 text-xs sm:text-sm">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:block">Reportes</span>
+            </TabsTrigger>
+            <TabsTrigger value="profitability" className="flex items-center gap-2 py-2 px-3 text-xs sm:text-sm">
+              <TrendingUp className="h-4 w-4" />
+              <span className="hidden sm:block">Rentabilidad</span>
+            </TabsTrigger>
+            <TabsTrigger value="invoicing" className="flex items-center gap-2 py-2 px-3 text-xs sm:text-sm">
+              <Receipt className="h-4 w-4" />
+              <span className="hidden sm:block">Facturación</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value="dashboard" className="space-y-6">
+        <TabsContent value="dashboard" className="space-y-4">
           <ERPDashboard 
             selectedClientId={selectedClientId}
             selectedProjectId={selectedProjectId}
           />
         </TabsContent>
 
-        <TabsContent value="treasury" className="space-y-6">
+        <TabsContent value="treasury" className="space-y-4">
           <TreasuryDashboard 
             selectedClientId={selectedClientId}
             selectedProjectId={selectedProjectId}
@@ -152,42 +150,40 @@ const FinancesNew: React.FC = () => {
           />
         </TabsContent>
 
-        <TabsContent value="accounts" className="space-y-6">
+        <TabsContent value="accounts" className="space-y-4">
           <CashAccountManager />
         </TabsContent>
 
-        <TabsContent value="cashflow" className="space-y-6">
+        <TabsContent value="cashflow" className="space-y-4">
           <CashFlowProjections />
         </TabsContent>
 
-        <TabsContent value="materials" className="space-y-6">
+        <TabsContent value="materials" className="space-y-4">
           <MaterialFinanceRequests 
             selectedClientId={selectedClientId}
             selectedProjectId={selectedProjectId}
           />
         </TabsContent>
 
-        <TabsContent value="advances" className="space-y-6">
+        <TabsContent value="advances" className="space-y-4">
           <EmployeeAdvanceManager />
         </TabsContent>
 
-        <TabsContent value="transactions" className="space-y-6">
+        <TabsContent value="transactions" className="space-y-4">
           <DetailedTransactionsTable />
         </TabsContent>
 
-        <TabsContent value="ppd" className="space-y-6">
+        <TabsContent value="ppd" className="space-y-4">
           <PPDMonitoringDashboard />
         </TabsContent>
 
-        <TabsContent value="operations" className="space-y-6">
-          <div className="grid gap-6">
-            <div className="grid gap-6 md:grid-cols-1">
-              <CashTransactionForm />
-            </div>
+        <TabsContent value="operations" className="space-y-4">
+          <div className="grid gap-4">
+            <CashTransactionForm />
           </div>
         </TabsContent>
 
-        <TabsContent value="expenses" className="space-y-6">
+        <TabsContent value="expenses" className="space-y-4">
           <ExpenseTable 
             onNewExpense={() => setIsExpenseDialogOpen(true)}
             refreshTrigger={refreshExpenses}
@@ -198,21 +194,15 @@ const FinancesNew: React.FC = () => {
           />
         </TabsContent>
 
-        <TabsContent value="reports" className="space-y-6">
+        <TabsContent value="reports" className="space-y-4">
           <FinancialReportsManager />
         </TabsContent>
 
-        <TabsContent value="budgets" className="space-y-6">
-          <div className="p-8 text-center">
-            <p className="text-muted-foreground">Sistema de presupuestos no disponible</p>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="profitability" className="space-y-6">
+        <TabsContent value="profitability" className="space-y-4">
           <ProfitabilityAnalysis />
         </TabsContent>
 
-        <TabsContent value="invoicing" className="space-y-6">
+        <TabsContent value="invoicing" className="space-y-4">
           <ElectronicInvoicingDashboard />
         </TabsContent>
       </Tabs>

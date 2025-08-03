@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +7,7 @@ import { ClientProjectSelector } from '@/components/ClientProjectSelector';
 import { Plus, Eye, Edit, Trash2, Receipt, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Expense {
   id: string;
@@ -21,7 +21,7 @@ interface Expense {
   suppliers?: { company_name: string } | null;
   client_projects?: { project_name: string } | null;
   clients?: { full_name: string } | null;
-  [key: string]: any; // Para campos adicionales de la base de datos
+  [key: string]: any;
 }
 
 interface ExpenseTableProps {
@@ -45,12 +45,12 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({
   const [loading, setLoading] = useState(true);
   const [internalClientId, setInternalClientId] = useState<string | undefined>(selectedClientId);
   const [internalProjectId, setInternalProjectId] = useState<string | undefined>(selectedProjectId);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     fetchExpenses();
   }, [refreshTrigger, internalClientId, internalProjectId]);
 
-  // Manejar cambios externos de filtros
   useEffect(() => {
     setInternalClientId(selectedClientId);
   }, [selectedClientId]);
@@ -73,7 +73,6 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({
         `)
         .order('created_at', { ascending: false });
 
-      // Aplicar filtros si están seleccionados
       if (internalClientId) {
         query = query.eq('client_id', internalClientId);
       }
@@ -143,162 +142,181 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({
     onProjectChange?.(projectId);
   };
 
-  const getFilterSummary = () => {
-    const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-    const expenseCount = expenses.length;
-    
-    return {
-      count: expenseCount,
-      total: totalExpenses,
-      categories: [...new Set(expenses.map(e => e.category))].length
-    };
+  const summary = {
+    count: expenses.length,
+    total: expenses.reduce((sum, expense) => sum + expense.amount, 0),
+    categories: [...new Set(expenses.map(e => e.category))].length
   };
 
-  const summary = getFilterSummary();
-
   return (
-    <div className="space-y-6">
-      {/* Selector Cliente-Proyecto */}
-      <ClientProjectSelector
-        selectedClientId={internalClientId}
-        selectedProjectId={internalProjectId}
-        onClientChange={handleClientChange}
-        onProjectChange={handleProjectChange}
-        showAllOption={true}
-        showProjectFilter={true}
-      />
-
+    <div className="w-full max-w-full space-y-4">
+      {/* Compact Header with Filters */}
       <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <CardTitle>Gastos y Egresos</CardTitle>
-              <CardDescription>
-                Gestión de gastos empresariales y seguimiento de egresos
-                {(internalClientId || internalProjectId) && (
-                  <span className="block text-sm text-primary mt-1">
-                    Filtrado por {internalClientId ? 'cliente' : ''}{internalClientId && internalProjectId ? ' y ' : ''}{internalProjectId ? 'proyecto' : ''} seleccionado
-                  </span>
-                )}
-              </CardDescription>
+              <CardTitle className="text-lg">Gastos</CardTitle>
+              <CardDescription className="text-sm">Gestión de gastos empresariales</CardDescription>
             </div>
-            <Button onClick={onNewExpense}>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button onClick={onNewExpense} size="sm">
+              <Plus className="mr-2 h-4 w-4" />
               Nuevo Gasto
             </Button>
           </div>
           
-          {/* Resumen de filtros */}
+          {/* Compact Filters */}
+          <div className="mt-3">
+            <ClientProjectSelector
+              selectedClientId={internalClientId}
+              selectedProjectId={internalProjectId}
+              onClientChange={handleClientChange}
+              onProjectChange={handleProjectChange}
+              showAllOption={true}
+              showProjectFilter={true}
+            />
+          </div>
+
+          {/* Compact Summary */}
           {(internalClientId || internalProjectId) && (
-            <div className="grid grid-cols-3 gap-4 mt-4 p-4 bg-muted/50 rounded-lg">
+            <div className="grid grid-cols-3 gap-3 mt-3 p-3 bg-muted/50 rounded-lg">
               <div className="text-center">
-                <div className="text-2xl font-bold text-primary">{summary.count}</div>
-                <div className="text-sm text-muted-foreground">Gastos</div>
+                <div className="text-lg font-bold text-primary">{summary.count}</div>
+                <div className="text-xs text-muted-foreground">Gastos</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{formatCurrency(summary.total)}</div>
-                <div className="text-sm text-muted-foreground">Total</div>
+                <div className="text-lg font-bold text-green-600">{formatCurrency(summary.total)}</div>
+                <div className="text-xs text-muted-foreground">Total</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{summary.categories}</div>
-                <div className="text-sm text-muted-foreground">Categorías</div>
+                <div className="text-lg font-bold text-blue-600">{summary.categories}</div>
+                <div className="text-xs text-muted-foreground">Categorías</div>
               </div>
             </div>
           )}
         </CardHeader>
-        <CardContent>
+
+        <CardContent className="p-0">
           {loading ? (
             <div className="flex items-center justify-center h-32">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : expenses.length === 0 ? (
-            <div className="text-center py-8">
+            <div className="text-center py-8 px-4">
               <div className="text-muted-foreground mb-4">
                 {(internalClientId || internalProjectId) 
-                  ? 'No hay gastos registrados para esta selección'
+                  ? 'No hay gastos para esta selección'
                   : 'No hay gastos registrados'
                 }
               </div>
-              <Button onClick={onNewExpense} variant="outline">
+              <Button onClick={onNewExpense} variant="outline" size="sm">
                 <Plus className="h-4 w-4 mr-2" />
-                {(internalClientId || internalProjectId) 
-                  ? 'Registrar Gasto para esta Selección'
-                  : 'Registrar Primer Gasto'
-                }
+                Agregar primer gasto
               </Button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Descripción</TableHead>
-                    <TableHead>Monto</TableHead>
-                    <TableHead>Categoría</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Proyecto</TableHead>
-                    <TableHead>Proveedor</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Fecha</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {expenses.map((expense) => (
-                    <TableRow key={expense.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{expense.description}</div>
-                          {expense.invoice_number && (
-                            <div className="text-sm text-muted-foreground">
-                              Factura: {expense.invoice_number}
+            <div className="w-full">
+              {/* Desktop Table */}
+              {!isMobile ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        <th className="text-left p-3 text-sm font-medium">Descripción</th>
+                        <th className="text-left p-3 text-sm font-medium">Categoría</th>
+                        <th className="text-right p-3 text-sm font-medium">Monto</th>
+                        <th className="text-left p-3 text-sm font-medium">Proveedor</th>
+                        <th className="text-left p-3 text-sm font-medium">Estado</th>
+                        <th className="text-left p-3 text-sm font-medium">Fecha</th>
+                        <th className="text-center p-3 text-sm font-medium">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {expenses.map((expense, index) => (
+                        <tr key={expense.id} className={`${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'} hover:bg-muted/40 transition-colors`}>
+                          <td className="p-3">
+                            <div className="space-y-1">
+                              <div className="font-medium text-sm">{expense.description}</div>
+                              {expense.invoice_number && (
+                                <div className="text-xs text-muted-foreground">#{expense.invoice_number}</div>
+                              )}
                             </div>
-                          )}
+                          </td>
+                          <td className="p-3">
+                            <Badge variant="outline" className="text-xs">{getCategoryLabel(expense.category)}</Badge>
+                          </td>
+                          <td className="p-3 text-right">
+                            <div className="font-semibold text-sm">{formatCurrency(expense.amount)}</div>
+                          </td>
+                          <td className="p-3">
+                            <div className="text-sm">{expense.suppliers?.company_name || 'N/A'}</div>
+                          </td>
+                          <td className="p-3">
+                            {expense.status && getStatusBadge(expense.status)}
+                          </td>
+                          <td className="p-3">
+                            <div className="text-sm">
+                              {format(new Date(expense.created_at), 'dd/MM/yyyy', { locale: es })}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex justify-center gap-1">
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                /* Mobile Cards */
+                <div className="divide-y">
+                  {expenses.map((expense) => (
+                    <div key={expense.id} className="p-4 space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-sm truncate">{expense.description}</h4>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className="text-xs">{getCategoryLabel(expense.category)}</Badge>
+                            {expense.status && getStatusBadge(expense.status)}
+                          </div>
                         </div>
-                      </TableCell>
-                      <TableCell className="font-mono font-medium">
-                        {formatCurrency(expense.amount)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {getCategoryLabel(expense.category)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {expense.clients?.full_name || '-'}
-                      </TableCell>
-                      <TableCell>
-                        {expense.client_projects?.project_name || '-'}
-                      </TableCell>
-                      <TableCell>
-                        {expense.suppliers?.company_name || '-'}
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(expense.status || 'pending')}
-                      </TableCell>
-                      <TableCell>
-                        {expense.expense_date 
-                          ? format(new Date(expense.expense_date), 'dd/MMM/yyyy', { locale: es })
-                          : format(new Date(expense.created_at), 'dd/MMM/yyyy', { locale: es })
-                        }
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                        <div className="text-right ml-3">
+                          <div className="font-bold text-lg">{formatCurrency(expense.amount)}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {format(new Date(expense.created_at), 'dd/MM/yyyy', { locale: es })}
+                          </div>
                         </div>
-                      </TableCell>
-                    </TableRow>
+                      </div>
+                      
+                      {expense.suppliers?.company_name && (
+                        <div className="text-sm text-muted-foreground">
+                          Proveedor: {expense.suppliers.company_name}
+                        </div>
+                      )}
+                      
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm">
+                          <Eye className="h-4 w-4 mr-1" />
+                          Ver
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Edit className="h-4 w-4 mr-1" />
+                          Editar
+                        </Button>
+                      </div>
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
+                </div>
+              )}
             </div>
           )}
         </CardContent>

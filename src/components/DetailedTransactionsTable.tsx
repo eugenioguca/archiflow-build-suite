@@ -11,6 +11,7 @@ import { Search, Download, Filter, Calendar, DollarSign } from 'lucide-react';
 import { ClientProjectSelector } from './ClientProjectSelector';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TransactionRow {
   id: string;
@@ -58,6 +59,7 @@ const DetailedTransactionsTable: React.FC<DetailedTransactionsTableProps> = ({ s
   const [customEndDate, setCustomEndDate] = useState<Date | null>(null);
   const [internalClientId, setInternalClientId] = useState<string>(selectedClientId || '');
   const [internalProjectId, setInternalProjectId] = useState<string>(selectedProjectId || '');
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     fetchTransactions();
