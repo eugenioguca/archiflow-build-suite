@@ -67,12 +67,10 @@ const ProfitabilityAnalysis: React.FC<ProfitabilityAnalysisProps> = ({ selectedC
   const [clientProfitability, setClientProfitability] = useState<ClientProfitability[]>([]);
   const [projectProfitability, setProjectProfitability] = useState<ProjectProfitability[]>([]);
   const [categoryProfitability, setCategoryProfitability] = useState<CategoryProfitability[]>([]);
-  const [internalClientId, setInternalClientId] = useState<string>(selectedClientId || '');
-  const [internalProjectId, setInternalProjectId] = useState<string>(selectedProjectId || '');
 
   useEffect(() => {
     fetchProfitabilityData();
-  }, [selectedPeriod, selectedAnalysis, internalClientId, internalProjectId]);
+  }, [selectedPeriod, selectedAnalysis, selectedClientId, selectedProjectId]);
 
   const getPeriodDates = () => {
     const now = new Date();
@@ -133,12 +131,12 @@ const ProfitabilityAnalysis: React.FC<ProfitabilityAnalysisProps> = ({ selectedC
       .not('client_id', 'is', null);
 
     // Apply filters
-    if (internalProjectId) {
-      incomesQuery = incomesQuery.eq('project_id', internalProjectId);
-      expensesQuery = expensesQuery.eq('project_id', internalProjectId);
-    } else if (internalClientId) {
-      incomesQuery = incomesQuery.eq('client_id', internalClientId);
-      expensesQuery = expensesQuery.eq('client_id', internalClientId);
+    if (selectedProjectId) {
+      incomesQuery = incomesQuery.eq('project_id', selectedProjectId);
+      expensesQuery = expensesQuery.eq('project_id', selectedProjectId);
+    } else if (selectedClientId) {
+      incomesQuery = incomesQuery.eq('client_id', selectedClientId);
+      expensesQuery = expensesQuery.eq('client_id', selectedClientId);
     }
 
     const [incomesResult, expensesResult, clientsResult] = await Promise.all([
@@ -451,15 +449,6 @@ const ProfitabilityAnalysis: React.FC<ProfitabilityAnalysisProps> = ({ selectedC
 
   return (
     <div className="space-y-6">
-      {/* Filtros Cliente-Proyecto */}
-      <ClientProjectSelector
-        selectedClientId={internalClientId}
-        selectedProjectId={internalProjectId}
-        onClientChange={(clientId) => setInternalClientId(clientId || '')}
-        onProjectChange={(projectId) => setInternalProjectId(projectId || '')}
-        showAllOption={true}
-        showProjectFilter={true}
-      />
 
       {/* Header */}
       <div className="flex justify-between items-center">

@@ -47,7 +47,12 @@ interface PaymentDialogData {
   clientName: string;
 }
 
-export const PaymentPlansFinance = () => {
+interface PaymentPlansFinanceProps {
+  selectedClientId?: string;
+  selectedProjectId?: string;
+}
+
+export const PaymentPlansFinance = ({ selectedClientId, selectedProjectId }: PaymentPlansFinanceProps) => {
   const [paymentPlans, setPaymentPlans] = useState<PaymentPlan[]>([]);
   const [installments, setInstallments] = useState<PaymentInstallment[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -66,7 +71,7 @@ export const PaymentPlansFinance = () => {
 
   useEffect(() => {
     fetchPaymentPlans();
-  }, []);
+  }, [selectedClientId, selectedProjectId]);
 
   useEffect(() => {
     if (selectedPlan) {
@@ -76,22 +81,53 @@ export const PaymentPlansFinance = () => {
 
   const fetchPaymentPlans = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('payment_plans')
         .select(`
-          *,
-          client_projects (
+          id,
+          plan_name,
+          client_project_id,
+          total_amount,
+          currency,
+          status,
+          created_at,
+          client_projects(
             project_name,
-            clients (
-              full_name
-            )
+            client_id,
+            clients(full_name)
           )
         `)
-        .in('status', ['active', 'draft'])
-        .order('created_at', { ascending: false });
+        .in('status', ['active', 'draft']);
+
+      // Apply filters
+      if (selectedProjectId) {
+        query = query.eq('client_project_id', selectedProjectId);
+      } else if (selectedClientId) {
+        query = query.eq('client_projects.client_id', selectedClientId);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPaymentPlans((data as any) || []);
+      
+      // Transform data to match the interface
+      const transformedData = (data || []).map((plan: any) => ({
+        id: plan.id,
+        client_project_id: plan.client_project_id || '',
+        plan_name: plan.plan_name,
+        total_amount: plan.total_amount,
+        currency: plan.currency,
+        status: plan.status,
+        created_at: plan.created_at,
+        client_projects: plan.client_projects ? {
+          project_name: plan.client_projects.project_name,
+          clients: plan.client_projects.clients ? {
+            full_name: plan.client_projects.clients.full_name
+          } : undefined
+        } : null
+      }));
+
+      setPaymentPlans(transformedData);
     } catch (error) {
       console.error('Error fetching payment plans:', error);
       toast({

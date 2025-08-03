@@ -218,11 +218,37 @@ const FinancesNew: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="profitability" className="space-y-4">
-          <ProfitabilityAnalysis />
+          <GlobalFilters
+            selectedClientId={selectedClientId}
+            selectedProjectId={selectedProjectId}
+            onClientChange={setSelectedClientId}
+            onProjectChange={setSelectedProjectId}
+            onClearFilters={() => {
+              setSelectedClientId(undefined);
+              setSelectedProjectId(undefined);
+            }}
+          />
+          <ProfitabilityAnalysis 
+            selectedClientId={selectedClientId}
+            selectedProjectId={selectedProjectId}
+          />
         </TabsContent>
 
         <TabsContent value="payment-plans" className="space-y-4">
-          <PaymentPlansFinance />
+          <GlobalFilters
+            selectedClientId={selectedClientId}
+            selectedProjectId={selectedProjectId}
+            onClientChange={setSelectedClientId}
+            onProjectChange={setSelectedProjectId}
+            onClearFilters={() => {
+              setSelectedClientId(undefined);
+              setSelectedProjectId(undefined);
+            }}
+          />
+          <PaymentPlansFinance 
+            selectedClientId={selectedClientId}
+            selectedProjectId={selectedProjectId}
+          />
         </TabsContent>
 
         <TabsContent value="invoicing" className="space-y-4">
