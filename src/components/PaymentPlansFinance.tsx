@@ -81,51 +81,74 @@ export const PaymentPlansFinance = ({ selectedClientId, selectedProjectId }: Pay
 
   const fetchPaymentPlans = async () => {
     try {
-      let query = supabase
+      setLoading(true);
+      
+      // First get payment plans
+      let plansQuery = supabase
         .from('payment_plans')
-        .select(`
-          id,
-          plan_name,
-          client_project_id,
-          total_amount,
-          currency,
-          status,
-          created_at,
-          client_projects(
-            project_name,
-            client_id,
-            clients(full_name)
-          )
-        `)
+        .select('*')
         .in('status', ['active', 'draft']);
 
-      // Apply filters
-      if (selectedProjectId) {
-        query = query.eq('client_project_id', selectedProjectId);
-      } else if (selectedClientId) {
-        query = query.eq('client_projects.client_id', selectedClientId);
+      const { data: plansData, error: plansError } = await plansQuery.order('created_at', { ascending: false });
+      if (plansError) throw plansError;
+
+      if (!plansData || plansData.length === 0) {
+        setPaymentPlans([]);
+        return;
       }
 
-      const { data, error } = await query.order('created_at', { ascending: false });
-
-      if (error) throw error;
+      // Get unique project IDs
+      const projectIds = [...new Set(plansData.map(plan => plan.client_project_id).filter(Boolean))];
       
-      // Transform data to match the interface
-      const transformedData = (data || []).map((plan: any) => ({
-        id: plan.id,
-        client_project_id: plan.client_project_id || '',
-        plan_name: plan.plan_name,
-        total_amount: plan.total_amount,
-        currency: plan.currency,
-        status: plan.status,
-        created_at: plan.created_at,
-        client_projects: plan.client_projects ? {
-          project_name: plan.client_projects.project_name,
-          clients: plan.client_projects.clients ? {
-            full_name: plan.client_projects.clients.full_name
-          } : undefined
-        } : null
-      }));
+      // Get project and client data
+      const { data: projectsData, error: projectsError } = await supabase
+        .from('client_projects')
+        .select(`
+          id,
+          project_name,
+          client_id,
+          clients(full_name)
+        `)
+        .in('id', projectIds);
+        
+      if (projectsError) throw projectsError;
+
+      // Create a map for quick lookup
+      const projectMap = new Map();
+      (projectsData || []).forEach(project => {
+        projectMap.set(project.id, project);
+      });
+
+      // Apply client/project filters and transform data
+      let filteredPlans = plansData;
+      
+      if (selectedProjectId) {
+        filteredPlans = plansData.filter(plan => plan.client_project_id === selectedProjectId);
+      } else if (selectedClientId) {
+        filteredPlans = plansData.filter(plan => {
+          const project = projectMap.get(plan.client_project_id);
+          return project && project.client_id === selectedClientId;
+        });
+      }
+
+      const transformedData = filteredPlans.map(plan => {
+        const project = projectMap.get(plan.client_project_id);
+        return {
+          id: plan.id,
+          client_project_id: plan.client_project_id,
+          plan_name: plan.plan_name,
+          total_amount: plan.total_amount,
+          currency: plan.currency,
+          status: plan.status,
+          created_at: plan.created_at,
+          client_projects: project ? {
+            project_name: project.project_name,
+            clients: project.clients ? {
+              full_name: project.clients.full_name
+            } : undefined
+          } : null
+        };
+      });
 
       setPaymentPlans(transformedData);
     } catch (error) {
@@ -135,6 +158,7 @@ export const PaymentPlansFinance = ({ selectedClientId, selectedProjectId }: Pay
         description: "No se pudieron cargar los planes de pago",
         variant: "destructive",
       });
+      setPaymentPlans([]);
     } finally {
       setLoading(false);
     }
