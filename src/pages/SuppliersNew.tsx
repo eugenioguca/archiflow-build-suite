@@ -42,6 +42,7 @@ interface Supplier {
   localidad?: string;
   municipio?: string;
   estado_fiscal?: string;
+  ofrece_credito?: boolean;
   dias_credito?: number;
   limite_credito?: number;
   saldo_actual?: number;

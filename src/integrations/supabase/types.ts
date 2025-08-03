@@ -5166,6 +5166,7 @@ export type Database = {
           bank_name: string | null
           city: string | null
           codigo_postal: string | null
+          colonia: string | null
           company_name: string
           contact_name: string | null
           country: string | null
@@ -5175,13 +5176,21 @@ export type Database = {
           current_balance: number | null
           dias_credito: number | null
           email: string | null
+          estado_fiscal: string | null
           id: string
           limite_credito: number | null
+          localidad: string | null
+          municipio: string | null
+          nombre_vialidad: string | null
           notes: string | null
+          numero_exterior: string | null
+          numero_interior: string | null
+          ofrece_credito: boolean | null
           payment_terms: number | null
           phone: string | null
           postal_code: string | null
           rating: number | null
+          razon_social: string | null
           regimen_fiscal: string | null
           rfc: string | null
           saldo_actual: number | null
@@ -5189,6 +5198,7 @@ export type Database = {
           status: Database["public"]["Enums"]["supplier_status"]
           supplier_category: Database["public"]["Enums"]["supplier_category"]
           tax_id: string | null
+          tipo_vialidad: string | null
           updated_at: string
           uso_cfdi_default: string | null
           website: string | null
@@ -5199,6 +5209,7 @@ export type Database = {
           bank_name?: string | null
           city?: string | null
           codigo_postal?: string | null
+          colonia?: string | null
           company_name: string
           contact_name?: string | null
           country?: string | null
@@ -5208,13 +5219,21 @@ export type Database = {
           current_balance?: number | null
           dias_credito?: number | null
           email?: string | null
+          estado_fiscal?: string | null
           id?: string
           limite_credito?: number | null
+          localidad?: string | null
+          municipio?: string | null
+          nombre_vialidad?: string | null
           notes?: string | null
+          numero_exterior?: string | null
+          numero_interior?: string | null
+          ofrece_credito?: boolean | null
           payment_terms?: number | null
           phone?: string | null
           postal_code?: string | null
           rating?: number | null
+          razon_social?: string | null
           regimen_fiscal?: string | null
           rfc?: string | null
           saldo_actual?: number | null
@@ -5222,6 +5241,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["supplier_status"]
           supplier_category?: Database["public"]["Enums"]["supplier_category"]
           tax_id?: string | null
+          tipo_vialidad?: string | null
           updated_at?: string
           uso_cfdi_default?: string | null
           website?: string | null
@@ -5232,6 +5252,7 @@ export type Database = {
           bank_name?: string | null
           city?: string | null
           codigo_postal?: string | null
+          colonia?: string | null
           company_name?: string
           contact_name?: string | null
           country?: string | null
@@ -5241,13 +5262,21 @@ export type Database = {
           current_balance?: number | null
           dias_credito?: number | null
           email?: string | null
+          estado_fiscal?: string | null
           id?: string
           limite_credito?: number | null
+          localidad?: string | null
+          municipio?: string | null
+          nombre_vialidad?: string | null
           notes?: string | null
+          numero_exterior?: string | null
+          numero_interior?: string | null
+          ofrece_credito?: boolean | null
           payment_terms?: number | null
           phone?: string | null
           postal_code?: string | null
           rating?: number | null
+          razon_social?: string | null
           regimen_fiscal?: string | null
           rfc?: string | null
           saldo_actual?: number | null
@@ -5255,6 +5284,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["supplier_status"]
           supplier_category?: Database["public"]["Enums"]["supplier_category"]
           tax_id?: string | null
+          tipo_vialidad?: string | null
           updated_at?: string
           uso_cfdi_default?: string | null
           website?: string | null
