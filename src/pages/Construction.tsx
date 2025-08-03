@@ -148,40 +148,44 @@ export function Construction() {
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
           <Building2 className="h-4 w-4" />
-          Proyectos
+          Proyectos Activos
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2">
-        {projects.map((project) => (
-          <div
-            key={project.id}
-            className={`p-2 rounded border cursor-pointer transition-colors text-sm ${
-              selectedProject?.id === project.id
-                ? "bg-primary/10 border-primary"
-                : "hover:bg-muted border-border"
-            }`}
-            onClick={() => {
-              setSelectedProject(project);
-              setSidebarOpen(false);
-            }}
-          >
-            <div className="font-medium truncate">
-              {project.project_name}
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          {projects.map((project) => (
+            <div
+              key={project.id}
+              className={`p-3 rounded border cursor-pointer transition-colors text-sm ${
+                selectedProject?.id === project.id
+                  ? "bg-primary/10 border-primary"
+                  : "hover:bg-muted border-border"
+              }`}
+              onClick={() => {
+                setSelectedProject(project);
+                setSidebarOpen(false);
+              }}
+            >
+              <div className="space-y-2">
+                <div className="font-medium truncate">
+                  {project.project_name}
+                </div>
+                <div className="text-xs text-muted-foreground truncate">
+                  {project.clients.full_name}
+                </div>
+                <div className="flex items-center justify-between">
+                  <Progress 
+                    value={project.overall_progress_percentage || 0} 
+                    className="h-1 flex-1 mr-2"
+                  />
+                  <span className="text-xs font-medium">
+                    {project.overall_progress_percentage || 0}%
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="text-xs text-muted-foreground truncate">
-              {project.clients.full_name}
-            </div>
-            <div className="flex items-center justify-between mt-1">
-              <Progress 
-                value={project.overall_progress_percentage || 0} 
-                className="h-1 flex-1 mr-2"
-              />
-              <span className="text-xs font-medium">
-                {project.overall_progress_percentage || 0}%
-              </span>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </CardContent>
     </Card>
   );
@@ -223,20 +227,6 @@ export function Construction() {
       {/* Compact Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          {isMobile && (
-            <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Menu className="h-4 w-4" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-80">
-                <div className="mt-4">
-                  <ProjectSelector />
-                </div>
-              </SheetContent>
-            </Sheet>
-          )}
           <div>
             <h1 className="text-lg sm:text-xl font-bold">Construcción</h1>
             <p className="text-sm text-muted-foreground">Gestión de proyectos</p>
@@ -247,16 +237,13 @@ export function Construction() {
         </Badge>
       </div>
 
-      <div className={`${isMobile ? 'space-y-4' : 'flex gap-4'}`}>
-        {/* Project Selection Sidebar - Desktop Only */}
-        {!isMobile && (
-          <div className="w-64 shrink-0">
-            <ProjectSelector />
-          </div>
-        )}
+      {/* Project Selection - Top for all devices */}
+      <div className="w-full">
+        <ProjectSelector />
+      </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 min-w-0 space-y-4">{/* min-w-0 prevents flex overflow */}
+      {/* Main Content Area */}
+      <div className="w-full space-y-4">{/* Full width content */}
           {selectedProject && (
             <div className="space-y-4 sm:space-y-6">
             {/* Mobile Project Header */}
@@ -490,6 +477,5 @@ export function Construction() {
           )}
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
