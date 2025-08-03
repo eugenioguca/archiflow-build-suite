@@ -748,13 +748,9 @@ export const PaymentPlanBuilder = ({
                             </Badge>
                             
                             {payment.status !== 'paid' && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => updatePaymentStatus(payment.id, 'paid', payment.amount)}
-                              >
-                                Marcar Pagado
-                              </Button>
+                              <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                                Solo finanzas puede marcar como pagado
+                              </span>
                             )}
                           </div>
                         </div>

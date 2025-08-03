@@ -14,6 +14,7 @@ import FinancialReportsManager from '@/components/FinancialReportsManager';
 // import BudgetControlSystem from '@/components/BudgetControlSystem'; // Component removed
 import ProfitabilityAnalysis from '@/components/ProfitabilityAnalysis';
 import { ElectronicInvoicingDashboard } from '@/components/ElectronicInvoicingDashboard';
+import { PaymentPlansFinance } from '@/components/PaymentPlansFinance';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   LayoutDashboard, 
@@ -76,7 +77,7 @@ const FinancesNew: React.FC = () => {
 
       <Tabs defaultValue="dashboard" className="space-y-3">
         <div className="w-full">
-          <TabsList className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-13 w-full h-auto gap-1 p-1 bg-muted">
+          <TabsList className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-14 w-full h-auto gap-1 p-1 bg-muted">
             <TabsTrigger value="dashboard" className="flex flex-col items-center gap-1 py-1.5 px-1 text-xs">
               <LayoutDashboard className="h-3 w-3" />
               <span className="hidden xs:block">Dashboard</span>
@@ -124,6 +125,10 @@ const FinancesNew: React.FC = () => {
             <TabsTrigger value="profitability" className="flex flex-col items-center gap-1 py-1.5 px-1 text-xs">
               <TrendingUp className="h-3 w-3" />
               <span className="hidden xs:block">Rentab.</span>
+            </TabsTrigger>
+            <TabsTrigger value="payment-plans" className="flex flex-col items-center gap-1 py-1.5 px-1 text-xs">
+              <CreditCard className="h-3 w-3" />
+              <span className="hidden xs:block">Planes</span>
             </TabsTrigger>
             <TabsTrigger value="invoicing" className="flex flex-col items-center gap-1 py-1.5 px-1 text-xs">
               <Receipt className="h-3 w-3" />
@@ -200,6 +205,10 @@ const FinancesNew: React.FC = () => {
 
         <TabsContent value="profitability" className="space-y-4">
           <ProfitabilityAnalysis />
+        </TabsContent>
+
+        <TabsContent value="payment-plans" className="space-y-4">
+          <PaymentPlansFinance />
         </TabsContent>
 
         <TabsContent value="invoicing" className="space-y-4">
