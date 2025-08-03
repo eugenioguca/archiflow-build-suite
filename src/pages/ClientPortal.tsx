@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-// Photo gallery removed
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Building2, 
   Calendar, 
@@ -18,62 +19,86 @@ import {
   MapPin,
   Clock,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  MessageCircle,
+  Home,
+  Eye,
+  Download
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+// Import our new professional components
+import { ProjectProgressCard } from '@/components/ProjectProgressCard';
+import { PaymentHistoryPanel } from '@/components/PaymentHistoryPanel';
+import { DocumentsPanel } from '@/components/DocumentsPanel';
+import { ProgressPhotosCarousel } from '@/components/ProgressPhotosCarousel';
+
 interface ClientProject {
   id: string;
-  name: string;
-  description: string;
+  project_name: string;
+  project_description?: string | null;
   status: string;
-  budget: number;
-  progress_percentage: number;
-  start_date: string;
-  estimated_completion: string;
-  actual_completion?: string;
+  sales_pipeline_stage?: string;
+  budget?: number | null;
+  construction_budget?: number | null;
+  overall_progress_percentage?: number | null;
+  estimated_completion_date?: string | null;
+  construction_start_date?: string | null;
+  project_location?: string | null;
+  service_type?: string | null;
+  timeline_months?: number | null;
   client_id: string;
-  location?: string;
-  project_manager?: string;
 }
 
 interface ProjectPhase {
   id: string;
-  name: string;
-  description: string;
+  phase_name: string;
   status: string;
-  start_date: string;
-  end_date: string;
-  budget_allocated: number;
-  actual_cost: number;
-  progress_percentage: number;
+  estimated_completion_date?: string | null;
+  actual_completion_date?: string | null;
+  phase_order: number;
 }
 
 interface Payment {
   id: string;
-  description: string;
-  amount: number;
+  amount_paid: number;
   payment_date: string;
-  payment_method: string;
-  status: string;
+  payment_method?: string | null;
+  reference_number?: string | null;
+  notes?: string | null;
+  status?: string;
 }
 
 interface ProjectDocument {
   id: string;
   name: string;
-  description: string;
   file_path: string;
-  file_type: string;
-  category: string;
+  file_type?: string | null;
+  file_size?: number | null;
+  description?: string | null;
   created_at: string;
+  uploader_name?: string | null;
+  category?: string;
+}
+
+interface ProgressPhoto {
+  id: string;
+  photo_url: string;
+  description?: string | null;
+  phase_name?: string | null;
+  created_at: string;
+  photographer_name?: string | null;
 }
 
 const ClientPortal: React.FC = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [project, setProject] = useState<ClientProject | null>(null);
+  const [phases, setPhases] = useState<ProjectPhase[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
+  const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -86,74 +111,92 @@ const ClientPortal: React.FC = () => {
     if (!user) return;
 
     try {
-      // Obtener información del cliente y su proyecto
+      // Get user profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      // Get client data
       const { data: clientData, error: clientError } = await supabase
         .from('clients')
-        .select(`
-          id,
-          full_name,
-          email,
-          phone,
-          address,
-          projects (
-            id,
-            name,
-            description,
-            status,
-            budget,
-            progress_percentage,
-            start_date,
-            estimated_completion,
-            actual_completion,
-            location
-          )
-        `)
-        .eq('profile_id', (await supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', user.id)
-          .single()).data?.id)
+        .select('id, full_name, email, phone, address')
+        .eq('profile_id', profileData.id)
         .single();
 
       if (clientError) throw clientError;
 
-      if (clientData && clientData.projects && clientData.projects.length > 0) {
-        setProject(clientData.projects[0] as ClientProject);
+      // Get client project
+      const { data: projectData, error: projectError } = await supabase
+        .from('client_projects')
+        .select('*')
+        .eq('client_id', clientData.id)
+        .single();
 
-        // Obtener pagos del proyecto
-        const { data: paymentsData, error: paymentsError } = await supabase
-          .from('incomes')
-          .select('*')
-          .eq('project_id', clientData.projects[0].id)
-          .eq('client_id', clientData.id)
-          .order('created_at', { ascending: false });
+      if (projectError) throw projectError;
+      setProject(projectData);
 
-        if (!paymentsError && paymentsData) {
-          setPayments(paymentsData.map(payment => ({
-            id: payment.id,
-            description: payment.description,
-            amount: payment.amount,
-            payment_date: payment.payment_date || payment.created_at,
-            payment_method: payment.forma_pago || 'Transferencia',
-            status: payment.payment_status
-          })));
-        }
+      // Get project phases
+      const { data: phasesData } = await supabase
+        .from('design_phases')
+        .select('*')
+        .eq('project_id', projectData.id)
+        .order('phase_order', { ascending: true });
+      
+      setPhases(phasesData || []);
 
-        // Obtener documentos del proyecto
-        const { data: documentsData, error: documentsError } = await supabase
-          .from('documents')
-          .select('*')
-          .eq('project_id', clientData.projects[0].id)
-          .eq('client_id', clientData.id)
-          .eq('access_level', 'client')
-          .order('created_at', { ascending: false });
+      // Get payments
+      const { data: paymentsData } = await supabase
+        .from('client_payments')
+        .select('*')
+        .eq('client_id', clientData.id)
+        .order('payment_date', { ascending: false });
 
-        if (!documentsError && documentsData) {
-          setDocuments(documentsData);
-        }
+      if (paymentsData) {
+        setPayments(paymentsData.map(payment => ({
+          ...payment,
+          status: 'paid' // Assume paid since they're in the system
+        })));
       }
+
+      // Get documents
+      const { data: documentsData } = await supabase
+        .from('documents')
+        .select(`
+          id,
+          name,
+          file_path,
+          file_type,
+          file_size,
+          description,
+          created_at,
+          uploaded_by
+        `)
+        .eq('project_id', projectData.id)
+        .order('created_at', { ascending: false });
+
+      if (documentsData) {
+        const processedDocs = documentsData.map(doc => ({
+          ...doc,
+          uploader_name: 'Sistema',
+          category: 'general'
+        }));
+        setDocuments(processedDocs);
+      }
+
+      // Skip progress photos for now - table may not exist yet
+      setPhotos([]);
+
     } catch (error) {
       console.error('Error fetching client data:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudieron cargar los datos del proyecto"
+      });
     } finally {
       setLoading(false);
     }
@@ -220,22 +263,22 @@ const ClientPortal: React.FC = () => {
       <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-6">
         <div className="flex items-start justify-between">
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold">{project.name}</h1>
-            <p className="text-lg text-muted-foreground">{project.description}</p>
+            <h1 className="text-3xl font-bold">{project.project_name}</h1>
+            <p className="text-lg text-muted-foreground">{project.project_description}</p>
             <div className="flex items-center gap-4 mt-4">
               {getStatusBadge(project.status)}
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4" />
-                {project.location || 'Ubicación no especificada'}
+                {project.project_location || 'Ubicación no especificada'}
               </div>
             </div>
           </div>
           <div className="text-right">
             <div className="text-2xl font-bold text-primary">
-              {project.progress_percentage}%
+              {project.overall_progress_percentage || 0}%
             </div>
             <div className="text-sm text-muted-foreground">Progreso</div>
-            <Progress value={project.progress_percentage} className="w-32 mt-2" />
+            <Progress value={project.overall_progress_percentage || 0} className="w-32 mt-2" />
           </div>
         </div>
       </div>
@@ -259,7 +302,10 @@ const ClientPortal: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {format(new Date(project.start_date), 'dd MMM yyyy', { locale: es })}
+              {project.construction_start_date ? 
+                format(new Date(project.construction_start_date), 'dd MMM yyyy', { locale: es }) :
+                'No definida'
+              }
             </div>
           </CardContent>
         </Card>
@@ -271,7 +317,10 @@ const ClientPortal: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {format(new Date(project.estimated_completion), 'dd MMM yyyy', { locale: es })}
+              {project.estimated_completion_date ? 
+                format(new Date(project.estimated_completion_date), 'dd MMM yyyy', { locale: es }) :
+                'No definida'
+              }
             </div>
           </CardContent>
         </Card>
@@ -310,13 +359,13 @@ const ClientPortal: React.FC = () => {
                   payments.map((payment) => (
                     <div key={payment.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <p className="font-medium">{payment.description}</p>
+                        <p className="font-medium">Pago #{payment.id.slice(0,8)}</p>
                         <p className="text-sm text-muted-foreground">
-                          {format(new Date(payment.payment_date), 'dd MMM yyyy', { locale: es })} • {payment.payment_method}
+                          {format(new Date(payment.payment_date), 'dd MMM yyyy', { locale: es })} • {payment.payment_method || 'Transferencia'}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-lg">{formatCurrency(payment.amount)}</p>
+                        <p className="font-bold text-lg">{formatCurrency(payment.amount_paid)}</p>
                         <Badge variant={payment.status === 'paid' ? 'default' : 'secondary'}>
                           {payment.status === 'paid' ? 'Pagado' : 'Pendiente'}
                         </Badge>
