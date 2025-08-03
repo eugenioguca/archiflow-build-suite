@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calculator, FileText, AlertTriangle, CheckCircle2, Clock, TrendingUp, PieChart, BookOpen, CreditCard, Receipt, Building, DollarSign, Calendar, Archive, Eye, Download, Upload } from 'lucide-react';
+import { Calculator, FileText, AlertTriangle, CheckCircle2, Clock, TrendingUp, PieChart, BookOpen, CreditCard, Receipt, Building, DollarSign, Calendar, Archive, Eye, Download, Upload, Filter } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -16,6 +16,7 @@ import { DocumentViewer } from '@/components/DocumentViewer';
 import { XMLUploader } from '@/components/XMLUploader';
 import { PaymentComplementsDashboard } from '@/components/PaymentComplementsDashboard';
 import { PPDComplianceManager } from '@/components/PPDComplianceManager';
+import { ClientProjectSelector } from '@/components/ClientProjectSelector';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ExpenseWithTax {
@@ -173,10 +174,12 @@ export default function Accounting() {
   const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<string>('2024');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const [selectedClientId, setSelectedClientId] = useState<string | undefined>();
+  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>();
 
   useEffect(() => {
     fetchData();
-  }, [selectedPeriod, selectedMonth]);
+  }, [selectedPeriod, selectedMonth, selectedClientId, selectedProjectId]);
 
   const fetchData = async () => {
     try {
@@ -220,6 +223,14 @@ export default function Accounting() {
         query = query.gte('created_at', monthStart).lte('created_at', monthEnd);
       }
 
+      // Apply client-project filters
+      if (selectedClientId) {
+        query = query.eq('client_id', selectedClientId);
+      }
+      if (selectedProjectId) {
+        query = query.eq('project_id', selectedProjectId);
+      }
+
       const { data, error } = await query;
 
       if (error) throw error;
@@ -258,6 +269,14 @@ export default function Accounting() {
         const monthStart = `${selectedPeriod}-${selectedMonth.padStart(2, '0')}-01`;
         const monthEnd = `${selectedPeriod}-${selectedMonth.padStart(2, '0')}-31`;
         query = query.gte('created_at', monthStart).lte('created_at', monthEnd);
+      }
+
+      // Apply client-project filters
+      if (selectedClientId) {
+        query = query.eq('client_id', selectedClientId);
+      }
+      if (selectedProjectId) {
+        query = query.eq('project_id', selectedProjectId);
       }
 
       const { data, error } = await query;
@@ -514,6 +533,17 @@ export default function Accounting() {
           </Select>
         </div>
       </div>
+
+      {/* Filtros Cliente-Proyecto */}
+      <ClientProjectSelector
+        selectedClientId={selectedClientId}
+        selectedProjectId={selectedProjectId}
+        onClientChange={setSelectedClientId}
+        onProjectChange={setSelectedProjectId}
+        showAllOption={true}
+        showProjectFilter={true}
+        className="w-full max-w-md"
+      />
 
       {/* Alertas de cumplimiento */}
       <div className="space-y-3">
