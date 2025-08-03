@@ -32,6 +32,16 @@ interface Supplier {
   regimen_fiscal?: string;
   codigo_postal?: string;
   uso_cfdi_default?: string;
+  // Campos fiscales adicionales
+  razon_social?: string;
+  tipo_vialidad?: string;
+  nombre_vialidad?: string;
+  numero_exterior?: string;
+  numero_interior?: string;
+  colonia?: string;
+  localidad?: string;
+  municipio?: string;
+  estado_fiscal?: string;
   dias_credito?: number;
   limite_credito?: number;
   saldo_actual?: number;
@@ -168,6 +178,22 @@ export default function SuppliersNew() {
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const { toast } = useToast();
 
+const tiposVialidad = [
+  { value: 'calle', label: 'Calle' },
+  { value: 'avenida', label: 'Avenida' },
+  { value: 'boulevard', label: 'Boulevard' },
+  { value: 'callejon', label: 'Callejón' },
+  { value: 'carretera', label: 'Carretera' },
+  { value: 'circuito', label: 'Circuito' },
+  { value: 'cerrada', label: 'Cerrada' },
+  { value: 'paseo', label: 'Paseo' },
+  { value: 'plaza', label: 'Plaza' },
+  { value: 'privada', label: 'Privada' },
+  { value: 'prolongacion', label: 'Prolongación' },
+  { value: 'retorno', label: 'Retorno' },
+  { value: 'viaducto', label: 'Viaducto' }
+];
+
   const [supplierFormData, setSupplierFormData] = useState({
     company_name: "",
     contact_name: "",
@@ -181,6 +207,16 @@ export default function SuppliersNew() {
     regimen_fiscal: "601",
     codigo_postal: "",
     uso_cfdi_default: "G03",
+    // Campos fiscales adicionales
+    razon_social: "",
+    tipo_vialidad: "",
+    nombre_vialidad: "",
+    numero_exterior: "",
+    numero_interior: "",
+    colonia: "",
+    localidad: "",
+    municipio: "",
+    estado_fiscal: "",
     ofrece_credito: false,
     dias_credito: 30,
     limite_credito: 0,
@@ -448,6 +484,16 @@ export default function SuppliersNew() {
       regimen_fiscal: "601",
       codigo_postal: "",
       uso_cfdi_default: "G03",
+      // Campos fiscales adicionales
+      razon_social: "",
+      tipo_vialidad: "",
+      nombre_vialidad: "",
+      numero_exterior: "",
+      numero_interior: "",
+      colonia: "",
+      localidad: "",
+      municipio: "",
+      estado_fiscal: "",
       ofrece_credito: false,
       dias_credito: 30,
       limite_credito: 0,
@@ -753,154 +799,50 @@ export default function SuppliersNew() {
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSupplierSubmit} className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="company_name">Razón Social *</Label>
-                    <Input
-                      id="company_name"
-                      value={supplierFormData.company_name}
-                      onChange={(e) => setSupplierFormData({...supplierFormData, company_name: e.target.value})}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="contact_name">Nombre de Contacto</Label>
-                    <Input
-                      id="contact_name"
-                      value={supplierFormData.contact_name}
-                      onChange={(e) => setSupplierFormData({...supplierFormData, contact_name: e.target.value})}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="rfc">RFC *</Label>
-                    <Input
-                      id="rfc"
-                      value={supplierFormData.rfc}
-                      onChange={(e) => setSupplierFormData({...supplierFormData, rfc: e.target.value.toUpperCase()})}
-                      placeholder="ABCD123456ABC"
-                      maxLength={13}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="regimen_fiscal">Régimen Fiscal</Label>
-                    <Input
-                      id="regimen_fiscal"
-                      value={supplierFormData.regimen_fiscal}
-                      onChange={(e) => setSupplierFormData({...supplierFormData, regimen_fiscal: e.target.value})}
-                      placeholder="601 - General de Ley Personas Morales"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="uso_cfdi_default">Uso CFDI por Defecto</Label>
-                    <Select value={supplierFormData.uso_cfdi_default} onValueChange={(value) => setSupplierFormData({...supplierFormData, uso_cfdi_default: value})}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-60 overflow-y-auto">
-                        {/* Gastos e Inversiones Generales */}
-                        <SelectItem value="G01">G01 - Adquisición de mercancías</SelectItem>
-                        <SelectItem value="G02">G02 - Devoluciones, descuentos o bonificaciones</SelectItem>
-                        <SelectItem value="G03">G03 - Gastos en general</SelectItem>
-                        
-                        {/* Inversiones */}
-                        <SelectItem value="I01">I01 - Construcciones</SelectItem>
-                        <SelectItem value="I02">I02 - Mobiliario y equipo de oficina por inversiones</SelectItem>
-                        <SelectItem value="I03">I03 - Equipo de transporte</SelectItem>
-                        <SelectItem value="I04">I04 - Equipo de cómputo y accesorios</SelectItem>
-                        <SelectItem value="I05">I05 - Dados, troqueles, moldes, matrices y herramental</SelectItem>
-                        <SelectItem value="I06">I06 - Comunicaciones telefónicas</SelectItem>
-                        <SelectItem value="I07">I07 - Comunicaciones satelitales</SelectItem>
-                        <SelectItem value="I08">I08 - Otra maquinaria y equipo</SelectItem>
-                        
-                        {/* Deducciones Personales (Personas Físicas) */}
-                        <SelectItem value="D01">D01 - Honorarios médicos, dentales y hospitalarios</SelectItem>
-                        <SelectItem value="D02">D02 - Gastos médicos por incapacidad o discapacidad</SelectItem>
-                        <SelectItem value="D03">D03 - Gastos funerales</SelectItem>
-                        <SelectItem value="D04">D04 - Donativos</SelectItem>
-                        <SelectItem value="D05">D05 - Intereses reales pagados por créditos hipotecarios</SelectItem>
-                        <SelectItem value="D06">D06 - Aportaciones voluntarias al SAR</SelectItem>
-                        <SelectItem value="D07">D07 - Primas de seguros de gastos médicos</SelectItem>
-                        <SelectItem value="D08">D08 - Gastos de transportación escolar obligatoria</SelectItem>
-                        <SelectItem value="D09">D09 - Depósitos en cuentas para el ahorro, primas que tengan como base planes de pensiones</SelectItem>
-                        <SelectItem value="D10">D10 - Pagos por servicios educativos (colegiaturas)</SelectItem>
-                        
-                        {/* Usos Especiales */}
-                        <SelectItem value="S01">S01 - Sin efectos fiscales</SelectItem>
-                        <SelectItem value="CP01">CP01 - Pagos</SelectItem>
-                        <SelectItem value="CN01">CN01 - Nómina</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={supplierFormData.email}
-                      onChange={(e) => setSupplierFormData({...supplierFormData, email: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone">Teléfono</Label>
-                    <Input
-                      id="phone"
-                      value={supplierFormData.phone}
-                      onChange={(e) => setSupplierFormData({...supplierFormData, phone: e.target.value})}
-                    />
-                  </div>
-                </div>
-
-                {/* Checkbox para Ofrece Crédito */}
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="ofrece_credito"
-                    checked={supplierFormData.ofrece_credito}
-                    onCheckedChange={(checked) => setSupplierFormData({
-                      ...supplierFormData, 
-                      ofrece_credito: checked as boolean,
-                      // Si no ofrece crédito, resetear los valores
-                      dias_credito: checked ? supplierFormData.dias_credito : 0,
-                      limite_credito: checked ? supplierFormData.limite_credito : 0
-                    })}
-                  />
-                  <Label htmlFor="ofrece_credito" className="text-sm font-medium">
-                    ¿Ofrece Crédito?
-                  </Label>
-                </div>
-
-                {/* Campos de crédito - solo si ofrece crédito */}
-                {supplierFormData.ofrece_credito && (
+                {/* INFORMACIÓN GENERAL */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-primary border-b pb-2">Información General</h3>
+                  
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="dias_credito">Días de Crédito</Label>
+                      <Label htmlFor="company_name">Nombre Comercial *</Label>
                       <Input
-                        id="dias_credito"
-                        type="number"
-                        value={supplierFormData.dias_credito}
-                        onChange={(e) => setSupplierFormData({...supplierFormData, dias_credito: parseInt(e.target.value)})}
+                        id="company_name"
+                        value={supplierFormData.company_name}
+                        onChange={(e) => setSupplierFormData({...supplierFormData, company_name: e.target.value})}
+                        required
                       />
                     </div>
                     <div>
-                      <Label htmlFor="limite_credito">Límite de Crédito</Label>
+                      <Label htmlFor="contact_name">Nombre de Contacto</Label>
                       <Input
-                        id="limite_credito"
-                        type="number"
-                        step="0.01"
-                        value={supplierFormData.limite_credito}
-                        onChange={(e) => setSupplierFormData({...supplierFormData, limite_credito: parseFloat(e.target.value)})}
+                        id="contact_name"
+                        value={supplierFormData.contact_name}
+                        onChange={(e) => setSupplierFormData({...supplierFormData, contact_name: e.target.value})}
                       />
                     </div>
                   </div>
-                )}
 
-                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={supplierFormData.email}
+                        onChange={(e) => setSupplierFormData({...supplierFormData, email: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="phone">Teléfono</Label>
+                      <Input
+                        id="phone"
+                        value={supplierFormData.phone}
+                        onChange={(e) => setSupplierFormData({...supplierFormData, phone: e.target.value})}
+                      />
+                    </div>
+                  </div>
+
                   <div>
                     <Label htmlFor="supplier_category">Categoría</Label>
                     <Select value={supplierFormData.supplier_category} onValueChange={(value) => setSupplierFormData({...supplierFormData, supplier_category: value as "materials" | "equipment" | "services" | "subcontractor" | "utilities" | "other"})}>
@@ -916,58 +858,308 @@ export default function SuppliersNew() {
                   </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="address">Dirección Completa</Label>
-                  <Textarea
-                    id="address"
-                    value={supplierFormData.address}
-                    onChange={(e) => setSupplierFormData({...supplierFormData, address: e.target.value})}
-                    rows={2}
-                  />
+                {/* INFORMACIÓN FISCAL */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-primary border-b pb-2">Información Fiscal</h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="razon_social">Razón Social *</Label>
+                      <Input
+                        id="razon_social"
+                        value={supplierFormData.razon_social}
+                        onChange={(e) => setSupplierFormData({...supplierFormData, razon_social: e.target.value})}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="rfc">RFC *</Label>
+                      <Input
+                        id="rfc"
+                        value={supplierFormData.rfc}
+                        onChange={(e) => setSupplierFormData({...supplierFormData, rfc: e.target.value.toUpperCase()})}
+                        placeholder="ABCD123456ABC"
+                        maxLength={13}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="regimen_fiscal">Régimen Fiscal</Label>
+                      <Input
+                        id="regimen_fiscal"
+                        value={supplierFormData.regimen_fiscal}
+                        onChange={(e) => setSupplierFormData({...supplierFormData, regimen_fiscal: e.target.value})}
+                        placeholder="601 - General de Ley Personas Morales"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="uso_cfdi_default">Uso CFDI por Defecto</Label>
+                      <Select value={supplierFormData.uso_cfdi_default} onValueChange={(value) => setSupplierFormData({...supplierFormData, uso_cfdi_default: value})}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60 overflow-y-auto">
+                          {/* Gastos e Inversiones Generales */}
+                          <SelectItem value="G01">G01 - Adquisición de mercancías</SelectItem>
+                          <SelectItem value="G02">G02 - Devoluciones, descuentos o bonificaciones</SelectItem>
+                          <SelectItem value="G03">G03 - Gastos en general</SelectItem>
+                          
+                          {/* Inversiones */}
+                          <SelectItem value="I01">I01 - Construcciones</SelectItem>
+                          <SelectItem value="I02">I02 - Mobiliario y equipo de oficina por inversiones</SelectItem>
+                          <SelectItem value="I03">I03 - Equipo de transporte</SelectItem>
+                          <SelectItem value="I04">I04 - Equipo de cómputo y accesorios</SelectItem>
+                          <SelectItem value="I05">I05 - Dados, troqueles, moldes, matrices y herramental</SelectItem>
+                          <SelectItem value="I06">I06 - Comunicaciones telefónicas</SelectItem>
+                          <SelectItem value="I07">I07 - Comunicaciones satelitales</SelectItem>
+                          <SelectItem value="I08">I08 - Otra maquinaria y equipo</SelectItem>
+                          
+                          {/* Deducciones Personales (Personas Físicas) */}
+                          <SelectItem value="D01">D01 - Honorarios médicos, dentales y hospitalarios</SelectItem>
+                          <SelectItem value="D02">D02 - Gastos médicos por incapacidad o discapacidad</SelectItem>
+                          <SelectItem value="D03">D03 - Gastos funerales</SelectItem>
+                          <SelectItem value="D04">D04 - Donativos</SelectItem>
+                          <SelectItem value="D05">D05 - Intereses reales pagados por créditos hipotecarios</SelectItem>
+                          <SelectItem value="D06">D06 - Aportaciones voluntarias al SAR</SelectItem>
+                          <SelectItem value="D07">D07 - Primas de seguros de gastos médicos</SelectItem>
+                          <SelectItem value="D08">D08 - Gastos de transportación escolar obligatoria</SelectItem>
+                          <SelectItem value="D09">D09 - Depósitos en cuentas para el ahorro, primas que tengan como base planes de pensiones</SelectItem>
+                          <SelectItem value="D10">D10 - Pagos por servicios educativos (colegiaturas)</SelectItem>
+                          
+                          {/* Usos Especiales */}
+                          <SelectItem value="S01">S01 - Sin efectos fiscales</SelectItem>
+                          <SelectItem value="CP01">CP01 - Pagos</SelectItem>
+                          <SelectItem value="CN01">CN01 - Nómina</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="codigo_postal">Código Postal Fiscal</Label>
+                      <Input
+                        id="codigo_postal"
+                        value={supplierFormData.codigo_postal}
+                        onChange={(e) => setSupplierFormData({...supplierFormData, codigo_postal: e.target.value})}
+                        maxLength={5}
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                {/* DOMICILIO FISCAL */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-primary border-b pb-2">Domicilio Fiscal</h3>
+                  
+                  <div className="grid grid-cols-4 gap-4">
+                    <div>
+                      <Label htmlFor="tipo_vialidad">Tipo de Vialidad</Label>
+                      <Select value={supplierFormData.tipo_vialidad} onValueChange={(value) => setSupplierFormData({...supplierFormData, tipo_vialidad: value})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Tipo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {tiposVialidad.map((tipo) => (
+                            <SelectItem key={tipo.value} value={tipo.value}>
+                              {tipo.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="nombre_vialidad">Nombre de Vialidad</Label>
+                      <Input
+                        id="nombre_vialidad"
+                        value={supplierFormData.nombre_vialidad}
+                        onChange={(e) => setSupplierFormData({...supplierFormData, nombre_vialidad: e.target.value})}
+                        placeholder="Ej: Insurgentes"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="numero_exterior">Número Exterior</Label>
+                      <Input
+                        id="numero_exterior"
+                        value={supplierFormData.numero_exterior}
+                        onChange={(e) => setSupplierFormData({...supplierFormData, numero_exterior: e.target.value})}
+                        placeholder="123"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="numero_interior">Número Interior</Label>
+                      <Input
+                        id="numero_interior"
+                        value={supplierFormData.numero_interior}
+                        onChange={(e) => setSupplierFormData({...supplierFormData, numero_interior: e.target.value})}
+                        placeholder="A, B, 101 (opcional)"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-4">
+                    <div>
+                      <Label htmlFor="colonia">Colonia</Label>
+                      <Input
+                        id="colonia"
+                        value={supplierFormData.colonia}
+                        onChange={(e) => setSupplierFormData({...supplierFormData, colonia: e.target.value})}
+                        placeholder="Del Valle"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="localidad">Localidad</Label>
+                      <Input
+                        id="localidad"
+                        value={supplierFormData.localidad}
+                        onChange={(e) => setSupplierFormData({...supplierFormData, localidad: e.target.value})}
+                        placeholder="Benito Juárez"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="municipio">Municipio</Label>
+                      <Input
+                        id="municipio"
+                        value={supplierFormData.municipio}
+                        onChange={(e) => setSupplierFormData({...supplierFormData, municipio: e.target.value})}
+                        placeholder="Benito Juárez"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="estado_fiscal">Estado</Label>
+                      <Select value={supplierFormData.estado_fiscal} onValueChange={(value) => setSupplierFormData({...supplierFormData, estado_fiscal: value})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona un estado" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60 overflow-y-auto">
+                          {estadosMexico.map((estado) => (
+                            <SelectItem key={estado.value} value={estado.value}>
+                              {estado.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* INFORMACIÓN DE CONTACTO ADICIONAL */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-primary border-b pb-2">Información de Contacto</h3>
+                  
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="city">Ciudad</Label>
+                      <Input
+                        id="city"
+                        value={supplierFormData.city}
+                        onChange={(e) => setSupplierFormData({...supplierFormData, city: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="state">Estado</Label>
+                      <Select value={supplierFormData.state} onValueChange={(value) => setSupplierFormData({...supplierFormData, state: value})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona un estado" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-60 overflow-y-auto">
+                          {estadosMexico.map((estado) => (
+                            <SelectItem key={estado.value} value={estado.value}>
+                              {estado.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="postal_code">Código Postal</Label>
+                      <Input
+                        id="postal_code"
+                        value={supplierFormData.postal_code}
+                        onChange={(e) => setSupplierFormData({...supplierFormData, postal_code: e.target.value})}
+                        maxLength={5}
+                      />
+                    </div>
+                  </div>
+
                   <div>
-                    <Label htmlFor="city">Ciudad</Label>
-                    <Input
-                      id="city"
-                      value={supplierFormData.city}
-                      onChange={(e) => setSupplierFormData({...supplierFormData, city: e.target.value})}
+                    <Label htmlFor="address">Dirección de Contacto</Label>
+                    <Textarea
+                      id="address"
+                      value={supplierFormData.address}
+                      onChange={(e) => setSupplierFormData({...supplierFormData, address: e.target.value})}
+                      rows={2}
+                      placeholder="Dirección para correspondencia y entregas"
                     />
                   </div>
+
                   <div>
-                    <Label htmlFor="state">Estado</Label>
-                    <Select value={supplierFormData.state} onValueChange={(value) => setSupplierFormData({...supplierFormData, state: value})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona un estado" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-60 overflow-y-auto">
-                        {estadosMexico.map((estado) => (
-                          <SelectItem key={estado.value} value={estado.value}>
-                            {estado.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="codigo_postal">Código Postal</Label>
+                    <Label htmlFor="website">Sitio Web</Label>
                     <Input
-                      id="codigo_postal"
-                      value={supplierFormData.codigo_postal}
-                      onChange={(e) => setSupplierFormData({...supplierFormData, codigo_postal: e.target.value})}
-                      maxLength={5}
+                      id="website"
+                      value={supplierFormData.website}
+                      onChange={(e) => setSupplierFormData({...supplierFormData, website: e.target.value})}
+                      placeholder="https://www.ejemplo.com"
                     />
                   </div>
                 </div>
 
+                {/* TÉRMINOS COMERCIALES */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-primary border-b pb-2">Términos Comerciales</h3>
+                  
+                  {/* Checkbox para Ofrece Crédito */}
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="ofrece_credito"
+                      checked={supplierFormData.ofrece_credito}
+                      onCheckedChange={(checked) => setSupplierFormData({
+                        ...supplierFormData, 
+                        ofrece_credito: checked as boolean,
+                        // Si no ofrece crédito, resetear los valores
+                        dias_credito: checked ? supplierFormData.dias_credito : 0,
+                        limite_credito: checked ? supplierFormData.limite_credito : 0
+                      })}
+                    />
+                    <Label htmlFor="ofrece_credito" className="text-sm font-medium">
+                      ¿Ofrece Crédito?
+                    </Label>
+                  </div>
+
+                  {/* Campos de crédito - solo si ofrece crédito */}
+                  {supplierFormData.ofrece_credito && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="dias_credito">Días de Crédito</Label>
+                        <Input
+                          id="dias_credito"
+                          type="number"
+                          value={supplierFormData.dias_credito}
+                          onChange={(e) => setSupplierFormData({...supplierFormData, dias_credito: parseInt(e.target.value)})}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="limite_credito">Límite de Crédito</Label>
+                        <Input
+                          id="limite_credito"
+                          type="number"
+                          step="0.01"
+                          value={supplierFormData.limite_credito}
+                          onChange={(e) => setSupplierFormData({...supplierFormData, limite_credito: parseFloat(e.target.value)})}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div>
-                  <Label htmlFor="notes">Notas</Label>
+                  <Label htmlFor="notes">Notas Adicionales</Label>
                   <Textarea
                     id="notes"
                     value={supplierFormData.notes}
                     onChange={(e) => setSupplierFormData({...supplierFormData, notes: e.target.value})}
                     rows={3}
+                    placeholder="Información adicional sobre el proveedor..."
                   />
                 </div>
 
@@ -1207,6 +1399,16 @@ export default function SuppliersNew() {
                                 regimen_fiscal: supplier.regimen_fiscal || "",
                                 codigo_postal: supplier.codigo_postal || "",
                                 uso_cfdi_default: supplier.uso_cfdi_default || "G03",
+                                // Campos fiscales adicionales
+                                razon_social: supplier.razon_social || supplier.company_name,
+                                tipo_vialidad: supplier.tipo_vialidad || "",
+                                nombre_vialidad: supplier.nombre_vialidad || "",
+                                numero_exterior: supplier.numero_exterior || "",
+                                numero_interior: supplier.numero_interior || "",
+                                colonia: supplier.colonia || "",
+                                localidad: supplier.localidad || "",
+                                municipio: supplier.municipio || "",
+                                estado_fiscal: supplier.estado_fiscal || supplier.state || "",
                                 ofrece_credito: (supplier.dias_credito && supplier.dias_credito > 0) || (supplier.limite_credito && supplier.limite_credito > 0) || false,
                                 dias_credito: supplier.dias_credito || 30,
                                 limite_credito: supplier.limite_credito || 0,
