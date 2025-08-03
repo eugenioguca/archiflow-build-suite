@@ -144,46 +144,41 @@ export function Construction() {
 
   // Component to render project selector
   const ProjectSelector = () => (
-    <Card className="shadow-sm border-border/50">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
-          <Building2 className="h-5 w-5 text-primary" />
-          Proyectos Activos
+    <Card className="h-fit">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base font-semibold flex items-center gap-2">
+          <Building2 className="h-4 w-4" />
+          Proyectos
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
         {projects.map((project) => (
           <div
             key={project.id}
-            className={`group p-4 rounded-lg border cursor-pointer transition-all duration-200 ${
+            className={`p-2 rounded border cursor-pointer transition-colors text-sm ${
               selectedProject?.id === project.id
-                ? "bg-primary/5 border-primary/30 shadow-sm"
-                : "hover:bg-muted/50 border-border/50 hover:border-border"
+                ? "bg-primary/10 border-primary"
+                : "hover:bg-muted border-border"
             }`}
             onClick={() => {
               setSelectedProject(project);
               setSidebarOpen(false);
             }}
           >
-            <div className="space-y-2">
-              <div className="font-semibold text-sm text-foreground truncate">
-                {project.project_name}
-              </div>
-              <div className="text-xs text-muted-foreground truncate">
-                {project.clients.full_name}
-              </div>
-              <div className="space-y-1">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-medium text-muted-foreground">Progreso</span>
-                  <span className="text-xs font-semibold text-foreground">
-                    {project.overall_progress_percentage || 0}%
-                  </span>
-                </div>
-                <Progress 
-                  value={project.overall_progress_percentage || 0} 
-                  className="h-2"
-                />
-              </div>
+            <div className="font-medium truncate">
+              {project.project_name}
+            </div>
+            <div className="text-xs text-muted-foreground truncate">
+              {project.clients.full_name}
+            </div>
+            <div className="flex items-center justify-between mt-1">
+              <Progress 
+                value={project.overall_progress_percentage || 0} 
+                className="h-1 flex-1 mr-2"
+              />
+              <span className="text-xs font-medium">
+                {project.overall_progress_percentage || 0}%
+              </span>
             </div>
           </div>
         ))}
@@ -224,151 +219,129 @@ export function Construction() {
   const tabOptions = Object.values(navigationCategories).flatMap(category => category.tabs);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b border-border bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/30">
-        <div className="container mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {isMobile && (
-                <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                  <SheetTrigger asChild>
-                    <Button variant="outline" size="icon" className="shrink-0">
-                      <Menu className="h-4 w-4" />
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="left" className="w-80">
-                    <div className="mt-4">
-                      <ProjectSelector />
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              )}
-              <div className="space-y-1">
-                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-                  Módulo de Construcción
-                </h1>
-                <p className="text-muted-foreground text-sm">
-                  Gestión integral de proyectos de construcción
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 font-medium">
-                <Building2 className="w-3 h-3 mr-1" />
-                {projects.length} proyectos
-              </Badge>
-            </div>
+    <div className="container mx-auto p-4 space-y-4">
+      {/* Compact Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {isMobile && (
+            <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Menu className="h-4 w-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-80">
+                <div className="mt-4">
+                  <ProjectSelector />
+                </div>
+              </SheetContent>
+            </Sheet>
+          )}
+          <div>
+            <h1 className="text-lg sm:text-xl font-bold">Construcción</h1>
+            <p className="text-sm text-muted-foreground">Gestión de proyectos</p>
           </div>
         </div>
+        <Badge variant="secondary" className="text-xs">
+          {projects.length} proyectos
+        </Badge>
       </div>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 sm:px-6 py-6 space-y-6">
+      <div className={`${isMobile ? 'space-y-4' : 'flex gap-4'}`}>
+        {/* Project Selection Sidebar - Desktop Only */}
+        {!isMobile && (
+          <div className="w-64 shrink-0">
+            <ProjectSelector />
+          </div>
+        )}
 
-        <div className={`${isMobile ? 'space-y-6' : 'flex gap-6'}`}>
-          {/* Project Selection Sidebar - Desktop Only */}
-          {!isMobile && (
-            <div className="w-80 shrink-0">
-              <ProjectSelector />
-            </div>
-          )}
-
-          {/* Main Content Area */}
-          <div className="flex-1 min-w-0 space-y-6">{/* min-w-0 prevents flex overflow */}
+        {/* Main Content Area */}
+        <div className="flex-1 min-w-0 space-y-4">{/* min-w-0 prevents flex overflow */}
           {selectedProject && (
             <div className="space-y-4 sm:space-y-6">
             {/* Mobile Project Header */}
             {isMobile && (
-              <Card className="shadow-sm border-border/50">
-                <CardHeader className="pb-4">
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <CardTitle className="text-lg font-bold text-foreground truncate">
-                          {selectedProject.project_name}
-                        </CardTitle>
-                        <CardDescription className="text-sm mt-1">
-                          Cliente: {selectedProject.clients.full_name}
-                        </CardDescription>
-                      </div>
-                      <Badge 
-                        variant={selectedProject.status === "construction" ? "default" : "secondary"} 
-                        className="text-xs font-medium shrink-0"
-                      >
-                        {selectedProject.status === "construction" ? "En Construcción" : "Diseño Completado"}
-                      </Badge>
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0 flex-1">
+                      <CardTitle className="text-base truncate">
+                        {selectedProject.project_name}
+                      </CardTitle>
+                      <CardDescription className="text-sm">
+                        {selectedProject.clients.full_name}
+                      </CardDescription>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="text-center p-3 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border border-primary/20">
-                        <div className="text-lg font-bold text-primary">
-                          {selectedProject.overall_progress_percentage || 0}%
-                        </div>
-                        <div className="text-xs text-muted-foreground font-medium">Progreso</div>
+                    <Badge variant={selectedProject.status === "construction" ? "default" : "secondary"} className="text-xs">
+                      {selectedProject.status === "construction" ? "Construcción" : "Diseño OK"}
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div className="text-center p-2 bg-muted/50 rounded">
+                      <div className="text-lg font-bold text-primary">
+                        {selectedProject.overall_progress_percentage || 0}%
                       </div>
-                      <div className="text-center p-3 bg-gradient-to-br from-green-500/10 to-green-500/5 rounded-lg border border-green-500/20">
-                        <div className="text-sm font-bold text-green-700">
-                          ${(selectedProject.construction_budget || selectedProject.budget || 0).toLocaleString()}
-                        </div>
-                        <div className="text-xs text-muted-foreground font-medium">Presupuesto</div>
+                      <div className="text-xs text-muted-foreground">Progreso</div>
+                    </div>
+                    <div className="text-center p-2 bg-muted/50 rounded">
+                      <div className="text-sm font-bold text-green-600">
+                        ${(selectedProject.construction_budget || selectedProject.budget || 0).toLocaleString()}
                       </div>
+                      <div className="text-xs text-muted-foreground">Presupuesto</div>
                     </div>
                   </div>
                 </CardHeader>
               </Card>
             )}
 
-            {/* Desktop Project Header */}
+            {/* Desktop Project Header - Compact */}
             {!isMobile && (
-              <Card className="shadow-sm border-border/50 bg-gradient-to-r from-card to-card/80">
-                <CardHeader className="pb-6">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-2">
-                      <CardTitle className="text-2xl font-bold text-foreground">
+              <Card>
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg">
                         {selectedProject.project_name}
                       </CardTitle>
-                      <CardDescription className="text-base">
-                        Cliente: {selectedProject.clients.full_name}
+                      <CardDescription>
+                        {selectedProject.clients.full_name}
                       </CardDescription>
                     </div>
-                    <Badge 
-                      variant={selectedProject.status === "construction" ? "default" : "secondary"}
-                      className="text-sm font-medium px-3 py-1"
-                    >
-                      {selectedProject.status === "construction" ? "En Construcción" : "Diseño Completado"}
+                    <Badge variant={selectedProject.status === "construction" ? "default" : "secondary"}>
+                      {selectedProject.status === "construction" ? "Construcción" : "Diseño OK"}
                     </Badge>
                   </div>
                   
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-6">
-                    <div className="text-center p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl border border-primary/20">
-                      <div className="text-3xl font-bold text-primary mb-1">
+                  <div className="grid grid-cols-4 gap-4 mt-3">
+                    <div className="text-center p-3 bg-muted/50 rounded">
+                      <div className="text-xl font-bold text-primary">
                         {selectedProject.overall_progress_percentage || 0}%
                       </div>
-                      <div className="text-sm text-muted-foreground font-medium">Progreso General</div>
+                      <div className="text-xs text-muted-foreground">Progreso</div>
                     </div>
-                    <div className="text-center p-4 bg-gradient-to-br from-green-500/10 to-green-500/5 rounded-xl border border-green-500/20">
-                      <div className="text-xl font-bold text-green-700 mb-1">
+                    <div className="text-center p-3 bg-muted/50 rounded">
+                      <div className="text-lg font-bold text-green-600">
                         ${(selectedProject.construction_budget || selectedProject.budget || 0).toLocaleString()}
                       </div>
-                      <div className="text-sm text-muted-foreground font-medium">Presupuesto</div>
+                      <div className="text-xs text-muted-foreground">Presupuesto</div>
                     </div>
-                    <div className="text-center p-4 bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-xl border border-blue-500/20">
-                      <div className="text-lg font-bold text-blue-700 mb-1">
+                    <div className="text-center p-3 bg-muted/50 rounded">
+                      <div className="text-sm font-bold text-blue-600">
                         {selectedProject.construction_start_date 
                           ? new Date(selectedProject.construction_start_date).toLocaleDateString()
-                          : "No iniciado"
+                          : "Sin iniciar"
                         }
                       </div>
-                      <div className="text-sm text-muted-foreground font-medium">Fecha de Inicio</div>
+                      <div className="text-xs text-muted-foreground">Inicio</div>
                     </div>
-                    <div className="text-center p-4 bg-gradient-to-br from-orange-500/10 to-orange-500/5 rounded-xl border border-orange-500/20">
-                      <div className="text-lg font-bold text-orange-700 mb-1">
+                    <div className="text-center p-3 bg-muted/50 rounded">
+                      <div className="text-sm font-bold text-orange-600">
                         {selectedProject.estimated_completion_date
                           ? new Date(selectedProject.estimated_completion_date).toLocaleDateString()
                           : "Sin fecha"
                         }
                       </div>
-                      <div className="text-sm text-muted-foreground font-medium">Fecha Estimada</div>
+                      <div className="text-xs text-muted-foreground">Estimado</div>
                     </div>
                   </div>
                 </CardHeader>
@@ -514,8 +487,7 @@ export function Construction() {
                 </TabsContent>
               </Tabs>
             </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </div>
