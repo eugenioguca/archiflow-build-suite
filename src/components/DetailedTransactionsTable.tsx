@@ -322,40 +322,50 @@ const DetailedTransactionsTable: React.FC<DetailedTransactionsTableProps> = ({ s
   }
 
   return (
-    <div className="space-y-6">
-      {/* Filtros Cliente-Proyecto */}
-      <ClientProjectSelector
-        selectedClientId={internalClientId}
-        selectedProjectId={internalProjectId}
-        onClientChange={(clientId) => setInternalClientId(clientId || '')}
-        onProjectChange={(projectId) => setInternalProjectId(projectId || '')}
-        showAllOption={true}
-        showProjectFilter={true}
-      />
-
-      {/* Header and Filters */}
+    <div className="space-y-3">
+      {/* Compact Header with Filters */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
-            Detalle de Transacciones
-          </CardTitle>
-          <CardDescription>
-            Control detallado de todos los ingresos y gastos de la empresa
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {/* Type Filter */}
+        <CardHeader className="pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
-              <label className="text-sm font-medium mb-2 block">Tipo</label>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                Detalle de Transacciones
+              </CardTitle>
+              <CardDescription className="text-sm">
+                Control detallado de ingresos y gastos
+              </CardDescription>
+            </div>
+            <Button onClick={exportToCSV} size="sm">
+              <Download className="h-4 w-4 mr-2" />
+              CSV
+            </Button>
+          </div>
+          
+          {/* Client-Project Selector */}
+          <div className="mt-3">
+            <ClientProjectSelector
+              selectedClientId={internalClientId}
+              selectedProjectId={internalProjectId}
+              onClientChange={(clientId) => setInternalClientId(clientId || '')}
+              onProjectChange={(projectId) => setInternalProjectId(projectId || '')}
+              showAllOption={true}
+              showProjectFilter={true}
+            />
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {/* Compact Filters Row 1 */}
+          <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
+            <div>
+              <label className="text-xs font-medium mb-1 block">Tipo</label>
               <Select
                 value={filters.type}
                 onValueChange={(value: 'all' | 'income' | 'expense') =>
                   setFilters(prev => ({ ...prev, type: value }))
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-8">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -366,16 +376,15 @@ const DetailedTransactionsTable: React.FC<DetailedTransactionsTableProps> = ({ s
               </Select>
             </div>
 
-            {/* Category Filter */}
             <div>
-              <label className="text-sm font-medium mb-2 block">Categoría</label>
+              <label className="text-xs font-medium mb-1 block">Categoría</label>
               <Select
                 value={filters.category}
                 onValueChange={(value) =>
                   setFilters(prev => ({ ...prev, category: value }))
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-8">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -389,70 +398,68 @@ const DetailedTransactionsTable: React.FC<DetailedTransactionsTableProps> = ({ s
               </Select>
             </div>
 
-            {/* Period Filter */}
             <div>
-              <label className="text-sm font-medium mb-2 block">Período</label>
+              <label className="text-xs font-medium mb-1 block">Período</label>
               <Select
                 value={filters.period}
                 onValueChange={(value: 'month' | 'quarter' | 'year' | 'custom') =>
                   setFilters(prev => ({ ...prev, period: value }))
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-8">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="month">Este mes</SelectItem>
-                  <SelectItem value="quarter">Este trimestre</SelectItem>
+                  <SelectItem value="quarter">Trimestre</SelectItem>
                   <SelectItem value="year">Este año</SelectItem>
                   <SelectItem value="custom">Personalizado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Search */}
             <div>
-              <label className="text-sm font-medium mb-2 block">Buscar</label>
+              <label className="text-xs font-medium mb-1 block">Buscar</label>
               <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-2 top-1.5 h-3 w-3 text-muted-foreground" />
                 <Input
-                  placeholder="Descripción, referencia..."
+                  placeholder="Buscar..."
                   value={filters.searchTerm}
                   onChange={(e) =>
                     setFilters(prev => ({ ...prev, searchTerm: e.target.value }))
                   }
-                  className="pl-8"
+                  className="pl-7 h-8 text-sm"
                 />
               </div>
             </div>
           </div>
 
-          {/* Custom Date Range - only show when period is 'custom' */}
+          {/* Custom Date Range */}
           {filters.period === 'custom' && (
-            <div className="grid gap-4 md:grid-cols-2 mt-4">
+            <div className="grid gap-3 grid-cols-2 mt-3">
               <div>
-                <label className="text-sm font-medium mb-2 block">Fecha de inicio</label>
+                <label className="text-xs font-medium mb-1 block">Inicio</label>
                 <DatePicker
                   date={customStartDate}
                   onDateChange={setCustomStartDate}
-                  placeholder="Seleccionar fecha inicio"
+                  placeholder="Fecha inicio"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Fecha de fin</label>
+                <label className="text-xs font-medium mb-1 block">Fin</label>
                 <DatePicker
                   date={customEndDate}
                   onDateChange={setCustomEndDate}
-                  placeholder="Seleccionar fecha fin"
+                  placeholder="Fecha fin"
                 />
               </div>
             </div>
           )}
 
           {/* Amount Filters */}
-          <div className="grid gap-4 md:grid-cols-3 mt-4">
+          <div className="grid gap-3 grid-cols-2 mt-3">
             <div>
-              <label className="text-sm font-medium mb-2 block">Monto mínimo</label>
+              <label className="text-xs font-medium mb-1 block">Monto mín.</label>
               <Input
                 type="number"
                 placeholder="0"
@@ -463,10 +470,11 @@ const DetailedTransactionsTable: React.FC<DetailedTransactionsTableProps> = ({ s
                     minAmount: e.target.value ? parseFloat(e.target.value) : undefined 
                   }))
                 }
+                className="h-8"
               />
             </div>
             <div>
-              <label className="text-sm font-medium mb-2 block">Monto máximo</label>
+              <label className="text-xs font-medium mb-1 block">Monto máx.</label>
               <Input
                 type="number"
                 placeholder="Sin límite"
@@ -477,125 +485,148 @@ const DetailedTransactionsTable: React.FC<DetailedTransactionsTableProps> = ({ s
                     maxAmount: e.target.value ? parseFloat(e.target.value) : undefined 
                   }))
                 }
+                className="h-8"
               />
-            </div>
-            <div className="flex items-end">
-              <Button onClick={exportToCSV} className="w-full">
-                <Download className="h-4 w-4 mr-2" />
-                Exportar CSV
-              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-green-600">Total Ingresos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(totals.totalIncome)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {filteredTransactions.filter(t => t.type === 'income').length} transacciones
-            </p>
-          </CardContent>
+      {/* Compact Summary Cards */}
+      <div className="grid gap-3 grid-cols-3">
+        <Card className="p-3">
+          <div className="text-center">
+            <div className="text-lg font-bold text-green-600">{formatCurrency(totals.totalIncome)}</div>
+            <div className="text-xs text-muted-foreground">Ingresos ({filteredTransactions.filter(t => t.type === 'income').length})</div>
+          </div>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-red-600">Total Gastos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(totals.totalExpenses)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {filteredTransactions.filter(t => t.type === 'expense').length} transacciones
-            </p>
-          </CardContent>
+        <Card className="p-3">
+          <div className="text-center">
+            <div className="text-lg font-bold text-red-600">{formatCurrency(totals.totalExpenses)}</div>
+            <div className="text-xs text-muted-foreground">Gastos ({filteredTransactions.filter(t => t.type === 'expense').length})</div>
+          </div>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Flujo Neto</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${totals.netFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+        <Card className="p-3">
+          <div className="text-center">
+            <div className={`text-lg font-bold ${totals.netFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {formatCurrency(totals.netFlow)}
             </div>
-            <p className="text-xs text-muted-foreground">
-              {filteredTransactions.length} transacciones totales
-            </p>
-          </CardContent>
+            <div className="text-xs text-muted-foreground">Flujo Neto ({filteredTransactions.length})</div>
+          </div>
         </Card>
       </div>
 
-      {/* Transactions Table */}
+      {/* Compact Transactions Display */}
       <Card>
-        <CardHeader>
-          <CardTitle>Listado de Transacciones</CardTitle>
-          <CardDescription>
-            Mostrando {filteredTransactions.length} de {transactions.length} transacciones
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Transacciones</CardTitle>
+          <CardDescription className="text-sm">
+            {filteredTransactions.length} de {transactions.length} registros
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Categoría</TableHead>
-                  <TableHead>Descripción</TableHead>
-                  <TableHead className="text-right">Monto</TableHead>
-                  <TableHead>Referencia</TableHead>
-                  <TableHead>Cliente/Proveedor</TableHead>
-                  <TableHead>Proyecto</TableHead>
-                  <TableHead>Estado</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTransactions.map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell>
-                      {format(new Date(transaction.date), 'dd/MM/yyyy', { locale: es })}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={transaction.type === 'income' ? 'default' : 'secondary'}>
-                        {transaction.type === 'income' ? 'Ingreso' : 'Gasto'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{transaction.category}</TableCell>
-                    <TableCell className="max-w-xs truncate" title={transaction.description}>
-                      {transaction.description}
-                    </TableCell>
-                    <TableCell className={`text-right font-medium ${
-                      transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
-                    </TableCell>
-                    <TableCell>{transaction.reference || '-'}</TableCell>
-                    <TableCell>{transaction.client || transaction.supplier || '-'}</TableCell>
-                    <TableCell>{transaction.project || '-'}</TableCell>
-                    <TableCell>
-                      {getStatusBadge(transaction.type, transaction.status, transaction.cfdi_status)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {filteredTransactions.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                      No se encontraron transacciones con los filtros aplicados
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+        <CardContent className="p-0">
+          {!isMobile ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="text-left p-2 text-xs font-medium">Fecha</th>
+                    <th className="text-left p-2 text-xs font-medium">Tipo</th>
+                    <th className="text-left p-2 text-xs font-medium">Categoría</th>
+                    <th className="text-left p-2 text-xs font-medium">Descripción</th>
+                    <th className="text-right p-2 text-xs font-medium">Monto</th>
+                    <th className="text-left p-2 text-xs font-medium">Ref.</th>
+                    <th className="text-left p-2 text-xs font-medium">Cliente/Prov.</th>
+                    <th className="text-left p-2 text-xs font-medium">Proyecto</th>
+                    <th className="text-left p-2 text-xs font-medium">Estado</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {filteredTransactions.map((transaction, index) => (
+                    <tr key={transaction.id} className={`${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'} hover:bg-muted/40 transition-colors`}>
+                      <td className="p-2 text-xs">
+                        {format(new Date(transaction.date), 'dd/MM/yy', { locale: es })}
+                      </td>
+                      <td className="p-2">
+                        <Badge variant={transaction.type === 'income' ? 'default' : 'secondary'} className="text-xs">
+                          {transaction.type === 'income' ? 'Ing' : 'Gas'}
+                        </Badge>
+                      </td>
+                      <td className="p-2 text-xs max-w-20 truncate" title={transaction.category}>
+                        {transaction.category}
+                      </td>
+                      <td className="p-2 text-xs max-w-32 truncate" title={transaction.description}>
+                        {transaction.description}
+                      </td>
+                      <td className={`p-2 text-right font-medium text-xs ${
+                        transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                      </td>
+                      <td className="p-2 text-xs max-w-16 truncate" title={transaction.reference}>
+                        {transaction.reference || '-'}
+                      </td>
+                      <td className="p-2 text-xs max-w-20 truncate" title={transaction.client || transaction.supplier}>
+                        {transaction.client || transaction.supplier || '-'}
+                      </td>
+                      <td className="p-2 text-xs max-w-20 truncate" title={transaction.project}>
+                        {transaction.project || '-'}
+                      </td>
+                      <td className="p-2">
+                        {getStatusBadge(transaction.type, transaction.status, transaction.cfdi_status)}
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredTransactions.length === 0 && (
+                    <tr>
+                      <td colSpan={9} className="text-center py-6 text-muted-foreground text-sm">
+                        No se encontraron transacciones
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            /* Mobile Cards */
+            <div className="divide-y">
+              {filteredTransactions.map((transaction) => (
+                <div key={transaction.id} className="p-3 space-y-2">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant={transaction.type === 'income' ? 'default' : 'secondary'} className="text-xs">
+                          {transaction.type === 'income' ? 'Ingreso' : 'Gasto'}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(transaction.date), 'dd/MM/yy', { locale: es })}
+                        </span>
+                      </div>
+                      <h4 className="font-medium text-sm truncate">{transaction.description}</h4>
+                      <div className="text-xs text-muted-foreground">
+                        {transaction.category} • {transaction.client || transaction.supplier || 'N/A'}
+                      </div>
+                    </div>
+                    <div className="text-right ml-3">
+                      <div className={`font-bold text-lg ${
+                        transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                      </div>
+                      {transaction.status && getStatusBadge(transaction.type, transaction.status, transaction.cfdi_status)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {filteredTransactions.length === 0 && (
+                <div className="text-center py-6 text-muted-foreground text-sm">
+                  No se encontraron transacciones
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
