@@ -54,10 +54,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const profileComplete = profile?.profile_completed === true ||
               (profile?.full_name && profile?.position && profile?.department && profile?.phone);
             
-            console.log('Is admin:', isAdmin);
-            console.log('Is approved user:', isApprovedUser);
-            console.log('Should be approved:', shouldBeApproved);
-            console.log('Profile complete:', profileComplete);
             
             setProfile(profile);
             setIsApproved(shouldBeApproved);
@@ -82,7 +78,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('Auth state change:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -96,8 +91,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 .eq('user_id', session.user.id)
                 .single();
               
-              console.log('Auth listener - User profile:', profile);
-              console.log('Auth listener - Profile error:', profileError);
               
               // Admins are automatically approved
               const isAdmin = profile?.role === 'admin';
@@ -108,8 +101,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               const profileComplete = profile?.profile_completed === true ||
                 (profile?.full_name && profile?.position && profile?.department && profile?.phone);
               
-              console.log('Auth listener - Should be approved:', shouldBeApproved);
-              console.log('Auth listener - Profile complete:', profileComplete);
               setProfile(profile);
               setIsApproved(shouldBeApproved);
               setNeedsOnboarding(!profileComplete && shouldBeApproved);
@@ -153,12 +144,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    console.log('Signing out...');
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('Error signing out:', error);
-    } else {
-      console.log('Successfully signed out');
     }
   };
 

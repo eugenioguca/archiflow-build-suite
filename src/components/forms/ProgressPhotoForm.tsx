@@ -156,7 +156,7 @@ export function ProgressPhotoForm({ projectId, onSuccess, onCancel }: ProgressPh
               longitude = position.coords.longitude;
               gpsAccuracy = position.coords.accuracy;
             } catch (gpsError) {
-              console.log("GPS not available:", gpsError);
+              
             }
           }
 

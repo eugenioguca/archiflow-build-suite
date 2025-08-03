@@ -39,37 +39,37 @@ export function InvoicePreview({ isOpen, onClose, template }: InvoicePreviewProp
   const textColor = colors_config.text_color || '#1E293B';
   const backgroundColor = colors_config.background_color || '#FFFFFF';
 
-  // Demo data for preview purposes - in production this would come from props
-  const sampleData = {
-    folio: 'FAC-A-001-2024',
+  // Preview data - Replace with actual invoice data from props
+  const previewData = {
+    folio: 'PREV-001-2024',
     fecha: new Date().toLocaleDateString('es-MX'),
-    serie: 'A',
+    serie: 'PREV',
     numero: '001',
     cliente: {
-      razon_social: 'Ejemplo Cliente S.A. de C.V.',
-      rfc: 'EJE010101000',
-      domicilio: 'Av. Ejemplo 123, Col. Centro',
-      ciudad: 'Ciudad de México, CP 12345',
-      email: 'cliente@ejemplo.com',
-      telefono: '+52 55 1234-5678'
+      razon_social: 'Vista Previa - Cliente',
+      rfc: 'PREV01010000',
+      domicilio: 'Vista previa del domicilio',
+      ciudad: 'Ciudad, CP 00000',
+      email: 'preview@template.com',
+      telefono: '+52 00 0000-0000'
     },
     conceptos: [
       {
         cantidad: 1,
-        descripcion: 'Servicios de consultoría especializada',
-        precio_unitario: 15000.00,
-        importe: 15000.00
+        descripcion: 'Concepto de vista previa 1',
+        precio_unitario: 1000.00,
+        importe: 1000.00
       },
       {
         cantidad: 1,
-        descripcion: 'Desarrollo de sistema personalizado',
-        precio_unitario: 25000.00,
-        importe: 25000.00
+        descripcion: 'Concepto de vista previa 2',
+        precio_unitario: 2000.00,
+        importe: 2000.00
       }
     ],
-    subtotal: 40000.00,
-    iva: 6400.00,
-    total: 46400.00
+    subtotal: 3000.00,
+    iva: 480.00,
+    total: 3480.00
   };
 
   return (
@@ -127,10 +127,10 @@ export function InvoicePreview({ isOpen, onClose, template }: InvoicePreviewProp
                     </h1>
                     <div className="flex items-center space-x-4 mt-2">
                       <Badge className="bg-white/20 text-white border-white/30 px-3 py-1">
-                        {sampleData.serie}-{sampleData.numero}
+                        {previewData.serie}-{previewData.numero}
                       </Badge>
                       <span className="text-white/90 font-medium">
-                        {sampleData.folio}
+                        {previewData.folio}
                       </span>
                     </div>
                   </div>
@@ -168,25 +168,25 @@ export function InvoicePreview({ isOpen, onClose, template }: InvoicePreviewProp
                     <div className="space-y-3">
                       <div>
                         <p className="text-sm font-medium text-blue-700">Razón Social</p>
-                        <p className="font-semibold text-gray-900">{sampleData.cliente.razon_social}</p>
+                        <p className="font-semibold text-gray-900">{previewData.cliente.razon_social}</p>
                       </div>
                       <div>
                         <p className="text-sm font-medium text-blue-700">RFC</p>
-                        <p className="font-mono font-semibold text-gray-900">{sampleData.cliente.rfc}</p>
+                        <p className="font-mono font-semibold text-gray-900">{previewData.cliente.rfc}</p>
                       </div>
                       <div>
                         <p className="text-sm font-medium text-blue-700">Domicilio</p>
-                        <p className="text-gray-800">{sampleData.cliente.domicilio}</p>
-                        <p className="text-gray-800">{sampleData.cliente.ciudad}</p>
+                        <p className="text-gray-800">{previewData.cliente.domicilio}</p>
+                        <p className="text-gray-800">{previewData.cliente.ciudad}</p>
                       </div>
                       <div className="flex items-center space-x-4 pt-2">
                         <div className="flex items-center space-x-1">
                           <Mail className="h-4 w-4 text-blue-600" />
-                          <span className="text-sm text-gray-700">{sampleData.cliente.email}</span>
+                          <span className="text-sm text-gray-700">{previewData.cliente.email}</span>
                         </div>
                         <div className="flex items-center space-x-1">
                           <Phone className="h-4 w-4 text-blue-600" />
-                          <span className="text-sm text-gray-700">{sampleData.cliente.telefono}</span>
+                          <span className="text-sm text-gray-700">{previewData.cliente.telefono}</span>
                         </div>
                       </div>
                     </div>
@@ -206,12 +206,12 @@ export function InvoicePreview({ isOpen, onClose, template }: InvoicePreviewProp
                         <p className="text-sm font-medium text-blue-700">Fecha de Emisión</p>
                         <div className="flex items-center space-x-2">
                           <Calendar className="h-4 w-4 text-blue-600" />
-                          <p className="font-semibold text-gray-900">{sampleData.fecha}</p>
+                          <p className="font-semibold text-gray-900">{previewData.fecha}</p>
                         </div>
                       </div>
                       <div>
                         <p className="text-sm font-medium text-blue-700">Serie y Folio</p>
-                        <p className="font-mono font-semibold text-gray-900">{sampleData.folio}</p>
+                        <p className="font-mono font-semibold text-gray-900">{previewData.folio}</p>
                       </div>
                       <div>
                         <p className="text-sm font-medium text-blue-700">Método de Pago</p>
@@ -247,7 +247,7 @@ export function InvoicePreview({ isOpen, onClose, template }: InvoicePreviewProp
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {sampleData.conceptos.map((concepto, index) => (
+                      {previewData.conceptos.map((concepto, index) => (
                         <tr key={index} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -282,13 +282,13 @@ export function InvoicePreview({ isOpen, onClose, template }: InvoicePreviewProp
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600 font-medium">Subtotal:</span>
                         <span className="font-mono text-lg font-semibold">
-                          ${sampleData.subtotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                          ${previewData.subtotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600 font-medium">IVA (16%):</span>
                         <span className="font-mono text-lg font-semibold text-blue-600">
-                          ${sampleData.iva.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                          ${previewData.iva.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                         </span>
                       </div>
                       <div className="border-t pt-4">
@@ -300,7 +300,7 @@ export function InvoicePreview({ isOpen, onClose, template }: InvoicePreviewProp
                         >
                           <span className="text-xl font-bold">TOTAL:</span>
                           <span className="text-2xl font-mono font-bold">
-                            ${sampleData.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN
+                            ${previewData.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN
                           </span>
                         </div>
                       </div>

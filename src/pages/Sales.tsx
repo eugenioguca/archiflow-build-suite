@@ -811,7 +811,7 @@ export default function Sales() {
                   clientId={selectedProject.client_id}
                   clientName={selectedProject.clients?.full_name || ''}
                   onProjectSelected={(projectId) => {
-                    console.log('Proyecto seleccionado:', projectId);
+                    
                   }}
                 />
               </TabsContent>

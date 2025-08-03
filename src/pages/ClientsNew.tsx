@@ -441,7 +441,7 @@ export default function ClientsNew() {
               clientName={selectedClient.full_name}
               onProjectSelected={(projectId) => {
                 // Aquí podrías redirigir al detalle del proyecto
-                console.log('Project selected:', projectId);
+                
                 toast({
                   title: "Proyecto seleccionado",
                   description: `ID del proyecto: ${projectId}`,

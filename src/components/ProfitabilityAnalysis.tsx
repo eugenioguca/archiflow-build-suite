@@ -195,7 +195,7 @@ const ProfitabilityAnalysis: React.FC<ProfitabilityAnalysisProps> = ({ selectedC
         costs: data.costs,
         gross_profit,
         gross_margin,
-        net_profit: gross_profit, // Simplified for demo
+        net_profit: gross_profit,
         net_margin: gross_margin,
         transactions_count: data.invoices_count,
         invoices_count: data.invoices_count,

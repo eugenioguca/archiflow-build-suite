@@ -110,13 +110,6 @@ export default function Dashboard() {
       const realPipelineValue = clientProjects?.filter(c => c.status === 'potential').reduce((sum, c) => sum + (Number(c.budget) || 0), 0) || 0;
       const potentialProjectsBudgets = projects?.filter(p => p.status === 'planning').reduce((sum, p) => sum + (Number(p.budget) || 0), 0) || 0;
       const pipelineValue = realPipelineValue + potentialProjectsBudgets;
-      
-      console.log('Dashboard Pipeline Debug:', {
-        potentialClients: clientProjects?.filter(c => c.status === 'potential'),
-        realPipelineValue,
-        potentialProjectsBudgets,
-        totalPipelineValue: pipelineValue
-      });
 
       setStats({
         totalClients,

@@ -16,7 +16,7 @@ import { DocumentViewer } from '@/components/DocumentViewer';
 import { XMLUploader } from '@/components/XMLUploader';
 import { PaymentComplementsDashboard } from '@/components/PaymentComplementsDashboard';
 import { PPDComplianceManager } from '@/components/PPDComplianceManager';
-import { ClientProjectSelector } from '@/components/ClientProjectSelector';
+import { GlobalFilters } from '@/components/GlobalFilters';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ExpenseWithTax {
@@ -534,16 +534,6 @@ export default function Accounting() {
         </div>
       </div>
 
-      {/* Filtros Cliente-Proyecto */}
-      <ClientProjectSelector
-        selectedClientId={selectedClientId}
-        selectedProjectId={selectedProjectId}
-        onClientChange={setSelectedClientId}
-        onProjectChange={setSelectedProjectId}
-        showAllOption={true}
-        showProjectFilter={true}
-        className="w-full max-w-md"
-      />
 
       {/* Alertas de cumplimiento */}
       <div className="space-y-3">

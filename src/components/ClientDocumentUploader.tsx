@@ -99,7 +99,7 @@ export function ClientDocumentUploader({ clientId, clientName, onDocumentUploade
 
       if (uploadError) throw uploadError;
 
-      console.log('Insertando documento con profile.id:', profile.id);
+      
 
       // Guardar referencia en la base de datos
       const { error: dbError } = await supabase
