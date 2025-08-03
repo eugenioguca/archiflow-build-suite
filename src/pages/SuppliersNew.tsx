@@ -827,20 +827,20 @@ const tiposVialidad = [
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
+                      <Label htmlFor="phone">Teléfono</Label>
+                      <Input
+                        id="phone"
+                        value={supplierFormData.phone}
+                        onChange={(e) => setSupplierFormData({...supplierFormData, phone: e.target.value})}
+                      />
+                    </div>
+                    <div>
                       <Label htmlFor="email">Email</Label>
                       <Input
                         id="email"
                         type="email"
                         value={supplierFormData.email}
                         onChange={(e) => setSupplierFormData({...supplierFormData, email: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="phone">Teléfono</Label>
-                      <Input
-                        id="phone"
-                        value={supplierFormData.phone}
-                        onChange={(e) => setSupplierFormData({...supplierFormData, phone: e.target.value})}
                       />
                     </div>
                   </div>
