@@ -27,7 +27,12 @@ import {
   CreditCard,
   Receipt,
   Target,
-  Package
+  Package,
+  Calculator,
+  BarChart3,
+  Calendar,
+  AlertTriangle,
+  Banknote
 } from 'lucide-react';
 import { MaterialFinanceRequests } from '@/components/MaterialFinanceRequests';
 
@@ -77,64 +82,72 @@ const FinancesNew: React.FC = () => {
 
       <Tabs defaultValue="dashboard" className="space-y-3">
         <div className="w-full">
-          <TabsList className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 xl:grid-cols-14 w-full h-auto gap-1 p-1 bg-muted">
-            <TabsTrigger value="dashboard" className="flex flex-col items-center gap-1 py-1.5 px-1 text-xs">
-              <LayoutDashboard className="h-3 w-3" />
-              <span className="hidden xs:block">Dashboard</span>
-            </TabsTrigger>
-            <TabsTrigger value="treasury" className="flex flex-col items-center gap-1 py-1.5 px-1 text-xs">
-              <Wallet className="h-3 w-3" />
-              <span className="hidden xs:block">Tesorería</span>
-            </TabsTrigger>
-            <TabsTrigger value="accounts" className="flex flex-col items-center gap-1 py-1.5 px-1 text-xs">
-              <Building2 className="h-3 w-3" />
-              <span className="hidden xs:block">Cuentas</span>
-            </TabsTrigger>
-            <TabsTrigger value="cashflow" className="flex flex-col items-center gap-1 py-1.5 px-1 text-xs">
-              <TrendingUp className="h-3 w-3" />
-              <span className="hidden xs:block">Flujo</span>
-            </TabsTrigger>
-            <TabsTrigger value="materials" className="flex flex-col items-center gap-1 py-1.5 px-1 text-xs">
-              <Package className="h-3 w-3" />
-              <span className="hidden xs:block">Material</span>
-            </TabsTrigger>
-            <TabsTrigger value="advances" className="flex flex-col items-center gap-1 py-1.5 px-1 text-xs">
-              <Users className="h-3 w-3" />
-              <span className="hidden xs:block">Anticipo</span>
-            </TabsTrigger>
-            <TabsTrigger value="transactions" className="flex flex-col items-center gap-1 py-1.5 px-1 text-xs">
-              <List className="h-3 w-3" />
-              <span className="hidden xs:block">Transac.</span>
-            </TabsTrigger>
-            <TabsTrigger value="ppd" className="flex flex-col items-center gap-1 py-1.5 px-1 text-xs">
-              <FileText className="h-3 w-3" />
-              <span className="hidden xs:block">PPD</span>
-            </TabsTrigger>
-            <TabsTrigger value="operations" className="flex flex-col items-center gap-1 py-1.5 px-1 text-xs">
-              <CreditCard className="h-3 w-3" />
-              <span className="hidden xs:block">Operac.</span>
-            </TabsTrigger>
-            <TabsTrigger value="expenses" className="flex flex-col items-center gap-1 py-1.5 px-1 text-xs">
-              <Receipt className="h-3 w-3" />
-              <span className="hidden xs:block">Gastos</span>
-            </TabsTrigger>
-            <TabsTrigger value="reports" className="flex flex-col items-center gap-1 py-1.5 px-1 text-xs">
-              <FileText className="h-3 w-3" />
-              <span className="hidden xs:block">Reportes</span>
-            </TabsTrigger>
-            <TabsTrigger value="profitability" className="flex flex-col items-center gap-1 py-1.5 px-1 text-xs">
-              <TrendingUp className="h-3 w-3" />
-              <span className="hidden xs:block">Rentab.</span>
-            </TabsTrigger>
-            <TabsTrigger value="payment-plans" className="flex flex-col items-center gap-1 py-1.5 px-1 text-xs">
-              <CreditCard className="h-3 w-3" />
-              <span className="hidden xs:block">Planes</span>
-            </TabsTrigger>
-            <TabsTrigger value="invoicing" className="flex flex-col items-center gap-1 py-1.5 px-1 text-xs">
-              <Receipt className="h-3 w-3" />
-              <span className="hidden xs:block">Facturac.</span>
-            </TabsTrigger>
-          </TabsList>
+          {/* Two-row navigation */}
+          <div className="space-y-2">
+            {/* First row - Main modules */}
+            <TabsList className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-7 w-full h-auto gap-1 p-1 bg-muted">
+              <TabsTrigger value="dashboard" className="flex items-center gap-2 py-2 px-3 text-sm">
+                <LayoutDashboard className="h-4 w-4" />
+                <span>Dashboard</span>
+              </TabsTrigger>
+              <TabsTrigger value="treasury" className="flex items-center gap-2 py-2 px-3 text-sm">
+                <Wallet className="h-4 w-4" />
+                <span>Tesorería</span>
+              </TabsTrigger>
+              <TabsTrigger value="accounts" className="flex items-center gap-2 py-2 px-3 text-sm">
+                <Building2 className="h-4 w-4" />
+                <span>Cuentas</span>
+              </TabsTrigger>
+              <TabsTrigger value="cashflow" className="flex items-center gap-2 py-2 px-3 text-sm">
+                <TrendingUp className="h-4 w-4" />
+                <span>Flujo Caja</span>
+              </TabsTrigger>
+              <TabsTrigger value="materials" className="flex items-center gap-2 py-2 px-3 text-sm">
+                <Package className="h-4 w-4" />
+                <span>Materiales</span>
+              </TabsTrigger>
+              <TabsTrigger value="advances" className="flex items-center gap-2 py-2 px-3 text-sm">
+                <Banknote className="h-4 w-4" />
+                <span>Anticipos</span>
+              </TabsTrigger>
+              <TabsTrigger value="payment-plans" className="flex items-center gap-2 py-2 px-3 text-sm">
+                <Calendar className="h-4 w-4" />
+                <span>Planes Pago</span>
+              </TabsTrigger>
+            </TabsList>
+            
+            {/* Second row - Operations and reports */}
+            <TabsList className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-7 w-full h-auto gap-1 p-1 bg-muted">
+              <TabsTrigger value="transactions" className="flex items-center gap-2 py-2 px-3 text-sm">
+                <List className="h-4 w-4" />
+                <span>Transacciones</span>
+              </TabsTrigger>
+              <TabsTrigger value="expenses" className="flex items-center gap-2 py-2 px-3 text-sm">
+                <Receipt className="h-4 w-4" />
+                <span>Gastos</span>
+              </TabsTrigger>
+              <TabsTrigger value="operations" className="flex items-center gap-2 py-2 px-3 text-sm">
+                <CreditCard className="h-4 w-4" />
+                <span>Operaciones</span>
+              </TabsTrigger>
+              <TabsTrigger value="reports" className="flex items-center gap-2 py-2 px-3 text-sm">
+                <BarChart3 className="h-4 w-4" />
+                <span>Reportes</span>
+              </TabsTrigger>
+              <TabsTrigger value="profitability" className="flex items-center gap-2 py-2 px-3 text-sm">
+                <Calculator className="h-4 w-4" />
+                <span>Rentabilidad</span>
+              </TabsTrigger>
+              <TabsTrigger value="ppd" className="flex items-center gap-2 py-2 px-3 text-sm">
+                <AlertTriangle className="h-4 w-4" />
+                <span>PPD</span>
+              </TabsTrigger>
+              <TabsTrigger value="invoicing" className="flex items-center gap-2 py-2 px-3 text-sm">
+                <FileText className="h-4 w-4" />
+                <span>Facturación</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
         </div>
 
         <TabsContent value="dashboard" className="space-y-4">
