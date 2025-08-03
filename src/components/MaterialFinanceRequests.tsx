@@ -198,6 +198,43 @@ export function MaterialFinanceRequests({ selectedClientId, selectedProjectId }:
     }
   };
 
+  const handleOrderedToggle = async (requestId: string, materialRequirementId: string, isOrdered: boolean) => {
+    try {
+      // Update the material requirement status to 'ordenado' or back to 'requerido'
+      const { error: materialError } = await supabase
+        .from('material_requirements')
+        .update({ status: isOrdered ? 'ordenado' : 'requerido' })
+        .eq('id', materialRequirementId);
+
+      if (materialError) {
+        console.error('Error updating material status:', materialError);
+        toast.error('Error al actualizar el estado del material');
+        return;
+      }
+
+      // Update the finance request status
+      const { error: requestError } = await supabase
+        .from('material_finance_requests')
+        .update({ 
+          status: isOrdered ? 'ordered' : 'pending',
+          is_attended: isOrdered 
+        })
+        .eq('id', requestId);
+
+      if (requestError) {
+        console.error('Error updating request status:', requestError);
+        toast.error('Error al actualizar la solicitud');
+        return;
+      }
+
+      toast.success(isOrdered ? 'Material marcado como ordenado' : 'Orden cancelada');
+      fetchRequests();
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Error inesperado al actualizar el material');
+    }
+  };
+
   // Filter requests based on search and filters
   const filteredRequests = requests.filter(request => {
     const matchesSearch = !searchTerm || 
@@ -218,11 +255,12 @@ export function MaterialFinanceRequests({ selectedClientId, selectedProjectId }:
     const statusMap = {
       pending: { label: "Pendiente", variant: "secondary" as const },
       attended: { label: "Atendido", variant: "default" as const },
+      ordered: { label: "Ordenado", variant: "default" as const },
       cancelled: { label: "Cancelado", variant: "destructive" as const }
     };
     
     const config = statusMap[status as keyof typeof statusMap] || { label: status, variant: "outline" as const };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    return <Badge variant={config.variant} className={status === 'ordered' ? 'bg-green-600 text-white' : ''}>{config.label}</Badge>;
   };
 
   const calculateFinalCost = (unitCost: number, additive: number, deductive: number, quantity: number) => {
@@ -240,7 +278,7 @@ export function MaterialFinanceRequests({ selectedClientId, selectedProjectId }:
               Solicitudes de Materiales
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Materiales que requieren orden de compra
+              Gestión de órdenes de compra para materiales requeridos
             </p>
           </div>
           <Badge variant="outline">
@@ -302,80 +340,123 @@ export function MaterialFinanceRequests({ selectedClientId, selectedProjectId }:
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border">
+              <div className="flex items-center gap-2 text-blue-700">
+                <CheckCircle2 className="h-5 w-5" />
+                <p className="font-semibold">Panel de Control Financiero</p>
+              </div>
+              <p className="text-sm text-blue-600 mt-1">
+                Marque como "Ordenado" los materiales que ya fueron solicitados al proveedor
+              </p>
+            </div>
+            <table className="w-full border border-border rounded-lg overflow-hidden">
               <thead>
-                <tr className="border-b">
-                  <th className="text-left p-2">Material</th>
-                  <th className="text-left p-2">Cliente/Proyecto</th>
-                  <th className="text-left p-2">Cantidad</th>
-                  <th className="text-left p-2">Costo Total</th>
-                  <th className="text-left p-2">Proveedor</th>
-                  <th className="text-left p-2">Solicitado</th>
-                  <th className="text-left p-2">Estado</th>
-                  <th className="text-center p-2">Atendido</th>
+                 <tr className="border-b bg-muted/50">
+                  <th className="text-left p-3 font-semibold">Material</th>
+                  <th className="text-left p-3 font-semibold">Cliente/Proyecto</th>
+                  <th className="text-left p-3 font-semibold">Cantidad</th>
+                  <th className="text-left p-3 font-semibold">Costo Total</th>
+                  <th className="text-left p-3 font-semibold">Proveedor</th>
+                  <th className="text-left p-3 font-semibold">Solicitado</th>
+                  <th className="text-left p-3 font-semibold">Estado</th>
+                  <th className="text-center p-3 font-semibold">Ordenado</th>
+                  <th className="text-center p-3 font-semibold">Atendido</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredRequests.map((request) => (
-                  <tr key={request.id} className="border-b hover:bg-muted/50">
-                    <td className="p-2">
-                      <div>
-                        <p className="font-medium">{request.material_name}</p>
-                        {request.descripcion_producto && (
-                          <p className="text-sm text-muted-foreground">{request.descripcion_producto}</p>
+                {filteredRequests.map((request) => {
+                  const isOrdered = request.status === 'ordered';
+                  return (
+                    <tr key={request.id} className={`border-b hover:bg-muted/30 transition-colors ${isOrdered ? 'bg-green-50/50' : ''}`}>
+                      <td className="p-3">
+                        <div className="space-y-1">
+                          <p className="font-medium text-foreground">{request.material_name}</p>
+                          {request.descripcion_producto && (
+                            <p className="text-sm text-muted-foreground">{request.descripcion_producto}</p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-muted-foreground" />
+                            <p className="font-medium text-foreground">{request.client_name}</p>
+                          </div>
+                          <p className="text-sm text-muted-foreground ml-6">{request.project_name}</p>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-1 text-foreground font-medium">
+                          <Package className="h-4 w-4 text-muted-foreground" />
+                          {request.quantity_required} {request.unit_of_measure}
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1">
+                            <DollarSign className="h-4 w-4 text-green-600" />
+                            <p className="font-bold text-green-700">
+                              ${calculateFinalCost(
+                                request.unit_cost || 0,
+                                request.adjustment_additive || 0,
+                                request.adjustment_deductive || 0,
+                                request.quantity_required
+                              ).toLocaleString()}
+                            </p>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            ${((request.unit_cost || 0) + (request.adjustment_additive || 0) - (request.adjustment_deductive || 0)).toLocaleString()} / {request.unit_of_measure}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        {request.supplier_name ? (
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-foreground">{request.supplier_name}</span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm italic">Sin proveedor asignado</span>
                         )}
-                      </div>
-                    </td>
-                    <td className="p-2">
-                      <div>
-                        <p className="font-medium">{request.client_name}</p>
-                        <p className="text-sm text-muted-foreground">{request.project_name}</p>
-                      </div>
-                    </td>
-                    <td className="p-2">
-                      {request.quantity_required} {request.unit_of_measure}
-                    </td>
-                    <td className="p-2">
-                      <div>
-                        <p className="font-medium">
-                          ${calculateFinalCost(
-                            request.unit_cost || 0,
-                            request.adjustment_additive || 0,
-                            request.adjustment_deductive || 0,
-                            request.quantity_required
-                          ).toLocaleString()}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          ${((request.unit_cost || 0) + (request.adjustment_additive || 0) - (request.adjustment_deductive || 0)).toLocaleString()} / {request.unit_of_measure}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="p-2">
-                      {request.supplier_name || (
-                        <span className="text-muted-foreground text-sm">Sin proveedor</span>
-                      )}
-                    </td>
-                    <td className="p-2">
-                      <div>
-                        <p className="text-sm">
-                          {format(new Date(request.request_date), "dd/MM/yyyy", { locale: es })}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          por {request.requester_name}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="p-2">{getStatusBadge(request.status)}</td>
-                    <td className="p-2">
-                      <div className="flex justify-center">
-                        <Checkbox
-                          checked={request.is_attended}
-                          onCheckedChange={(checked) => handleAttendedToggle(request.id, !!checked)}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="p-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <p className="text-sm font-medium">
+                              {format(new Date(request.request_date), "dd/MM/yyyy", { locale: es })}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <User className="h-3 w-3 text-muted-foreground" />
+                            <p className="text-xs text-muted-foreground">
+                              {request.requester_name}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-3">{getStatusBadge(request.status)}</td>
+                      <td className="p-3">
+                        <div className="flex justify-center">
+                          <Checkbox
+                            checked={isOrdered}
+                            onCheckedChange={(checked) => handleOrderedToggle(request.id, request.material_requirement_id, !!checked)}
+                            className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                          />
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex justify-center">
+                          <Checkbox
+                            checked={request.is_attended}
+                            onCheckedChange={(checked) => handleAttendedToggle(request.id, !!checked)}
+                            className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

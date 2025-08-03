@@ -194,20 +194,18 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
 
   // Calculate statistics
   const totalMaterials = materials.length;
-  const requiredCount = materials.filter(m => m.status === 'required').length;
-  const orderedCount = materials.filter(m => m.status === 'ordered' || m.status === 'quoted').length;
-  const deliveredCount = materials.filter(m => m.status === 'delivered').length;
+  const requiredCount = materials.filter(m => m.status === 'requerido').length;
+  const orderedCount = materials.filter(m => m.status === 'ordenado' || m.status === 'cotizado').length;
+  const deliveredCount = materials.filter(m => m.is_delivered === true).length;
   const lowStockCount = materials.filter(m => 
     (m.quantity_remaining || 0) <= 5 // Using a simple threshold since some fields might be null
   ).length;
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
-      required: { label: "Requerido", variant: "secondary" as const },
-      quoted: { label: "Cotizado", variant: "outline" as const },
-      ordered: { label: "Ordenado", variant: "default" as const },
-      partial_delivery: { label: "Entrega Parcial", variant: "secondary" as const },
-      cancelled: { label: "Cancelado", variant: "destructive" as const }
+      cotizado: { label: "Cotizado", variant: "outline" as const },
+      requerido: { label: "Requerido", variant: "secondary" as const },
+      ordenado: { label: "Ordenado", variant: "default" as const }
     };
     
     const config = statusMap[status as keyof typeof statusMap] || { label: status, variant: "outline" as const };
@@ -344,11 +342,9 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos los estados</SelectItem>
-                    <SelectItem value="required">Requerido</SelectItem>
-                    <SelectItem value="quoted">Cotizado</SelectItem>
-                    <SelectItem value="ordered">Ordenado</SelectItem>
-                    <SelectItem value="partial_delivery">Entrega Parcial</SelectItem>
-                    <SelectItem value="cancelled">Cancelado</SelectItem>
+                    <SelectItem value="cotizado">Cotizado</SelectItem>
+                    <SelectItem value="requerido">Requerido</SelectItem>
+                    <SelectItem value="ordenado">Ordenado</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -400,32 +396,36 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                           <td className="p-2">
                             {material.quantity_required} {material.unit_of_measure}
                           </td>
-                          <td className="p-2">
-                            <EditableCell
+                           <td className="p-2">
+                            <Select
                               value={material.status}
-                              onSave={(newValue) => handleUpdateMaterial(material.id, 'status', newValue)}
-                              type="select"
-                              options={[
-                                { value: 'required', label: 'Requerido' },
-                                { value: 'quoted', label: 'Cotizado' },
-                                { value: 'ordered', label: 'Ordenado' },
-                                { value: 'partial_delivery', label: 'Entrega Parcial' },
-                                { value: 'cancelled', label: 'Cancelado' }
-                              ]}
-                            />
+                              onValueChange={(newValue) => handleUpdateMaterial(material.id, 'status', newValue)}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="cotizado">Cotizado</SelectItem>
+                                <SelectItem value="requerido">Requerido</SelectItem>
+                                <SelectItem value="ordenado">Ordenado</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </td>
                           <td className="p-2">
-                            <EditableCell
+                            <Select
                               value={material.priority}
-                              onSave={(newValue) => handleUpdateMaterial(material.id, 'priority', newValue)}
-                              type="select"
-                              options={[
-                                { value: 'low', label: 'Baja' },
-                                { value: 'medium', label: 'Media' },
-                                { value: 'high', label: 'Alta' },
-                                { value: 'urgent', label: 'Urgente' }
-                              ]}
-                            />
+                              onValueChange={(newValue) => handleUpdateMaterial(material.id, 'priority', newValue)}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="low">Baja</SelectItem>
+                                <SelectItem value="medium">Media</SelectItem>
+                                <SelectItem value="high">Alta</SelectItem>
+                                <SelectItem value="urgent">Urgente</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </td>
                           <td className="p-2">
                             <EditableCell

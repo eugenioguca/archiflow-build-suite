@@ -163,6 +163,8 @@ export function MaterialRequirementForm({
         requisito_almacenamiento: formData.requisito_almacenamiento || null,
         material_name: formData.descripcion_producto, // For compatibility
         material_type: formData.cuenta_mayor || 'general', // For compatibility
+        status: 'cotizado', // Default status in Spanish
+        priority: 'medium', // Default priority
         created_by: profile.id
       }
 
