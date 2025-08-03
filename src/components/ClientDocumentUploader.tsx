@@ -1,295 +1,331 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Upload, FileText, Trash2, Download } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { getFileType, formatFileSize } from "@/lib/fileUtils";
-
-interface ClientDocument {
-  id: string;
-  document_type: string;
-  document_name: string;
-  file_path: string;
-  file_type?: string;
-  file_size?: number;
-  created_at: string;
-}
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { 
+  Upload, 
+  FileText, 
+  X, 
+  CheckCircle, 
+  AlertCircle,
+  File,
+  Image,
+  FileSpreadsheet
+} from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 interface ClientDocumentUploaderProps {
+  projectId: string;
   clientId: string;
-  clientName: string;
-  onDocumentUploaded?: () => void;
+  onUploadComplete?: () => void;
 }
 
-const DOCUMENT_TYPES = [
-  { value: 'curp', label: 'CURP', description: 'Clave Única de Registro de Población' },
-  { value: 'rfc', label: 'RFC', description: 'Registro Federal de Contribuyentes' },
-  { value: 'identificacion', label: 'Identificación Oficial', description: 'INE, Pasaporte, etc.' },
-  { value: 'constancia_fiscal', label: 'Constancia de Situación Fiscal', description: 'Documento SAT' },
-  { value: 'contrato', label: 'Contrato', description: 'Documentos contractuales' },
-  { value: 'otro', label: 'Otro', description: 'Otros documentos legales' },
+interface FileUpload {
+  file: File;
+  id: string;
+  progress: number;
+  status: 'pending' | 'uploading' | 'completed' | 'error';
+  category: string;
+  description: string;
+}
+
+const DOCUMENT_CATEGORIES = [
+  { value: 'contract', label: 'Contrato' },
+  { value: 'permit', label: 'Permisos' },
+  { value: 'legal', label: 'Documentos Legales' },
+  { value: 'financial', label: 'Documentos Financieros' },
+  { value: 'identification', label: 'Identificación' },
+  { value: 'other', label: 'Otros' }
 ];
 
-export function ClientDocumentUploader({ clientId, clientName, onDocumentUploaded }: ClientDocumentUploaderProps) {
-  const [documents, setDocuments] = useState<ClientDocument[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [loading, setLoading] = useState(false);
+export const ClientDocumentUploader: React.FC<ClientDocumentUploaderProps> = ({
+  projectId,
+  clientId,
+  onUploadComplete
+}) => {
+  const { user } = useAuth();
   const { toast } = useToast();
+  const [selectedFiles, setSelectedFiles] = useState<FileUpload[]>([]);
+  const [uploading, setUploading] = useState(false);
 
-  useEffect(() => {
-    fetchDocuments();
-  }, [clientId]);
+  const generateFileId = () => Math.random().toString(36).substr(2, 9);
 
-  const fetchDocuments = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('client_documents')
-        .select('*')
-        .eq('client_id', clientId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setDocuments(data || []);
-    } catch (error) {
-      console.error('Error fetching documents:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los documentos",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+  const getFileIcon = (fileType: string) => {
+    if (fileType.includes('image')) return Image;
+    if (fileType.includes('pdf')) return FileText;
+    if (fileType.includes('spreadsheet') || fileType.includes('excel')) return FileSpreadsheet;
+    return File;
   };
 
-  const handleFileUpload = async (file: File, documentType: string) => {
-    setUploading(true);
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    
+    const newFiles: FileUpload[] = files.map(file => ({
+      file,
+      id: generateFileId(),
+      progress: 0,
+      status: 'pending',
+      category: 'other',
+      description: ''
+    }));
+
+    setSelectedFiles(prev => [...prev, ...newFiles]);
+  };
+
+  const removeFile = (fileId: string) => {
+    setSelectedFiles(prev => prev.filter(f => f.id !== fileId));
+  };
+
+  const updateFile = (fileId: string, updates: Partial<FileUpload>) => {
+    setSelectedFiles(prev => 
+      prev.map(f => f.id === fileId ? { ...f, ...updates } : f)
+    );
+  };
+
+  const uploadFile = async (fileUpload: FileUpload): Promise<boolean> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuario no autenticado');
+      updateFile(fileUpload.id, { status: 'uploading', progress: 0 });
 
-      // Obtener el profile_id del usuario autenticado
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
+      // Upload to Supabase Storage
+      const fileExt = fileUpload.file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+      const filePath = `client-documents/${clientId}/${fileName}`;
 
-      if (profileError || !profile) {
-        throw new Error('No se pudo obtener el perfil del usuario');
-      }
-
-      // Crear path para el archivo
-      const timestamp = Date.now();
-      const sanitizedClientName = clientName.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const fileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      // Simulate progress for UI feedback
+      updateFile(fileUpload.id, { progress: 50 });
       
-      const folder = ['curp', 'rfc', 'constancia_fiscal', 'identificacion'].includes(documentType) 
-        ? 'fiscal' 
-        : 'legal';
-      
-      const filePath = `cliente_${sanitizedClientName}_${timestamp}/${folder}/${fileName}`;
-
-      // Subir archivo al bucket privado
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('client-documents')
-        .upload(filePath, file);
+        .upload(filePath, fileUpload.file);
 
       if (uploadError) throw uploadError;
 
-      
+      // Get current user's profile
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user?.id)
+        .single();
 
-      // Guardar referencia en la base de datos
+      if (!profileData) throw new Error('Profile not found');
+
+      // Save document record
       const { error: dbError } = await supabase
         .from('client_documents')
         .insert({
           client_id: clientId,
-          document_type: documentType,
-          document_name: fileName,
+          project_id: projectId,
+          document_name: fileUpload.file.name,
+          document_type: fileUpload.category,
           file_path: filePath,
-          file_type: getFileType(fileName).type,
-          file_size: file.size,
-          uploaded_by: profile.id
+          file_type: fileUpload.file.type,
+          file_size: fileUpload.file.size,
+          uploaded_by: profileData.id
         });
 
       if (dbError) throw dbError;
 
-      toast({
-        title: "Documento subido",
-        description: `${fileName} se ha subido correctamente`,
-      });
+      updateFile(fileUpload.id, { status: 'completed', progress: 100 });
+      return true;
 
-      fetchDocuments();
-      onDocumentUploaded?.();
     } catch (error) {
-      console.error('Error uploading document:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo subir el documento",
-        variant: "destructive",
-      });
-    } finally {
-      setUploading(false);
+      console.error('Error uploading file:', error);
+      updateFile(fileUpload.id, { status: 'error' });
+      return false;
     }
   };
 
-  const handleDelete = async (document: ClientDocument) => {
-    try {
-      // Eliminar archivo del storage
-      const { error: storageError } = await supabase.storage
-        .from('client-documents')
-        .remove([document.file_path]);
+  const handleUploadAll = async () => {
+    if (selectedFiles.length === 0) return;
 
-      if (storageError) throw storageError;
+    setUploading(true);
+    let successCount = 0;
 
-      // Eliminar referencia de la base de datos
-      const { error: dbError } = await supabase
-        .from('client_documents')
-        .delete()
-        .eq('id', document.id);
+    for (const fileUpload of selectedFiles) {
+      if (fileUpload.status === 'pending') {
+        const success = await uploadFile(fileUpload);
+        if (success) successCount++;
+      }
+    }
 
-      if (dbError) throw dbError;
+    setUploading(false);
 
+    if (successCount > 0) {
       toast({
-        title: "Documento eliminado",
-        description: "El documento se ha eliminado correctamente",
+        title: "Documentos subidos",
+        description: `Se subieron ${successCount} documentos correctamente`
       });
+      
+      // Clear completed files
+      setSelectedFiles(prev => prev.filter(f => f.status !== 'completed'));
+      onUploadComplete?.();
+    }
 
-      fetchDocuments();
-    } catch (error) {
-      console.error('Error deleting document:', error);
+    if (successCount < selectedFiles.filter(f => f.status === 'pending').length) {
       toast({
-        title: "Error",
-        description: "No se pudo eliminar el documento",
         variant: "destructive",
+        title: "Error",
+        description: "Algunos documentos no se pudieron subir"
       });
     }
   };
 
-  const handleDownload = async (doc: ClientDocument) => {
-    try {
-      const { data, error } = await supabase.storage
-        .from('client-documents')
-        .createSignedUrl(doc.file_path, 3600);
-
-      if (error) throw error;
-
-      const link = window.document.createElement('a');
-      link.href = data.signedUrl;
-      link.download = doc.document_name;
-      window.document.body.appendChild(link);
-      link.click();
-      window.document.body.removeChild(link);
-    } catch (error) {
-      console.error('Error downloading document:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo descargar el documento",
-        variant: "destructive",
-      });
-    }
-  };
+  const canUpload = selectedFiles.some(f => f.status === 'pending' && f.category && f.description);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5" />
-          Documentos del Cliente (Fase Lead)
+          <Upload className="h-5 w-5" />
+          Subir Documentos
         </CardTitle>
-        <CardDescription>
-          Documentos sensibles que se heredarán automáticamente al crear el proyecto
-        </CardDescription>
       </CardHeader>
-      
-      <CardContent className="space-y-4">
-        {/* Botones de subida por tipo */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {DOCUMENT_TYPES.map((docType) => (
-            <div key={docType.value} className="relative">
-              <input
-                type="file"
-                id={`upload-${docType.value}`}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    handleFileUpload(file, docType.value);
-                  }
-                  // Reset input
-                  e.target.value = '';
-                }}
-                disabled={uploading}
-              />
-              <Button
-                variant="outline"
-                className="w-full h-auto flex flex-col gap-1 p-3"
-                disabled={uploading}
-              >
-                <Upload className="h-4 w-4" />
-                <span className="text-xs font-medium">{docType.label}</span>
-                <span className="text-xs text-muted-foreground text-center">
-                  {docType.description}
-                </span>
+      <CardContent className="space-y-6">
+        {/* File Selection */}
+        <div>
+          <Label htmlFor="file-upload" className="cursor-pointer">
+            <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover:border-muted-foreground/50 transition-colors">
+              <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-lg font-medium mb-2">Selecciona documentos para subir</p>
+              <p className="text-sm text-muted-foreground">
+                Arrastra archivos aquí o haz clic para seleccionar
+              </p>
+              <Button variant="outline" className="mt-4">
+                Seleccionar Archivos
               </Button>
             </div>
-          ))}
+          </Label>
+          <Input
+            id="file-upload"
+            type="file"
+            multiple
+            className="hidden"
+            onChange={handleFileSelect}
+            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.xlsx,.xls,.txt"
+          />
         </div>
 
-        {uploading && (
-          <div className="text-center py-2">
-            <span className="text-sm text-muted-foreground">Subiendo documento...</span>
-          </div>
-        )}
+        {/* Selected Files */}
+        {selectedFiles.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">Archivos Seleccionados ({selectedFiles.length})</h3>
+              <Button
+                onClick={handleUploadAll}
+                disabled={!canUpload || uploading}
+                className="gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                Subir Todos
+              </Button>
+            </div>
 
-        {/* Lista de documentos */}
-        {documents.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="font-medium">Documentos Subidos</h4>
-            {documents.map((doc) => (
-              <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{doc.document_name}</p>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span className="capitalize">
-                      {DOCUMENT_TYPES.find(t => t.value === doc.document_type)?.label || doc.document_type}
-                    </span>
-                    {doc.file_size && <span>{formatFileSize(doc.file_size)}</span>}
-                    <span>{new Date(doc.created_at).toLocaleDateString()}</span>
-                  </div>
-                </div>
+            <div className="space-y-3">
+              {selectedFiles.map((fileUpload) => {
+                const FileIcon = getFileIcon(fileUpload.file.type);
                 
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDownload(doc)}
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(doc)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+                return (
+                  <div key={fileUpload.id} className="border rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
+                        <FileIcon className="h-5 w-5 text-primary" />
+                      </div>
+                      
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="font-medium">{fileUpload.file.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {formatFileSize(fileUpload.file.size)}
+                            </p>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            {fileUpload.status === 'completed' && (
+                              <Badge variant="default" className="gap-1">
+                                <CheckCircle className="h-3 w-3" />
+                                Completado
+                              </Badge>
+                            )}
+                            {fileUpload.status === 'error' && (
+                              <Badge variant="destructive" className="gap-1">
+                                <AlertCircle className="h-3 w-3" />
+                                Error
+                              </Badge>
+                            )}
+                            {fileUpload.status === 'pending' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeFile(fileUpload.id)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
 
-        {documents.length === 0 && !loading && (
-          <div className="text-center py-6 text-muted-foreground">
-            <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p>No hay documentos subidos</p>
-            <p className="text-sm">Sube documentos usando los botones de arriba</p>
+                        {fileUpload.status === 'uploading' && (
+                          <Progress value={fileUpload.progress} className="h-2" />
+                        )}
+
+                        {fileUpload.status === 'pending' && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                              <Label className="text-sm">Categoría</Label>
+                              <Select
+                                value={fileUpload.category}
+                                onValueChange={(value) => updateFile(fileUpload.id, { category: value })}
+                              >
+                                <SelectTrigger className="h-9">
+                                  <SelectValue placeholder="Selecciona categoría" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {DOCUMENT_CATEGORIES.map((cat) => (
+                                    <SelectItem key={cat.value} value={cat.value}>
+                                      {cat.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            <div>
+                              <Label className="text-sm">Descripción</Label>
+                              <Input
+                                value={fileUpload.description}
+                                onChange={(e) => updateFile(fileUpload.id, { description: e.target.value })}
+                                placeholder="Descripción del documento"
+                                className="h-9"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </CardContent>
     </Card>
   );
-}
+};

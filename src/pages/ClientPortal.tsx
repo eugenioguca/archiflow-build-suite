@@ -33,6 +33,8 @@ import { ProjectProgressCard } from '@/components/ProjectProgressCard';
 import { PaymentHistoryPanel } from '@/components/PaymentHistoryPanel';
 import { DocumentsPanel } from '@/components/DocumentsPanel';
 import { ProgressPhotosCarousel } from '@/components/ProgressPhotosCarousel';
+import { ClientPortalChat } from '@/components/ClientPortalChat';
+import { ClientDocumentUploader } from '@/components/ClientDocumentUploader';
 
 interface ClientProject {
   id: string;
@@ -327,8 +329,12 @@ const ClientPortal: React.FC = () => {
       </div>
 
       {/* Tabs con información detallada */}
-      <Tabs defaultValue="pagos" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue="resumen" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="resumen" className="flex items-center gap-2">
+            <Home className="h-4 w-4" />
+            Resumen
+          </TabsTrigger>
           <TabsTrigger value="pagos" className="flex items-center gap-2">
             <DollarSign className="h-4 w-4" />
             Pagos
@@ -341,89 +347,106 @@ const ClientPortal: React.FC = () => {
             <Camera className="h-4 w-4" />
             Fotos de Avance
           </TabsTrigger>
+          <TabsTrigger value="chat" className="flex items-center gap-2">
+            <MessageCircle className="h-4 w-4" />
+            Chat
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="pagos">
-          <Card>
-            <CardHeader>
-              <CardTitle>Historial de Pagos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {payments.length === 0 ? (
-                  <div className="text-center py-8">
-                    <DollarSign className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">No hay pagos registrados</p>
-                  </div>
-                ) : (
-                  payments.map((payment) => (
-                    <div key={payment.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <p className="font-medium">Pago #{payment.id.slice(0,8)}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {format(new Date(payment.payment_date), 'dd MMM yyyy', { locale: es })} • {payment.payment_method || 'Transferencia'}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-lg">{formatCurrency(payment.amount_paid)}</p>
-                        <Badge variant={payment.status === 'paid' ? 'default' : 'secondary'}>
-                          {payment.status === 'paid' ? 'Pagado' : 'Pendiente'}
-                        </Badge>
-                      </div>
+        <TabsContent value="resumen" className="space-y-6">
+          {/* Project Progress Card */}
+          <ProjectProgressCard project={project} />
+          
+          {/* Two column layout with overview cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <PaymentHistoryPanel payments={payments} />
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Fases del Proyecto
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {phases.length === 0 ? (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <Clock className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
+                      <p>No hay fases definidas</p>
                     </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="documentos">
-          <Card>
-            <CardHeader>
-              <CardTitle>Documentos del Proyecto</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {documents.length === 0 ? (
-                  <div className="text-center py-8">
-                    <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">No hay documentos disponibles</p>
-                  </div>
-                ) : (
-                  documents.map((document) => (
-                    <div key={document.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-8 w-8 text-primary" />
+                  ) : (
+                    phases.slice(0, 4).map((phase) => (
+                      <div key={phase.id} className="flex items-center justify-between p-3 border rounded-lg">
                         <div>
-                          <p className="font-medium">{document.name}</p>
-                          <p className="text-sm text-muted-foreground">{document.description}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {format(new Date(document.created_at), 'dd MMM yyyy', { locale: es })}
+                          <p className="font-medium">{phase.phase_name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Orden: {phase.phase_order}
                           </p>
                         </div>
+                        <Badge 
+                          variant={phase.status === 'completed' ? 'default' : 'secondary'}
+                        >
+                          {phase.status === 'completed' ? 'Completada' : 
+                           phase.status === 'in_progress' ? 'En progreso' : 'Pendiente'}
+                        </Badge>
                       </div>
-                      <Badge variant="outline">{document.category}</Badge>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                    ))
+                  )}
+                  {phases.length > 4 && (
+                    <p className="text-sm text-muted-foreground text-center">
+                      Y {phases.length - 4} fases más...
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="pagos">
+          <PaymentHistoryPanel payments={payments} />
+        </TabsContent>
+
+        <TabsContent value="documentos" className="space-y-6">
+          <ClientDocumentUploader 
+            projectId={project.id}
+            clientId={project.client_id}
+            onUploadComplete={fetchClientData}
+          />
+          <DocumentsPanel 
+            documents={documents}
+            onDocumentView={(doc) => {
+              // Open document in new tab or modal
+              window.open(doc.file_path, '_blank');
+            }}
+            onDocumentDownload={(doc) => {
+              // Download document
+              const link = document.createElement('a');
+              link.href = doc.file_path;
+              link.download = doc.name;
+              link.click();
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="fotos">
-          <Card>
-            <CardHeader>
-              <CardTitle>Fotos de Avance del Proyecto</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <Camera className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">Las fotos de avance se mostrarán aquí</p>
-              </div>
-            </CardContent>
-          </Card>
+          <ProgressPhotosCarousel 
+            photos={photos}
+            onPhotoDownload={(photo) => {
+              // Download photo
+              const link = document.createElement('a');
+              link.href = photo.photo_url;
+              link.download = `foto-${photo.id}.jpg`;
+              link.click();
+            }}
+          />
+        </TabsContent>
+
+        <TabsContent value="chat">
+          <ClientPortalChat 
+            projectId={project.id}
+            clientId={project.client_id}
+          />
         </TabsContent>
       </Tabs>
     </div>
