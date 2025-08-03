@@ -791,14 +791,15 @@ const tiposVialidad = [
                 Nuevo Proveedor
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
               <DialogHeader>
                 <DialogTitle>{editingSupplier ? 'Editar' : 'Nuevo'} Proveedor</DialogTitle>
                 <DialogDescription>
                   Información fiscal completa para cumplimiento CFDI mexicano
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleSupplierSubmit} className="space-y-6">
+              <div className="flex-1 overflow-y-auto">
+                <form onSubmit={handleSupplierSubmit} className="space-y-6">
                 {/* INFORMACIÓN GENERAL */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold text-primary border-b pb-2">Información General</h3>
@@ -1163,15 +1164,16 @@ const tiposVialidad = [
                   />
                 </div>
 
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setShowSupplierDialog(false)}>
-                    Cancelar
-                  </Button>
-                  <Button type="submit">
-                    {editingSupplier ? 'Actualizar' : 'Crear'} Proveedor
-                  </Button>
-                </div>
-              </form>
+                  <div className="flex justify-end gap-2 pt-4 border-t bg-background sticky bottom-0">
+                    <Button type="button" variant="outline" onClick={() => setShowSupplierDialog(false)}>
+                      Cancelar
+                    </Button>
+                    <Button type="submit">
+                      {editingSupplier ? 'Actualizar' : 'Crear'} Proveedor
+                    </Button>
+                  </div>
+                </form>
+              </div>
             </DialogContent>
           </Dialog>
         </div>
