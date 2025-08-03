@@ -247,16 +247,16 @@ export function Construction() {
         </div>
       </div>
 
-      <div className={`${isMobile ? 'space-y-4' : 'grid grid-cols-1 xl:grid-cols-4 gap-6'}`}>
+      <div className={`${isMobile ? 'space-y-4' : 'flex gap-6'}`}>
         {/* Project Selection Sidebar - Desktop Only */}
         {!isMobile && (
-          <div className="xl:col-span-1">
+          <div className="w-80 shrink-0">
             <ProjectSelector />
           </div>
         )}
 
         {/* Main Content Area */}
-        <div className={`${isMobile ? 'flex-1' : 'xl:col-span-3'}`}>
+        <div className="flex-1 min-w-0">{/* min-w-0 prevents flex overflow */}
           {selectedProject && (
             <div className="space-y-4 sm:space-y-6">
               {/* Mobile Project Header */}

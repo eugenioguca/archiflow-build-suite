@@ -364,46 +364,171 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                   <p className="text-muted-foreground">Comience agregando el primer material del proyecto</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left p-2">Material</th>
-                        <th className="text-left p-2">Cuenta Mayor</th>
-                        <th className="text-left p-2">Cantidad</th>
-                        <th className="text-left p-2">Estado</th>
-                        <th className="text-left p-2">Prioridad</th>
-                        <th className="text-left p-2">Aditivo</th>
-                        <th className="text-left p-2">Deductivo</th>
-                        <th className="text-left p-2">Costo Final</th>
-                        <th className="text-center p-2">Entregado</th>
-                        <th className="text-center p-2">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredMaterials.map((material) => (
-                        <tr key={material.id} className="border-b hover:bg-muted/50">
-                          <td className="p-2">
-                            <div>
-                              <p className="font-medium">{material.material_name}</p>
-                              {material.material_code && (
-                                <p className="text-sm text-muted-foreground">{material.material_code}</p>
-                              )}
+                <div className="space-y-4">
+                  {/* Desktop Table View */}
+                  <div className="hidden lg:block">
+                    <div className="border border-border rounded-lg overflow-hidden bg-card">
+                      <table className="w-full">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            <th className="text-left p-4 font-semibold text-foreground">Material</th>
+                            <th className="text-left p-4 font-semibold text-foreground">Cantidad</th>
+                            <th className="text-left p-4 font-semibold text-foreground">Estado</th>
+                            <th className="text-left p-4 font-semibold text-foreground">Prioridad</th>
+                            <th className="text-left p-4 font-semibold text-foreground">Costo Final</th>
+                            <th className="text-center p-4 font-semibold text-foreground">Entregado</th>
+                            <th className="text-center p-4 font-semibold text-foreground">Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredMaterials.map((material, index) => (
+                            <tr key={material.id} className={`${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'} hover:bg-muted/50 transition-colors border-b border-border/50`}>
+                              <td className="p-4">
+                                <div className="space-y-1">
+                                  <p className="font-semibold text-foreground">{material.material_name}</p>
+                                  {material.material_code && (
+                                    <p className="text-sm text-muted-foreground">{material.material_code}</p>
+                                  )}
+                                  {material.descripcion_producto && (
+                                    <p className="text-sm text-muted-foreground">{material.descripcion_producto}</p>
+                                  )}
+                                  <p className="text-xs text-muted-foreground">{material.cuenta_mayor || material.material_type}</p>
+                                </div>
+                              </td>
+                              <td className="p-4">
+                                <div className="font-medium text-foreground">
+                                  {material.quantity_required} {material.unit_of_measure}
+                                </div>
+                              </td>
+                              <td className="p-4">
+                                <Select
+                                  value={material.status}
+                                  onValueChange={(newValue) => handleUpdateMaterial(material.id, 'status', newValue)}
+                                >
+                                  <SelectTrigger className="w-32">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="cotizado">Cotizado</SelectItem>
+                                    <SelectItem value="requerido">Requerido</SelectItem>
+                                    <SelectItem value="ordenado">Ordenado</SelectItem>
+                                    <SelectItem value="cancelado">Cancelado</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </td>
+                              <td className="p-4">
+                                <Select
+                                  value={material.priority}
+                                  onValueChange={(newValue) => handleUpdateMaterial(material.id, 'priority', newValue)}
+                                >
+                                  <SelectTrigger className="w-28">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="low">Baja</SelectItem>
+                                    <SelectItem value="medium">Media</SelectItem>
+                                    <SelectItem value="high">Alta</SelectItem>
+                                    <SelectItem value="urgent">Urgente</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </td>
+                              <td className="p-4">
+                                <div className="space-y-1">
+                                  <div className="font-bold text-green-700">
+                                    ${(((material.unit_cost || 0) + (material.adjustment_additive || 0) - (material.adjustment_deductive || 0)) * material.quantity_required).toLocaleString()}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    ${((material.unit_cost || 0) + (material.adjustment_additive || 0) - (material.adjustment_deductive || 0)).toLocaleString()} / {material.unit_of_measure}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="p-4">
+                                <div className="flex justify-center">
+                                  <Checkbox
+                                    checked={material.is_delivered}
+                                    onCheckedChange={(checked) => handleDeliveryToggle(material.id, !!checked)}
+                                    className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                                  />
+                                </div>
+                              </td>
+                              <td className="p-4">
+                                <div className="flex justify-center gap-1">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => handleEditMaterial(material)}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => handleDeleteMaterial(material.id)}
+                                    className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Mobile Card View */}
+                  <div className="block lg:hidden space-y-3">
+                    {filteredMaterials.map((material) => (
+                      <Card key={material.id} className="p-4">
+                        <div className="space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-1 flex-1">
+                              <h4 className="font-semibold text-foreground">{material.material_name}</h4>
                               {material.descripcion_producto && (
                                 <p className="text-sm text-muted-foreground">{material.descripcion_producto}</p>
                               )}
+                              <p className="text-xs text-muted-foreground">{material.cuenta_mayor || material.material_type}</p>
                             </div>
-                          </td>
-                          <td className="p-2">{material.cuenta_mayor || material.material_type}</td>
-                          <td className="p-2">
-                            {material.quantity_required} {material.unit_of_measure}
-                          </td>
-                           <td className="p-2">
+                            <div className="text-right">
+                              {getStatusBadge(material.status)}
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">Cantidad:</span>
+                              <p className="font-medium">{material.quantity_required} {material.unit_of_measure}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Prioridad:</span>
+                              <p className="font-medium">{getPriorityBadge(material.priority)}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-2 border-t">
+                            <div>
+                              <span className="text-sm text-muted-foreground">Costo Total:</span>
+                              <p className="font-bold text-green-700">
+                                ${(((material.unit_cost || 0) + (material.adjustment_additive || 0) - (material.adjustment_deductive || 0)) * material.quantity_required).toLocaleString()}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                checked={material.is_delivered}
+                                onCheckedChange={(checked) => handleDeliveryToggle(material.id, !!checked)}
+                              />
+                              <span className="text-sm text-muted-foreground">Entregado</span>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2">
                             <Select
                               value={material.status}
                               onValueChange={(newValue) => handleUpdateMaterial(material.id, 'status', newValue)}
                             >
-                              <SelectTrigger className="w-full">
+                              <SelectTrigger className="flex-1">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -413,13 +538,12 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                                 <SelectItem value="cancelado">Cancelado</SelectItem>
                               </SelectContent>
                             </Select>
-                          </td>
-                          <td className="p-2">
+                            
                             <Select
                               value={material.priority}
                               onValueChange={(newValue) => handleUpdateMaterial(material.id, 'priority', newValue)}
                             >
-                              <SelectTrigger className="w-full">
+                              <SelectTrigger className="flex-1">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -429,56 +553,31 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                                 <SelectItem value="urgent">Urgente</SelectItem>
                               </SelectContent>
                             </Select>
-                          </td>
-                          <td className="p-2">
-                            <EditableCell
-                              value={(material.adjustment_additive || 0).toString()}
-                              onSave={(newValue) => handleUpdateMaterial(material.id, 'adjustment_additive', parseFloat(newValue) || 0)}
-                              type="number"
-                              displayTransform={(value) => `$${parseFloat(value || '0').toLocaleString()}`}
-                            />
-                          </td>
-                          <td className="p-2">
-                            <EditableCell
-                              value={(material.adjustment_deductive || 0).toString()}
-                              onSave={(newValue) => handleUpdateMaterial(material.id, 'adjustment_deductive', parseFloat(newValue) || 0)}
-                              type="number"
-                              displayTransform={(value) => `$${parseFloat(value || '0').toLocaleString()}`}
-                            />
-                          </td>
-                          <td className="p-2">
-                            ${(((material.unit_cost || 0) + (material.adjustment_additive || 0) - (material.adjustment_deductive || 0)) * material.quantity_required).toLocaleString()}
-                          </td>
-                          <td className="p-2">
-                            <div className="flex justify-center">
-                              <Checkbox
-                                checked={material.is_delivered}
-                                onCheckedChange={(checked) => handleDeliveryToggle(material.id, !!checked)}
-                              />
-                            </div>
-                          </td>
-                          <td className="p-2">
-                            <div className="flex justify-center gap-1">
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => handleEditMaterial(material)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => handleDeleteMaterial(material.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          </div>
+
+                          <div className="flex justify-end gap-1 pt-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleEditMaterial(material)}
+                            >
+                              <Edit className="h-4 w-4 mr-1" />
+                              Editar
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleDeleteMaterial(material.id)}
+                              className="hover:bg-red-100 hover:text-red-600 hover:border-red-300"
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Eliminar
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
                 </div>
               )}
             </CardContent>
