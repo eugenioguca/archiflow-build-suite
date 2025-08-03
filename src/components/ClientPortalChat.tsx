@@ -283,7 +283,12 @@ export const ClientPortalChat: React.FC<ClientPortalChatProps> = ({
             variant="outline"
             size="icon"
             className="flex-shrink-0"
-            disabled
+            onClick={() => {
+              toast({
+                title: "Funcionalidad en desarrollo",
+                description: "Los adjuntos estarán disponibles próximamente"
+              });
+            }}
           >
             <Paperclip className="h-4 w-4" />
           </Button>

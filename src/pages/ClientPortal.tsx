@@ -228,7 +228,8 @@ const ClientPortal: React.FC = () => {
     );
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | null | undefined) => {
+    if (!amount || amount === 0) return '$0.00 MXN';
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
       currency: 'MXN'
@@ -372,7 +373,8 @@ const ClientPortal: React.FC = () => {
                   {phases.length === 0 ? (
                     <div className="text-center py-6 text-muted-foreground">
                       <Clock className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
-                      <p>No hay fases definidas</p>
+                      <p className="font-medium">Fases del proyecto</p>
+                      <p className="text-sm">Las fases se mostrarán aquí cuando sean definidas por el equipo</p>
                     </div>
                   ) : (
                     phases.slice(0, 4).map((phase) => (
@@ -415,16 +417,57 @@ const ClientPortal: React.FC = () => {
           />
           <DocumentsPanel 
             documents={documents}
-            onDocumentView={(doc) => {
-              // Open document in new tab or modal
-              window.open(doc.file_path, '_blank');
+            onDocumentView={async (doc) => {
+              try {
+                // Validate file exists before opening
+                const { data } = await supabase.storage
+                  .from('project-documents')
+                  .getPublicUrl(doc.file_path);
+                
+                if (data?.publicUrl) {
+                  window.open(data.publicUrl, '_blank');
+                } else {
+                  toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: "No se pudo acceder al archivo"
+                  });
+                }
+              } catch (error) {
+                toast({
+                  variant: "destructive",
+                  title: "Error",
+                  description: "El archivo no está disponible"
+                });
+              }
             }}
-            onDocumentDownload={(doc) => {
-              // Download document
-              const link = document.createElement('a');
-              link.href = doc.file_path;
-              link.download = doc.name;
-              link.click();
+            onDocumentDownload={async (doc) => {
+              try {
+                const { data } = await supabase.storage
+                  .from('project-documents')
+                  .download(doc.file_path);
+                
+                if (data) {
+                  const url = URL.createObjectURL(data);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = doc.name;
+                  link.click();
+                  URL.revokeObjectURL(url);
+                } else {
+                  toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: "No se pudo descargar el archivo"
+                  });
+                }
+              } catch (error) {
+                toast({
+                  variant: "destructive",
+                  title: "Error",
+                  description: "El archivo no está disponible para descarga"
+                });
+              }
             }}
           />
         </TabsContent>
@@ -432,12 +475,33 @@ const ClientPortal: React.FC = () => {
         <TabsContent value="fotos">
           <ProgressPhotosCarousel 
             photos={photos}
-            onPhotoDownload={(photo) => {
-              // Download photo
-              const link = document.createElement('a');
-              link.href = photo.photo_url;
-              link.download = `foto-${photo.id}.jpg`;
-              link.click();
+            onPhotoDownload={async (photo) => {
+              try {
+                const { data } = await supabase.storage
+                  .from('progress-photos')
+                  .download(photo.photo_url);
+                
+                if (data) {
+                  const url = URL.createObjectURL(data);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = `foto-progreso-${photo.id}.jpg`;
+                  link.click();
+                  URL.revokeObjectURL(url);
+                } else {
+                  toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: "No se pudo descargar la foto"
+                  });
+                }
+              } catch (error) {
+                toast({
+                  variant: "destructive",
+                  title: "Error",
+                  description: "La foto no está disponible para descarga"
+                });
+              }
             }}
           />
         </TabsContent>
