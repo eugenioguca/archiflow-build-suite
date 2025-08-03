@@ -117,6 +117,41 @@ const paymentStatusLabels = {
   cancelled: 'Cancelado'
 };
 
+const estadosMexico = [
+  { value: 'aguascalientes', label: 'Aguascalientes' },
+  { value: 'baja_california', label: 'Baja California' },
+  { value: 'baja_california_sur', label: 'Baja California Sur' },
+  { value: 'campeche', label: 'Campeche' },
+  { value: 'chiapas', label: 'Chiapas' },
+  { value: 'chihuahua', label: 'Chihuahua' },
+  { value: 'coahuila', label: 'Coahuila' },
+  { value: 'colima', label: 'Colima' },
+  { value: 'ciudad_de_mexico', label: 'Ciudad de México' },
+  { value: 'durango', label: 'Durango' },
+  { value: 'estado_de_mexico', label: 'Estado de México' },
+  { value: 'guanajuato', label: 'Guanajuato' },
+  { value: 'guerrero', label: 'Guerrero' },
+  { value: 'hidalgo', label: 'Hidalgo' },
+  { value: 'jalisco', label: 'Jalisco' },
+  { value: 'michoacan', label: 'Michoacán' },
+  { value: 'morelos', label: 'Morelos' },
+  { value: 'nayarit', label: 'Nayarit' },
+  { value: 'nuevo_leon', label: 'Nuevo León' },
+  { value: 'oaxaca', label: 'Oaxaca' },
+  { value: 'puebla', label: 'Puebla' },
+  { value: 'queretaro', label: 'Querétaro' },
+  { value: 'quintana_roo', label: 'Quintana Roo' },
+  { value: 'san_luis_potosi', label: 'San Luis Potosí' },
+  { value: 'sinaloa', label: 'Sinaloa' },
+  { value: 'sonora', label: 'Sonora' },
+  { value: 'tabasco', label: 'Tabasco' },
+  { value: 'tamaulipas', label: 'Tamaulipas' },
+  { value: 'tlaxcala', label: 'Tlaxcala' },
+  { value: 'veracruz', label: 'Veracruz' },
+  { value: 'yucatan', label: 'Yucatán' },
+  { value: 'zacatecas', label: 'Zacatecas' }
+];
+
 export default function SuppliersNew() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [accountsPayable, setAccountsPayable] = useState<AccountsPayable[]>([]);
@@ -902,11 +937,18 @@ export default function SuppliersNew() {
                   </div>
                   <div>
                     <Label htmlFor="state">Estado</Label>
-                    <Input
-                      id="state"
-                      value={supplierFormData.state}
-                      onChange={(e) => setSupplierFormData({...supplierFormData, state: e.target.value})}
-                    />
+                    <Select value={supplierFormData.state} onValueChange={(value) => setSupplierFormData({...supplierFormData, state: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona un estado" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-60 overflow-y-auto">
+                        {estadosMexico.map((estado) => (
+                          <SelectItem key={estado.value} value={estado.value}>
+                            {estado.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label htmlFor="codigo_postal">Código Postal</Label>
