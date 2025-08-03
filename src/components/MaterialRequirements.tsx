@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Package, 
   Plus, 
@@ -26,6 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { MaterialRequirementForm } from "@/components/forms/MaterialRequirementForm";
 import { MaterialExcelManager } from "@/components/MaterialExcelManager";
+import { EditableCell } from "@/components/EditableCell";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -74,6 +76,9 @@ interface MaterialRequirement {
   descripcion_producto: string | null;
   notas_procuracion: string | null;
   requisito_almacenamiento: string | null;
+  adjustment_additive: number | null;
+  adjustment_deductive: number | null;
+  is_delivered: boolean;
 }
 
 interface MaterialRequirementsProps {
@@ -149,6 +154,31 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
     }
   };
 
+  const handleUpdateMaterial = async (materialId: string, field: string, value: any) => {
+    try {
+      const { error } = await supabase
+        .from('material_requirements')
+        .update({ [field]: value })
+        .eq('id', materialId);
+
+      if (error) {
+        console.error('Error updating material:', error);
+        toast.error('Error al actualizar el material');
+        return;
+      }
+
+      toast.success('Material actualizado exitosamente');
+      fetchMaterials();
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Error inesperado al actualizar el material');
+    }
+  };
+
+  const handleDeliveryToggle = async (materialId: string, isDelivered: boolean) => {
+    await handleUpdateMaterial(materialId, 'is_delivered', isDelivered);
+  };
+
   // Filter materials based on search and filters
   const filteredMaterials = materials.filter(material => {
     const matchesSearch = !searchTerm || 
@@ -177,7 +207,6 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
       quoted: { label: "Cotizado", variant: "outline" as const },
       ordered: { label: "Ordenado", variant: "default" as const },
       partial_delivery: { label: "Entrega Parcial", variant: "secondary" as const },
-      delivered: { label: "Entregado", variant: "default" as const },
       cancelled: { label: "Cancelado", variant: "destructive" as const }
     };
     
@@ -318,7 +347,8 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                     <SelectItem value="required">Requerido</SelectItem>
                     <SelectItem value="quoted">Cotizado</SelectItem>
                     <SelectItem value="ordered">Ordenado</SelectItem>
-                    <SelectItem value="delivered">Entregado</SelectItem>
+                    <SelectItem value="partial_delivery">Entrega Parcial</SelectItem>
+                    <SelectItem value="cancelled">Cancelado</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -345,7 +375,10 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                         <th className="text-left p-2">Cantidad</th>
                         <th className="text-left p-2">Estado</th>
                         <th className="text-left p-2">Prioridad</th>
-                        <th className="text-left p-2">Costo</th>
+                        <th className="text-left p-2">Aditivo</th>
+                        <th className="text-left p-2">Deductivo</th>
+                        <th className="text-left p-2">Costo Final</th>
+                        <th className="text-center p-2">Entregado</th>
                         <th className="text-center p-2">Acciones</th>
                       </tr>
                     </thead>
@@ -367,10 +400,59 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                           <td className="p-2">
                             {material.quantity_required} {material.unit_of_measure}
                           </td>
-                          <td className="p-2">{getStatusBadge(material.status)}</td>
-                          <td className="p-2">{getPriorityBadge(material.priority)}</td>
                           <td className="p-2">
-                            ${((material.unit_cost || 0) * material.quantity_required).toLocaleString()}
+                            <EditableCell
+                              value={material.status}
+                              onSave={(newValue) => handleUpdateMaterial(material.id, 'status', newValue)}
+                              type="select"
+                              options={[
+                                { value: 'required', label: 'Requerido' },
+                                { value: 'quoted', label: 'Cotizado' },
+                                { value: 'ordered', label: 'Ordenado' },
+                                { value: 'partial_delivery', label: 'Entrega Parcial' },
+                                { value: 'cancelled', label: 'Cancelado' }
+                              ]}
+                            />
+                          </td>
+                          <td className="p-2">
+                            <EditableCell
+                              value={material.priority}
+                              onSave={(newValue) => handleUpdateMaterial(material.id, 'priority', newValue)}
+                              type="select"
+                              options={[
+                                { value: 'low', label: 'Baja' },
+                                { value: 'medium', label: 'Media' },
+                                { value: 'high', label: 'Alta' },
+                                { value: 'urgent', label: 'Urgente' }
+                              ]}
+                            />
+                          </td>
+                          <td className="p-2">
+                            <EditableCell
+                              value={(material.adjustment_additive || 0).toString()}
+                              onSave={(newValue) => handleUpdateMaterial(material.id, 'adjustment_additive', parseFloat(newValue) || 0)}
+                              type="number"
+                              displayTransform={(value) => `$${parseFloat(value || '0').toLocaleString()}`}
+                            />
+                          </td>
+                          <td className="p-2">
+                            <EditableCell
+                              value={(material.adjustment_deductive || 0).toString()}
+                              onSave={(newValue) => handleUpdateMaterial(material.id, 'adjustment_deductive', parseFloat(newValue) || 0)}
+                              type="number"
+                              displayTransform={(value) => `$${parseFloat(value || '0').toLocaleString()}`}
+                            />
+                          </td>
+                          <td className="p-2">
+                            ${(((material.unit_cost || 0) + (material.adjustment_additive || 0) - (material.adjustment_deductive || 0)) * material.quantity_required).toLocaleString()}
+                          </td>
+                          <td className="p-2">
+                            <div className="flex justify-center">
+                              <Checkbox
+                                checked={material.is_delivered}
+                                onCheckedChange={(checked) => handleDeliveryToggle(material.id, !!checked)}
+                              />
+                            </div>
                           </td>
                           <td className="p-2">
                             <div className="flex justify-center gap-1">

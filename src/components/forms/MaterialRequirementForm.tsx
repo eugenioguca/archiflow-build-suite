@@ -23,6 +23,11 @@ interface DropdownOption {
   id?: string
 }
 
+interface Supplier {
+  id: string
+  company_name: string
+}
+
 export function MaterialRequirementForm({ 
   projectId, 
   initialData, 
@@ -33,6 +38,7 @@ export function MaterialRequirementForm({
   const [cuentasMayorOptions, setCuentasMayorOptions] = useState<DropdownOption[]>([])
   const [partidasOptions, setPartidasOptions] = useState<DropdownOption[]>([])
   const [descripcionesOptions, setDescripcionesOptions] = useState<DropdownOption[]>([])
+  const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const { toast } = useToast()
 
   const [formData, setFormData] = useState({
@@ -43,13 +49,17 @@ export function MaterialRequirementForm({
     unit_of_measure: initialData?.unit_of_measure || "",
     quantity_required: initialData?.quantity_required || "",
     unit_cost: initialData?.unit_cost || "",
+    adjustment_additive: initialData?.adjustment_additive || "",
+    adjustment_deductive: initialData?.adjustment_deductive || "",
+    supplier_id: initialData?.supplier_id || "",
     notas_procuracion: initialData?.notas_procuracion || "",
     requisito_almacenamiento: initialData?.requisito_almacenamiento || "",
   })
 
-  // Load dropdown options
+  // Load dropdown options and suppliers
   useEffect(() => {
     fetchDropdownOptions()
+    fetchSuppliers()
   }, [])
 
   const fetchDropdownOptions = async () => {
@@ -86,6 +96,25 @@ export function MaterialRequirementForm({
     }
   }
 
+  const fetchSuppliers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('suppliers')
+        .select('id, company_name')
+        .eq('status', 'active')
+        .order('company_name')
+
+      if (error) throw error
+      setSuppliers(data || [])
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Error al cargar proveedores: " + error.message,
+        variant: "destructive",
+      })
+    }
+  }
+
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
@@ -110,6 +139,12 @@ export function MaterialRequirementForm({
 
       if (!profile) throw new Error("Profile not found")
 
+      // Calculate final cost with adjustments
+      const baseCost = parseFloat(formData.unit_cost) || 0
+      const additiveAmount = parseFloat(formData.adjustment_additive) || 0
+      const deductiveAmount = parseFloat(formData.adjustment_deductive) || 0
+      const finalUnitCost = baseCost + additiveAmount - deductiveAmount
+
       // Prepare material data
       const materialData = {
         project_id: projectId,
@@ -119,7 +154,11 @@ export function MaterialRequirementForm({
         descripcion_producto: formData.descripcion_producto,
         unit_of_measure: formData.unit_of_measure,
         quantity_required: parseFloat(formData.quantity_required) || 0,
-        unit_cost: parseFloat(formData.unit_cost) || 0,
+        unit_cost: finalUnitCost,
+        total_cost: finalUnitCost * (parseFloat(formData.quantity_required) || 0),
+        adjustment_additive: additiveAmount,
+        adjustment_deductive: deductiveAmount,
+        supplier_id: formData.supplier_id || null,
         notas_procuracion: formData.notas_procuracion || null,
         requisito_almacenamiento: formData.requisito_almacenamiento || null,
         material_name: formData.descripcion_producto, // For compatibility
@@ -269,12 +308,68 @@ export function MaterialRequirementForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="unit_cost">Costo Unitario</Label>
+              <Label htmlFor="supplier_id">Proveedor</Label>
+              <Select 
+                value={formData.supplier_id} 
+                onValueChange={(value) => handleInputChange("supplier_id", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccione proveedor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Sin proveedor</SelectItem>
+                  {suppliers.map((supplier) => (
+                    <SelectItem key={supplier.id} value={supplier.id}>
+                      {supplier.company_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="unit_cost">Costo Unitario Base</Label>
               <CurrencyInput
                 value={formData.unit_cost}
                 onChange={(value) => handleInputChange("unit_cost", value)}
                 placeholder="$0.00"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="adjustment_additive">Ajuste Aditivo</Label>
+              <CurrencyInput
+                value={formData.adjustment_additive}
+                onChange={(value) => handleInputChange("adjustment_additive", value)}
+                placeholder="$0.00"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="adjustment_deductive">Ajuste Deductivo</Label>
+              <CurrencyInput
+                value={formData.adjustment_deductive}
+                onChange={(value) => handleInputChange("adjustment_deductive", value)}
+                placeholder="$0.00"
+              />
+            </div>
+
+            {/* Final Cost Display */}
+            <div className="space-y-2">
+              <Label>Costo Final</Label>
+              <div className="p-3 bg-muted rounded-md">
+                <p className="font-medium">
+                  ${((parseFloat(formData.unit_cost) || 0) + 
+                     (parseFloat(formData.adjustment_additive) || 0) - 
+                     (parseFloat(formData.adjustment_deductive) || 0)).toLocaleString()}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Total: ${(((parseFloat(formData.unit_cost) || 0) + 
+                              (parseFloat(formData.adjustment_additive) || 0) - 
+                              (parseFloat(formData.adjustment_deductive) || 0)) * 
+                            (parseFloat(formData.quantity_required) || 0)).toLocaleString()}
+                </p>
+              </div>
             </div>
           </div>
 

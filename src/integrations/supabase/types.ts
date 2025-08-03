@@ -3406,8 +3406,64 @@ export type Database = {
         }
         Relationships: []
       }
+      material_finance_requests: {
+        Row: {
+          attended_by: string | null
+          attended_date: string | null
+          client_id: string
+          created_at: string
+          id: string
+          is_attended: boolean | null
+          material_requirement_id: string
+          notes: string | null
+          project_id: string
+          purchase_order_number: string | null
+          request_date: string
+          requested_by: string
+          status: string
+          supplier_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          attended_by?: string | null
+          attended_date?: string | null
+          client_id: string
+          created_at?: string
+          id?: string
+          is_attended?: boolean | null
+          material_requirement_id: string
+          notes?: string | null
+          project_id: string
+          purchase_order_number?: string | null
+          request_date?: string
+          requested_by: string
+          status?: string
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attended_by?: string | null
+          attended_date?: string | null
+          client_id?: string
+          created_at?: string
+          id?: string
+          is_attended?: boolean | null
+          material_requirement_id?: string
+          notes?: string | null
+          project_id?: string
+          purchase_order_number?: string | null
+          request_date?: string
+          requested_by?: string
+          status?: string
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       material_requirements: {
         Row: {
+          adjustment_additive: number | null
+          adjustment_deductive: number | null
           brand: string | null
           budget_item_id: string | null
           certifications: Json | null
@@ -3419,6 +3475,7 @@ export type Database = {
           descripcion_producto: string | null
           environmental_impact: Json | null
           id: string
+          is_delivered: boolean | null
           material_code: string | null
           material_name: string
           material_type: string
@@ -3453,6 +3510,8 @@ export type Database = {
           warranty_terms: string | null
         }
         Insert: {
+          adjustment_additive?: number | null
+          adjustment_deductive?: number | null
           brand?: string | null
           budget_item_id?: string | null
           certifications?: Json | null
@@ -3464,6 +3523,7 @@ export type Database = {
           descripcion_producto?: string | null
           environmental_impact?: Json | null
           id?: string
+          is_delivered?: boolean | null
           material_code?: string | null
           material_name: string
           material_type: string
@@ -3498,6 +3558,8 @@ export type Database = {
           warranty_terms?: string | null
         }
         Update: {
+          adjustment_additive?: number | null
+          adjustment_deductive?: number | null
           brand?: string | null
           budget_item_id?: string | null
           certifications?: Json | null
@@ -3509,6 +3571,7 @@ export type Database = {
           descripcion_producto?: string | null
           environmental_impact?: Json | null
           id?: string
+          is_delivered?: boolean | null
           material_code?: string | null
           material_name?: string
           material_type?: string

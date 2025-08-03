@@ -25,8 +25,10 @@ import {
   FileText, 
   CreditCard,
   Receipt,
-  Target
+  Target,
+  Package
 } from 'lucide-react';
+import { MaterialFinanceRequests } from '@/components/MaterialFinanceRequests';
 
 const FinancesNew: React.FC = () => {
   const [isExpenseDialogOpen, setIsExpenseDialogOpen] = useState(false);
@@ -90,6 +92,10 @@ const FinancesNew: React.FC = () => {
             <TrendingUp className="h-4 w-4" />
             <span className="hidden sm:block">Flujo</span>
           </TabsTrigger>
+          <TabsTrigger value="materials" className="flex items-center gap-2 py-3">
+            <Package className="h-4 w-4" />
+            <span className="hidden sm:block">Materiales</span>
+          </TabsTrigger>
           <TabsTrigger value="advances" className="flex items-center gap-2 py-3">
             <Users className="h-4 w-4" />
             <span className="hidden sm:block">Anticipos</span>
@@ -152,6 +158,13 @@ const FinancesNew: React.FC = () => {
 
         <TabsContent value="cashflow" className="space-y-6">
           <CashFlowProjections />
+        </TabsContent>
+
+        <TabsContent value="materials" className="space-y-6">
+          <MaterialFinanceRequests 
+            selectedClientId={selectedClientId}
+            selectedProjectId={selectedProjectId}
+          />
         </TabsContent>
 
         <TabsContent value="advances" className="space-y-6">
