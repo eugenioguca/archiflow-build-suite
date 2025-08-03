@@ -4,8 +4,11 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { MobileDialog, MobileDialogContent, MobileDialogHeader, MobileDialogTitle } from '@/components/ui/mobile-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Building2, 
@@ -23,7 +26,8 @@ import {
   MessageCircle,
   Home,
   Eye,
-  Download
+  Download,
+  Maximize2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -96,12 +100,14 @@ interface ProgressPhoto {
 const ClientPortal: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [project, setProject] = useState<ClientProject | null>(null);
   const [phases, setPhases] = useState<ProjectPhase[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
   const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [chatExpanded, setChatExpanded] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -261,50 +267,52 @@ const ClientPortal: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className={`${isMobile ? 'p-2 space-y-4' : 'container mx-auto py-6 space-y-6'}`}>
       {/* Header del Proyecto */}
-      <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-6">
-        <div className="flex items-start justify-between">
+      <div className={`bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg ${isMobile ? 'p-4' : 'p-6'}`}>
+        <div className={`${isMobile ? 'space-y-4' : 'flex items-start justify-between'}`}>
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold">{project.project_name}</h1>
-            <p className="text-lg text-muted-foreground">{project.project_description}</p>
-            <div className="flex items-center gap-4 mt-4">
+            <h1 className={`${isMobile ? 'text-xl' : 'text-3xl'} font-bold`}>{project.project_name}</h1>
+            <p className={`${isMobile ? 'text-sm' : 'text-lg'} text-muted-foreground`}>{project.project_description}</p>
+            <div className={`${isMobile ? 'flex flex-col gap-2' : 'flex items-center gap-4'} mt-4`}>
               {getStatusBadge(project.status)}
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <MapPin className="h-4 w-4" />
-                {project.project_location || 'Ubicación no especificada'}
+                <MapPin className="h-4 w-4 flex-shrink-0" />
+                <span className={isMobile ? 'truncate' : ''}>{project.project_location || 'Ubicación no especificada'}</span>
               </div>
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold text-primary">
-              {project.overall_progress_percentage || 0}%
+          <div className={`${isMobile ? 'border-t pt-4' : 'text-right'}`}>
+            <div className={`${isMobile ? 'flex items-center justify-between' : 'text-right'}`}>
+              <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-primary`}>
+                {project.overall_progress_percentage || 0}%
+              </div>
+              <div className={`text-sm text-muted-foreground ${isMobile ? 'order-first' : ''}`}>Progreso</div>
             </div>
-            <div className="text-sm text-muted-foreground">Progreso</div>
-            <Progress value={project.overall_progress_percentage || 0} className="w-32 mt-2" />
+            <Progress value={project.overall_progress_percentage || 0} className={`${isMobile ? 'w-full mt-2' : 'w-32 mt-2'}`} />
           </div>
         </div>
       </div>
 
       {/* Información General */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className={`${isMobile ? 'space-y-4' : 'grid grid-cols-1 md:grid-cols-3 gap-6'}`}>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium">Presupuesto Total</CardTitle>
+          <CardHeader className={`flex flex-row items-center justify-between space-y-0 ${isMobile ? 'pb-2 px-4 pt-4' : 'pb-3'}`}>
+            <CardTitle className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium`}>Presupuesto Total</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(project.budget)}</div>
+          <CardContent className={isMobile ? 'px-4 pb-4' : undefined}>
+            <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>{formatCurrency(project.budget)}</div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium">Fecha de Inicio</CardTitle>
+          <CardHeader className={`flex flex-row items-center justify-between space-y-0 ${isMobile ? 'pb-2 px-4 pt-4' : 'pb-3'}`}>
+            <CardTitle className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium`}>Fecha de Inicio</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className={isMobile ? 'px-4 pb-4' : undefined}>
+            <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>
               {project.construction_start_date ? 
                 format(new Date(project.construction_start_date), 'dd MMM yyyy', { locale: es }) :
                 'No definida'
@@ -314,12 +322,12 @@ const ClientPortal: React.FC = () => {
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium">Finalización Estimada</CardTitle>
+          <CardHeader className={`flex flex-row items-center justify-between space-y-0 ${isMobile ? 'pb-2 px-4 pt-4' : 'pb-3'}`}>
+            <CardTitle className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium`}>Finalización Estimada</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className={isMobile ? 'px-4 pb-4' : undefined}>
+            <div className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>
               {project.estimated_completion_date ? 
                 format(new Date(project.estimated_completion_date), 'dd MMM yyyy', { locale: es }) :
                 'No definida'
@@ -331,62 +339,90 @@ const ClientPortal: React.FC = () => {
 
       {/* Tabs con información detallada */}
       <Tabs defaultValue="resumen" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="resumen" className="flex items-center gap-2">
-            <Home className="h-4 w-4" />
-            Resumen
-          </TabsTrigger>
-          <TabsTrigger value="pagos" className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
-            Pagos
-          </TabsTrigger>
-          <TabsTrigger value="documentos" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Documentos
-          </TabsTrigger>
-          <TabsTrigger value="fotos" className="flex items-center gap-2">
-            <Camera className="h-4 w-4" />
-            Fotos de Avance
-          </TabsTrigger>
-          <TabsTrigger value="chat" className="flex items-center gap-2">
-            <MessageCircle className="h-4 w-4" />
-            Chat
-          </TabsTrigger>
-        </TabsList>
+        {isMobile ? (
+          <ScrollArea className="w-full">
+            <TabsList className="flex w-max p-1 h-auto">
+              <TabsTrigger value="resumen" className="flex items-center gap-2 px-4 py-2">
+                <Home className="h-4 w-4" />
+                <span>Resumen</span>
+              </TabsTrigger>
+              <TabsTrigger value="pagos" className="flex items-center gap-2 px-4 py-2">
+                <DollarSign className="h-4 w-4" />
+                <span>Pagos</span>
+              </TabsTrigger>
+              <TabsTrigger value="documentos" className="flex items-center gap-2 px-4 py-2">
+                <FileText className="h-4 w-4" />
+                <span>Documentos</span>
+              </TabsTrigger>
+              <TabsTrigger value="fotos" className="flex items-center gap-2 px-4 py-2">
+                <Camera className="h-4 w-4" />
+                <span>Fotos</span>
+              </TabsTrigger>
+              <TabsTrigger value="chat" className="flex items-center gap-2 px-4 py-2">
+                <MessageCircle className="h-4 w-4" />
+                <span>Chat</span>
+              </TabsTrigger>
+            </TabsList>
+          </ScrollArea>
+        ) : (
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="resumen" className="flex items-center gap-2">
+              <Home className="h-4 w-4" />
+              Resumen
+            </TabsTrigger>
+            <TabsTrigger value="pagos" className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Pagos
+            </TabsTrigger>
+            <TabsTrigger value="documentos" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Documentos
+            </TabsTrigger>
+            <TabsTrigger value="fotos" className="flex items-center gap-2">
+              <Camera className="h-4 w-4" />
+              Fotos de Avance
+            </TabsTrigger>
+            <TabsTrigger value="chat" className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" />
+              Chat
+            </TabsTrigger>
+          </TabsList>
+        )}
 
         <TabsContent value="resumen" className="space-y-6">
           {/* Project Progress Card */}
           <ProjectProgressCard project={project} />
           
           {/* Two column layout with overview cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className={`${isMobile ? 'space-y-6' : 'grid grid-cols-1 lg:grid-cols-2 gap-6'}`}>
             <PaymentHistoryPanel payments={payments} />
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+              <CardHeader className={isMobile ? 'p-4' : undefined}>
+                <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-base' : ''}`}>
                   <Clock className="h-5 w-5" />
                   Fases del Proyecto
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
+              <CardContent className={isMobile ? 'p-4 pt-0' : undefined}>
+                <div className={`space-y-3 ${isMobile ? 'space-y-2' : ''}`}>
                   {phases.length === 0 ? (
-                    <div className="text-center py-6 text-muted-foreground">
-                      <Clock className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
-                      <p className="font-medium">Fases del proyecto</p>
-                      <p className="text-sm">Las fases se mostrarán aquí cuando sean definidas por el equipo</p>
+                    <div className={`text-center py-6 text-muted-foreground ${isMobile ? 'py-4' : ''}`}>
+                      <Clock className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} mx-auto mb-2 text-muted-foreground/50`} />
+                      <p className={`font-medium ${isMobile ? 'text-sm' : ''}`}>Fases del proyecto</p>
+                      <p className={`text-sm ${isMobile ? 'text-xs' : ''}`}>Las fases se mostrarán aquí cuando sean definidas por el equipo</p>
                     </div>
                   ) : (
                     phases.slice(0, 4).map((phase) => (
-                      <div key={phase.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <p className="font-medium">{phase.phase_name}</p>
-                          <p className="text-sm text-muted-foreground">
+                      <div key={phase.id} className={`${isMobile ? 'flex flex-col space-y-2 p-3' : 'flex items-center justify-between p-3'} border rounded-lg`}>
+                        <div className={isMobile ? 'flex-1' : ''}>
+                          <p className={`font-medium ${isMobile ? 'text-sm' : ''}`}>{phase.phase_name}</p>
+                          <p className={`text-sm text-muted-foreground ${isMobile ? 'text-xs' : ''}`}>
                             Orden: {phase.phase_order}
                           </p>
                         </div>
                         <Badge 
                           variant={phase.status === 'completed' ? 'default' : 'secondary'}
+                          className={isMobile ? 'self-start' : ''}
                         >
                           {phase.status === 'completed' ? 'Completada' : 
                            phase.status === 'in_progress' ? 'En progreso' : 'Pendiente'}
@@ -395,7 +431,7 @@ const ClientPortal: React.FC = () => {
                     ))
                   )}
                   {phases.length > 4 && (
-                    <p className="text-sm text-muted-foreground text-center">
+                    <p className={`text-sm text-muted-foreground text-center ${isMobile ? 'text-xs' : ''}`}>
                       Y {phases.length - 4} fases más...
                     </p>
                   )}
@@ -507,10 +543,45 @@ const ClientPortal: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="chat">
-          <ClientPortalChat 
-            projectId={project.id}
-            clientId={project.client_id}
-          />
+          {isMobile ? (
+            <>
+              <div className="flex justify-end mb-4">
+                <Button
+                  onClick={() => setChatExpanded(true)}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  <Maximize2 className="h-4 w-4" />
+                  Expandir Chat
+                </Button>
+              </div>
+              <div className="h-[400px]">
+                <ClientPortalChat 
+                  projectId={project.id}
+                  clientId={project.client_id}
+                />
+              </div>
+              
+              <MobileDialog open={chatExpanded} onOpenChange={setChatExpanded}>
+                <MobileDialogContent className="h-[90vh] flex flex-col p-0">
+                  <MobileDialogHeader className="p-4 border-b">
+                    <MobileDialogTitle>Chat del Proyecto</MobileDialogTitle>
+                  </MobileDialogHeader>
+                  <div className="flex-1 overflow-hidden">
+                    <ClientPortalChat 
+                      projectId={project.id}
+                      clientId={project.client_id}
+                    />
+                  </div>
+                </MobileDialogContent>
+              </MobileDialog>
+            </>
+          ) : (
+            <ClientPortalChat 
+              projectId={project.id}
+              clientId={project.client_id}
+            />
+          )}
         </TabsContent>
       </Tabs>
     </div>
