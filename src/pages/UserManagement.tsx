@@ -36,8 +36,9 @@ interface UserProfile {
   full_name: string | null;
   phone: string | null;
   role: 'admin' | 'employee' | 'client';
-  approval_status: 'approved' | 'pending' | 'rejected';
+  approval_status: string;
   created_at: string;
+  [key: string]: any; // Para campos adicionales de Supabase
 }
 
 interface Client {
@@ -63,7 +64,7 @@ const UserManagement = () => {
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [linkingUserId, setLinkingUserId] = useState<string>('');
   const [editingUser, setEditingUser] = useState<string>('');
-  const [editForm, setEditForm] = useState({ display_name: '', phone: '' });
+  const [editForm, setEditForm] = useState({ full_name: '', phone: '' });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -165,7 +166,7 @@ const UserManagement = () => {
       const { error } = await supabase
         .from('profiles')
         .update({
-          display_name: editForm.display_name,
+          full_name: editForm.full_name,
           phone: editForm.phone,
         })
         .eq('user_id', userId);
@@ -174,12 +175,12 @@ const UserManagement = () => {
 
       setUsers(users.map(user => 
         user.user_id === userId 
-          ? { ...user, display_name: editForm.display_name, phone: editForm.phone }
+          ? { ...user, full_name: editForm.full_name, phone: editForm.phone }
           : user
       ));
       
       setEditingUser('');
-      setEditForm({ display_name: '', phone: '' });
+      setEditForm({ full_name: '', phone: '' });
       
       toast({
         title: "Usuario actualizado",
@@ -336,7 +337,7 @@ const UserManagement = () => {
       const { error } = await supabase
         .from('profiles')
         .update({ 
-          approved: false,
+          approval_status: 'pending',
           role: 'client'
         })
         .eq('user_id', userId);
@@ -344,7 +345,7 @@ const UserManagement = () => {
       if (error) throw error;
 
       setUsers(users.map(user => 
-        user.user_id === userId ? { ...user, approved: false, role: 'client' } : user
+        user.user_id === userId ? { ...user, approval_status: 'pending', role: 'client' } : user
       ));
       
       toast({
@@ -454,8 +455,8 @@ const UserManagement = () => {
                         <td className="p-4">
                           {editingUser === user.id ? (
                             <Input
-                              value={editForm.display_name}
-                              onChange={(e) => setEditForm({...editForm, display_name: e.target.value})}
+                              value={editForm.full_name}
+                              onChange={(e) => setEditForm({...editForm, full_name: e.target.value})}
                               placeholder="Nombre completo"
                             />
                           ) : (
@@ -495,7 +496,7 @@ const UserManagement = () => {
                                   size="sm"
                                   onClick={() => {
                                     setEditingUser('');
-                                    setEditForm({ display_name: '', phone: '' });
+                                    setEditForm({ full_name: '', phone: '' });
                                   }}
                                 >
                                   <X className="h-4 w-4" />
@@ -508,7 +509,7 @@ const UserManagement = () => {
                                 onClick={() => {
                                   setEditingUser(user.id);
                                   setEditForm({
-                                    display_name: user.display_name || '',
+                                    full_name: user.full_name || '',
                                     phone: user.phone || '',
                                   });
                                 }}
