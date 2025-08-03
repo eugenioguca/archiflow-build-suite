@@ -70,7 +70,15 @@ interface TopClients {
   invoices: number;
 }
 
-const ERPDashboard: React.FC = () => {
+interface ERPDashboardProps {
+  selectedClientId?: string;
+  selectedProjectId?: string;
+}
+
+const ERPDashboard: React.FC<ERPDashboardProps> = ({
+  selectedClientId,
+  selectedProjectId
+}) => {
   const [metrics, setMetrics] = useState<ERPMetrics | null>(null);
   const [cashFlowData, setCashFlowData] = useState<CashFlowData[]>([]);
   const [expenseBreakdown, setExpenseBreakdown] = useState<ExpenseBreakdown[]>([]);
@@ -84,7 +92,7 @@ const ERPDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchERPData();
-  }, [selectedPeriod, customStartDate, customEndDate]);
+  }, [selectedPeriod, customStartDate, customEndDate, selectedClientId, selectedProjectId]);
 
   const fetchERPData = async () => {
     try {
@@ -162,6 +170,25 @@ const ERPDashboard: React.FC = () => {
   const fetchDashboardMetrics = async (): Promise<ERPMetrics> => {
     const { start: startDate, end: endDate } = getPeriodDates();
 
+    // Construir consultas con filtros
+    let incomeQuery = supabase.from('incomes').select('amount')
+      .gte('created_at', startDate.toISOString())
+      .lte('created_at', endDate.toISOString());
+    
+    let expenseQuery = supabase.from('expenses').select('amount')
+      .gte('created_at', startDate.toISOString())
+      .lte('created_at', endDate.toISOString());
+
+    if (selectedClientId) {
+      incomeQuery = incomeQuery.eq('client_id', selectedClientId);
+      expenseQuery = expenseQuery.eq('client_id', selectedClientId);
+    }
+
+    if (selectedProjectId) {
+      incomeQuery = incomeQuery.eq('project_id', selectedProjectId);
+      expenseQuery = expenseQuery.eq('project_id', selectedProjectId);
+    }
+
     const [
       cashResult,
       incomeResult,
@@ -173,9 +200,9 @@ const ERPDashboard: React.FC = () => {
       cfdiResult
     ] = await Promise.all([
       supabase.from('cash_accounts').select('current_balance').eq('status', 'active'),
-      supabase.from('incomes').select('amount').gte('created_at', startDate.toISOString()).lte('created_at', endDate.toISOString()),
-      supabase.from('expenses').select('amount').gte('created_at', startDate.toISOString()).lte('created_at', endDate.toISOString()),
-      supabase.from('projects').select('id').neq('status', 'completed'),
+      incomeQuery,
+      expenseQuery,
+      supabase.from('client_projects').select('id').neq('status', 'completed'),
       supabase.from('suppliers').select('id').eq('status', 'active'),
       supabase.from('clients').select('id'),
       supabase.from('employee_advances').select('advance_amount, amount_justified').neq('status', 'completed'),

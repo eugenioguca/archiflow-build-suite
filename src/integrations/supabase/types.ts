@@ -5612,6 +5612,54 @@ export type Database = {
         Args: { project_id_param: string }
         Returns: undefined
       }
+      get_financial_summary_by_client: {
+        Args: { client_filter?: string }
+        Returns: {
+          client_id: string
+          client_name: string
+          total_projects: number
+          total_income: number
+          total_expenses: number
+          net_profit: number
+          profit_margin: number
+          active_projects: number
+        }[]
+      }
+      get_financial_summary_by_client_project: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          project_id: string
+          client_id: string
+          project_name: string
+          client_name: string
+          total_income: number
+          total_expenses: number
+          net_profit: number
+          profit_margin: number
+          project_status: string
+          sales_pipeline_stage: string
+          estimated_budget: number
+          construction_budget: number
+        }[]
+      }
+      get_profitability_analysis: {
+        Args: {
+          analysis_type?: string
+          period_start?: string
+          period_end?: string
+          limit_results?: number
+        }
+        Returns: {
+          id: string
+          name: string
+          revenue: number
+          costs: number
+          gross_profit: number
+          gross_margin: number
+          transaction_count: number
+          additional_data: Json
+        }[]
+      }
       get_project_cumulative_documents: {
         Args: { project_id_param: string; user_department?: string }
         Returns: {

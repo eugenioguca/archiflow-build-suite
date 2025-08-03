@@ -34,6 +34,10 @@ const FinancesNew: React.FC = () => {
   const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([]);
   const [clients, setClients] = useState<Array<{ id: string; full_name: string }>>([]);
   const [refreshExpenses, setRefreshExpenses] = useState(0);
+  
+  // Estado para filtros cliente-proyecto
+  const [selectedClientId, setSelectedClientId] = useState<string | undefined>();
+  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>();
 
   useEffect(() => {
     fetchSupportData();
@@ -125,7 +129,10 @@ const FinancesNew: React.FC = () => {
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6">
-          <ERPDashboard />
+          <ERPDashboard 
+            selectedClientId={selectedClientId}
+            selectedProjectId={selectedProjectId}
+          />
         </TabsContent>
 
         <TabsContent value="treasury" className="space-y-6">
@@ -164,6 +171,10 @@ const FinancesNew: React.FC = () => {
           <ExpenseTable 
             onNewExpense={() => setIsExpenseDialogOpen(true)}
             refreshTrigger={refreshExpenses}
+            selectedClientId={selectedClientId}
+            selectedProjectId={selectedProjectId}
+            onClientChange={setSelectedClientId}
+            onProjectChange={setSelectedProjectId}
           />
         </TabsContent>
 
