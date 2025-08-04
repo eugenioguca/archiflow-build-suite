@@ -50,9 +50,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const isApprovedUser = profile?.approval_status === 'approved';
             const shouldBeApproved = isAdmin || isApprovedUser;
             
-            // Check if profile is complete (need all required fields)
+            // Check if profile is complete based on role
+            const isClient = profile?.role === 'client';
             const profileComplete = profile?.profile_completed === true ||
-              (profile?.full_name && profile?.position && profile?.department && profile?.phone);
+              (isClient 
+                ? (profile?.full_name && profile?.phone) // Para clientes solo nombre y teléfono
+                : (profile?.full_name && profile?.position && profile?.department && profile?.phone) // Para empleados todos los campos
+              );
             
             
             setProfile(profile);
@@ -97,9 +101,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               const isApprovedUser = profile?.approval_status === 'approved';
               const shouldBeApproved = isAdmin || isApprovedUser;
               
-              // Check if profile is complete
+              // Check if profile is complete based on role
+              const isClient = profile?.role === 'client';
               const profileComplete = profile?.profile_completed === true ||
-                (profile?.full_name && profile?.position && profile?.department && profile?.phone);
+                (isClient 
+                  ? (profile?.full_name && profile?.phone) // Para clientes solo nombre y teléfono
+                  : (profile?.full_name && profile?.position && profile?.department && profile?.phone) // Para empleados todos los campos
+                );
               
               setProfile(profile);
               setIsApproved(shouldBeApproved);

@@ -31,7 +31,7 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, isApproved, needsOnboarding } = useAuth();
+  const { user, loading, isApproved, needsOnboarding, profile } = useAuth();
 
   if (loading) {
     return (
@@ -47,7 +47,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   // Show onboarding if user needs to complete profile
   if (needsOnboarding) {
-    return <UserOnboarding user={user} onComplete={() => window.location.reload()} />;
+    return <UserOnboarding user={user} profile={profile} onComplete={() => window.location.reload()} />;
   }
 
   // Show pending approval screen for non-approved users
@@ -59,7 +59,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function ClientProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading, isApproved, needsOnboarding } = useAuth();
+  const { user, loading, isApproved, needsOnboarding, profile } = useAuth();
 
   if (loading) {
     return (
@@ -75,7 +75,7 @@ function ClientProtectedRoute({ children }: { children: React.ReactNode }) {
 
   // Show onboarding if user needs to complete profile
   if (needsOnboarding) {
-    return <UserOnboarding user={user} onComplete={() => window.location.reload()} />;
+    return <UserOnboarding user={user} profile={profile} onComplete={() => window.location.reload()} />;
   }
 
   if (!isApproved) {

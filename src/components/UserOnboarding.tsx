@@ -9,10 +9,13 @@ import { Loader2, UserCheck } from "lucide-react";
 
 interface UserOnboardingProps {
   user: any;
+  profile: any;
   onComplete: () => void;
 }
 
-export function UserOnboarding({ user, onComplete }: UserOnboardingProps) {
+export function UserOnboarding({ user, profile, onComplete }: UserOnboardingProps) {
+  const isClient = profile?.role === 'client';
+  
   const [formData, setFormData] = useState({
     full_name: "",
     position: "",
@@ -43,7 +46,8 @@ export function UserOnboarding({ user, onComplete }: UserOnboardingProps) {
       return;
     }
 
-    if (!formData.position.trim()) {
+    // Solo validar puesto y departamento para empleados
+    if (!isClient && !formData.position.trim()) {
       toast({
         title: "Error", 
         description: "El puesto es obligatorio",
@@ -52,7 +56,7 @@ export function UserOnboarding({ user, onComplete }: UserOnboardingProps) {
       return;
     }
 
-    if (!formData.department.trim()) {
+    if (!isClient && !formData.department.trim()) {
       toast({
         title: "Error",
         description: "El departamento es obligatorio", 
@@ -72,15 +76,21 @@ export function UserOnboarding({ user, onComplete }: UserOnboardingProps) {
 
     setLoading(true);
     try {
+      const updateData: any = {
+        full_name: formData.full_name.trim(),
+        phone: formData.phone.trim(),
+        profile_completed: true
+      };
+
+      // Solo actualizar puesto y departamento para empleados
+      if (!isClient) {
+        updateData.position = formData.position.trim();
+        updateData.department = formData.department.trim();
+      }
+
       const { error } = await supabase
         .from("profiles")
-        .update({
-          full_name: formData.full_name.trim(),
-          position: formData.position.trim(),
-          department: formData.department.trim(),
-          phone: formData.phone.trim(),
-          profile_completed: true
-        })
+        .update(updateData)
         .eq("user_id", user.id);
 
       if (error) throw error;
@@ -112,10 +122,14 @@ export function UserOnboarding({ user, onComplete }: UserOnboardingProps) {
               <UserCheck className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl">¡Bienvenido a la plataforma!</CardTitle>
+          <CardTitle className="text-2xl">
+            {isClient ? '¡Bienvenido cliente!' : '¡Bienvenido a la plataforma!'}
+          </CardTitle>
           <CardDescription>
-            Completa tu perfil para crear tu tarjeta de contacto que será utilizada 
-            para añadirte a los equipos de proyectos
+            {isClient 
+              ? 'Completa tu información de contacto para mantenerte al día con tus proyectos'
+              : 'Completa tu perfil para crear tu tarjeta de contacto que será utilizada para añadirte a los equipos de proyectos'
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -132,29 +146,33 @@ export function UserOnboarding({ user, onComplete }: UserOnboardingProps) {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="position">Puesto *</Label>
-              <Input
-                id="position"
-                type="text"
-                value={formData.position}
-                onChange={(e) => handleInputChange("position", e.target.value)}
-                placeholder="Ej: Arquitecto, Ingeniero, Diseñador"
-                required
-              />
-            </div>
+            {!isClient && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="position">Puesto *</Label>
+                  <Input
+                    id="position"
+                    type="text"
+                    value={formData.position}
+                    onChange={(e) => handleInputChange("position", e.target.value)}
+                    placeholder="Ej: Arquitecto, Ingeniero, Diseñador"
+                    required
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="department">Departamento *</Label>
-              <Input
-                id="department"
-                type="text"
-                value={formData.department}
-                onChange={(e) => handleInputChange("department", e.target.value)}
-                placeholder="Ej: Diseño, Construcción, Ventas"
-                required
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="department">Departamento *</Label>
+                  <Input
+                    id="department"
+                    type="text"
+                    value={formData.department}
+                    onChange={(e) => handleInputChange("department", e.target.value)}
+                    placeholder="Ej: Diseño, Construcción, Ventas"
+                    required
+                  />
+                </div>
+              </>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="email">Email *</Label>
