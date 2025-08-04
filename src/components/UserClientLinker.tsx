@@ -82,42 +82,57 @@ export const UserClientLinker: React.FC = () => {
       const userProfile = clientUsers.find(user => user.user_id === userId);
       if (!userProfile) throw new Error('Usuario no encontrado');
 
+      console.log('Vinculando usuario:', { userId, clientId, userProfile });
+
       // Update client with profile_id
-      const { error: clientError } = await supabase
+      const { data: clientData, error: clientError } = await supabase
         .from('clients')
         .update({ profile_id: userProfile.id })
-        .eq('id', clientId);
+        .eq('id', clientId)
+        .select();
 
-      if (clientError) throw clientError;
+      if (clientError) {
+        console.error('Error actualizando cliente:', clientError);
+        throw new Error(`Error actualizando cliente: ${clientError.message}`);
+      }
 
-      // Create portal settings
-      const { error: portalError } = await supabase
+      console.log('Cliente actualizado exitosamente:', clientData);
+
+      // Create portal settings with upsert to avoid duplicates
+      const { data: portalData, error: portalError } = await supabase
         .from('client_portal_settings')
-        .insert({
+        .upsert({
           client_id: clientId,
           can_view_documents: true,
           can_view_finances: true,
           can_view_photos: true,
           can_view_progress: true
-        });
+        }, {
+          onConflict: 'client_id'
+        })
+        .select();
 
-      if (portalError && !portalError.message.includes('duplicate')) {
-        throw portalError;
+      if (portalError) {
+        console.error('Error creando configuración portal:', portalError);
+        throw new Error(`Error creando configuración portal: ${portalError.message}`);
       }
+
+      console.log('Configuración portal creada exitosamente:', portalData);
 
       toast({
         title: "Vinculación exitosa",
-        description: "El usuario ha sido vinculado al cliente correctamente"
+        description: `Usuario ${userProfile.full_name} vinculado al cliente correctamente`
       });
 
       // Refresh data
       fetchData();
-    } catch (error) {
-      console.error('Error linking user to client:', error);
+    } catch (error: any) {
+      console.error('Error completo linking user to client:', error);
+      const errorMessage = error.message || 'Error desconocido al vincular usuario';
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "No se pudo vincular el usuario al cliente"
+        title: "Error de vinculación",
+        description: errorMessage
       });
     }
   };
