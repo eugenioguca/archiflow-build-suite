@@ -49,8 +49,7 @@ const adminItems = [
   { title: "Finanzas", url: "/finances", icon: DollarSign, color: "text-primary" },
   { title: "Contabilidad", url: "/accounting", icon: Calculator, color: "text-primary" },
   { title: "Preview Portal Cliente", url: "/client-portal-preview", icon: Eye, color: "text-info" },
-  { title: "Gestión de Usuarios", url: "/user-management", icon: UserCheck, color: "text-primary" },
-  { title: "Alianzas Comerciales", url: "/commercial-alliances", icon: HandHeart, color: "text-primary" },
+  { title: "Herramientas", url: "/user-management", icon: UserCheck, color: "text-primary" },
 ];
 
 const clientItems = [

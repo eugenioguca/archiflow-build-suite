@@ -23,7 +23,7 @@ import ClientPortalPreview from "./pages/ClientPortalPreview";
 
 import SuppliersNew from "./pages/SuppliersNew";
 import ClientPortal from "./pages/ClientPortal";
-import CommercialAlliances from "./pages/CommercialAlliances";
+
 import PendingApproval from "./components/PendingApproval";
 import { UserOnboarding } from "./components/UserOnboarding";
 import NotFound from "./pages/NotFound";
@@ -163,16 +163,6 @@ const App = () => (
                      <UserManagement />
                    </Layout>
                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/commercial-alliances" 
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <CommercialAlliances />
-                    </Layout>
-                  </ProtectedRoute>
                 } 
               />
           <Route 

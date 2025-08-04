@@ -9,6 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import { ProjectProgressCard } from '@/components/ProjectProgressCard';
 import { PaymentHistoryPanel } from '@/components/PaymentHistoryPanel';
 import { DocumentsPanel } from '@/components/DocumentsPanel';
+import { ProgressPhotosCarousel } from '@/components/ProgressPhotosCarousel';
+import { PaymentPlansFinance } from '@/components/PaymentPlansFinance';
 
 interface PreviewProject {
   id: string;
@@ -31,6 +33,8 @@ const ClientPortalPreview = () => {
   const [projectData, setProjectData] = useState<PreviewProject | null>(null);
   const [payments, setPayments] = useState<any[]>([]);
   const [documents, setDocuments] = useState<any[]>([]);
+  const [progressPhotos, setProgressPhotos] = useState<any[]>([]);
+  const [paymentPlans, setPaymentPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -52,7 +56,19 @@ const ClientPortalPreview = () => {
       if (projectError) throw projectError;
       setProjectData(project);
 
-      // Fetch sample payments
+      // Fetch payment plans (datos reales del plan de pagos)
+      const { data: paymentPlansData } = await supabase
+        .from('payment_plans')
+        .select(`
+          *,
+          payment_installments(*)
+        `)
+        .eq('client_project_id', selectedProjectId)
+        .limit(5);
+
+      setPaymentPlans(paymentPlansData || []);
+
+      // Fetch client payments for history
       const { data: paymentsData } = await supabase
         .from('client_payments')
         .select('*')
@@ -64,7 +80,7 @@ const ClientPortalPreview = () => {
         status: 'paid'
       })) || []);
 
-      // Fetch sample documents
+      // Fetch documents
       const { data: documentsData } = await supabase
         .from('documents')
         .select('*')
@@ -75,6 +91,26 @@ const ClientPortalPreview = () => {
         ...doc,
         uploader_name: 'Sistema',
         category: 'general'
+      })) || []);
+
+      // Fetch progress photos
+      const { data: progressPhotosData } = await supabase
+        .from('progress_photos')
+        .select(`
+          *,
+          profiles!progress_photos_taken_by_fkey(full_name)
+        `)
+        .eq('project_id', selectedProjectId)
+        .order('taken_at', { ascending: false })
+        .limit(10);
+
+      setProgressPhotos(progressPhotosData?.map(photo => ({
+        id: photo.id,
+        photo_url: photo.photo_url,
+        description: photo.title || photo.description || 'Foto de progreso',
+        phase_name: photo.phase_id ? `Fase ${photo.phase_id}` : 'General',
+        created_at: photo.taken_at,
+        photographer_name: photo.profiles?.full_name || 'Equipo de construcción'
       })) || []);
 
     } catch (error) {
@@ -156,24 +192,84 @@ const ClientPortalPreview = () => {
                 {/* Project Progress Card */}
                 <ProjectProgressCard project={projectData} />
                 
-                {/* Two column layout */}
-                <div className="grid md:grid-cols-2 gap-6">
-                  <PaymentHistoryPanel payments={payments} />
-                  <DocumentsPanel 
-                    documents={documents}
-                    onDocumentView={(doc) => {
-                      toast({
-                        title: "Vista previa",
-                        description: `Abriendo documento: ${doc.name}`
-                      });
-                    }}
-                    onDocumentDownload={(doc) => {
-                      toast({
-                        title: "Descarga simulada",
-                        description: `Descargando: ${doc.name}`
-                      });
-                    }}
-                  />
+                {/* Main content layout */}
+                <div className="space-y-6">
+                  {/* Payment Plans Section */}
+                  {paymentPlans.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <CreditCard className="h-4 w-4" />
+                          Plan de Pagos
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <p className="text-sm text-muted-foreground">
+                            Plan de pagos configurado para este proyecto
+                          </p>
+                          <div className="grid gap-2">
+                            {paymentPlans.map(plan => (
+                              <div key={plan.id} className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                                <div>
+                                  <p className="font-medium">{plan.plan_name}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    Total: ${plan.total_amount?.toLocaleString()} {plan.currency}
+                                  </p>
+                                </div>
+                                <Badge variant={plan.status === 'active' ? 'default' : 'secondary'}>
+                                  {plan.status}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Two column layout */}
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <PaymentHistoryPanel payments={payments} />
+                    <DocumentsPanel 
+                      documents={documents}
+                      onDocumentView={(doc) => {
+                        toast({
+                          title: "Vista previa",
+                          description: `Abriendo documento: ${doc.name}`
+                        });
+                      }}
+                      onDocumentDownload={(doc) => {
+                        toast({
+                          title: "Descarga simulada",
+                          description: `Descargando: ${doc.name}`
+                        });
+                      }}
+                    />
+                  </div>
+
+                  {/* Progress Photos Section */}
+                  {progressPhotos.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Camera className="h-4 w-4" />
+                          Fotos de Avance del Proyecto
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ProgressPhotosCarousel 
+                          photos={progressPhotos}
+                          onPhotoDownload={(photo) => {
+                            toast({
+                              title: "Descarga simulada",
+                              description: `Descargando foto: ${photo.description}`
+                            });
+                          }}
+                        />
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               </div>
             ) : (
@@ -216,10 +312,13 @@ const ClientPortalPreview = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground text-sm">
-                    {payments.length > 0 
-                      ? `${payments.length} pagos registrados`
-                      : 'No hay pagos registrados'
+                    {paymentPlans.length > 0 
+                      ? `${paymentPlans.length} planes de pago configurados`
+                      : 'No hay planes de pago configurados'
                     }
+                    <span className="block text-xs mt-1 text-green-600">
+                      ✓ Datos reales conectados
+                    </span>
                   </p>
                 </CardContent>
               </Card>
@@ -233,9 +332,12 @@ const ClientPortalPreview = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground text-sm">
-                    Fotos de avance del proyecto
-                    <span className="block text-xs mt-1 text-orange-600">
-                      (Funcionalidad en desarrollo)
+                    {progressPhotos.length > 0 
+                      ? `${progressPhotos.length} fotos disponibles`
+                      : 'No hay fotos de avance'
+                    }
+                    <span className="block text-xs mt-1 text-green-600">
+                      ✓ Datos reales conectados
                     </span>
                   </p>
                 </CardContent>
