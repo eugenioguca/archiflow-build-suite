@@ -202,6 +202,9 @@ export const ClientPortalChat: React.FC<ClientPortalChatProps> = ({
           <span className="flex items-center gap-2">
             <MessageCircle className="h-5 w-5" />
             Chat del Proyecto
+            <Badge variant="outline" className="text-xs">
+              ID: {projectId.substring(0, 8)}...
+            </Badge>
           </span>
           <Badge variant="secondary" className="gap-1">
             {messages.length} mensajes

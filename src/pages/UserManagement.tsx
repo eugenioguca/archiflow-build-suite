@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { BranchOfficeManager } from '@/components/BranchOfficeManager';
 import CommercialAlliancesManager from '@/components/CommercialAlliancesManager';
+import { UserClientLinker } from '@/components/UserClientLinker';
 import { Loader2, UserX, Trash2, Edit3, Save, X, Link, Users, Building, Handshake } from 'lucide-react';
 
 // Interfaces
@@ -419,10 +420,14 @@ const UserManagement = () => {
       </div>
 
       <Tabs defaultValue="users" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Usuarios
+          </TabsTrigger>
+          <TabsTrigger value="linking" className="flex items-center gap-2">
+            <Link className="h-4 w-4" />
+            Vincular
           </TabsTrigger>
           <TabsTrigger value="branches" className="flex items-center gap-2">
             <Building className="h-4 w-4" />
@@ -485,7 +490,46 @@ const UserManagement = () => {
                           {new Date(user.created_at).toLocaleDateString()}
                         </td>
                         <td className="p-4">
-                          <div className="flex gap-2">
+                      <div className="flex gap-2">
+                            {/* Interface de vinculación usuario-cliente */}
+                            {linkingUserId === user.user_id && (
+                              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                                <div className="bg-card p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+                                  <h3 className="text-lg font-semibold mb-4">
+                                    Vincular Usuario con Cliente
+                                  </h3>
+                                  
+                                  <div className="space-y-4">
+                                    <div>
+                                      <Label htmlFor="client-select">Cliente:</Label>
+                                      <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Seleccionar cliente" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {clients.filter(c => !c.profile_id).map((client) => (
+                                            <SelectItem key={client.id} value={client.id}>
+                                              {client.full_name}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+
+                                    <div className="flex gap-2 justify-end">
+                                      <Button variant="outline" onClick={cancelLinking}>
+                                        Cancelar
+                                      </Button>
+                                      <Button onClick={handleLinkClientToUser}>
+                                        <Link className="h-4 w-4 mr-2" />
+                                        Vincular
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
                             {editingUser === user.id ? (
                               <>
                                 <Button
@@ -655,6 +699,10 @@ const UserManagement = () => {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="linking">
+          <UserClientLinker />
         </TabsContent>
 
         <TabsContent value="branches">

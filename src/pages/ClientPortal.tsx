@@ -39,6 +39,7 @@ import { DocumentsPanel } from '@/components/DocumentsPanel';
 import { ProgressPhotosCarousel } from '@/components/ProgressPhotosCarousel';
 import { ClientPortalChat } from '@/components/ClientPortalChat';
 import { ClientDocumentUploader } from '@/components/ClientDocumentUploader';
+import ClientLayout from '@/components/ClientLayout';
 
 interface ClientProject {
   id: string;
@@ -101,6 +102,9 @@ const ClientPortal: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const [clientName, setClientName] = useState<string>('');
+  const [projects, setProjects] = useState<ClientProject[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [project, setProject] = useState<ClientProject | null>(null);
   const [phases, setPhases] = useState<ProjectPhase[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -111,11 +115,17 @@ const ClientPortal: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      fetchClientData();
+      fetchClientProjects();
     }
   }, [user]);
 
-  const fetchClientData = async () => {
+  useEffect(() => {
+    if (selectedProjectId) {
+      fetchProjectData(selectedProjectId);
+    }
+  }, [selectedProjectId]);
+
+  const fetchClientProjects = async () => {
     if (!user) return;
 
     try {
@@ -136,27 +146,73 @@ const ClientPortal: React.FC = () => {
         .single();
 
       if (clientError) throw clientError;
+      setClientName(clientData.full_name);
 
-      // Get client project
-      const { data: projectData, error: projectError } = await supabase
+      // Get all client projects
+      const { data: projectsData, error: projectsError } = await supabase
         .from('client_projects')
         .select('*')
         .eq('client_id', clientData.id)
+        .order('project_name', { ascending: true });
+
+      if (projectsError) throw projectsError;
+      
+      setProjects(projectsData || []);
+      
+      // Auto-select first project if available
+      if (projectsData && projectsData.length > 0 && !selectedProjectId) {
+        setSelectedProjectId(projectsData[0].id);
+      }
+
+    } catch (error) {
+      console.error('Error fetching client projects:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudieron cargar los proyectos del cliente"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchProjectData = async (projectId: string) => {
+    if (!user || !projectId) return;
+
+    try {
+      // Get selected project data
+      const selectedProj = projects.find(p => p.id === projectId);
+      if (!selectedProj) return;
+      
+      setProject(selectedProj);
+
+      // Get user profile and client data for queries
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
         .single();
 
-      if (projectError) throw projectError;
-      setProject(projectData);
+      if (!profileData) return;
+
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('profile_id', profileData.id)
+        .single();
+
+      if (!clientData) return;
 
       // Get project phases
       const { data: phasesData } = await supabase
         .from('design_phases')
         .select('*')
-        .eq('project_id', projectData.id)
+        .eq('project_id', projectId)
         .order('phase_order', { ascending: true });
       
       setPhases(phasesData || []);
 
-      // Get payments
+      // Get payments for this project specifically
       const { data: paymentsData } = await supabase
         .from('client_payments')
         .select('*')
@@ -166,11 +222,11 @@ const ClientPortal: React.FC = () => {
       if (paymentsData) {
         setPayments(paymentsData.map(payment => ({
           ...payment,
-          status: 'paid' // Assume paid since they're in the system
+          status: 'paid'
         })));
       }
 
-      // Get documents
+      // Get documents for this project
       const { data: documentsData } = await supabase
         .from('documents')
         .select(`
@@ -183,7 +239,7 @@ const ClientPortal: React.FC = () => {
           created_at,
           uploaded_by
         `)
-        .eq('project_id', projectData.id)
+        .eq('project_id', projectId)
         .order('created_at', { ascending: false });
 
       if (documentsData) {
@@ -195,18 +251,16 @@ const ClientPortal: React.FC = () => {
         setDocuments(processedDocs);
       }
 
-      // Skip progress photos for now - table may not exist yet
+      // Skip progress photos for now
       setPhotos([]);
 
     } catch (error) {
-      console.error('Error fetching client data:', error);
+      console.error('Error fetching project data:', error);
       toast({
         variant: "destructive",
         title: "Error",
         description: "No se pudieron cargar los datos del proyecto"
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -250,15 +304,31 @@ const ClientPortal: React.FC = () => {
     );
   }
 
-  if (!project) {
+  if (projects.length === 0 && !loading) {
     return (
       <div className="container mx-auto py-8">
         <Card>
           <CardContent className="text-center py-12">
             <Building2 className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-2xl font-bold mb-2">No hay proyecto asignado</h2>
+            <h2 className="text-2xl font-bold mb-2">No hay proyectos asignados</h2>
             <p className="text-muted-foreground">
-              Actualmente no tienes un proyecto asignado. Contacta con el administrador.
+              Actualmente no tienes proyectos asignados. Contacta con el administrador.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!selectedProjectId || !project) {
+    return (
+      <div className="container mx-auto py-8">
+        <Card>
+          <CardContent className="text-center py-12">
+            <Building2 className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Selecciona un proyecto</h2>
+            <p className="text-muted-foreground">
+              Selecciona un proyecto desde el selector en la parte superior para ver su información.
             </p>
           </CardContent>
         </Card>
@@ -267,7 +337,12 @@ const ClientPortal: React.FC = () => {
   }
 
   return (
-    <div className={`${isMobile ? 'p-2 space-y-4' : 'container mx-auto py-6 space-y-6'}`}>
+    <ClientLayout
+      clientName={clientName}
+      projects={projects}
+      selectedProjectId={selectedProjectId}
+      onProjectChange={setSelectedProjectId}
+    >
       {/* Header del Proyecto */}
       <div className={`bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg ${isMobile ? 'p-4' : 'p-6'}`}>
         <div className={`${isMobile ? 'space-y-4' : 'flex items-start justify-between'}`}>
@@ -446,10 +521,10 @@ const ClientPortal: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="documentos" className="space-y-6">
-          <ClientDocumentUploader 
+            <ClientDocumentUploader 
             projectId={project.id}
             clientId={project.client_id}
-            onUploadComplete={fetchClientData}
+            onUploadComplete={() => fetchProjectData(selectedProjectId)}
           />
           <DocumentsPanel 
             documents={documents}
@@ -584,7 +659,7 @@ const ClientPortal: React.FC = () => {
           )}
         </TabsContent>
       </Tabs>
-    </div>
+    </ClientLayout>
   );
 };
 
