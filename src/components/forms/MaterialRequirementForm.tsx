@@ -319,7 +319,6 @@ export function MaterialRequirementForm({
                   <SelectValue placeholder="Seleccione proveedor" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin proveedor</SelectItem>
                   {suppliers.map((supplier) => (
                     <SelectItem key={supplier.id} value={supplier.id}>
                       {supplier.company_name}
