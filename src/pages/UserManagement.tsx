@@ -35,6 +35,7 @@ interface UserProfile {
   user_id: string;
   full_name: string | null;
   phone: string | null;
+  email: string | null;
   role: 'admin' | 'employee' | 'client';
   approval_status: string;
   created_at: string;
@@ -84,13 +85,34 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase
+      // Primero obtener los perfiles
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setUsers(data || []);
+      if (profilesError) throw profilesError;
+
+      // Luego obtener los emails de auth.users para cada perfil
+      const usersWithEmails = await Promise.all(
+        (profiles || []).map(async (profile) => {
+          try {
+            const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(profile.user_id);
+            return {
+              ...profile,
+              email: user?.email || null
+            };
+          } catch (error) {
+            // Si no se puede obtener el email, usar fallback
+            return {
+              ...profile,
+              email: null
+            };
+          }
+        })
+      );
+
+      setUsers(usersWithEmails);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -463,7 +485,7 @@ const UserManagement = () => {
                             user.full_name || 'Sin nombre'
                           )}
                         </td>
-                        <td className="p-4">{user.user_id}</td>
+                        <td className="p-4">{user.email || 'Email no disponible'}</td>
                         <td className="p-4">
                           <Badge 
                             variant={user.role === 'admin' ? 'default' : 
