@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { usePermissions } from "@/hooks/usePermissions";
 
 import {
   Sidebar,
@@ -39,21 +40,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 
-const adminItems = [
-  { title: "Dashboard", url: "/dashboard", icon: BarChart3, color: "text-primary" },
-  { title: "Clientes", url: "/clients", icon: Users, color: "text-primary" },
-  { title: "Ventas", url: "/sales", icon: TrendingUp, color: "text-success" },
-  { title: "Diseño", url: "/design", icon: Palette, color: "text-purple" },
-  { title: "Construcción", url: "/construction", icon: HardHat, color: "text-orange" },
-  { title: "Proveedores", url: "/suppliers", icon: Truck, color: "text-orange" },
-  { title: "Finanzas", url: "/finances", icon: DollarSign, color: "text-primary" },
-  { title: "Contabilidad", url: "/accounting", icon: Calculator, color: "text-primary" },
-  { title: "Preview Portal Cliente", url: "/client-portal-preview", icon: Eye, color: "text-info" },
-  { title: "Herramientas", url: "/user-management", icon: UserCheck, color: "text-primary" },
+const allMenuItems = [
+  { title: "Dashboard", url: "/dashboard", icon: BarChart3, color: "text-primary", module: "dashboard" },
+  { title: "Clientes", url: "/clients", icon: Users, color: "text-primary", module: "clients" },
+  { title: "Ventas", url: "/sales", icon: TrendingUp, color: "text-success", module: "sales" },
+  { title: "Diseño", url: "/design", icon: Palette, color: "text-purple", module: "design" },
+  { title: "Construcción", url: "/construction", icon: HardHat, color: "text-orange", module: "construction" },
+  { title: "Proveedores", url: "/suppliers", icon: Truck, color: "text-orange", module: "suppliers" },
+  { title: "Finanzas", url: "/finances", icon: DollarSign, color: "text-primary", module: "finances" },
+  { title: "Contabilidad", url: "/accounting", icon: Calculator, color: "text-primary", module: "accounting" },
+  { title: "Preview Portal Cliente", url: "/client-portal-preview", icon: Eye, color: "text-info", module: "client_portal_preview" },
+  { title: "Herramientas", url: "/user-management", icon: UserCheck, color: "text-primary", module: "tools" },
 ];
 
 const clientItems = [
-  { title: "Mi Proyecto", url: "/my-project", icon: Building2, color: "text-info" },
+  { title: "Mi Proyecto", url: "/my-project", icon: Building2, color: "text-info", module: "client_portal" },
 ];
 
 export function AppSidebar() {
@@ -63,26 +64,31 @@ export function AppSidebar() {
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [userDepartment, setUserDepartment] = useState<string | null>(null);
+  const [userPosition, setUserPosition] = useState<string | null>(null);
   const isMobile = useIsMobile();
+  const { hasModuleAccess, isLoading } = usePermissions();
 
   useEffect(() => {
-    const fetchUserRole = async () => {
+    const fetchUserProfile = async () => {
       if (user) {
         const { data, error } = await supabase
           .from('profiles')
-          .select('role')
+          .select('role, department_enum, position_enum')
           .eq('user_id', user.id)
           .single();
         
         if (data && !error) {
           setUserRole(data.role);
+          setUserDepartment(data.department_enum);
+          setUserPosition(data.position_enum);
         } else {
           setUserRole(null);
         }
       }
     };
 
-    fetchUserRole();
+    fetchUserProfile();
   }, [user]);
 
   const handleNavigate = () => {
@@ -97,22 +103,42 @@ export function AppSidebar() {
       ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md" 
       : "hover:bg-sidebar-accent/80 transition-all duration-200";
 
-  // Filter menu items based on user role
-  let menuItems = adminItems;
+  // Filter menu items based on user permissions
+  let menuItems = allMenuItems;
   
   if (userRole === 'client') {
-    // Clients should be redirected to their portal, but if they somehow reach this component, show minimal items
     menuItems = clientItems;
-  } else if (userRole === 'employee') {
-    // Employees don't see user management or client portal preview
-    menuItems = adminItems.filter(item => 
-      item.url !== '/user-management' && 
-      item.url !== '/client-portal-preview'
-    );
-  } else if (userRole === 'admin') {
-    // Admins see everything
-    menuItems = adminItems;
+  } else if (!isLoading) {
+    // Filter items based on permissions
+    menuItems = allMenuItems.filter(item => hasModuleAccess(item.module));
   }
+
+  // Helper function to display position in Spanish
+  const getPositionDisplay = (position: string | null, department: string | null) => {
+    if (!position) return 'Usuario';
+    
+    const positionMap: Record<string, string> = {
+      'direccion_general': 'Dirección General',
+      'director': 'Director',
+      'gerente': 'Gerente',
+      'jefatura': 'Jefatura',
+      'analista': 'Analista',
+      'auxiliar': 'Auxiliar'
+    };
+
+    const departmentMap: Record<string, string> = {
+      'ventas': 'Ventas',
+      'diseño': 'Diseño',
+      'construcción': 'Construcción',
+      'finanzas': 'Finanzas',
+      'contabilidad': 'Contabilidad'
+    };
+
+    const positionTitle = positionMap[position] || position;
+    const departmentTitle = department ? departmentMap[department] || department : '';
+    
+    return position === 'direccion_general' ? positionTitle : `${positionTitle} ${departmentTitle}`.trim();
+  };
 
   return (
     <Sidebar 
@@ -182,9 +208,7 @@ export function AppSidebar() {
                   {user.email}
                 </p>
                 <p className="text-xs text-sidebar-foreground/70">
-                  {userRole === 'admin' ? 'Administrador' : 
-                   userRole === 'employee' ? 'Empleado' : 
-                   userRole === 'client' ? 'Cliente' : 'Usuario'}
+                  {userRole === 'client' ? 'Cliente' : getPositionDisplay(userPosition, userDepartment)}
                 </p>
               </div>
             </div>

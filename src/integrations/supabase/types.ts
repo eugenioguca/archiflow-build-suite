@@ -2598,6 +2598,36 @@ export type Database = {
           },
         ]
       }
+      department_permissions: {
+        Row: {
+          can_access: boolean | null
+          can_view_all_branches: boolean | null
+          created_at: string | null
+          department: Database["public"]["Enums"]["department_type"]
+          id: string
+          module_name: string
+          position: Database["public"]["Enums"]["position_hierarchy"]
+        }
+        Insert: {
+          can_access?: boolean | null
+          can_view_all_branches?: boolean | null
+          created_at?: string | null
+          department: Database["public"]["Enums"]["department_type"]
+          id?: string
+          module_name: string
+          position: Database["public"]["Enums"]["position_hierarchy"]
+        }
+        Update: {
+          can_access?: boolean | null
+          can_view_all_branches?: boolean | null
+          created_at?: string | null
+          department?: Database["public"]["Enums"]["department_type"]
+          id?: string
+          module_name?: string
+          position?: Database["public"]["Enums"]["position_hierarchy"]
+        }
+        Relationships: []
+      }
       design_appointments: {
         Row: {
           appointment_date: string
@@ -4367,11 +4397,17 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           department: string | null
+          department_enum: Database["public"]["Enums"]["department_type"] | null
           email: string
           full_name: string
+          hire_date: string | null
           id: string
+          immediate_supervisor_id: string | null
           phone: string | null
           position: string | null
+          position_enum:
+            | Database["public"]["Enums"]["position_hierarchy"]
+            | null
           profile_completed: boolean | null
           role: Database["public"]["Enums"]["user_role"]
           skills: string[] | null
@@ -4384,11 +4420,19 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           department?: string | null
+          department_enum?:
+            | Database["public"]["Enums"]["department_type"]
+            | null
           email: string
           full_name: string
+          hire_date?: string | null
           id?: string
+          immediate_supervisor_id?: string | null
           phone?: string | null
           position?: string | null
+          position_enum?:
+            | Database["public"]["Enums"]["position_hierarchy"]
+            | null
           profile_completed?: boolean | null
           role?: Database["public"]["Enums"]["user_role"]
           skills?: string[] | null
@@ -4401,18 +4445,34 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           department?: string | null
+          department_enum?:
+            | Database["public"]["Enums"]["department_type"]
+            | null
           email?: string
           full_name?: string
+          hire_date?: string | null
           id?: string
+          immediate_supervisor_id?: string | null
           phone?: string | null
           position?: string | null
+          position_enum?:
+            | Database["public"]["Enums"]["position_hierarchy"]
+            | null
           profile_completed?: boolean | null
           role?: Database["public"]["Enums"]["user_role"]
           skills?: string[] | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_immediate_supervisor_id_fkey"
+            columns: ["immediate_supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       progress_milestones: {
         Row: {
@@ -5595,6 +5655,52 @@ export type Database = {
         }
         Relationships: []
       }
+      user_branch_assignments: {
+        Row: {
+          branch_office_id: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          branch_office_id: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          branch_office_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_branch_assignments_branch_office_id_fkey"
+            columns: ["branch_office_id"]
+            isOneToOne: false
+            referencedRelation: "branch_offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_branch_assignments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_branch_assignments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_permissions: {
         Row: {
           can_create: boolean
@@ -5867,12 +5973,18 @@ export type Database = {
           uploader_name: string
         }[]
       }
+      get_user_branch_offices: {
+        Args: { _user_id: string }
+        Returns: string[]
+      }
       has_module_permission: {
-        Args: {
-          _user_id: string
-          _module: Database["public"]["Enums"]["module_name"]
-          _permission: string
-        }
+        Args:
+          | {
+              _user_id: string
+              _module: Database["public"]["Enums"]["module_name"]
+              _permission: string
+            }
+          | { _user_id: string; _module: string }
         Returns: boolean
       }
       insert_default_budget_items: {
@@ -5938,6 +6050,12 @@ export type Database = {
         | "meeting"
         | "site_visit"
         | "video_call"
+      department_type:
+        | "ventas"
+        | "diseño"
+        | "construcción"
+        | "finanzas"
+        | "contabilidad"
       expense_category:
         | "administration"
         | "sales"
@@ -5975,6 +6093,13 @@ export type Database = {
         | "transporte"
         | "otros"
       payable_status: "pending" | "partial" | "paid" | "overdue" | "cancelled"
+      position_hierarchy:
+        | "direccion_general"
+        | "director"
+        | "gerente"
+        | "jefatura"
+        | "analista"
+        | "auxiliar"
       priority_level: "low" | "medium" | "high" | "urgent"
       progress_milestone_type:
         | "start"
@@ -6189,6 +6314,13 @@ export const Constants = {
         "site_visit",
         "video_call",
       ],
+      department_type: [
+        "ventas",
+        "diseño",
+        "construcción",
+        "finanzas",
+        "contabilidad",
+      ],
       expense_category: [
         "administration",
         "sales",
@@ -6231,6 +6363,14 @@ export const Constants = {
         "otros",
       ],
       payable_status: ["pending", "partial", "paid", "overdue", "cancelled"],
+      position_hierarchy: [
+        "direccion_general",
+        "director",
+        "gerente",
+        "jefatura",
+        "analista",
+        "auxiliar",
+      ],
       priority_level: ["low", "medium", "high", "urgent"],
       progress_milestone_type: [
         "start",

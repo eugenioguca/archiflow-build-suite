@@ -28,7 +28,8 @@ import { useToast } from '@/hooks/use-toast';
 import { BranchOfficeManager } from '@/components/BranchOfficeManager';
 import CommercialAlliancesManager from '@/components/CommercialAlliancesManager';
 import { UserClientLinker } from '@/components/UserClientLinker';
-import { Loader2, UserX, Trash2, Edit3, Save, X, Link, Users, Building, Handshake } from 'lucide-react';
+import { EmployeeSetupDialog } from '@/components/EmployeeSetupDialog';
+import { Loader2, UserX, Trash2, Edit3, Save, X, Link, Users, Building, Handshake, Settings } from 'lucide-react';
 
 // Interfaces
 interface UserProfile {
@@ -67,6 +68,11 @@ const UserManagement = () => {
   const [linkingUserId, setLinkingUserId] = useState<string>('');
   const [editingUser, setEditingUser] = useState<string>('');
   const [editForm, setEditForm] = useState({ full_name: '', phone: '' });
+  
+  // Employee setup dialog states
+  const [isEmployeeSetupDialogOpen, setIsEmployeeSetupDialogOpen] = useState(false);
+  const [selectedUserForSetup, setSelectedUserForSetup] = useState<UserProfile | null>(null);
+  
   const { toast } = useToast();
 
   useEffect(() => {
@@ -490,7 +496,7 @@ const UserManagement = () => {
                           {new Date(user.created_at).toLocaleDateString()}
                         </td>
                         <td className="p-4">
-                      <div className="flex gap-2">
+                          <div className="flex gap-2">
                             {/* Interface de vinculación usuario-cliente */}
                             {linkingUserId === user.user_id && (
                               <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -528,6 +534,20 @@ const UserManagement = () => {
                                   </div>
                                 </div>
                               </div>
+                            )}
+
+                            {/* Employee Setup Button */}
+                            {user.role === 'employee' && user.approval_status === 'approved' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedUserForSetup(user);
+                                  setIsEmployeeSetupDialogOpen(true);
+                                }}
+                              >
+                                <Settings className="h-4 w-4" />
+                              </Button>
                             )}
 
                             {editingUser === user.id ? (
@@ -713,6 +733,14 @@ const UserManagement = () => {
           <CommercialAlliancesManager />
         </TabsContent>
       </Tabs>
+
+      {/* Employee Setup Dialog */}
+      <EmployeeSetupDialog
+        isOpen={isEmployeeSetupDialogOpen}
+        onOpenChange={setIsEmployeeSetupDialogOpen}
+        user={selectedUserForSetup}
+        onUserUpdated={fetchUsers}
+      />
     </div>
   );
 };
