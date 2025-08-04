@@ -197,6 +197,57 @@ export type Database = {
           },
         ]
       }
+      bank_accounts: {
+        Row: {
+          account_holder: string
+          account_number: string
+          account_type: string
+          bank_name: string
+          branch: string | null
+          created_at: string
+          created_by: string
+          credit_limit: number | null
+          current_balance: number
+          id: string
+          notes: string | null
+          status: string
+          swift_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_holder: string
+          account_number: string
+          account_type?: string
+          bank_name: string
+          branch?: string | null
+          created_at?: string
+          created_by: string
+          credit_limit?: number | null
+          current_balance?: number
+          id?: string
+          notes?: string | null
+          status?: string
+          swift_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_holder?: string
+          account_number?: string
+          account_type?: string
+          bank_name?: string
+          branch?: string | null
+          created_at?: string
+          created_by?: string
+          credit_limit?: number | null
+          current_balance?: number
+          id?: string
+          notes?: string | null
+          status?: string
+          swift_code?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       billing_clients: {
         Row: {
           activo: boolean | null
@@ -3267,6 +3318,48 @@ export type Database = {
         }
         Relationships: []
       }
+      general_ledger_accounts: {
+        Row: {
+          account_code: string
+          account_name: string
+          account_type: string
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean
+          level: number
+          parent_account_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_code: string
+          account_name: string
+          account_type: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          level?: number
+          parent_account_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_code?: string
+          account_name?: string
+          account_type?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          level?: number
+          parent_account_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       incomes: {
         Row: {
           amount: number
@@ -5655,6 +5748,144 @@ export type Database = {
         }
         Relationships: []
       }
+      treasury_payment_references: {
+        Row: {
+          account_id: string
+          account_type: string
+          created_at: string
+          created_by: string
+          id: string
+          notes: string | null
+          payment_date: string | null
+          reference_code: string
+          status: string
+          supplier_id: string | null
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          account_type: string
+          created_at?: string
+          created_by: string
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          reference_code: string
+          status?: string
+          supplier_id?: string | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          account_type?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string | null
+          reference_code?: string
+          status?: string
+          supplier_id?: string | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      treasury_transactions: {
+        Row: {
+          account_id: string
+          account_type: string
+          amount: number
+          approved_at: string | null
+          approved_by: string | null
+          client_id: string | null
+          comments: string | null
+          cost_per_unit: number | null
+          created_at: string
+          created_by: string
+          cuenta_mayor: string | null
+          department: string | null
+          description: string
+          id: string
+          invoice_number: string | null
+          invoice_url: string | null
+          partida: string | null
+          payment_reference_id: string | null
+          project_id: string | null
+          quantity: number | null
+          requires_approval: boolean | null
+          status: string
+          sub_partida: string | null
+          supplier_id: string | null
+          transaction_date: string
+          transaction_type: string
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          account_type: string
+          amount: number
+          approved_at?: string | null
+          approved_by?: string | null
+          client_id?: string | null
+          comments?: string | null
+          cost_per_unit?: number | null
+          created_at?: string
+          created_by: string
+          cuenta_mayor?: string | null
+          department?: string | null
+          description: string
+          id?: string
+          invoice_number?: string | null
+          invoice_url?: string | null
+          partida?: string | null
+          payment_reference_id?: string | null
+          project_id?: string | null
+          quantity?: number | null
+          requires_approval?: boolean | null
+          status?: string
+          sub_partida?: string | null
+          supplier_id?: string | null
+          transaction_date: string
+          transaction_type: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          account_type?: string
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          client_id?: string | null
+          comments?: string | null
+          cost_per_unit?: number | null
+          created_at?: string
+          created_by?: string
+          cuenta_mayor?: string | null
+          department?: string | null
+          description?: string
+          id?: string
+          invoice_number?: string | null
+          invoice_url?: string | null
+          partida?: string | null
+          payment_reference_id?: string | null
+          project_id?: string | null
+          quantity?: number | null
+          requires_approval?: boolean | null
+          status?: string
+          sub_partida?: string | null
+          supplier_id?: string | null
+          transaction_date?: string
+          transaction_type?: string
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_branch_assignments: {
         Row: {
           branch_office_id: string
@@ -5909,6 +6140,10 @@ export type Database = {
       create_default_design_phases: {
         Args: { project_id_param: string }
         Returns: undefined
+      }
+      generate_payment_reference: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_financial_summary_by_client: {
         Args: { client_filter?: string }
