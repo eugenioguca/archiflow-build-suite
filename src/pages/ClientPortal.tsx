@@ -308,6 +308,21 @@ const ClientPortal: React.FC = () => {
   if (projects.length === 0 && !loading) {
     return (
       <div className="container mx-auto py-8">
+        {/* Emergency Logout Button */}
+        <div className="flex justify-end mb-4">
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              supabase.auth.signOut();
+              window.location.href = '/auth';
+            }}
+            className="flex items-center gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Cerrar Sesión
+          </Button>
+        </div>
+        
         <Card>
           <CardContent className="text-center py-12">
             <Building2 className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
@@ -324,6 +339,21 @@ const ClientPortal: React.FC = () => {
   if (!selectedProjectId || !project) {
     return (
       <div className="container mx-auto py-8">
+        {/* Emergency Logout Button */}
+        <div className="flex justify-end mb-4">
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              supabase.auth.signOut();
+              window.location.href = '/auth';
+            }}
+            className="flex items-center gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Cerrar Sesión
+          </Button>
+        </div>
+        
         <Card>
           <CardContent className="text-center py-12">
             <Building2 className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
