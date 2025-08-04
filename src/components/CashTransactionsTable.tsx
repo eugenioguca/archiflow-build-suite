@@ -53,9 +53,6 @@ export const CashTransactionsTable: React.FC<CashTransactionsTableProps> = ({
         .from('treasury_transactions')
         .select(`
           *,
-          clients (full_name),
-          client_projects (project_name),
-          suppliers (company_name),
           cash_accounts (name),
           treasury_payment_references (reference_code)
         `)
@@ -84,10 +81,10 @@ export const CashTransactionsTable: React.FC<CashTransactionsTableProps> = ({
         department: transaction.department,
         status: transaction.status,
         invoice_number: transaction.invoice_number,
-        client_name: transaction.clients?.full_name,
-        project_name: transaction.client_projects?.project_name,
-        supplier_name: transaction.suppliers?.company_name,
-        cash_account_name: transaction.cash_accounts?.name,
+        client_name: 'Cliente',
+        project_name: 'Proyecto', 
+        supplier_name: 'Proveedor',
+        cash_account_name: transaction.cash_accounts?.name || 'N/A',
         payment_reference: transaction.treasury_payment_references?.reference_code
       }));
 
