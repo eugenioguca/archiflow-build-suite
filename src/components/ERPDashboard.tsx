@@ -19,8 +19,7 @@ import {
 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, PieChart, Pie, Cell, BarChart, Bar, Tooltip } from 'recharts';
 
 interface FinancialKPIs {
   totalCash: number;
@@ -551,7 +550,10 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
                     axisLine={false}
                     tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
                   />
-                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Tooltip 
+                    formatter={(value, name) => [formatCurrency(Number(value)), name === 'income' ? 'Ingresos' : 'Gastos']}
+                    labelFormatter={(label) => label}
+                  />
                   <Area
                     type="monotone"
                     dataKey="income"
@@ -625,7 +627,10 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
                     axisLine={false}
                     tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
                   />
-                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Tooltip 
+                    formatter={(value, name) => [formatCurrency(Number(value)), name === 'revenue' ? 'Ingresos' : 'Gastos']}
+                    labelFormatter={(label) => label}
+                  />
                   <Bar
                     dataKey="revenue"
                     fill="hsl(var(--primary))"
