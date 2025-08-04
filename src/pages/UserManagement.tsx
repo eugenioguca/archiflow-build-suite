@@ -85,7 +85,7 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      // Primero obtener los perfiles
+      // Obtener los perfiles con email directamente de la tabla profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
@@ -93,26 +93,7 @@ const UserManagement = () => {
 
       if (profilesError) throw profilesError;
 
-      // Luego obtener los emails de auth.users para cada perfil
-      const usersWithEmails = await Promise.all(
-        (profiles || []).map(async (profile) => {
-          try {
-            const { data: { user }, error: userError } = await supabase.auth.admin.getUserById(profile.user_id);
-            return {
-              ...profile,
-              email: user?.email || null
-            };
-          } catch (error) {
-            // Si no se puede obtener el email, usar fallback
-            return {
-              ...profile,
-              email: null
-            };
-          }
-        })
-      );
-
-      setUsers(usersWithEmails);
+      setUsers(profiles || []);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
