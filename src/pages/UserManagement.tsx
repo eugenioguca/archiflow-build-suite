@@ -92,7 +92,7 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      // Obtener los perfiles con email directamente de la tabla profiles
+      // Obtener los perfiles básicos primero
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
@@ -100,7 +100,26 @@ const UserManagement = () => {
 
       if (profilesError) throw profilesError;
 
-      setUsers(profiles || []);
+      // Obtener asignaciones de sucursales para cada usuario
+      const userIds = profiles?.map(p => p.id) || [];
+      const { data: branchAssignments } = await supabase
+        .from('user_branch_assignments')
+        .select(`
+          user_id,
+          branch_office_id,
+          branch_offices(id, name)
+        `)
+        .in('user_id', userIds);
+
+      // Combinar datos
+      const enrichedProfiles = profiles?.map(profile => ({
+        ...profile,
+        user_branch_assignments: branchAssignments?.filter(
+          assignment => assignment.user_id === profile.id
+        ) || []
+      })) || [];
+
+      setUsers(enrichedProfiles);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -446,6 +465,57 @@ const UserManagement = () => {
         </TabsList>
 
         <TabsContent value="users">
+          {/* Tarjetas de información */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total Usuarios</p>
+                    <p className="text-2xl font-bold">{users.length}</p>
+                  </div>
+                  <Users className="h-8 w-8 text-primary" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Empleados</p>
+                    <p className="text-2xl font-bold">{users.filter(u => u.role === 'employee').length}</p>
+                  </div>
+                  <Badge className="text-lg p-2">👥</Badge>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Admins</p>
+                    <p className="text-2xl font-bold">{users.filter(u => u.role === 'admin').length}</p>
+                  </div>
+                  <Badge className="text-lg p-2">⚡</Badge>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Con Departamento</p>
+                    <p className="text-2xl font-bold">{users.filter(u => u.department_enum).length}</p>
+                  </div>
+                  <Badge className="text-lg p-2">🏢</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           <Card>
             <CardHeader>
               <CardTitle>Usuarios Registrados</CardTitle>
@@ -458,8 +528,10 @@ const UserManagement = () => {
                       <th className="text-left p-4">Nombre</th>
                       <th className="text-left p-4">Email</th>
                       <th className="text-left p-4">Rol</th>
+                      <th className="text-left p-4">Departamento</th>
+                      <th className="text-left p-4">Cargo</th>
+                      <th className="text-left p-4">Sucursales</th>
                       <th className="text-left p-4">Estado</th>
-                      <th className="text-left p-4">Fecha</th>
                       <th className="text-left p-4">Acciones</th>
                     </tr>
                   </thead>
@@ -488,12 +560,40 @@ const UserManagement = () => {
                           </Badge>
                         </td>
                         <td className="p-4">
+                          {user.department_enum ? (
+                            <Badge variant="outline">
+                              {user.department_enum.charAt(0).toUpperCase() + user.department_enum.slice(1)}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">Sin asignar</span>
+                          )}
+                        </td>
+                        <td className="p-4">
+                          {user.position_enum ? (
+                            <Badge variant="secondary">
+                              {user.position_enum.charAt(0).toUpperCase() + user.position_enum.slice(1)}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">Sin asignar</span>
+                          )}
+                        </td>
+                        <td className="p-4">
+                          {user.user_branch_assignments && user.user_branch_assignments.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {user.user_branch_assignments.map((assignment: any) => (
+                                <Badge key={assignment.branch_office_id} variant="outline" className="text-xs">
+                                  {assignment.branch_offices?.name || 'Sin nombre'}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">Sin sucursales</span>
+                          )}
+                        </td>
+                        <td className="p-4">
                           <Badge variant={user.approval_status === 'approved' ? 'default' : 'destructive'}>
                             {user.approval_status === 'approved' ? 'Aprobado' : 'Pendiente'}
                           </Badge>
-                        </td>
-                        <td className="p-4">
-                          {new Date(user.created_at).toLocaleDateString()}
                         </td>
                         <td className="p-4">
                           <div className="flex gap-2">
