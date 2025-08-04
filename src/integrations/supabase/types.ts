@@ -204,6 +204,7 @@ export type Database = {
           account_type: string
           bank_name: string
           branch: string | null
+          clabe: string | null
           created_at: string
           created_by: string
           credit_limit: number | null
@@ -220,6 +221,7 @@ export type Database = {
           account_type?: string
           bank_name: string
           branch?: string | null
+          clabe?: string | null
           created_at?: string
           created_by: string
           credit_limit?: number | null
@@ -236,6 +238,7 @@ export type Database = {
           account_type?: string
           bank_name?: string
           branch?: string | null
+          clabe?: string | null
           created_at?: string
           created_by?: string
           credit_limit?: number | null
