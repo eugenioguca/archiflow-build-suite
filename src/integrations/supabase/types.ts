@@ -1041,7 +1041,7 @@ export type Database = {
           {
             foreignKeyName: "client_portal_settings_client_id_fkey"
             columns: ["client_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "clients"
             referencedColumns: ["id"]
           },
