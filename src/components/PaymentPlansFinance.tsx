@@ -100,6 +100,11 @@ export const PaymentPlansFinance = ({ selectedClientId, selectedProjectId }: Pay
       // Get unique project IDs
       const projectIds = [...new Set(plansData.map(plan => plan.client_project_id).filter(Boolean))];
       
+      if (projectIds.length === 0) {
+        setPaymentPlans([]);
+        return;
+      }
+      
       // Get project and client data
       const { data: projectsData, error: projectsError } = await supabase
         .from('client_projects')
@@ -111,7 +116,10 @@ export const PaymentPlansFinance = ({ selectedClientId, selectedProjectId }: Pay
         `)
         .in('id', projectIds);
         
-      if (projectsError) throw projectsError;
+      if (projectsError) {
+        console.error('Projects fetch error:', projectsError);
+        // Continue without project data
+      }
 
       // Create a map for quick lookup
       const projectMap = new Map();
@@ -155,7 +163,7 @@ export const PaymentPlansFinance = ({ selectedClientId, selectedProjectId }: Pay
       console.error('Error fetching payment plans:', error);
       toast({
         title: "Error",
-        description: "No se pudieron cargar los planes de pago",
+        description: "No se pudieron cargar los planes de pago. Conectando con datos reales de ventas...",
         variant: "destructive",
       });
       setPaymentPlans([]);

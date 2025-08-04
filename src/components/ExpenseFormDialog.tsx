@@ -177,15 +177,16 @@ export function ExpenseFormDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-6xl w-[95vw] h-[85vh] flex flex-col">
+        <DialogHeader className="shrink-0 pb-4">
           <DialogTitle>Crear Nuevo Gasto</DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="flex-1 overflow-y-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column - Form */}
           <div className="space-y-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form id="expense-form" onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="description">Descripción *</Label>
                 <Textarea
@@ -355,20 +356,6 @@ export function ExpenseFormDialog({
                 />
               </div>
 
-              <div className="flex gap-2 pt-4">
-                <Button type="submit" disabled={isLoading} className="flex-1">
-                  {isLoading ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  ) : (
-                    <Save className="h-4 w-4 mr-2" />
-                  )}
-                  Guardar Gasto
-                </Button>
-                <Button type="button" variant="outline" onClick={onClose}>
-                  <X className="h-4 w-4 mr-2" />
-                  Cancelar
-                </Button>
-              </div>
             </form>
           </div>
 
@@ -434,6 +421,25 @@ export function ExpenseFormDialog({
                 </CardContent>
               </Card>
             )}
+          </div>
+        </div>
+        </div>
+        
+        {/* Fixed Footer with Actions */}
+        <div className="shrink-0 border-t pt-4 mt-4">
+          <div className="flex gap-2">
+            <Button type="submit" disabled={isLoading} className="flex-1" form="expense-form">
+              {isLoading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              Guardar Gasto
+            </Button>
+            <Button type="button" variant="outline" onClick={onClose}>
+              <X className="h-4 w-4 mr-2" />
+              Cancelar
+            </Button>
           </div>
         </div>
       </DialogContent>

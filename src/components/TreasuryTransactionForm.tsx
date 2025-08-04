@@ -279,8 +279,8 @@ export const TreasuryTransactionForm: React.FC<TreasuryTransactionFormProps> = (
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-6xl w-[95vw] h-[85vh] flex flex-col">
+        <DialogHeader className="shrink-0 pb-4">
           <DialogTitle className="flex items-center gap-2">
             {transactionType === 'income' ? (
               <DollarSign className="h-5 w-5 text-green-600" />
@@ -291,7 +291,8 @@ export const TreasuryTransactionForm: React.FC<TreasuryTransactionFormProps> = (
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="flex-1 overflow-y-auto px-1">
+          <form id="treasury-form" onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
           <Card>
             <CardHeader>
@@ -579,16 +580,20 @@ export const TreasuryTransactionForm: React.FC<TreasuryTransactionFormProps> = (
             </CardContent>
           </Card>
 
-          {/* Form Actions */}
-          <div className="flex gap-2 pt-4">
-            <Button type="submit" disabled={loading} className="flex-1">
+          </form>
+        </div>
+        
+        {/* Fixed Footer with Actions */}
+        <div className="shrink-0 border-t pt-4 mt-4">
+          <div className="flex gap-2">
+            <Button type="submit" disabled={loading} className="flex-1" form="treasury-form">
               {loading ? "Procesando..." : `Registrar ${transactionType === 'income' ? 'Ingreso' : 'Egreso'}`}
             </Button>
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
           </div>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
