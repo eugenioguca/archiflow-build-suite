@@ -71,17 +71,20 @@ export function TreasuryDashboard({ selectedClientId, selectedProjectId, onFilte
       // Build queries with client/project filters
       let accountsQuery = supabase
         .from('cash_accounts')
-        .select(`
-          *,
-          projects(id, name)
-        `)
+        .select('*')
         .eq('status', 'active');
       
+      // Use expenses table for recent transactions since cash_transactions was deleted
       let transactionsQuery = supabase
-        .from('cash_transactions')
+        .from('expenses')
         .select(`
-          *,
-          cash_account:cash_accounts(name)
+          id,
+          description,
+          amount,
+          category,
+          created_at,
+          client_id,
+          project_id
         `)
         .order('created_at', { ascending: false })
         .limit(10);
@@ -94,33 +97,35 @@ export function TreasuryDashboard({ selectedClientId, selectedProjectId, onFilte
         transactionsQuery = transactionsQuery.eq('client_id', internalClientId);
       }
 
-      const [accountsResult, transactionsResult, advancesResult] = await Promise.all([
+      const [accountsResult, transactionsResult] = await Promise.all([
         accountsQuery.order('current_balance', { ascending: false }),
-        transactionsQuery,
-        supabase
-          .from('employee_advances')
-          .select('*')
-          .in('status', ['pending', 'overdue'])
-          .order('due_date', { ascending: true })
+        transactionsQuery
       ]);
 
       if (accountsResult.error) throw accountsResult.error;
       if (transactionsResult.error) throw transactionsResult.error;
-      if (advancesResult.error) throw advancesResult.error;
 
       const processedAccounts: CashAccount[] = (accountsResult.data || []).map(account => ({
         ...account,
-        project: account.projects ? { name: account.projects.name } : null
+        project: null // Remove project relation as it's causing issues
       }));
       
       setCashAccounts(processedAccounts);
-      // Process transactions to handle potential SelectQueryError
-      const processedTransactions = (transactionsResult.data || []).map(transaction => ({
-        ...transaction,
-        cash_account: { name: 'Cuenta de efectivo' }
+      
+      // Process expense transactions as recent transactions
+      const processedTransactions: CashTransaction[] = (transactionsResult.data || []).map(expense => ({
+        id: expense.id,
+        transaction_type: 'expense',
+        category: expense.category,
+        amount: expense.amount,
+        description: expense.description,
+        created_at: expense.created_at,
+        approval_status: 'approved',
+        cash_account: { name: 'Cuenta General' }
       }));
+      
       setRecentTransactions(processedTransactions);
-      setPendingAdvances(advancesResult.data || []);
+      setPendingAdvances([]); // No more employee advances table
     } catch (error) {
       console.error('Error fetching treasury data:', error);
     } finally {

@@ -64,13 +64,13 @@ interface Supplier {
 interface AccountsPayable {
   id: string;
   supplier_id: string;
-  invoice_number?: string;
+  invoice_number?: string | null;
   amount_due: number;
   amount_paid?: number;
   due_date: string;
-  invoice_date?: string;
+  invoice_date?: string | null;
   payment_status: string;
-  payment_date?: string;
+  payment_date?: string | null;
   payment_reference?: string;
   notes?: string;
   expense_id?: string;
@@ -281,16 +281,40 @@ const tiposVialidad = [
   };
 
   const fetchAccountsPayable = async () => {
+    // Use expenses as accounts payable since the table was deleted
     const { data, error } = await supabase
-      .from('accounts_payable')
+      .from('expenses')
       .select(`
-        *,
+        id,
+        description,
+        amount,
+        created_at,
         supplier:suppliers(*)
       `)
-      .order('due_date');
+      .not('supplier_id', 'is', null)
+      .order('created_at');
 
     if (error) throw error;
-    setAccountsPayable(data || []);
+    
+    // Transform expenses to match AccountsPayable interface
+    const transformedData = (data || []).map(expense => ({
+      id: expense.id,
+      supplier_id: '',
+      invoice_number: null,
+      invoice_date: null,
+      due_date: expense.created_at,
+      amount_due: expense.amount,
+      amount_paid: 0,
+      payment_status: 'pending',
+      payment_date: null,
+      payment_reference: null,
+      notes: null,
+      supplier: expense.supplier,
+      created_at: expense.created_at,
+      updated_at: expense.created_at
+    }));
+    
+    setAccountsPayable(transformedData);
   };
 
   const fetchCFDIDocuments = async () => {
@@ -386,15 +410,37 @@ const tiposVialidad = [
     e.preventDefault();
 
     try {
+      // Create expense instead of accounts_payable since the table was deleted
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) throw new Error('Usuario no autenticado');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', userData.user.id)
+        .single();
+
+      if (!profile) throw new Error('Perfil no encontrado');
+
+      const expenseData = {
+        description: `Factura ${payableFormData.invoice_number || 'Sin número'}`,
+        amount: payableFormData.amount_due,
+        category: 'administration' as const,
+        invoice_date: payableFormData.due_date,
+        supplier_id: payableFormData.supplier_id,
+        created_by: profile.id,
+        invoice_number: payableFormData.invoice_number
+      };
+
       const { error } = await supabase
-        .from('accounts_payable')
-        .insert([payableFormData]);
+        .from('expenses')
+        .insert(expenseData);
 
       if (error) throw error;
 
       toast({
         title: "Éxito",
-        description: "Cuenta por pagar creada correctamente",
+        description: "Gasto creado correctamente",
       });
 
       setShowPayableDialog(false);
@@ -404,7 +450,7 @@ const tiposVialidad = [
       console.error('Error:', error);
       toast({
         title: "Error",
-        description: "Error al crear la cuenta por pagar",
+        description: "Error al crear el gasto",
         variant: "destructive",
       });
     }

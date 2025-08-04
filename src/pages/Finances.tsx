@@ -311,16 +311,33 @@ export default function Finances() {
 
   const fetchAccountsPayable = async () => {
     try {
+      // Use expenses as accounts payable since the table was deleted
       const { data, error } = await supabase
-        .from('accounts_payable')
+        .from('expenses')
         .select(`
-          *,
+          id,
+          description,
+          amount,
+          created_at,
           supplier:suppliers(company_name)
         `)
-        .order('due_date');
+        .not('supplier_id', 'is', null)
+        .order('created_at');
 
       if (error) throw error;
-      setAccountsPayable(data || []);
+      
+      // Transform expenses to match AccountsPayable interface
+      const transformedData = (data || []).map(expense => ({
+        id: expense.id,
+        supplier_id: '',
+        amount_due: expense.amount,
+        amount_paid: 0,
+        due_date: expense.created_at,
+        payment_status: 'pending',
+        supplier: expense.supplier
+      }));
+      
+      setAccountsPayable(transformedData);
     } catch (error) {
       console.error('Error fetching accounts payable:', error);
     }
@@ -328,16 +345,34 @@ export default function Finances() {
 
   const fetchAccountsReceivable = async () => {
     try {
+      // Use incomes as accounts receivable since the table was deleted
       const { data, error } = await supabase
-        .from('accounts_receivable')
+        .from('incomes')
         .select(`
-          *,
+          id,
+          description,
+          amount,
+          payment_date,
+          payment_status,
           client:clients(full_name)
         `)
-        .order('due_date');
+        .not('client_id', 'is', null)
+        .order('payment_date');
 
       if (error) throw error;
-      setAccountsReceivable(data || []);
+      
+      // Transform incomes to match AccountsReceivable interface
+      const transformedData = (data || []).map(income => ({
+        id: income.id,
+        client_id: '',
+        amount_due: income.amount,
+        amount_paid: income.payment_status === 'paid' ? income.amount : 0,
+        due_date: income.payment_date || new Date().toISOString(),
+        status: income.payment_status || 'pending',
+        client: income.client
+      }));
+      
+      setAccountsReceivable(transformedData);
     } catch (error) {
       console.error('Error fetching accounts receivable:', error);
     }
