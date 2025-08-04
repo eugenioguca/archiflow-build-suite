@@ -184,12 +184,10 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
       expenseQuery = expenseQuery.eq('client_id', selectedClientId);
     }
 
-    // Note: project_id column doesn't exist in incomes/expenses tables yet
-    // This will be implemented when the schema is updated
-    // if (selectedProjectId) {
-    //   incomeQuery = incomeQuery.eq('project_id', selectedProjectId);
-    //   expenseQuery = expenseQuery.eq('project_id', selectedProjectId);
-    // }
+    if (selectedProjectId) {
+      incomeQuery = incomeQuery.eq('project_id', selectedProjectId);
+      expenseQuery = expenseQuery.eq('project_id', selectedProjectId);
+    }
 
     const [
       cashResult,
@@ -242,13 +240,28 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
       // For custom periods, show the selected range
       const { start: startDate, end: endDate } = getPeriodDates();
       
+      let incomeQuery = supabase.from('incomes').select('amount')
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
+      
+      let expenseQuery = supabase.from('expenses').select('amount')
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
+
+      // Apply client and project filters
+      if (selectedClientId) {
+        incomeQuery = incomeQuery.eq('client_id', selectedClientId);
+        expenseQuery = expenseQuery.eq('client_id', selectedClientId);
+      }
+
+      if (selectedProjectId) {
+        incomeQuery = incomeQuery.eq('project_id', selectedProjectId);
+        expenseQuery = expenseQuery.eq('project_id', selectedProjectId);
+      }
+
       const [incomeResult, expenseResult] = await Promise.all([
-        supabase.from('incomes').select('amount')
-          .gte('created_at', startDate.toISOString())
-          .lte('created_at', endDate.toISOString()),
-        supabase.from('expenses').select('amount')
-          .gte('created_at', startDate.toISOString())
-          .lte('created_at', endDate.toISOString())
+        incomeQuery,
+        expenseQuery
       ]);
 
       const income = (incomeResult.data || []).reduce((sum, item) => sum + (item.amount || 0), 0);

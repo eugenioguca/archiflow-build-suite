@@ -279,7 +279,7 @@ export const TreasuryTransactionForm: React.FC<TreasuryTransactionFormProps> = (
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl w-[95vw] h-[85vh] flex flex-col">
+      <DialogContent className="max-w-6xl w-[95vw] max-h-[90vh] flex flex-col">
         <DialogHeader className="shrink-0 pb-4">
           <DialogTitle className="flex items-center gap-2">
             {transactionType === 'income' ? (
@@ -291,8 +291,8 @@ export const TreasuryTransactionForm: React.FC<TreasuryTransactionFormProps> = (
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-1">
-          <form id="treasury-form" onSubmit={handleSubmit} className="space-y-6">
+        <div className="flex-1 overflow-y-auto px-1 max-h-[calc(90vh-200px)]">
+          <form id="treasury-form" onSubmit={handleSubmit} className="space-y-4">
           {/* Basic Information */}
           <Card>
             <CardHeader>

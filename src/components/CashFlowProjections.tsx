@@ -70,41 +70,50 @@ export function CashFlowProjections({ selectedClientId, selectedProjectId }: Cas
 
   const fetchData = async () => {
     try {
-      // Build projections query with filters - remove relational queries since they don't exist
+      // Build projections query with filters using real client_projects architecture
       let projectionsQuery = supabase
         .from('cash_flow_projections')
         .select('*');
 
-      // Apply filters
+      // Apply filters for real client-project architecture
       if (internalProjectId) {
         projectionsQuery = projectionsQuery.eq('project_id', internalProjectId);
       }
 
+      // Fetch real client_projects data with client information
+      let projectsQuery = supabase
+        .from('client_projects')
+        .select(`
+          id,
+          project_name,
+          client_id,
+          clients!inner (
+            id,
+            full_name
+          )
+        `)
+        .order('project_name');
+
+      // Apply client filter if provided
+      if (internalClientId) {
+        projectsQuery = projectsQuery.eq('client_id', internalClientId);
+      }
+
       const [projectionsResult, projectsResult] = await Promise.all([
         projectionsQuery.order('period_start', { ascending: false }),
-        supabase
-          .from('client_projects')
-          .select('id, project_name')
-          .order('project_name')
+        projectsQuery
       ]);
 
       if (projectionsResult.error) throw projectionsResult.error;
       if (projectsResult.error) throw projectsResult.error;
 
-      // Process projections without relational data
-      const processedProjections: CashFlowProjection[] = (projectionsResult.data || []).map(projection => ({
-        ...projection,
-        project: null // No relational data available
-      }));
-
-      // Process projects properly
-      const processedProjects: Project[] = (projectsResult.data || []).map(project => ({
-        id: project.id,
-        name: project.project_name
-      }));
-      
-      setProjections(processedProjections);
-      setProjects(processedProjects);
+      setProjections(projectionsResult.data || []);
+      setProjects(
+        projectsResult.data?.map(p => ({ 
+          id: p.id, 
+          name: `${p.project_name} - ${p.clients?.full_name || 'Sin cliente'}` 
+        })) || []
+      );
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
