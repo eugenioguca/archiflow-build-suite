@@ -27,7 +27,8 @@ import {
   Home,
   Eye,
   Download,
-  Maximize2
+  Maximize2,
+  LogOut
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -343,6 +344,21 @@ const ClientPortal: React.FC = () => {
       selectedProjectId={selectedProjectId}
       onProjectChange={setSelectedProjectId}
     >
+      {/* Emergency Logout Button */}
+      <div className="flex justify-end mb-4">
+        <Button 
+          variant="outline" 
+          onClick={() => {
+            supabase.auth.signOut();
+            window.location.href = '/auth';
+          }}
+          className="flex items-center gap-2"
+        >
+          <LogOut className="h-4 w-4" />
+          Cerrar Sesión
+        </Button>
+      </div>
+      
       {/* Header del Proyecto */}
       <div className={`bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg ${isMobile ? 'p-4' : 'p-6'}`}>
         <div className={`${isMobile ? 'space-y-4' : 'flex items-start justify-between'}`}>
