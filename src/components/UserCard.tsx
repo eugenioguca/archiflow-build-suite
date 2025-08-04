@@ -13,7 +13,9 @@ import {
   Shield,
   User,
   UserCheck,
-  UserX
+  UserX,
+  MoreHorizontal,
+  Eye
 } from 'lucide-react';
 
 interface UserProfile {
@@ -40,6 +42,7 @@ interface UserCardProps {
   onApprovalChange: (userId: string, approved: boolean) => void;
   onRoleChange: (userId: string, role: 'admin' | 'employee' | 'client') => void;
   canManage: boolean;
+  isCompact?: boolean;
 }
 
 const roleLabels = {
@@ -181,49 +184,41 @@ export function UserCard({
 
       {canManage && (
         <CardFooter className="pt-0">
-          <div className="flex flex-wrap gap-2 w-full">
+          <div className="flex flex-col gap-2 w-full">
+            {/* Botón principal de editar */}
             <Button
               size="sm"
-              variant="outline"
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="flex-1 min-w-0"
+              onClick={() => onEdit(user)}
+              className="w-full"
             >
-              {isExpanded ? 'Menos' : 'Más'} info
+              <Edit3 className="w-4 h-4 mr-2" />
+              Editar Usuario
             </Button>
             
-            {user.role === 'employee' && !hasEmployeeSetup && (
-              <Button
-                size="sm"
-                onClick={() => onSetupEmployee(user)}
-                className="flex-1 min-w-0"
-              >
-                <Settings className="w-4 h-4 mr-1" />
-                Configurar
-              </Button>
-            )}
-            
-            {user.role === 'employee' && hasEmployeeSetup && (
+            {/* Botones secundarios */}
+            <div className="flex gap-2">
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => onSetupEmployee(user)}
-                className="flex-1 min-w-0"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="flex-1"
               >
-                <Edit3 className="w-4 h-4 mr-1" />
-                Editar
+                <Eye className="w-4 h-4 mr-1" />
+                {isExpanded ? 'Menos' : 'Ver más'}
               </Button>
-            )}
-            
-            {user.approval_status !== 'approved' && (
-              <Button
-                size="sm"
-                onClick={() => onApprovalChange(user.user_id, true)}
-                className="flex-1 min-w-0"
-              >
-                <UserCheck className="w-4 h-4 mr-1" />
-                Aprobar
-              </Button>
-            )}
+              
+              {user.approval_status !== 'approved' && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onApprovalChange(user.user_id, true)}
+                  className="flex-1"
+                >
+                  <UserCheck className="w-4 h-4 mr-1" />
+                  Aprobar
+                </Button>
+              )}
+            </div>
           </div>
         </CardFooter>
       )}

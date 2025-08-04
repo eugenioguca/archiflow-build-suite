@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { BranchOfficeManager } from '@/components/BranchOfficeManager';
 import CommercialAlliancesManager from '@/components/CommercialAlliancesManager';
 import { UserClientLinker } from '@/components/UserClientLinker';
+import { UserEditModal } from '@/components/UserEditModal';
 import { EmployeeSetupDialog } from '@/components/EmployeeSetupDialog';
 import { UserCard } from '@/components/UserCard';
 import { UserFilters } from '@/components/UserFilters';
@@ -42,7 +43,8 @@ const UserManagement = () => {
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const [positionFilter, setPositionFilter] = useState('all');
   
-  // Employee setup dialog states
+  // Dialog states
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isEmployeeSetupDialogOpen, setIsEmployeeSetupDialogOpen] = useState(false);
   const [selectedUserForSetup, setSelectedUserForSetup] = useState<UserProfile | null>(null);
   
@@ -151,7 +153,7 @@ const UserManagement = () => {
 
   const handleEditUser = (user: UserProfile) => {
     setSelectedUserForSetup(user);
-    setIsEmployeeSetupDialogOpen(true);
+    setIsEditModalOpen(true);
   };
 
   const handleSetupEmployee = (user: UserProfile) => {
@@ -319,6 +321,14 @@ const UserManagement = () => {
           <CommercialAlliancesManager />
         </TabsContent>
       </Tabs>
+
+      {/* User Edit Modal */}
+      <UserEditModal
+        isOpen={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        user={selectedUserForSetup}
+        onUserUpdated={fetchUsers}
+      />
 
       {/* Employee Setup Dialog */}
       <EmployeeSetupDialog

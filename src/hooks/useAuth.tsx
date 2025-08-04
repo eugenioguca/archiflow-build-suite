@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             const { data: profile, error: profileError } = await supabase
               .from('profiles')
-              .select('approval_status, role, full_name, position, department, phone, profile_completed')
+              .select('approval_status, role, full_name, position_enum, department_enum, phone, profile_completed')
               .eq('user_id', session.user.id)
               .single();
             
@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const profileComplete = profile?.profile_completed === true ||
               (isClient 
                 ? (profile?.full_name && profile?.phone) // Para clientes solo nombre y teléfono
-                : (profile?.full_name && profile?.position && profile?.department && profile?.phone) // Para empleados todos los campos
+                : (profile?.full_name && profile?.position_enum && profile?.department_enum && profile?.phone) // Para empleados todos los campos
               );
             
             
@@ -91,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             try {
               const { data: profile, error: profileError } = await supabase
                 .from('profiles')
-                .select('approval_status, role, full_name, position, department, phone, profile_completed')
+                .select('approval_status, role, full_name, position_enum, department_enum, phone, profile_completed')
                 .eq('user_id', session.user.id)
                 .single();
               
@@ -106,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               const profileComplete = profile?.profile_completed === true ||
                 (isClient 
                   ? (profile?.full_name && profile?.phone) // Para clientes solo nombre y teléfono
-                  : (profile?.full_name && profile?.position && profile?.department && profile?.phone) // Para empleados todos los campos
+                  : (profile?.full_name && profile?.position_enum && profile?.department_enum && profile?.phone) // Para empleados todos los campos
                 );
               
               setProfile(profile);
