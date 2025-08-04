@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ERPDashboard from '@/components/ERPDashboard';
-import { TreasuryDashboard } from '@/components/TreasuryDashboard';
+import { TreasuryModule } from '@/components/TreasuryModule';
 import { CashAccountManager } from '@/components/CashAccountManager';
 import { CashFlowProjections } from '@/components/CashFlowProjections';
 import { EmployeeAdvanceManager } from '@/components/EmployeeAdvanceManager';
@@ -159,13 +159,9 @@ const FinancesNew: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="treasury" className="space-y-4">
-          <TreasuryDashboard 
+          <TreasuryModule 
             selectedClientId={selectedClientId}
             selectedProjectId={selectedProjectId}
-            onFiltersChange={(clientId, projectId) => {
-              setSelectedClientId(clientId || undefined);
-              setSelectedProjectId(projectId || undefined);
-            }}
           />
         </TabsContent>
 

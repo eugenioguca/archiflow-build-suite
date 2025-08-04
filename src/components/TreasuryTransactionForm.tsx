@@ -31,14 +31,14 @@ interface FormData {
   project_id: string;
   supplier_id: string;
   department: string;
-  amount: string;
+  amount: number;
   description: string;
   cuenta_mayor: string;
   partida: string;
   sub_partida: string;
   unit: string;
   quantity: string;
-  cost_per_unit: string;
+  cost_per_unit: number;
   invoice_number: string;
   invoice_url: string;
   comments: string;
@@ -90,7 +90,7 @@ export const TreasuryTransactionForm: React.FC<TreasuryTransactionFormProps> = (
   const [projects, setProjects] = useState<Project[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [generalLedgerAccounts, setGeneralLedgerAccounts] = useState<GeneralLedgerAccount[]>([]);
-  const [partidas, setPartidas] = useState<any[]>([]);
+  const [partidas, setPartidas] = useState<Array<{id: string; code: string; name: string}>>([]);
 
   const [formData, setFormData] = useState<FormData>({
     transaction_date: new Date(),
@@ -99,14 +99,14 @@ export const TreasuryTransactionForm: React.FC<TreasuryTransactionFormProps> = (
     project_id: selectedProjectId || "",
     supplier_id: "",
     department: "",
-    amount: "",
+    amount: 0,
     description: "",
     cuenta_mayor: "",
     partida: "",
     sub_partida: "",
     unit: "",
-    quantity: "",
-    cost_per_unit: "",
+    quantity: "0",
+    cost_per_unit: 0,
     invoice_number: "",
     invoice_url: "",
     comments: "",
@@ -156,16 +156,16 @@ export const TreasuryTransactionForm: React.FC<TreasuryTransactionFormProps> = (
       // Fetch partidas
       const { data: partidasData } = await supabase
         .from('partidas_catalog')
-        .select('*')
-        .eq('is_active', true)
-        .order('code');
+        .select('id, codigo, nombre')
+        .eq('activo', true)
+        .order('codigo');
 
       setAccounts(accountsData || []);
       setClients(clientsData || []);
       setProjects(projectsData || []);
       setSuppliers(suppliersData || []);
       setGeneralLedgerAccounts(ledgerData || []);
-      setPartidas(partidasData || []);
+      setPartidas((partidasData || []).map(p => ({ id: p.id, code: p.codigo, name: p.nombre })));
     } catch (error) {
       console.error('Error fetching data:', error);
     }
@@ -210,14 +210,14 @@ export const TreasuryTransactionForm: React.FC<TreasuryTransactionFormProps> = (
         supplier_id: formData.supplier_id || null,
         department: formData.department,
         transaction_date: formData.transaction_date.toISOString().split('T')[0],
-        amount: parseFloat(formData.amount),
+        amount: formData.amount,
         description: formData.description,
         cuenta_mayor: formData.cuenta_mayor,
         partida: formData.partida,
         sub_partida: formData.sub_partida,
         unit: formData.unit,
         quantity: formData.quantity ? parseFloat(formData.quantity) : null,
-        cost_per_unit: formData.cost_per_unit ? parseFloat(formData.cost_per_unit) : null,
+        cost_per_unit: formData.cost_per_unit || null,
         invoice_number: formData.invoice_number,
         invoice_url: formData.invoice_url,
         comments: formData.comments,
@@ -245,14 +245,14 @@ export const TreasuryTransactionForm: React.FC<TreasuryTransactionFormProps> = (
         project_id: selectedProjectId || "",
         supplier_id: "",
         department: "",
-        amount: "",
+        amount: 0,
         description: "",
         cuenta_mayor: "",
         partida: "",
         sub_partida: "",
         unit: "",
-        quantity: "",
-        cost_per_unit: "",
+        quantity: "0",
+        cost_per_unit: 0,
         invoice_number: "",
         invoice_url: "",
         comments: "",
@@ -422,7 +422,7 @@ export const TreasuryTransactionForm: React.FC<TreasuryTransactionFormProps> = (
                 <Label>Monto Total</Label>
                 <CurrencyInput
                   value={formData.amount}
-                  onValueChange={(value) => setFormData({ ...formData, amount: value })}
+                  onChange={(value) => setFormData({ ...formData, amount: value })}
                   required
                 />
               </div>
@@ -439,32 +439,40 @@ export const TreasuryTransactionForm: React.FC<TreasuryTransactionFormProps> = (
 
               <div>
                 <Label>Cuenta de Mayor</Label>
-                <SmartCombobox
+                <Select
                   value={formData.cuenta_mayor}
                   onValueChange={(value) => setFormData({ ...formData, cuenta_mayor: value })}
-                  options={generalLedgerAccounts.map(account => ({ 
-                    value: account.account_code, 
-                    label: `${account.account_code} - ${account.account_name}` 
-                  }))}
-                  placeholder="Seleccionar cuenta de mayor"
-                  searchPlaceholder="Buscar cuenta..."
-                  allowCustom={true}
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar cuenta de mayor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {generalLedgerAccounts.map(account => (
+                      <SelectItem key={account.id} value={account.account_code}>
+                        {account.account_code} - {account.account_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
                 <Label>Partida</Label>
-                <SmartCombobox
+                <Select
                   value={formData.partida}
                   onValueChange={(value) => setFormData({ ...formData, partida: value })}
-                  options={partidas.map(partida => ({ 
-                    value: partida.code, 
-                    label: `${partida.code} - ${partida.name}` 
-                  }))}
-                  placeholder="Seleccionar partida"
-                  searchPlaceholder="Buscar partida..."
-                  allowCustom={true}
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar partida" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {partidas.map(partida => (
+                      <SelectItem key={partida.id} value={partida.code}>
+                        {partida.code} - {partida.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
@@ -478,14 +486,21 @@ export const TreasuryTransactionForm: React.FC<TreasuryTransactionFormProps> = (
 
               <div>
                 <Label>Unidad</Label>
-                <SmartCombobox
+                <Select
                   value={formData.unit}
                   onValueChange={(value) => setFormData({ ...formData, unit: value })}
-                  options={units.map(unit => ({ value: unit, label: unit }))}
-                  placeholder="Seleccionar unidad"
-                  searchPlaceholder="Buscar unidad..."
-                  allowCustom={true}
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar unidad" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {units.map(unit => (
+                      <SelectItem key={unit} value={unit}>
+                        {unit}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
@@ -503,7 +518,7 @@ export const TreasuryTransactionForm: React.FC<TreasuryTransactionFormProps> = (
                 <Label>Costo Unitario</Label>
                 <CurrencyInput
                   value={formData.cost_per_unit}
-                  onValueChange={(value) => setFormData({ ...formData, cost_per_unit: value })}
+                  onChange={(value) => setFormData({ ...formData, cost_per_unit: value })}
                   placeholder="Costo por unidad"
                 />
               </div>
