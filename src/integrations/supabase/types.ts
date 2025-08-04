@@ -4316,6 +4316,13 @@ export type Database = {
             referencedRelation: "payment_plans"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "payment_installments_payment_plan_id_fkey"
+            columns: ["payment_plan_id"]
+            isOneToOne: false
+            referencedRelation: "payment_plans_with_sales"
+            referencedColumns: ["id"]
+          },
         ]
       }
       payment_plans: {
@@ -4364,7 +4371,22 @@ export type Database = {
           total_amount?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "payment_plans_client_project_id_fkey"
+            columns: ["client_project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_plans_client_project_id_fkey"
+            columns: ["client_project_id"]
+            isOneToOne: false
+            referencedRelation: "financial_summary_by_client_project"
+            referencedColumns: ["project_id"]
+          },
+        ]
       }
       platform_settings: {
         Row: {
@@ -6134,6 +6156,55 @@ export type Database = {
           },
         ]
       }
+      payment_plans_with_sales: {
+        Row: {
+          client_email: string | null
+          client_id: string | null
+          client_name: string | null
+          client_phone: string | null
+          client_project_id: string | null
+          created_at: string | null
+          created_by: string | null
+          currency: string | null
+          end_date: string | null
+          id: string | null
+          notes: string | null
+          payment_frequency: string | null
+          plan_name: string | null
+          project_name: string | null
+          project_status: Database["public"]["Enums"]["client_status"] | null
+          sales_pipeline_stage:
+            | Database["public"]["Enums"]["sales_pipeline_stage"]
+            | null
+          start_date: string | null
+          status: string | null
+          total_amount: number | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_plans_client_project_id_fkey"
+            columns: ["client_project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_plans_client_project_id_fkey"
+            columns: ["client_project_id"]
+            isOneToOne: false
+            referencedRelation: "financial_summary_by_client_project"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
     }
     Functions: {
       calculate_complement_due_date: {
@@ -6143,6 +6214,16 @@ export type Database = {
       create_default_design_phases: {
         Args: { project_id_param: string }
         Returns: undefined
+      }
+      create_payment_plan_from_sales: {
+        Args: {
+          p_client_project_id: string
+          p_plan_name: string
+          p_total_amount: number
+          p_currency?: string
+          p_installments_data?: Json
+        }
+        Returns: string
       }
       generate_payment_reference: {
         Args: Record<PropertyKey, never>
@@ -6209,6 +6290,17 @@ export type Database = {
           file_size: number
           description: string
           uploader_name: string
+        }[]
+      }
+      get_project_payment_status: {
+        Args: { p_project_id: string }
+        Returns: {
+          total_amount: number
+          paid_amount: number
+          pending_amount: number
+          overdue_amount: number
+          payment_percentage: number
+          status: string
         }[]
       }
       get_user_branch_offices: {

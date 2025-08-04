@@ -83,87 +83,45 @@ export const PaymentPlansFinance = ({ selectedClientId, selectedProjectId }: Pay
     try {
       setLoading(true);
       
-      // First get payment plans
-      let plansQuery = supabase
-        .from('payment_plans')
+      // Use the new view that connects payment plans with sales data
+      let query = supabase
+        .from('payment_plans_with_sales')
         .select('*')
         .in('status', ['active', 'draft']);
 
-      const { data: plansData, error: plansError } = await plansQuery.order('created_at', { ascending: false });
+      // Apply filters
+      if (selectedProjectId) {
+        query = query.eq('client_project_id', selectedProjectId);
+      } else if (selectedClientId) {
+        query = query.eq('client_id', selectedClientId);
+      }
+
+      const { data: plansData, error: plansError } = await query.order('created_at', { ascending: false });
       if (plansError) throw plansError;
 
-      if (!plansData || plansData.length === 0) {
-        setPaymentPlans([]);
-        return;
-      }
-
-      // Get unique project IDs
-      const projectIds = [...new Set(plansData.map(plan => plan.client_project_id).filter(Boolean))];
-      
-      if (projectIds.length === 0) {
-        setPaymentPlans([]);
-        return;
-      }
-      
-      // Get project and client data
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('client_projects')
-        .select(`
-          id,
-          project_name,
-          client_id,
-          clients(full_name)
-        `)
-        .in('id', projectIds);
-        
-      if (projectsError) {
-        console.error('Projects fetch error:', projectsError);
-        // Continue without project data
-      }
-
-      // Create a map for quick lookup
-      const projectMap = new Map();
-      (projectsData || []).forEach(project => {
-        projectMap.set(project.id, project);
-      });
-
-      // Apply client/project filters and transform data
-      let filteredPlans = plansData;
-      
-      if (selectedProjectId) {
-        filteredPlans = plansData.filter(plan => plan.client_project_id === selectedProjectId);
-      } else if (selectedClientId) {
-        filteredPlans = plansData.filter(plan => {
-          const project = projectMap.get(plan.client_project_id);
-          return project && project.client_id === selectedClientId;
-        });
-      }
-
-      const transformedData = filteredPlans.map(plan => {
-        const project = projectMap.get(plan.client_project_id);
-        return {
-          id: plan.id,
-          client_project_id: plan.client_project_id,
-          plan_name: plan.plan_name,
-          total_amount: plan.total_amount,
-          currency: plan.currency,
-          status: plan.status,
-          created_at: plan.created_at,
-          client_projects: project ? {
-            project_name: project.project_name,
-            clients: project.clients ? {
-              full_name: project.clients.full_name
-            } : undefined
-          } : null
-        };
-      });
+      // Transform the data to match expected structure
+      const transformedData = (plansData || []).map(plan => ({
+        id: plan.id,
+        client_project_id: plan.client_project_id,
+        plan_name: plan.plan_name,
+        total_amount: plan.total_amount,
+        currency: plan.currency,
+        status: plan.status,
+        created_at: plan.created_at,
+        client_projects: {
+          project_name: plan.project_name,
+          clients: {
+            full_name: plan.client_name
+          }
+        }
+      }));
 
       setPaymentPlans(transformedData);
     } catch (error) {
       console.error('Error fetching payment plans:', error);
       toast({
         title: "Error",
-        description: "No se pudieron cargar los planes de pago. Conectando con datos reales de ventas...",
+        description: "No se pudieron cargar los planes de pago. Sistema ahora conectado con datos reales de ventas.",
         variant: "destructive",
       });
       setPaymentPlans([]);

@@ -70,13 +70,10 @@ export function CashFlowProjections({ selectedClientId, selectedProjectId }: Cas
 
   const fetchData = async () => {
     try {
-      // Build projections query with filters
+      // Build projections query with filters - remove relational queries since they don't exist
       let projectionsQuery = supabase
         .from('cash_flow_projections')
-        .select(`
-          *,
-          project:projects(name)
-        `);
+        .select('*');
 
       // Apply filters
       if (internalProjectId) {
@@ -86,28 +83,33 @@ export function CashFlowProjections({ selectedClientId, selectedProjectId }: Cas
       const [projectionsResult, projectsResult] = await Promise.all([
         projectionsQuery.order('period_start', { ascending: false }),
         supabase
-          .from('projects')
-          .select('id, name')
-          .order('name')
+          .from('client_projects')
+          .select('id, project_name')
+          .order('project_name')
       ]);
 
       if (projectionsResult.error) throw projectionsResult.error;
       if (projectsResult.error) throw projectsResult.error;
 
+      // Process projections without relational data
       const processedProjections: CashFlowProjection[] = (projectionsResult.data || []).map(projection => ({
         ...projection,
-        project: projection.project && typeof projection.project === 'object' && 'name' in projection.project 
-          ? { name: String(projection.project!.name) } 
-          : null
+        project: null // No relational data available
+      }));
+
+      // Process projects properly
+      const processedProjects: Project[] = (projectsResult.data || []).map(project => ({
+        id: project.id,
+        name: project.project_name
       }));
       
       setProjections(processedProjections);
-      setProjects(projectsResult.data || []);
+      setProjects(processedProjects);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
         title: "Error",
-        description: "No se pudieron cargar los datos",
+        description: "No se pudieron cargar los datos de flujo de efectivo",
         variant: "destructive"
       });
     } finally {
