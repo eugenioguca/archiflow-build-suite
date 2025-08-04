@@ -14,189 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      accounts_payable: {
-        Row: {
-          amount_due: number
-          amount_paid: number | null
-          created_at: string
-          due_date: string
-          expense_id: string | null
-          id: string
-          invoice_date: string | null
-          invoice_number: string | null
-          notes: string | null
-          payment_date: string | null
-          payment_reference: string | null
-          payment_status: Database["public"]["Enums"]["payable_status"] | null
-          supplier_id: string
-          updated_at: string
-        }
-        Insert: {
-          amount_due: number
-          amount_paid?: number | null
-          created_at?: string
-          due_date: string
-          expense_id?: string | null
-          id?: string
-          invoice_date?: string | null
-          invoice_number?: string | null
-          notes?: string | null
-          payment_date?: string | null
-          payment_reference?: string | null
-          payment_status?: Database["public"]["Enums"]["payable_status"] | null
-          supplier_id: string
-          updated_at?: string
-        }
-        Update: {
-          amount_due?: number
-          amount_paid?: number | null
-          created_at?: string
-          due_date?: string
-          expense_id?: string | null
-          id?: string
-          invoice_date?: string | null
-          invoice_number?: string | null
-          notes?: string | null
-          payment_date?: string | null
-          payment_reference?: string | null
-          payment_status?: Database["public"]["Enums"]["payable_status"] | null
-          supplier_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "accounts_payable_supplier_id_fkey"
-            columns: ["supplier_id"]
-            isOneToOne: false
-            referencedRelation: "suppliers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      accounts_receivable: {
-        Row: {
-          amount_due: number
-          amount_paid: number | null
-          client_id: string
-          created_at: string
-          due_date: string
-          id: string
-          income_id: string
-          status: Database["public"]["Enums"]["receivable_status"] | null
-          updated_at: string
-        }
-        Insert: {
-          amount_due: number
-          amount_paid?: number | null
-          client_id: string
-          created_at?: string
-          due_date: string
-          id?: string
-          income_id: string
-          status?: Database["public"]["Enums"]["receivable_status"] | null
-          updated_at?: string
-        }
-        Update: {
-          amount_due?: number
-          amount_paid?: number | null
-          client_id?: string
-          created_at?: string
-          due_date?: string
-          id?: string
-          income_id?: string
-          status?: Database["public"]["Enums"]["receivable_status"] | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "accounts_receivable_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "accounts_receivable_income_id_fkey"
-            columns: ["income_id"]
-            isOneToOne: false
-            referencedRelation: "incomes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      advance_justifications: {
-        Row: {
-          advance_id: string
-          amount: number
-          approved: boolean | null
-          approved_at: string | null
-          approved_by: string | null
-          created_at: string
-          created_by: string
-          description: string
-          fiscal_receipt: boolean | null
-          id: string
-          receipt_date: string
-          receipt_url: string | null
-          supplier_name: string | null
-          updated_at: string
-        }
-        Insert: {
-          advance_id: string
-          amount: number
-          approved?: boolean | null
-          approved_at?: string | null
-          approved_by?: string | null
-          created_at?: string
-          created_by: string
-          description: string
-          fiscal_receipt?: boolean | null
-          id?: string
-          receipt_date: string
-          receipt_url?: string | null
-          supplier_name?: string | null
-          updated_at?: string
-        }
-        Update: {
-          advance_id?: string
-          amount?: number
-          approved?: boolean | null
-          approved_at?: string | null
-          approved_by?: string | null
-          created_at?: string
-          created_by?: string
-          description?: string
-          fiscal_receipt?: boolean | null
-          id?: string
-          receipt_date?: string
-          receipt_url?: string | null
-          supplier_name?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "advance_justifications_advance_id_fkey"
-            columns: ["advance_id"]
-            isOneToOne: false
-            referencedRelation: "employee_advances"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_advance_justifications_advance"
-            columns: ["advance_id"]
-            isOneToOne: false
-            referencedRelation: "employee_advances"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_advance_justifications_created_by"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       bank_accounts: {
         Row: {
           account_holder: string
@@ -490,196 +307,6 @@ export type Database = {
             columns: ["responsible_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cash_flow_projections: {
-        Row: {
-          actual_expenses: number | null
-          actual_income: number | null
-          actual_net_flow: number | null
-          created_at: string
-          created_by: string
-          id: string
-          notes: string | null
-          period_end: string
-          period_start: string
-          project_id: string | null
-          projected_expenses: number | null
-          projected_income: number | null
-          projected_net_flow: number | null
-          updated_at: string
-          variance: number | null
-        }
-        Insert: {
-          actual_expenses?: number | null
-          actual_income?: number | null
-          actual_net_flow?: number | null
-          created_at?: string
-          created_by: string
-          id?: string
-          notes?: string | null
-          period_end: string
-          period_start: string
-          project_id?: string | null
-          projected_expenses?: number | null
-          projected_income?: number | null
-          projected_net_flow?: number | null
-          updated_at?: string
-          variance?: number | null
-        }
-        Update: {
-          actual_expenses?: number | null
-          actual_income?: number | null
-          actual_net_flow?: number | null
-          created_at?: string
-          created_by?: string
-          id?: string
-          notes?: string | null
-          period_end?: string
-          period_start?: string
-          project_id?: string | null
-          projected_expenses?: number | null
-          projected_income?: number | null
-          projected_net_flow?: number | null
-          updated_at?: string
-          variance?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fk_cash_flow_projections_created_by"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_cash_flow_projections_project"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cash_transactions: {
-        Row: {
-          amount: number
-          approval_status: string | null
-          approved_at: string | null
-          approved_by: string | null
-          cash_account_id: string
-          category: string
-          client_id: string | null
-          created_at: string
-          created_by: string
-          description: string
-          employee_name: string | null
-          expense_id: string | null
-          fiscal_compliant: boolean | null
-          id: string
-          notes: string | null
-          project_id: string | null
-          receipt_provided: boolean | null
-          receipt_url: string | null
-          reference_number: string | null
-          requires_receipt: boolean | null
-          supplier_id: string | null
-          transaction_type: string
-          updated_at: string
-        }
-        Insert: {
-          amount: number
-          approval_status?: string | null
-          approved_at?: string | null
-          approved_by?: string | null
-          cash_account_id: string
-          category: string
-          client_id?: string | null
-          created_at?: string
-          created_by: string
-          description: string
-          employee_name?: string | null
-          expense_id?: string | null
-          fiscal_compliant?: boolean | null
-          id?: string
-          notes?: string | null
-          project_id?: string | null
-          receipt_provided?: boolean | null
-          receipt_url?: string | null
-          reference_number?: string | null
-          requires_receipt?: boolean | null
-          supplier_id?: string | null
-          transaction_type: string
-          updated_at?: string
-        }
-        Update: {
-          amount?: number
-          approval_status?: string | null
-          approved_at?: string | null
-          approved_by?: string | null
-          cash_account_id?: string
-          category?: string
-          client_id?: string | null
-          created_at?: string
-          created_by?: string
-          description?: string
-          employee_name?: string | null
-          expense_id?: string | null
-          fiscal_compliant?: boolean | null
-          id?: string
-          notes?: string | null
-          project_id?: string | null
-          receipt_provided?: boolean | null
-          receipt_url?: string | null
-          reference_number?: string | null
-          requires_receipt?: boolean | null
-          supplier_id?: string | null
-          transaction_type?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cash_transactions_cash_account_id_fkey"
-            columns: ["cash_account_id"]
-            isOneToOne: false
-            referencedRelation: "cash_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_cash_transactions_cash_account"
-            columns: ["cash_account_id"]
-            isOneToOne: false
-            referencedRelation: "cash_accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_cash_transactions_client"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_cash_transactions_created_by"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_cash_transactions_project"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_cash_transactions_supplier"
-            columns: ["supplier_id"]
-            isOneToOne: false
-            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
@@ -3082,85 +2709,6 @@ export type Database = {
         }
         Relationships: []
       }
-      employee_advances: {
-        Row: {
-          advance_amount: number
-          advance_date: string
-          amount_justified: number | null
-          amount_pending: number | null
-          cash_transaction_id: string | null
-          created_at: string
-          created_by: string
-          due_date: string
-          employee_name: string
-          employee_position: string | null
-          id: string
-          notes: string | null
-          project_id: string | null
-          purpose: string
-          status: string | null
-          updated_at: string
-        }
-        Insert: {
-          advance_amount: number
-          advance_date: string
-          amount_justified?: number | null
-          amount_pending?: number | null
-          cash_transaction_id?: string | null
-          created_at?: string
-          created_by: string
-          due_date: string
-          employee_name: string
-          employee_position?: string | null
-          id?: string
-          notes?: string | null
-          project_id?: string | null
-          purpose: string
-          status?: string | null
-          updated_at?: string
-        }
-        Update: {
-          advance_amount?: number
-          advance_date?: string
-          amount_justified?: number | null
-          amount_pending?: number | null
-          cash_transaction_id?: string | null
-          created_at?: string
-          created_by?: string
-          due_date?: string
-          employee_name?: string
-          employee_position?: string | null
-          id?: string
-          notes?: string | null
-          project_id?: string | null
-          purpose?: string
-          status?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "employee_advances_cash_transaction_id_fkey"
-            columns: ["cash_transaction_id"]
-            isOneToOne: false
-            referencedRelation: "cash_transactions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_employee_advances_created_by"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_employee_advances_project"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       expenses: {
         Row: {
           amount: number
@@ -4119,6 +3667,7 @@ export type Database = {
       payment_complements: {
         Row: {
           cfdi_document_id: string
+          client_id: string | null
           complement_uuid: string
           created_at: string
           fecha_pago: string
@@ -4127,6 +3676,7 @@ export type Database = {
           id: string
           moneda: string | null
           monto_pago: number
+          project_id: string | null
           received_date: string | null
           status: string | null
           updated_at: string
@@ -4134,6 +3684,7 @@ export type Database = {
         }
         Insert: {
           cfdi_document_id: string
+          client_id?: string | null
           complement_uuid: string
           created_at?: string
           fecha_pago: string
@@ -4142,6 +3693,7 @@ export type Database = {
           id?: string
           moneda?: string | null
           monto_pago: number
+          project_id?: string | null
           received_date?: string | null
           status?: string | null
           updated_at?: string
@@ -4149,6 +3701,7 @@ export type Database = {
         }
         Update: {
           cfdi_document_id?: string
+          client_id?: string | null
           complement_uuid?: string
           created_at?: string
           fecha_pago?: string
@@ -4157,6 +3710,7 @@ export type Database = {
           id?: string
           moneda?: string | null
           monto_pago?: number
+          project_id?: string | null
           received_date?: string | null
           status?: string | null
           updated_at?: string
@@ -4169,6 +3723,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cfdi_documents"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_complements_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_complements_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_complements_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "financial_summary_by_client_project"
+            referencedColumns: ["project_id"]
           },
         ]
       }
@@ -5611,13 +5186,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "supplier_payments_accounts_payable_id_fkey"
-            columns: ["accounts_payable_id"]
-            isOneToOne: false
-            referencedRelation: "accounts_payable"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "supplier_payments_cfdi_complement_id_fkey"
             columns: ["cfdi_complement_id"]

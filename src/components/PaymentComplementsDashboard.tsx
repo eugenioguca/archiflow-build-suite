@@ -58,7 +58,12 @@ interface CFDIWithComplements {
   }>;
 }
 
-export function PaymentComplementsDashboard() {
+interface PaymentComplementsDashboardProps {
+  selectedClientId?: string;
+  selectedProjectId?: string;
+}
+
+export function PaymentComplementsDashboard({ selectedClientId, selectedProjectId }: PaymentComplementsDashboardProps) {
   const [cfdiDocuments, setCfdiDocuments] = useState<CFDIWithComplements[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCFDI, setSelectedCFDI] = useState<CFDIWithComplements | null>(null);
@@ -72,7 +77,7 @@ export function PaymentComplementsDashboard() {
   const fetchCFDIWithComplements = async () => {
     try {
       // Fetch CFDI documents with PPD payment method (require complements)
-      const { data: cfdiData, error: cfdiError } = await supabase
+      let cfdiQuery = supabase
         .from('cfdi_documents')
         .select(`
           id,
@@ -83,6 +88,7 @@ export function PaymentComplementsDashboard() {
           rfc_receptor,
           forma_pago,
           tipo_comprobante,
+          client_id,
           payment_complements(
             id,
             complement_uuid,
@@ -95,6 +101,13 @@ export function PaymentComplementsDashboard() {
         `)
         .eq('forma_pago', 'PPD')
         .order('fecha_emision', { ascending: false });
+
+      // Apply client filter if provided
+      if (selectedClientId) {
+        cfdiQuery = cfdiQuery.eq('client_id', selectedClientId);
+      }
+
+      const { data: cfdiData, error: cfdiError } = await cfdiQuery;
 
       if (cfdiError) throw cfdiError;
 

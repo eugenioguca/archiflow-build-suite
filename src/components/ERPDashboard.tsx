@@ -196,7 +196,6 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
       projectsResult,
       suppliersResult,
       clientsResult,
-      advancesResult,
       cfdiResult
     ] = await Promise.all([
       supabase.from('cash_accounts').select('current_balance').eq('status', 'active'),
@@ -205,14 +204,14 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
       supabase.from('client_projects').select('id').neq('status', 'completed'),
       supabase.from('suppliers').select('id').eq('status', 'active'),
       supabase.from('clients').select('id'),
-      supabase.from('employee_advances').select('advance_amount, amount_justified').neq('status', 'completed'),
+      
       supabase.from('cfdi_documents').select('id, tipo_comprobante').eq('status', 'active').eq('validation_status', 'pending')
     ]);
 
     const totalCash = (cashResult.data || []).reduce((sum, account) => sum + (account.current_balance || 0), 0);
     const monthlyIncome = (incomeResult.data || []).reduce((sum, income) => sum + (income.amount || 0), 0);
     const monthlyExpenses = (expenseResult.data || []).reduce((sum, expense) => sum + (expense.amount || 0), 0);
-    const pendingAdvances = (advancesResult.data || []).reduce((sum, advance) => sum + ((advance.advance_amount || 0) - (advance.amount_justified || 0)), 0);
+    
     const cfdiPending = (cfdiResult.data || []).length;
     const ppdPending = (cfdiResult.data || []).filter(doc => doc.tipo_comprobante === 'I').length;
 
@@ -226,7 +225,7 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
       activeProjects: (projectsResult.data || []).length,
       totalSuppliers: (suppliersResult.data || []).length,
       totalClients: (clientsResult.data || []).length,
-      pendingAdvances,
+      pendingAdvances: 0,
       cfdiPending,
       ppdPending
     };
