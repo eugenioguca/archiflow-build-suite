@@ -1,73 +1,66 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { DatePicker } from '@/components/DatePicker';
 import { 
   DollarSign, 
   TrendingUp, 
   TrendingDown, 
   AlertTriangle, 
-  Calendar,
+  Wallet,
+  Package,
   FileText,
-  CreditCard,
-  Target,
-  Activity,
-  Briefcase,
+  Calculator,
+  Building2,
   Users,
-  PieChart
+  Activity,
+  ChevronRight
 } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, startOfQuarter, endOfQuarter, subQuarters } from 'date-fns';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 
-interface ERPMetrics {
+interface FinancialKPIs {
   totalCash: number;
+  bankBalance: number;
+  cashBalance: number;
+  netMonthlyFlow: number;
   monthlyIncome: number;
   monthlyExpenses: number;
-  netFlow: number;
-  pendingInvoices: number;
-  overdueInvoices: number;
   activeProjects: number;
-  totalSuppliers: number;
-  totalClients: number;
-  pendingAdvances: number;
-  cfdiPending: number;
-  ppdPending: number;
+  pipelineValue: number;
+}
+
+interface OperationalMetrics {
+  treasuryAccounts: number;
+  lastTransaction: string;
+  materialRequests: number;
+  materialRequestsAmount: number;
+  pendingCFDIs: number;
+  ppdComplements: number;
 }
 
 interface CashFlowData {
-  period: string;
+  month: string;
   income: number;
   expenses: number;
-  netFlow: number;
+  net: number;
 }
 
-interface ExpenseBreakdown {
-  category: string;
-  amount: number;
-  percentage: number;
-  transactions: number;
-}
-
-interface IncomeBreakdown {
-  category: string;
-  amount: number;
-  percentage: number;
-  transactions: number;
-}
-
-interface TopSuppliers {
+interface ExpenseCategory {
   name: string;
-  amount: number;
-  transactions: number;
+  value: number;
+  percentage: number;
 }
 
-interface TopClients {
-  name: string;
-  amount: number;
-  invoices: number;
+interface ProjectPerformance {
+  projectName: string;
+  revenue: number;
+  expenses: number;
+  profit: number;
+  margin: number;
 }
 
 interface ERPDashboardProps {
@@ -79,165 +72,164 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
   selectedClientId,
   selectedProjectId
 }) => {
-  const [metrics, setMetrics] = useState<ERPMetrics | null>(null);
+  const [kpis, setKpis] = useState<FinancialKPIs | null>(null);
+  const [operationalMetrics, setOperationalMetrics] = useState<OperationalMetrics | null>(null);
   const [cashFlowData, setCashFlowData] = useState<CashFlowData[]>([]);
-  const [expenseBreakdown, setExpenseBreakdown] = useState<ExpenseBreakdown[]>([]);
-  const [incomeBreakdown, setIncomeBreakdown] = useState<IncomeBreakdown[]>([]);
-  const [topSuppliers, setTopSuppliers] = useState<TopSuppliers[]>([]);
-  const [topClients, setTopClients] = useState<TopClients[]>([]);
+  const [expenseCategories, setExpenseCategories] = useState<ExpenseCategory[]>([]);
+  const [projectPerformance, setProjectPerformance] = useState<ProjectPerformance[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'quarter' | 'year' | 'custom'>('month');
-  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
-  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
-    fetchERPData();
-  }, [selectedPeriod, customStartDate, customEndDate, selectedClientId, selectedProjectId]);
+    fetchFinancialData();
+  }, [selectedClientId, selectedProjectId]);
 
-  const fetchERPData = async () => {
+  const fetchFinancialData = async () => {
     try {
       setLoading(true);
       
-      // Fetch all data in parallel
       const [
-        metricsData,
+        kpisData,
+        operationalData,
         cashFlowResult,
-        expensesResult,
-        incomesResult,
-        suppliersResult,
-        clientsResult
+        expenseCategoriesResult,
+        projectPerformanceResult
       ] = await Promise.all([
-        fetchDashboardMetrics(),
-        fetchCashFlowData(),
-        fetchExpenseBreakdown(),
-        fetchIncomeBreakdown(),
-        fetchTopSuppliers(),
-        fetchTopClients()
+        fetchFinancialKPIs(),
+        fetchOperationalMetrics(),
+        fetchCashFlowHistory(),
+        fetchExpenseCategories(),
+        fetchProjectPerformance()
       ]);
 
-      setMetrics(metricsData);
+      setKpis(kpisData);
+      setOperationalMetrics(operationalData);
       setCashFlowData(cashFlowResult);
-      setExpenseBreakdown(expensesResult);
-      setIncomeBreakdown(incomesResult);
-      setTopSuppliers(suppliersResult);
-      setTopClients(clientsResult);
+      setExpenseCategories(expenseCategoriesResult);
+      setProjectPerformance(projectPerformanceResult);
     } catch (error) {
-      console.error('Error fetching ERP data:', error);
+      console.error('Error fetching financial data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const getPeriodDates = () => {
+  const fetchFinancialKPIs = async (): Promise<FinancialKPIs> => {
     const currentDate = new Date();
-    
-    switch (selectedPeriod) {
-      case 'month':
-        return {
-          start: startOfMonth(currentDate),
-          end: endOfMonth(currentDate)
-        };
-      case 'quarter':
-        return {
-          start: startOfQuarter(currentDate),
-          end: endOfQuarter(currentDate)
-        };
-      case 'year':
-        return {
-          start: startOfYear(currentDate),
-          end: endOfYear(currentDate)
-        };
-      case 'custom':
-        if (customStartDate && customEndDate) {
-          return {
-            start: customStartDate,
-            end: customEndDate
-          };
-        }
-        // Fallback to current month if custom dates not set
-        return {
-          start: startOfMonth(currentDate),
-          end: endOfMonth(currentDate)
-        };
-      default:
-        return {
-          start: startOfMonth(currentDate),
-          end: endOfMonth(currentDate)
-        };
-    }
-  };
+    const startOfCurrentMonth = startOfMonth(currentDate);
+    const endOfCurrentMonth = endOfMonth(currentDate);
 
-  const fetchDashboardMetrics = async (): Promise<ERPMetrics> => {
-    const { start: startDate, end: endDate } = getPeriodDates();
-
-    // Construir consultas con filtros
+    // Build queries with client-project filters
     let incomeQuery = supabase.from('incomes').select('amount')
-      .gte('created_at', startDate.toISOString())
-      .lte('created_at', endDate.toISOString());
+      .gte('created_at', startOfCurrentMonth.toISOString())
+      .lte('created_at', endOfCurrentMonth.toISOString());
     
     let expenseQuery = supabase.from('expenses').select('amount')
-      .gte('created_at', startDate.toISOString())
-      .lte('created_at', endDate.toISOString());
+      .gte('created_at', startOfCurrentMonth.toISOString())
+      .lte('created_at', endOfCurrentMonth.toISOString());
+
+    let projectQuery = supabase.from('client_projects').select('id, budget, construction_budget')
+      .neq('status', 'completed');
 
     if (selectedClientId) {
       incomeQuery = incomeQuery.eq('client_id', selectedClientId);
       expenseQuery = expenseQuery.eq('client_id', selectedClientId);
+      projectQuery = projectQuery.eq('client_id', selectedClientId);
     }
 
     if (selectedProjectId) {
       incomeQuery = incomeQuery.eq('project_id', selectedProjectId);
       expenseQuery = expenseQuery.eq('project_id', selectedProjectId);
+      projectQuery = projectQuery.eq('id', selectedProjectId);
     }
 
     const [
-      cashResult,
+      cashAccountsResult,
+      bankAccountsResult,
       incomeResult,
       expenseResult,
-      projectsResult,
-      suppliersResult,
-      clientsResult,
-      cfdiResult
+      projectsResult
     ] = await Promise.all([
       supabase.from('cash_accounts').select('current_balance').eq('status', 'active'),
+      supabase.from('bank_accounts').select('current_balance').eq('status', 'active'),
       incomeQuery,
       expenseQuery,
-      supabase.from('client_projects').select('id').neq('status', 'completed'),
-      supabase.from('suppliers').select('id').eq('status', 'active'),
-      supabase.from('clients').select('id'),
-      
-      supabase.from('cfdi_documents').select('id, tipo_comprobante').eq('status', 'active').eq('validation_status', 'pending')
+      projectQuery
     ]);
 
-    const totalCash = (cashResult.data || []).reduce((sum, account) => sum + (account.current_balance || 0), 0);
+    const cashBalance = (cashAccountsResult.data || []).reduce((sum, account) => sum + (account.current_balance || 0), 0);
+    const bankBalance = (bankAccountsResult.data || []).reduce((sum, account) => sum + (account.current_balance || 0), 0);
     const monthlyIncome = (incomeResult.data || []).reduce((sum, income) => sum + (income.amount || 0), 0);
     const monthlyExpenses = (expenseResult.data || []).reduce((sum, expense) => sum + (expense.amount || 0), 0);
-    
-    const cfdiPending = (cfdiResult.data || []).length;
-    const ppdPending = (cfdiResult.data || []).filter(doc => doc.tipo_comprobante === 'I').length;
+    const activeProjects = (projectsResult.data || []).length;
+    const pipelineValue = (projectsResult.data || []).reduce((sum, project) => {
+      return sum + Math.max(project.budget || 0, project.construction_budget || 0);
+    }, 0);
 
     return {
-      totalCash,
+      totalCash: cashBalance + bankBalance,
+      bankBalance,
+      cashBalance,
+      netMonthlyFlow: monthlyIncome - monthlyExpenses,
       monthlyIncome,
       monthlyExpenses,
-      netFlow: monthlyIncome - monthlyExpenses,
-      pendingInvoices: 0, // To be calculated from accounts_receivable
-      overdueInvoices: 0, // To be calculated from accounts_receivable
-      activeProjects: (projectsResult.data || []).length,
-      totalSuppliers: (suppliersResult.data || []).length,
-      totalClients: (clientsResult.data || []).length,
-      pendingAdvances: 0,
-      cfdiPending,
-      ppdPending
+      activeProjects,
+      pipelineValue
     };
   };
 
-  const fetchCashFlowData = async (): Promise<CashFlowData[]> => {
-    const periods = [];
+  const fetchOperationalMetrics = async (): Promise<OperationalMetrics> => {
+    // Build material requests query with filters
+    let materialQuery = supabase.from('material_finance_requests')
+      .select('id')
+      .eq('status', 'pending');
+
+    if (selectedClientId) {
+      materialQuery = materialQuery.eq('client_id', selectedClientId);
+    }
+
+    if (selectedProjectId) {
+      materialQuery = materialQuery.eq('project_id', selectedProjectId);
+    }
+
+    const [
+      treasuryResult,
+      lastTransactionResult,
+      materialRequestsResult,
+      cfdiResult,
+      complementsResult
+    ] = await Promise.all([
+      supabase.from('cash_accounts').select('id').eq('status', 'active'),
+      supabase.from('expenses').select('created_at, description')
+        .order('created_at', { ascending: false })
+        .limit(1),
+      materialQuery,
+      supabase.from('cfdi_documents').select('id')
+        .eq('status', 'active')
+        .eq('validation_status', 'pending'),
+      supabase.from('payment_complements').select('id')
+        .eq('status', 'pending')
+    ]);
+
+    return {
+      treasuryAccounts: (treasuryResult.data || []).length,
+      lastTransaction: lastTransactionResult.data?.[0]?.created_at 
+        ? format(new Date(lastTransactionResult.data[0].created_at), 'dd/MM/yyyy')
+        : 'Sin movimientos',
+      materialRequests: (materialRequestsResult.data || []).length,
+      materialRequestsAmount: 0, // Simplified for now
+      pendingCFDIs: (cfdiResult.data || []).length,
+      ppdComplements: (complementsResult.data || []).length
+    };
+  };
+
+  const fetchCashFlowHistory = async (): Promise<CashFlowData[]> => {
+    const months = [];
     const currentDate = new Date();
     
-    if (selectedPeriod === 'custom' && customStartDate && customEndDate) {
-      // For custom periods, show the selected range
-      const { start: startDate, end: endDate } = getPeriodDates();
+    for (let i = 5; i >= 0; i--) {
+      const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const startDate = startOfMonth(monthDate);
+      const endDate = endOfMonth(monthDate);
       
       let incomeQuery = supabase.from('incomes').select('amount')
         .gte('created_at', startDate.toISOString())
@@ -247,7 +239,6 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());
 
-      // Apply client and project filters
       if (selectedClientId) {
         incomeQuery = incomeQuery.eq('client_id', selectedClientId);
         expenseQuery = expenseQuery.eq('client_id', selectedClientId);
@@ -266,209 +257,156 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
       const income = (incomeResult.data || []).reduce((sum, item) => sum + (item.amount || 0), 0);
       const expenses = (expenseResult.data || []).reduce((sum, item) => sum + (item.amount || 0), 0);
 
-      periods.push({
-        period: `${format(startDate, 'dd MMM', { locale: es })} - ${format(endDate, 'dd MMM yyyy', { locale: es })}`,
+      months.push({
+        month: format(monthDate, 'MMM', { locale: es }),
         income,
         expenses,
-        netFlow: income - expenses
+        net: income - expenses
       });
-    } else {
-      // For predefined periods, show historical data
-      for (let i = 5; i >= 0; i--) {
-        let periodDate, startDate, endDate, periodLabel;
-        
-        switch (selectedPeriod) {
-          case 'quarter':
-            periodDate = subQuarters(currentDate, i);
-            startDate = startOfQuarter(periodDate);
-            endDate = endOfQuarter(periodDate);
-            periodLabel = `Q${Math.floor(periodDate.getMonth() / 3) + 1} ${format(periodDate, 'yyyy')}`;
-            break;
-          case 'year':
-            periodDate = new Date(currentDate.getFullYear() - i, 0, 1);
-            startDate = startOfYear(periodDate);
-            endDate = endOfYear(periodDate);
-            periodLabel = format(periodDate, 'yyyy');
-            break;
-          default: // month
-            periodDate = subMonths(currentDate, i);
-            startDate = startOfMonth(periodDate);
-            endDate = endOfMonth(periodDate);
-            periodLabel = format(periodDate, 'MMM yyyy', { locale: es });
-        }
-      
-        const [incomeResult, expenseResult] = await Promise.all([
-          supabase.from('incomes').select('amount')
-            .gte('created_at', startDate.toISOString())
-            .lte('created_at', endDate.toISOString()),
-          supabase.from('expenses').select('amount')
-            .gte('created_at', startDate.toISOString())
-            .lte('created_at', endDate.toISOString())
-        ]);
-
-        const income = (incomeResult.data || []).reduce((sum, item) => sum + (item.amount || 0), 0);
-        const expenses = (expenseResult.data || []).reduce((sum, item) => sum + (item.amount || 0), 0);
-
-        periods.push({
-          period: periodLabel,
-          income,
-          expenses,
-          netFlow: income - expenses
-        });
-      }
     }
 
-    return periods;
+    return months;
   };
 
-  const fetchExpenseBreakdown = async (): Promise<ExpenseBreakdown[]> => {
-    const { start: startDate, end: endDate } = getPeriodDates();
+  const fetchExpenseCategories = async (): Promise<ExpenseCategory[]> => {
+    const currentDate = new Date();
+    const startDate = startOfMonth(currentDate);
+    const endDate = endOfMonth(currentDate);
 
-    const { data: expenses } = await supabase
-      .from('expenses')
-      .select('category, amount')
+    let expenseQuery = supabase.from('expenses').select('category, amount')
       .gte('created_at', startDate.toISOString())
       .lte('created_at', endDate.toISOString());
 
-    const categoryMap = new Map<string, { amount: number; count: number }>();
+    if (selectedClientId) {
+      expenseQuery = expenseQuery.eq('client_id', selectedClientId);
+    }
+
+    if (selectedProjectId) {
+      expenseQuery = expenseQuery.eq('project_id', selectedProjectId);
+    }
+
+    const { data: expenses } = await expenseQuery;
+
+    const categoryMap = new Map<string, number>();
     let totalAmount = 0;
 
     (expenses || []).forEach(expense => {
-      const category = expense.category || 'Sin categoría';
+      const category = expense.category || 'Otros';
       const amount = expense.amount || 0;
       
-      if (!categoryMap.has(category)) {
-        categoryMap.set(category, { amount: 0, count: 0 });
-      }
-      
-      const existing = categoryMap.get(category)!;
-      existing.amount += amount;
-      existing.count += 1;
+      categoryMap.set(category, (categoryMap.get(category) || 0) + amount);
       totalAmount += amount;
     });
 
-    return Array.from(categoryMap.entries()).map(([category, data]) => ({
-      category,
-      amount: data.amount,
-      percentage: totalAmount > 0 ? (data.amount / totalAmount) * 100 : 0,
-      transactions: data.count
-    })).sort((a, b) => b.amount - a.amount);
-  };
-
-  const fetchIncomeBreakdown = async (): Promise<IncomeBreakdown[]> => {
-    const { start: startDate, end: endDate } = getPeriodDates();
-
-    const { data: incomes } = await supabase
-      .from('incomes')
-      .select('category, amount')
-      .gte('created_at', startDate.toISOString())
-      .lte('created_at', endDate.toISOString());
-
-    const categoryMap = new Map<string, { amount: number; count: number }>();
-    let totalAmount = 0;
-
-    (incomes || []).forEach(income => {
-      const category = income.category || 'Sin categoría';
-      const amount = income.amount || 0;
-      
-      if (!categoryMap.has(category)) {
-        categoryMap.set(category, { amount: 0, count: 0 });
-      }
-      
-      const existing = categoryMap.get(category)!;
-      existing.amount += amount;
-      existing.count += 1;
-      totalAmount += amount;
-    });
-
-    return Array.from(categoryMap.entries()).map(([category, data]) => ({
-      category,
-      amount: data.amount,
-      percentage: totalAmount > 0 ? (data.amount / totalAmount) * 100 : 0,
-      transactions: data.count
-    })).sort((a, b) => b.amount - a.amount);
-  };
-
-  const fetchTopSuppliers = async (): Promise<TopSuppliers[]> => {
-    const { start: startDate, end: endDate } = getPeriodDates();
-
-    const { data: expenses } = await supabase
-      .from('expenses')
-      .select('amount, suppliers(company_name)')
-      .gte('created_at', startDate.toISOString())
-      .lte('created_at', endDate.toISOString())
-      .not('supplier_id', 'is', null);
-
-    const supplierMap = new Map<string, { amount: number; count: number }>();
-
-    (expenses || []).forEach(expense => {
-      const supplierName = expense.suppliers?.company_name || 'Proveedor desconocido';
-      const amount = expense.amount || 0;
-      
-      if (!supplierMap.has(supplierName)) {
-        supplierMap.set(supplierName, { amount: 0, count: 0 });
-      }
-      
-      const existing = supplierMap.get(supplierName)!;
-      existing.amount += amount;
-      existing.count += 1;
-    });
-
-    return Array.from(supplierMap.entries())
-      .map(([name, data]) => ({
+    return Array.from(categoryMap.entries())
+      .map(([name, value]) => ({
         name,
-        amount: data.amount,
-        transactions: data.count
+        value,
+        percentage: totalAmount > 0 ? (value / totalAmount) * 100 : 0
       }))
-      .sort((a, b) => b.amount - a.amount)
-      .slice(0, 5);
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6);
   };
 
-  const fetchTopClients = async (): Promise<TopClients[]> => {
-    const { start: startDate, end: endDate } = getPeriodDates();
+  const fetchProjectPerformance = async (): Promise<ProjectPerformance[]> => {
+    let projectQuery = supabase.from('client_projects')
+      .select('id, project_name')
+      .neq('status', 'completed');
 
-    const { data: incomes } = await supabase
-      .from('incomes')
-      .select('amount, clients(full_name)')
-      .gte('created_at', startDate.toISOString())
-      .lte('created_at', endDate.toISOString())
-      .not('client_id', 'is', null);
+    if (selectedClientId) {
+      projectQuery = projectQuery.eq('client_id', selectedClientId);
+    }
 
-    const clientMap = new Map<string, { amount: number; count: number }>();
+    if (selectedProjectId) {
+      projectQuery = projectQuery.eq('id', selectedProjectId);
+    }
 
-    (incomes || []).forEach(income => {
-      const clientName = income.clients?.full_name || 'Cliente desconocido';
-      const amount = income.amount || 0;
-      
-      if (!clientMap.has(clientName)) {
-        clientMap.set(clientName, { amount: 0, count: 0 });
-      }
-      
-      const existing = clientMap.get(clientName)!;
-      existing.amount += amount;
-      existing.count += 1;
-    });
+    const { data: projects } = await projectQuery.limit(5);
 
-    return Array.from(clientMap.entries())
-      .map(([name, data]) => ({
-        name,
-        amount: data.amount,
-        invoices: data.count
-      }))
-      .sort((a, b) => b.amount - a.amount)
-      .slice(0, 5);
+    const projectPerformanceData = await Promise.all(
+      (projects || []).map(async (project) => {
+        const [incomeResult, expenseResult] = await Promise.all([
+          supabase.from('incomes').select('amount').eq('project_id', project.id),
+          supabase.from('expenses').select('amount').eq('project_id', project.id)
+        ]);
+
+        const revenue = (incomeResult.data || []).reduce((sum, income) => sum + (income.amount || 0), 0);
+        const expenses = (expenseResult.data || []).reduce((sum, expense) => sum + (expense.amount || 0), 0);
+        const profit = revenue - expenses;
+        const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
+
+        return {
+          projectName: project.project_name || 'Proyecto sin nombre',
+          revenue,
+          expenses,
+          profit,
+          margin
+        };
+      })
+    );
+
+    return projectPerformanceData.filter(project => project.revenue > 0 || project.expenses > 0);
   };
+
+  const moduleAccess = [
+    { 
+      name: 'Tesorería', 
+      icon: Wallet, 
+      value: 'treasury',
+      description: `${operationalMetrics?.treasuryAccounts || 0} cuentas activas`
+    },
+    { 
+      name: 'Materiales', 
+      icon: Package, 
+      value: 'materials',
+      description: `${operationalMetrics?.materialRequests || 0} solicitudes pendientes`
+    },
+    { 
+      name: 'Planes de Pago', 
+      icon: Activity, 
+      value: 'payment-plans',
+      description: 'Gestión de pagos'
+    },
+    { 
+      name: 'PPD', 
+      icon: AlertTriangle, 
+      value: 'ppd',
+      description: `${operationalMetrics?.ppdComplements || 0} complementos pendientes`
+    },
+    { 
+      name: 'Facturación', 
+      icon: FileText, 
+      value: 'invoicing',
+      description: `${operationalMetrics?.pendingCFDIs || 0} CFDIs pendientes`
+    },
+    { 
+      name: 'Rentabilidad', 
+      icon: Calculator, 
+      value: 'profitability',
+      description: 'Análisis financiero'
+    }
+  ];
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
-      currency: 'MXN'
+      currency: 'MXN',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
     }).format(amount);
   };
 
   const formatPercentage = (value: number) => {
     return `${value.toFixed(1)}%`;
   };
+
+  const getFlowIcon = (value: number) => {
+    if (value > 0) return <TrendingUp className="h-4 w-4 text-green-600" />;
+    if (value < 0) return <TrendingDown className="h-4 w-4 text-red-600" />;
+    return <Activity className="h-4 w-4 text-muted-foreground" />;
+  };
+
+  const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))', 'hsl(var(--destructive))', 'hsl(var(--warning))'];
 
   if (loading) {
     return (
@@ -481,71 +419,16 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard ERP</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Centro de Control Financiero</h1>
           <p className="text-muted-foreground">
-            Panel de control ejecutivo - {format(new Date(), 'dd MMMM yyyy', { locale: es })}
-            {selectedPeriod === 'custom' && customStartDate && customEndDate && (
-              <span className="block text-sm">
-                Período personalizado: {format(customStartDate, 'dd/MM/yyyy')} - {format(customEndDate, 'dd/MM/yyyy')}
-              </span>
-            )}
+            Dashboard ejecutivo en tiempo real - {format(new Date(), 'dd MMMM yyyy', { locale: es })}
           </p>
-        </div>
-        <div className="flex flex-col gap-4">
-          <div className="flex gap-2">
-            <Button
-              variant={selectedPeriod === 'month' ? 'default' : 'outline'}
-              onClick={() => setSelectedPeriod('month')}
-            >
-              Mes
-            </Button>
-            <Button
-              variant={selectedPeriod === 'quarter' ? 'default' : 'outline'}
-              onClick={() => setSelectedPeriod('quarter')}
-            >
-              Trimestre
-            </Button>
-            <Button
-              variant={selectedPeriod === 'year' ? 'default' : 'outline'}
-              onClick={() => setSelectedPeriod('year')}
-            >
-              Año
-            </Button>
-            <Button
-              variant={selectedPeriod === 'custom' ? 'default' : 'outline'}
-              onClick={() => setSelectedPeriod('custom')}
-            >
-              <Calendar className="h-4 w-4 mr-2" />
-              Personalizado
-            </Button>
-          </div>
-          
-          {selectedPeriod === 'custom' && (
-            <div className="flex gap-2 items-center">
-              <DatePicker
-                date={customStartDate}
-                onDateChange={setCustomStartDate}
-                placeholder="Fecha inicio"
-                className="w-40"
-              />
-              <span className="text-muted-foreground">hasta</span>
-              <DatePicker
-                date={customEndDate}
-                onDateChange={setCustomEndDate}
-                placeholder="Fecha fin"
-                className="w-40"
-              />
-              {customStartDate && customEndDate && customStartDate > customEndDate && (
-                <span className="text-sm text-red-500">La fecha de inicio debe ser anterior a la fecha de fin</span>
-              )}
-            </div>
-          )}
         </div>
       </div>
 
-      {/* KPIs Grid */}
+      {/* Principal KPIs */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -553,250 +436,248 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(metrics?.totalCash || 0)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(kpis?.totalCash || 0)}</div>
             <p className="text-xs text-muted-foreground">
-              En todas las cuentas activas
+              Bancos: {formatCurrency(kpis?.bankBalance || 0)} | Efectivo: {formatCurrency(kpis?.cashBalance || 0)}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Flujo Neto</CardTitle>
-            {(metrics?.netFlow || 0) >= 0 ? (
-              <TrendingUp className="h-4 w-4 text-green-500" />
-            ) : (
-              <TrendingDown className="h-4 w-4 text-red-500" />
-            )}
+            <CardTitle className="text-sm font-medium">Flujo Neto Mensual</CardTitle>
+            {getFlowIcon(kpis?.netMonthlyFlow || 0)}
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${(metrics?.netFlow || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(metrics?.netFlow || 0)}
-            </div>
+            <div className="text-2xl font-bold">{formatCurrency(kpis?.netMonthlyFlow || 0)}</div>
             <p className="text-xs text-muted-foreground">
-              {formatCurrency(metrics?.monthlyIncome || 0)} ingresos - {formatCurrency(metrics?.monthlyExpenses || 0)} gastos
+              Ingresos: {formatCurrency(kpis?.monthlyIncome || 0)} | Gastos: {formatCurrency(kpis?.monthlyExpenses || 0)}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">CFDIs Pendientes</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Proyectos Activos</CardTitle>
+            <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{metrics?.cfdiPending || 0}</div>
+            <div className="text-2xl font-bold">{kpis?.activeProjects || 0}</div>
             <p className="text-xs text-muted-foreground">
-              {metrics?.ppdPending || 0} facturas PPD
+              En desarrollo y construcción
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Anticipos Pendientes</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-yellow-500" />
+            <CardTitle className="text-sm font-medium">Value Pipeline</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(metrics?.pendingAdvances || 0)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(kpis?.pipelineValue || 0)}</div>
             <p className="text-xs text-muted-foreground">
-              Por justificar empleados
+              Valor total de proyectos activos
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Tabs for detailed views */}
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Resumen</TabsTrigger>
-          <TabsTrigger value="cashflow">Flujo de Efectivo</TabsTrigger>
-          <TabsTrigger value="expenses">Análisis de Gastos</TabsTrigger>
-          <TabsTrigger value="income">Análisis de Ingresos</TabsTrigger>
-          <TabsTrigger value="partners">Socios Comerciales</TabsTrigger>
-        </TabsList>
+      {/* Operational Metrics */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Estado de Tesorería</CardTitle>
+            <Wallet className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg font-bold">{operationalMetrics?.treasuryAccounts || 0} cuentas activas</div>
+            <p className="text-xs text-muted-foreground">
+              Último movimiento: {operationalMetrics?.lastTransaction || 'Sin movimientos'}
+            </p>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Briefcase className="h-5 w-5" />
-                  Proyectos Activos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{metrics?.activeProjects || 0}</div>
-              </CardContent>
-            </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Solicitudes de Materiales</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg font-bold">{operationalMetrics?.materialRequests || 0} solicitudes</div>
+            <p className="text-xs text-muted-foreground">
+              Monto total: {formatCurrency(operationalMetrics?.materialRequestsAmount || 0)}
+            </p>
+          </CardContent>
+        </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Total Proveedores
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{metrics?.totalSuppliers || 0}</div>
-              </CardContent>
-            </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Sistema PPD</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg font-bold">{operationalMetrics?.pendingCFDIs || 0} CFDIs</div>
+            <p className="text-xs text-muted-foreground">
+              {operationalMetrics?.ppdComplements || 0} complementos pendientes
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Total Clientes
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{metrics?.totalClients || 0}</div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+      {/* Real-time Analysis */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        {/* Cash Flow Chart */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Flujo de Efectivo - Últimos 6 Meses</CardTitle>
+            <CardDescription>Evolución de ingresos y gastos en tiempo real</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={cashFlowData}>
+                  <XAxis 
+                    dataKey="month" 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Area
+                    type="monotone"
+                    dataKey="income"
+                    stroke="hsl(var(--primary))"
+                    fill="hsl(var(--primary))"
+                    fillOpacity={0.3}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="expenses"
+                    stroke="hsl(var(--destructive))"
+                    fill="hsl(var(--destructive))"
+                    fillOpacity={0.3}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="cashflow" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Evolución del Flujo de Efectivo</CardTitle>
-              <CardDescription>
-                Comparativo de ingresos vs gastos por período
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {cashFlowData.map((period, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="font-medium">{period.period}</div>
-                    <div className="flex gap-4 text-sm">
-                      <span className="text-green-600">↗ {formatCurrency(period.income)}</span>
-                      <span className="text-red-600">↘ {formatCurrency(period.expenses)}</span>
-                      <span className={`font-medium ${period.netFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        = {formatCurrency(period.netFlow)}
-                      </span>
-                    </div>
+        {/* Expense Categories */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Distribución de Gastos</CardTitle>
+            <CardDescription>Por categoría - Mes actual</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {expenseCategories.slice(0, 5).map((category, index) => (
+                <div key={category.name} className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                    />
+                    <span className="text-sm font-medium">{category.name}</span>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="expenses" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Desglose de Gastos por Categoría</CardTitle>
-              <CardDescription>
-                Análisis detallado del mes actual
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {expenseBreakdown.map((category, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <div className="font-medium">{category.category}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {category.transactions} transacciones
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-medium">{formatCurrency(category.amount)}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {formatPercentage(category.percentage)}
-                      </div>
-                    </div>
+                  <div className="text-right">
+                    <div className="text-sm font-bold">{formatCurrency(category.value)}</div>
+                    <div className="text-xs text-muted-foreground">{formatPercentage(category.percentage)}</div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="income" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Desglose de Ingresos por Categoría</CardTitle>
-              <CardDescription>
-                Análisis detallado del mes actual
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {incomeBreakdown.map((category, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <div className="font-medium">{category.category}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {category.transactions} transacciones
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-medium">{formatCurrency(category.amount)}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {formatPercentage(category.percentage)}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="partners" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Top Proveedores</CardTitle>
-                <CardDescription>Mayor volumen de gastos este mes</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {topSuppliers.map((supplier, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium">{supplier.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {supplier.transactions} transacciones
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">{formatCurrency(supplier.amount)}</div>
-                      </div>
-                    </div>
-                  ))}
                 </div>
-              </CardContent>
-            </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Top Clientes</CardTitle>
-                <CardDescription>Mayor volumen de ingresos este mes</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {topClients.map((client, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium">{client.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {client.invoices} facturas
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">{formatCurrency(client.amount)}</div>
-                      </div>
+      {/* Project Performance */}
+      {projectPerformance.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Performance de Proyectos</CardTitle>
+            <CardDescription>Rentabilidad por proyecto activo</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={projectPerformance}>
+                  <XAxis 
+                    dataKey="projectName" 
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar
+                    dataKey="revenue"
+                    fill="hsl(var(--primary))"
+                    name="Ingresos"
+                  />
+                  <Bar
+                    dataKey="expenses"
+                    fill="hsl(var(--destructive))"
+                    name="Gastos"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Module Access */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Acceso a Módulos Financieros</CardTitle>
+          <CardDescription>Navegación rápida a las funcionalidades del sistema</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {moduleAccess.map((module) => {
+              const Icon = module.icon;
+              return (
+                <Button
+                  key={module.value}
+                  variant="outline"
+                  className="flex items-center justify-between p-4 h-auto"
+                  onClick={() => {
+                    // This would navigate to the specific tab in the parent component
+                    const event = new CustomEvent('navigate-to-module', { detail: module.value });
+                    window.dispatchEvent(event);
+                  }}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Icon className="h-5 w-5" />
+                    <div className="text-left">
+                      <div className="font-medium">{module.name}</div>
+                      <div className="text-xs text-muted-foreground">{module.description}</div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                  </div>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              );
+            })}
           </div>
-        </TabsContent>
-      </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 };
