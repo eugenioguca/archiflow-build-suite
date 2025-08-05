@@ -59,22 +59,56 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
     try {
       setLoading(true);
       let query = supabase
-        .from('payment_plans_with_sales')
-        .select('*')
+        .from('payment_plans')
+        .select(`
+          *,
+          client_projects(
+            project_name,
+            client_id,
+            clients(full_name)
+          )
+        `)
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
       if (selectedProjectId) {
         query = query.eq('client_project_id', selectedProjectId);
       } else if (selectedClientId) {
-        query = query.eq('client_id', selectedClientId);
+        // Para filtrar por cliente, usar una subconsulta
+        const { data: clientProjects } = await supabase
+          .from('client_projects')
+          .select('id')
+          .eq('client_id', selectedClientId);
+        
+        if (clientProjects && clientProjects.length > 0) {
+          const projectIds = clientProjects.map(p => p.id);
+          query = query.in('client_project_id', projectIds);
+        } else {
+          // Si no hay proyectos para este cliente, no devolver nada
+          setPaymentPlans([]);
+          setLoading(false);
+          return;
+        }
       }
 
       const { data, error } = await query;
 
       if (error) throw error;
 
-      setPaymentPlans(data || []);
+      // Mapear los datos para que coincidan con la interfaz PaymentPlan
+      const mappedPlans: PaymentPlan[] = (data || []).map((plan: any) => ({
+        id: plan.id,
+        plan_name: plan.plan_name,
+        total_amount: plan.total_amount,
+        currency: plan.currency,
+        status: plan.status,
+        client_project_id: plan.client_project_id,
+        client_id: plan.client_projects?.client_id || '',
+        client_name: plan.client_projects?.clients?.full_name || 'Cliente desconocido',
+        project_name: plan.client_projects?.project_name || 'Proyecto desconocido'
+      }));
+
+      setPaymentPlans(mappedPlans);
     } catch (error) {
       console.error('Error fetching payment plans:', error);
       toast.error('Error al cargar planes de pago');
@@ -250,8 +284,9 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
   return (
     <div className="space-y-4">
       {paymentPlans.map((plan) => {
-        const progress = calculateProgress(installments);
-        const totalPaid = calculateTotalPaid(installments);
+        // Por ahora mostrar progreso como 0 hasta que se implemente correctamente
+        const progress = 0;
+        const totalPaid = 0;
         
         return (
           <Card key={plan.id} className="border-l-4 border-l-primary">
@@ -290,15 +325,11 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <CheckCircle2 className="h-4 w-4" />
-                    <span>{installments.filter(i => i.status === 'paid').length} pagados</span>
+                    <span>Installments disponibles</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
-                    <span>{installments.filter(i => i.status === 'pending').length} pendientes</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <AlertCircle className="h-4 w-4" />
-                    <span>{installments.filter(i => i.status === 'overdue').length} vencidos</span>
+                    <span>Ver detalles para estado</span>
                   </div>
                 </div>
                 

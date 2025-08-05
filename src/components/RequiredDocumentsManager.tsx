@@ -96,19 +96,14 @@ export const RequiredDocumentsManager = ({
   const [curpValue, setCurpValue] = useState(clientProject.curp || '');
   const [showCurpDialog, setShowCurpDialog] = useState(false);
   const [paymentPlanData, setPaymentPlanData] = useState<any>(null);
+  const [paymentPlanCompleted, setPaymentPlanCompleted] = useState(false);
   const { toast } = useToast();
 
   // Cargar datos del plan de pagos al montar el componente y cuando se actualiza
   const fetchPaymentPlan = async () => {
     try {
-      const { data, error } = await supabase
-        .from('client_projects')
-        .select('payment_plan')
-        .eq('id', clientProjectId)
-        .single();
-
-      if (error) throw error;
-      setPaymentPlanData(data?.payment_plan);
+      // Ya no necesitamos cargar desde el JSONB - se verifica directamente en checkPaymentPlanCompleted
+      setPaymentPlanData(true); // Solo para mantener compatibilidad
     } catch (error) {
       console.error('Error fetching payment plan:', error);
     }
@@ -116,30 +111,47 @@ export const RequiredDocumentsManager = ({
 
   useEffect(() => {
     fetchPaymentPlan();
+    // Verificar el estado del plan de pagos
+    checkPaymentPlanCompleted().then(setPaymentPlanCompleted);
   }, [clientProjectId]);
 
   // Refetch cuando onDocumentUpdate es llamado (cuando hay cambios externos)
   useEffect(() => {
     if (onDocumentUpdate) {
       fetchPaymentPlan();
+      checkPaymentPlanCompleted().then(setPaymentPlanCompleted);
     }
   }, [onDocumentUpdate]);
 
-  const checkPaymentPlanCompleted = () => {
-    if (!paymentPlanData) return false;
-
+  const checkPaymentPlanCompleted = async () => {
     try {
-      const plans = Array.isArray(paymentPlanData) ? paymentPlanData : [paymentPlanData];
-      
-      // Verificar si al menos un plan tiene un pago marcado como pagado o con status 'paid'
-      return plans.some((plan: any) => {
-        if (!Array.isArray(plan.payments)) return false;
-        return plan.payments.some((payment: any) => 
-          payment.paid === true || 
-          payment.status === 'paid' || 
-          payment.status === 'partial'
-        );
-      });
+      // Primero obtener los IDs de los planes de pago para este proyecto
+      const { data: plans, error: plansError } = await supabase
+        .from('payment_plans')
+        .select('id')
+        .eq('client_project_id', clientProjectId)
+        .eq('status', 'active');
+
+      if (plansError || !plans || plans.length === 0) {
+        return false;
+      }
+
+      const planIds = plans.map(p => p.id);
+
+      // Verificar si existe al menos un installment pagado
+      const { data: paidInstallments, error } = await supabase
+        .from('payment_installments')
+        .select('id')
+        .in('payment_plan_id', planIds)
+        .eq('status', 'paid')
+        .limit(1);
+
+      if (error) {
+        console.error('Error checking payment plan:', error);
+        return false;
+      }
+
+      return paidInstallments && paidInstallments.length > 0;
     } catch (error) {
       console.error('Error checking payment plan:', error);
       return false;
@@ -174,8 +186,8 @@ export const RequiredDocumentsManager = ({
         };
       case 'payment_plan':
         return {
-          completed: checkPaymentPlanCompleted(),
-          value: checkPaymentPlanCompleted() ? 'Plan de pagos con primer pago realizado' : null,
+          completed: paymentPlanCompleted,
+          value: paymentPlanCompleted ? 'Plan de pagos con primer pago realizado' : null,
           canEdit: true
         };
       default:

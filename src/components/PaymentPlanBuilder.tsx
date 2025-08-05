@@ -134,33 +134,64 @@ export const PaymentPlanBuilder = ({
     try {
       setLoading(true);
       
-      const { data: projectData, error } = await supabase
-        .from('client_projects')
-        .select('payment_plan')
-        .eq('id', clientProjectId)
-        .single();
+      // Ahora cargar desde las tablas normalizadas
+      const { data: plansData, error } = await supabase
+        .from('payment_plans')
+        .select(`
+          *,
+          client_projects(
+            project_name,
+            clients(full_name)
+          )
+        `)
+        .eq('client_project_id', clientProjectId)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Cargar planes desde el campo payment_plan del proyecto
-      if (projectData?.payment_plan && typeof projectData.payment_plan === 'object') {
-        try {
-          const plans = Array.isArray(projectData.payment_plan) ? projectData.payment_plan : [projectData.payment_plan];
-          // Asegurar que cada plan tenga un array de payments válido y campos numéricos válidos
-          const validPlans = plans.map((plan: any) => ({
-            ...plan,
-            payments: Array.isArray(plan.payments) ? plan.payments.map((payment: any) => ({
-              ...payment,
-              amount: typeof payment.amount === 'number' ? payment.amount : 0,
-              paid_amount: typeof payment.paid_amount === 'number' ? payment.paid_amount : 0
-            })) : [],
-            total_amount: typeof plan.total_amount === 'number' ? plan.total_amount : 0
-          }));
-          setPaymentPlans(validPlans as unknown as PaymentPlan[]);
-        } catch (e) {
-          console.error('Error parsing payment plans:', e);
-          setPaymentPlans([]);
-        }
+      if (plansData && plansData.length > 0) {
+        // Para cada plan, cargar sus installments
+        const plansWithInstallments = await Promise.all(
+          plansData.map(async (plan: any) => {
+            const { data: installments, error: instError } = await supabase
+              .from('payment_installments')
+              .select('*')
+              .eq('payment_plan_id', plan.id)
+              .order('installment_number');
+
+            if (instError) {
+              console.error('Error fetching installments:', instError);
+              return { ...plan, payments: [] };
+            }
+
+            return {
+              id: plan.id,
+              client_project_id: plan.client_project_id,
+              plan_name: plan.plan_name,
+              total_amount: plan.total_amount || 0,
+              currency: plan.currency || 'MXN',
+              status: plan.status as 'draft' | 'approved' | 'active' | 'completed',
+              created_at: plan.created_at,
+              updated_at: plan.updated_at,
+              payments: (installments || []).map((inst: any) => ({
+                id: inst.id,
+                payment_plan_id: inst.payment_plan_id,
+                installment_number: inst.installment_number,
+                amount: inst.amount,
+                due_date: inst.due_date,
+                description: inst.description || '',
+                status: inst.status as 'pending' | 'paid' | 'overdue' | 'partial',
+                paid_amount: 0,
+                paid_date: inst.paid_date,
+                payment_method: '',
+                notes: ''
+              }))
+            };
+          })
+        );
+
+        setPaymentPlans(plansWithInstallments as PaymentPlan[]);
       } else {
         setPaymentPlans([]);
       }
@@ -200,47 +231,37 @@ export const PaymentPlanBuilder = ({
         return;
       }
 
-      // Crear nuevo plan
-      const newPlan: PaymentPlan = {
-        id: Math.random().toString(),
-        client_project_id: clientProjectId,
-        plan_name: planName,
-        total_amount: planAmountNumber,
-        currency: 'MXN',
-        status: 'draft',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        payments: customInstallments.map((inst, index) => ({
-          ...inst,
-          id: Math.random().toString(),
-          payment_plan_id: Math.random().toString(),
-          installment_number: index + 1
-        }))
-      };
+      // Usar la función existente para crear el plan en las tablas normalizadas
+      const installmentsData = customInstallments.map((inst, index) => ({
+        installment_number: index + 1,
+        amount: inst.amount,
+        due_date: inst.due_date,
+        description: inst.description,
+        status: 'pending'
+      }));
 
-      // Guardar en la base de datos
-      const updatedPlans = [...paymentPlans, newPlan];
-      
-      const { error } = await supabase
-        .from('client_projects')
-        .update({ 
-          payment_plan: updatedPlans as any,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', clientProjectId);
+      const { data: planData, error: createError } = await supabase
+        .rpc('create_payment_plan_from_sales', {
+          p_client_project_id: clientProjectId,
+          p_plan_name: planName,
+          p_total_amount: planAmountNumber,
+          p_currency: 'MXN',
+          p_installments_data: installmentsData
+        });
 
-      if (error) throw error;
-
-      setPaymentPlans(updatedPlans);
+      if (createError) throw createError;
 
       toast({
         title: "Éxito",
-        description: "Plan de pago creado y guardado exitosamente",
+        description: "Plan de pago creado exitosamente",
       });
 
       setShowCreateDialog(false);
       resetForm();
       onPlanUpdate?.();
+      
+      // Refrescar la lista de planes
+      await fetchPaymentPlans();
     } catch (error) {
       console.error('Error creating payment plan:', error);
       toast({
@@ -297,34 +318,41 @@ export const PaymentPlanBuilder = ({
         return;
       }
 
-      // Actualizar plan existente
-      const updatedPlan: PaymentPlan = {
-        ...editingPlan,
-        plan_name: planName,
-        total_amount: planAmountNumber,
-        updated_at: new Date().toISOString(),
-        payments: customInstallments.map((inst, index) => ({
-          ...inst,
-          installment_number: index + 1
-        }))
-      };
-
-      // Actualizar en la lista de planes
-      const updatedPlans = paymentPlans.map(plan => 
-        plan.id === editingPlan.id ? updatedPlan : plan
-      );
-      
-      const { error } = await supabase
-        .from('client_projects')
-        .update({ 
-          payment_plan: updatedPlans as any,
+      // Actualizar plan en las tablas normalizadas
+      const { error: updatePlanError } = await supabase
+        .from('payment_plans')
+        .update({
+          plan_name: planName,
+          total_amount: planAmountNumber,
           updated_at: new Date().toISOString()
         })
-        .eq('id', clientProjectId);
+        .eq('id', editingPlan.id);
 
-      if (error) throw error;
+      if (updatePlanError) throw updatePlanError;
 
-      setPaymentPlans(updatedPlans);
+      // Actualizar installments (eliminar existentes y recrear)
+      const { error: deleteError } = await supabase
+        .from('payment_installments')
+        .delete()
+        .eq('payment_plan_id', editingPlan.id);
+
+      if (deleteError) throw deleteError;
+
+      // Insertar nuevos installments
+      const { error: insertError } = await supabase
+        .from('payment_installments')
+        .insert(
+          customInstallments.map((inst, index) => ({
+            payment_plan_id: editingPlan.id,
+            installment_number: index + 1,
+            amount: inst.amount,
+            due_date: inst.due_date,
+            description: inst.description,
+            status: 'pending'
+          }))
+        );
+
+      if (insertError) throw insertError;
 
       toast({
         title: "Éxito",
@@ -334,6 +362,9 @@ export const PaymentPlanBuilder = ({
       setShowEditDialog(false);
       resetForm();
       onPlanUpdate?.();
+      
+      // Refrescar la lista de planes
+      await fetchPaymentPlans();
     } catch (error) {
       console.error('Error updating payment plan:', error);
       toast({
@@ -427,23 +458,21 @@ export const PaymentPlanBuilder = ({
 
   const deletePlan = async (planId: string) => {
     try {
-      const updatedPlans = paymentPlans.filter(plan => plan.id !== planId);
-      
+      // Eliminar de las tablas normalizadas
       const { error } = await supabase
-        .from('client_projects')
-        .update({ 
-          payment_plan: updatedPlans as any,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', clientProjectId);
+        .from('payment_plans')
+        .update({ status: 'cancelled' })
+        .eq('id', planId);
 
       if (error) throw error;
       
-      setPaymentPlans(updatedPlans);
       toast({
         title: "Éxito",
         description: "Plan de pago eliminado correctamente",
       });
+      
+      // Refrescar la lista de planes
+      await fetchPaymentPlans();
     } catch (error) {
       console.error('Error deleting payment plan:', error);
       toast({
@@ -456,31 +485,16 @@ export const PaymentPlanBuilder = ({
 
   const updatePaymentStatus = async (installmentId: string, status: string, paidAmount?: number) => {
     try {
-      const updatedPlans = paymentPlans.map(plan => ({
-        ...plan,
-        payments: plan.payments.map(payment => 
-          payment.id === installmentId 
-            ? { 
-                ...payment, 
-                status: status as any,
-                paid_amount: paidAmount,
-                paid_date: new Date().toISOString()
-              }
-            : payment
-        )
-      }));
-
+      // Actualizar en las tablas normalizadas
       const { error } = await supabase
-        .from('client_projects')
-        .update({ 
-          payment_plan: updatedPlans as any,
-          updated_at: new Date().toISOString()
+        .from('payment_installments')
+        .update({
+          status: status as any,
+          paid_date: status === 'paid' ? new Date().toISOString().split('T')[0] : null
         })
-        .eq('id', clientProjectId);
+        .eq('id', installmentId);
 
       if (error) throw error;
-
-      setPaymentPlans(updatedPlans);
 
       // Notify parent component about the update
       if (onPlanUpdate) {
@@ -491,6 +505,9 @@ export const PaymentPlanBuilder = ({
         title: "Éxito",
         description: "Estado de pago actualizado y guardado",
       });
+      
+      // Refrescar la lista de planes
+      await fetchPaymentPlans();
     } catch (error) {
       console.error('Error updating payment status:', error);
       toast({
