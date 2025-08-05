@@ -23,37 +23,7 @@ import { EmployeeSetupDialog } from './EmployeeSetupDialog';
 import { UserDeleteDialog } from './UserDeleteDialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-
-interface UserProfile {
-  id: string;
-  user_id: string;
-  full_name: string | null;
-  phone: string | null;
-  email: string | null;
-  role: string;
-  approval_status: string;
-  created_at: string;
-  department_enum?: string;
-  position_enum?: string;
-  user_branch_assignments?: Array<{
-    branch_office_id: string;
-    branch_offices: { name: string };
-  }>;
-  [key: string]: any;
-}
-
-interface BranchOffice {
-  id: string;
-  name: string;
-}
-
-interface UserDetailsModalProps {
-  user: UserProfile | null;
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onUserUpdated: () => void;
-  canManageUsers: boolean;
-}
+import { UserProfile, BranchOffice, UserDetailsModalProps } from '@/types/user';
 
 const departmentOptions = [
   { value: 'ventas', label: 'Ventas' },
@@ -137,7 +107,7 @@ export function UserDetailsModal({
         const { data, error } = await supabase
           .from('branch_offices')
           .select('id, name')
-          .eq('is_active', true)
+          .eq('active', true)
           .order('name');
 
         if (error) throw error;
@@ -171,18 +141,18 @@ export function UserDetailsModal({
     
     setIsSaving(true);
     try {
-      // Update user profile - use any to avoid type conflicts
+      // Update user profile
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
           full_name: formData.full_name || null,
           phone: formData.phone || null,
           email: formData.email || null,
-          role: formData.role,
+          role: formData.role as any,
           approval_status: formData.approval_status,
-          department_enum: formData.department_enum || null,
-          position_enum: formData.position_enum || null
-        } as any)
+          department_enum: formData.department_enum as any || null,
+          position_enum: formData.position_enum as any || null
+        })
         .eq('user_id', user.user_id);
 
       if (profileError) throw profileError;
@@ -715,12 +685,12 @@ export function UserDetailsModal({
       <EmployeeSetupDialog
         isOpen={isEmployeeSetupOpen}
         onOpenChange={setIsEmployeeSetupOpen}
-        user={user}
+        user={user as any}
         onUserUpdated={onUserUpdated}
       />
 
       <UserDeleteDialog
-        user={user}
+        user={user as any}
         isOpen={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         onUserDeleted={() => {

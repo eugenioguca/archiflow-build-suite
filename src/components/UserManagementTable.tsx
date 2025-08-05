@@ -1,8 +1,15 @@
-import { useState } from 'react';
-import { Eye, Trash2, MoreHorizontal } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import React, { useState } from 'react';
+import { MoreHorizontal, Eye, Trash2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Table,
   TableBody,
@@ -11,40 +18,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { UserDetailsModal } from './UserDetailsModal';
 import { UserDeleteDialog } from './UserDeleteDialog';
-
-interface UserProfile {
-  id: string;
-  user_id: string;
-  full_name: string | null;
-  phone: string | null;
-  email: string | null;
-  role: string;
-  approval_status: string;
-  created_at: string;
-  department_enum?: string;
-  position_enum?: string;
-  user_branch_assignments?: Array<{
-    branch_office_id: string;
-    branch_offices: { name: string };
-  }>;
-  [key: string]: any;
-}
-
-interface UserManagementTableProps {
-  users: UserProfile[];
-  currentUserRole: string;
-  onUserUpdated: () => void;
-  onUserDeleted: (userId: string) => void;
-}
+import { UserProfile, UserManagementTableProps } from '@/types/user';
 
 export function UserManagementTable({ 
   users, 
@@ -72,26 +48,26 @@ export function UserManagementTable({
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'admin':
-        return 'bg-red-500/10 text-red-500 border-red-500/20';
+        return 'bg-destructive/10 text-destructive border-destructive/20';
       case 'employee':
-        return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
+        return 'bg-primary/10 text-primary border-primary/20';
       case 'client':
-        return 'bg-green-500/10 text-green-500 border-green-500/20';
+        return 'bg-success/10 text-success border-success/20';
       default:
-        return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
+        return 'bg-muted/10 text-muted-foreground border-muted/20';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved':
-        return 'bg-green-500/10 text-green-500 border-green-500/20';
+        return 'bg-success/10 text-success border-success/20';
       case 'pending':
-        return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
+        return 'bg-warning/10 text-warning border-warning/20';
       case 'rejected':
-        return 'bg-red-500/10 text-red-500 border-red-500/20';
+        return 'bg-destructive/10 text-destructive border-destructive/20';
       default:
-        return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
+        return 'bg-muted/10 text-muted-foreground border-muted/20';
     }
   };
 
@@ -121,24 +97,36 @@ export function UserManagementTable({
     }
   };
 
+  const formatDepartmentPosition = (department?: string, position?: string) => {
+    if (!department && !position) return 'No asignado';
+    if (department && position) return `${department} - ${position}`;
+    return department || position || 'No asignado';
+  };
+
   return (
-    <>
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Usuario</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Rol</TableHead>
+            <TableHead>Estado</TableHead>
+            <TableHead>Departamento/Posición</TableHead>
+            <TableHead>Sucursales</TableHead>
+            <TableHead className="text-right">Acciones</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {users.length === 0 ? (
             <TableRow>
-              <TableHead>Usuario</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Rol</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="hidden md:table-cell">Puesto</TableHead>
-              <TableHead className="hidden lg:table-cell">Sucursales</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
+              <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                No hay usuarios para mostrar
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
+          ) : (
+            users.map((user) => (
+              <TableRow key={user.id} className="hover:bg-muted/50">
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8">
@@ -146,7 +134,7 @@ export function UserManagementTable({
                         src={user.avatar_url} 
                         alt={user.full_name || 'Usuario'} 
                       />
-                      <AvatarFallback>
+                      <AvatarFallback className="text-xs">
                         {(user.full_name || user.email || 'U')
                           .split(' ')
                           .map(n => n[0])
@@ -155,13 +143,13 @@ export function UserManagementTable({
                           .slice(0, 2)}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">
+                    <div>
+                      <div className="font-medium">
                         {user.full_name || 'Sin nombre'}
-                      </p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        ID: {user.id.slice(0, 8)}...
-                      </p>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        ID: {user.user_id.slice(0, 8)}...
+                      </div>
                     </div>
                   </div>
                 </TableCell>
@@ -180,31 +168,26 @@ export function UserManagementTable({
                     {getStatusLabel(user.approval_status)}
                   </Badge>
                 </TableCell>
-                <TableCell className="hidden md:table-cell">
-                  <div className="space-y-1">
-                    {user.department_enum && (
-                      <div className="text-xs text-muted-foreground">
-                        {user.department_enum}
-                      </div>
-                    )}
-                    {user.position_enum && (
-                      <div className="text-xs">
-                        {user.position_enum}
-                      </div>
-                    )}
+                <TableCell>
+                  <div className="text-sm">
+                    {formatDepartmentPosition(user.department_enum, user.position_enum)}
                   </div>
                 </TableCell>
-                <TableCell className="hidden lg:table-cell">
-                  <div className="space-y-1">
-                    {user.user_branch_assignments?.slice(0, 2).map((assignment, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
-                        {assignment.branch_offices?.name}
-                      </Badge>
-                    ))}
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    {user.user_branch_assignments && user.user_branch_assignments.length > 0 ? (
+                      user.user_branch_assignments.slice(0, 2).map((assignment, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {assignment.branch_offices?.name}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Sin sucursales</span>
+                    )}
                     {user.user_branch_assignments && user.user_branch_assignments.length > 2 && (
-                      <div className="text-xs text-muted-foreground">
-                        +{user.user_branch_assignments.length - 2} más
-                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        +{user.user_branch_assignments.length - 2}
+                      </Badge>
                     )}
                   </div>
                 </TableCell>
@@ -215,8 +198,10 @@ export function UserManagementTable({
                       size="sm"
                       onClick={() => handleViewDetails(user)}
                     >
-                      <Eye className="h-4 w-4" />
+                      <Eye className="h-4 w-4 mr-2" />
+                      Ver detalles
                     </Button>
+                    
                     {canManageUsers && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -230,7 +215,7 @@ export function UserManagementTable({
                             Ver detalles
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem
+                          <DropdownMenuItem 
                             onClick={() => handleDeleteUser(user)}
                             className="text-destructive focus:text-destructive"
                           >
@@ -243,13 +228,13 @@ export function UserManagementTable({
                   </div>
                 </TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            ))
+          )}
+        </TableBody>
+      </Table>
 
       <UserDetailsModal
-        user={selectedUser}
+        user={selectedUser as any}
         isOpen={isDetailsModalOpen}
         onOpenChange={setIsDetailsModalOpen}
         onUserUpdated={onUserUpdated}
@@ -257,11 +242,15 @@ export function UserManagementTable({
       />
 
       <UserDeleteDialog
-        user={userToDelete}
+        user={userToDelete as any}
         isOpen={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
-        onUserDeleted={onUserDeleted}
+        onUserDeleted={() => {
+          onUserDeleted();
+          setIsDeleteDialogOpen(false);
+          setUserToDelete(null);
+        }}
       />
-    </>
+    </div>
   );
 }

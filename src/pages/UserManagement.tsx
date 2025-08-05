@@ -10,26 +10,8 @@ import { EmployeeSetupDialog } from '@/components/EmployeeSetupDialog';
 import { UserFilters } from '@/components/UserFilters';
 import { UserStatsCards } from '@/components/UserStatsCards';
 import { UserManagementTable } from '@/components/UserManagementTable';
+import { UserProfile } from '@/types/user';
 import { Loader2, Users, Building, Handshake, Link } from 'lucide-react';
-
-// Interfaces
-interface UserProfile {
-  id: string;
-  user_id: string;
-  full_name: string | null;
-  phone: string | null;
-  email: string | null;
-  role: 'admin' | 'employee' | 'client';
-  approval_status: string;
-  created_at: string;
-  department_enum?: string;
-  position_enum?: string;
-  user_branch_assignments?: Array<{
-    branch_office_id: string;
-    branch_offices: { name: string };
-  }>;
-  [key: string]: any; // Para campos adicionales de Supabase
-}
 
 const UserManagement = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -262,7 +244,7 @@ const UserManagement = () => {
 
         <TabsContent value="users" className="space-y-6">
           {/* Tarjetas estadísticas */}
-          <UserStatsCards users={users} />
+          <UserStatsCards users={users as any} />
           
           {/* Filtros */}
           <UserFilters
@@ -289,12 +271,12 @@ const UserManagement = () => {
             </div>
             
             {/* Tabla de usuarios */}
-            <UserManagementTable
-              users={filteredUsers}
-              currentUserRole={currentUserRole}
-              onUserUpdated={fetchUsers}
-              onUserDeleted={handleUserDeleted}
-            />
+          <UserManagementTable
+            users={filteredUsers as any}
+            currentUserRole={currentUserRole}
+            onUserUpdated={fetchUsers}
+            onUserDeleted={fetchUsers}
+          />
             
             {filteredUsers.length === 0 && (
               <div className="text-center py-12">
@@ -327,7 +309,7 @@ const UserManagement = () => {
       <UserEditModal
         isOpen={isEditModalOpen}
         onOpenChange={setIsEditModalOpen}
-        user={selectedUserForSetup}
+        user={selectedUserForSetup as any}
         onUserUpdated={fetchUsers}
       />
 
@@ -335,7 +317,7 @@ const UserManagement = () => {
       <EmployeeSetupDialog
         isOpen={isEmployeeSetupDialogOpen}
         onOpenChange={setIsEmployeeSetupDialogOpen}
-        user={selectedUserForSetup}
+        user={selectedUserForSetup as any}
         onUserUpdated={fetchUsers}
       />
     </div>
