@@ -20,6 +20,7 @@ import { SalesDesignCalendar } from "@/components/SalesDesignCalendar";
 import { SalesExecutiveDashboard } from "@/components/SalesExecutiveDashboard";
 import { ContractTemplateManager } from "@/components/ContractTemplateManager";
 import { SalesAppointmentScheduler } from "@/components/SalesAppointmentScheduler";
+import { TeamClientChat } from "@/components/TeamClientChat";
 import {
   Users, 
   TrendingUp, 
@@ -361,13 +362,14 @@ export default function Sales() {
 
       {/* Tabs principales */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-6 w-full">
+        <TabsList className="grid grid-cols-7 w-full">
           <TabsTrigger value="list">Smart View</TabsTrigger>
           <TabsTrigger value="pipeline">Pipeline Kanban</TabsTrigger>
           <TabsTrigger value="payment-status">Estado Pagos</TabsTrigger>
           <TabsTrigger value="calendar">Calendario</TabsTrigger>
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="contracts">Contratos</TabsTrigger>
+          <TabsTrigger value="chat">Chat Cliente</TabsTrigger>
         </TabsList>
 
         {/* Pipeline Kanban */}

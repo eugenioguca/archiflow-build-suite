@@ -3,14 +3,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ClientProjectSelector } from '@/components/ClientProjectSelector';
 import { Separator } from '@/components/ui/separator';
-import { Eye, FileText, CreditCard, Camera, MessageCircle, Building2, DollarSign, Calendar, MapPin } from 'lucide-react';
+import { Eye, FileText, CreditCard, Camera, MessageCircle, Building2, DollarSign, Calendar, MapPin, MessageSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ProjectProgressCard } from '@/components/ProjectProgressCard';
 import { PaymentHistoryPanel } from '@/components/PaymentHistoryPanel';
 import { DocumentsPanel } from '@/components/DocumentsPanel';
 import { ProgressPhotosCarousel } from '@/components/ProgressPhotosCarousel';
-import { PaymentPlansFinance } from '@/components/PaymentPlansFinance';
+import { ClientDocumentHub } from '@/components/ClientDocumentHub';
+import { SuperiorClientPortalChat } from '@/components/SuperiorClientPortalChat';
+import { RealtimeNotificationSystem } from '@/components/RealtimeNotificationSystem';
+import { ClientPortalFeaturesSummary } from '@/components/ClientPortalFeaturesSummary';
 
 interface PreviewProject {
   id: string;
@@ -192,45 +195,72 @@ const ClientPortalPreview = () => {
                 {/* Project Progress Card */}
                 <ProjectProgressCard project={projectData} />
                 
-                {/* Main content layout */}
-                <div className="space-y-6">
-                  {/* Payment Plans Section */}
-                  {paymentPlans.length > 0 && (
+                <Separator />
+
+                {/* Componentes Reales del Portal Cliente */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                  {/* Columna izquierda - Funcionalidades principales */}
+                  <div className="space-y-6">
+                    {/* Sistema de Notificaciones en Tiempo Real */}
+                    <RealtimeNotificationSystem 
+                      clientId={selectedClientId} 
+                      projectId={selectedProjectId} 
+                    />
+
+                    {/* Hub de Documentos del Cliente */}
+                    <ClientDocumentHub 
+                      clientId={selectedClientId} 
+                      projectId={selectedProjectId} 
+                    />
+
+                    {/* Resumen de Características */}
                     <Card>
                       <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <CreditCard className="h-4 w-4" />
-                          Plan de Pagos
-                        </CardTitle>
+                        <CardTitle>Resumen del Portal</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="space-y-4">
-                          <p className="text-sm text-muted-foreground">
-                            Plan de pagos configurado para este proyecto
-                          </p>
-                          <div className="grid gap-2">
-                            {paymentPlans.map(plan => (
-                              <div key={plan.id} className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                                <div>
-                                  <p className="font-medium">{plan.plan_name}</p>
-                                  <p className="text-sm text-muted-foreground">
-                                    Total: ${plan.total_amount?.toLocaleString()} {plan.currency}
-                                  </p>
-                                </div>
-                                <Badge variant={plan.status === 'active' ? 'default' : 'secondary'}>
-                                  {plan.status}
-                                </Badge>
-                              </div>
-                            ))}
+                        <div className="space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-sm text-muted-foreground">Planes de pago:</span>
+                            <span className="text-sm font-medium">{paymentPlans.length}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-muted-foreground">Documentos:</span>
+                            <span className="text-sm font-medium">{documents.length}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-muted-foreground">Fotos de progreso:</span>
+                            <span className="text-sm font-medium">{progressPhotos.length}</span>
                           </div>
                         </div>
                       </CardContent>
                     </Card>
-                  )}
+                  </div>
 
-                  {/* Two column layout */}
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <PaymentHistoryPanel payments={payments} />
+                  {/* Columna derecha - Chat y comunicación */}
+                  <div className="space-y-6">
+                    {/* Chat Superior con el Equipo */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <MessageSquare className="h-5 w-5" />
+                          Comunicación con Equipo
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-0">
+                        <SuperiorClientPortalChat 
+                          projectId={selectedProjectId} 
+                          clientId={selectedClientId} 
+                        />
+                      </CardContent>
+                    </Card>
+
+                    {/* Historial de Pagos Panel */}
+                    <PaymentHistoryPanel 
+                      payments={payments} 
+                    />
+
+                    {/* Panel de Documentos */}
                     <DocumentsPanel 
                       documents={documents}
                       onDocumentView={(doc) => {
@@ -247,30 +277,32 @@ const ClientPortalPreview = () => {
                       }}
                     />
                   </div>
-
-                  {/* Progress Photos Section */}
-                  {progressPhotos.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Camera className="h-4 w-4" />
-                          Fotos de Avance del Proyecto
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <ProgressPhotosCarousel 
-                          photos={progressPhotos}
-                          onPhotoDownload={(photo) => {
-                            toast({
-                              title: "Descarga simulada",
-                              description: `Descargando foto: ${photo.description}`
-                            });
-                          }}
-                        />
-                      </CardContent>
-                    </Card>
-                  )}
                 </div>
+
+                <Separator />
+
+                {/* Carrusel de Fotos de Progreso */}
+                {progressPhotos.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Camera className="h-5 w-5" />
+                        Progreso Visual del Proyecto
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ProgressPhotosCarousel 
+                        photos={progressPhotos}
+                        onPhotoDownload={(photo) => {
+                          toast({
+                            title: "Descarga simulada",
+                            description: `Descargando foto: ${photo.description}`
+                          });
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             ) : (
               <Card>

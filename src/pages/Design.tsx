@@ -18,6 +18,7 @@ import { DesignCompletionManager } from "@/components/DesignCompletionManager";
 import { CompletedDesignsTab } from "@/components/CompletedDesignsTab";
 import { DesignDocumentManager } from "@/components/DesignDocumentManager";
 import { PaymentPlansUnified } from "@/components/PaymentPlansUnified";
+import { TeamClientChat } from "@/components/TeamClientChat";
 import { 
   Clock, 
   User, 
@@ -38,7 +39,8 @@ import {
   Plus,
   ChevronRight,
   ArrowLeft,
-  FileText
+  FileText,
+  MessageSquare
 } from "lucide-react";
 
 interface DesignPhase {
@@ -620,7 +622,7 @@ export default function Design() {
 
       {/* Main Content with Tabs */}
       <Tabs defaultValue="phases" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7 bg-muted h-9">
+        <TabsList className="grid w-full grid-cols-8 bg-muted h-9">
           <TabsTrigger value="phases" className="text-xs">
             <Layers className="h-3 w-3 mr-1" />
             Fases
@@ -648,6 +650,10 @@ export default function Design() {
           <TabsTrigger value="client" className="text-xs">
             <FileUser className="h-3 w-3 mr-1" />
             Cliente
+          </TabsTrigger>
+          <TabsTrigger value="chat" className="text-xs">
+            <MessageSquare className="h-3 w-3 mr-1" />
+            Chat
           </TabsTrigger>
         </TabsList>
 
@@ -782,6 +788,15 @@ export default function Design() {
         <TabsContent value="client">
           <div className="bg-card rounded-lg p-4 border">
             <ClientInfoPanel projectId={projectId} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="chat">
+          <div className="bg-card rounded-lg p-4 border">
+            <TeamClientChat 
+              projectId={projectId} 
+              module="design"
+            />
           </div>
         </TabsContent>
       </Tabs>
