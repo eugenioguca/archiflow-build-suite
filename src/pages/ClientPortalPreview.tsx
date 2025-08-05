@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ProjectProgressCard } from '@/components/ProjectProgressCard';
 import { PaymentHistoryPanel } from '@/components/PaymentHistoryPanel';
+import { PaymentPlansViewer } from '@/components/PaymentPlansViewer';
 import { DocumentsPanel } from '@/components/DocumentsPanel';
 import { ProgressPhotosCarousel } from '@/components/ProgressPhotosCarousel';
 import { ClientDocumentHub } from '@/components/ClientDocumentHub';
@@ -59,15 +60,12 @@ const ClientPortalPreview = () => {
       if (projectError) throw projectError;
       setProjectData(project);
 
-      // Fetch payment plans (datos reales del plan de pagos)
+      // Fetch payment plans count (datos reales del plan de pagos)
       const { data: paymentPlansData } = await supabase
         .from('payment_plans')
-        .select(`
-          *,
-          payment_installments(*)
-        `)
+        .select('id, plan_name, total_amount, status')
         .eq('client_project_id', selectedProjectId)
-        .limit(5);
+        .eq('status', 'active');
 
       setPaymentPlans(paymentPlansData || []);
 
@@ -254,6 +252,12 @@ const ClientPortalPreview = () => {
                         />
                       </CardContent>
                     </Card>
+
+                    {/* Planes de Pago Interactivos */}
+                    <PaymentPlansViewer 
+                      projectId={selectedProjectId}
+                      clientId={selectedClientId}
+                    />
 
                     {/* Historial de Pagos Panel */}
                     <PaymentHistoryPanel 

@@ -37,6 +37,7 @@ import { es } from 'date-fns/locale';
 import { ProjectProgressCard } from '@/components/ProjectProgressCard';
 import { PaymentHistoryPanel } from '@/components/PaymentHistoryPanel';
 import { PaymentPlanViewer } from '@/components/PaymentPlanViewer';
+import { PaymentPlansViewer } from '@/components/PaymentPlansViewer';
 import { DocumentsPanel } from '@/components/DocumentsPanel';
 import { ProgressPhotosCarousel } from '@/components/ProgressPhotosCarousel';
 import { ClientPortalChat } from '@/components/ClientPortalChat';
@@ -524,7 +525,7 @@ const ClientPortal: React.FC = () => {
         <TabsContent value="resumen" className="space-y-6">
           {/* Timeline del proyecto y notificaciones */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <PaymentPlanViewer 
+            <PaymentPlansViewer 
               projectId={selectedProjectId} 
               clientId={project.client_id}
             />
@@ -609,7 +610,8 @@ const ClientPortal: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="pagos" className="space-y-6">
-          <PaymentPlanViewer 
+          {/* Multiple Payment Plans with Clickable Details */}
+          <PaymentPlansViewer 
             projectId={selectedProjectId}
             clientId={project.client_id}
           />
