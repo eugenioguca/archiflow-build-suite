@@ -165,6 +165,36 @@ export default function ClientsNew() {
         // No detenemos el proceso por esto, solo advertimos
       }
 
+      // Eliminar client_portal_settings
+      const { error: portalSettingsError } = await supabase
+        .from('client_portal_settings')
+        .delete()
+        .eq('client_id', clientId);
+
+      if (portalSettingsError) {
+        console.warn('Error eliminando configuración del portal del cliente:', portalSettingsError);
+      }
+
+      // Eliminar client_portal_chat
+      const { error: portalChatError } = await supabase
+        .from('client_portal_chat')
+        .delete()
+        .eq('client_id', clientId);
+
+      if (portalChatError) {
+        console.warn('Error eliminando chat del portal del cliente:', portalChatError);
+      }
+
+      // Eliminar client_portal_notifications
+      const { error: portalNotificationsError } = await supabase
+        .from('client_portal_notifications')
+        .delete()
+        .eq('client_id', clientId);
+
+      if (portalNotificationsError) {
+        console.warn('Error eliminando notificaciones del portal del cliente:', portalNotificationsError);
+      }
+
       // Eliminar documentos en tabla general
       const { error: generalDocsError } = await supabase
         .from('documents')
