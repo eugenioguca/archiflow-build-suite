@@ -7,9 +7,9 @@ import CommercialAlliancesManager from '@/components/CommercialAlliancesManager'
 import { UserClientLinker } from '@/components/UserClientLinker';
 import { UserEditModal } from '@/components/UserEditModal';
 import { EmployeeSetupDialog } from '@/components/EmployeeSetupDialog';
-import { UserCard } from '@/components/UserCard';
 import { UserFilters } from '@/components/UserFilters';
 import { UserStatsCards } from '@/components/UserStatsCards';
+import { UserManagementTable } from '@/components/UserManagementTable';
 import { Loader2, Users, Building, Handshake, Link } from 'lucide-react';
 
 // Interfaces
@@ -215,6 +215,14 @@ const UserManagement = () => {
     }
   };
 
+  const handleUserDeleted = (userId: string) => {
+    setUsers(users.filter(user => user.user_id !== userId));
+    toast({
+      title: "Usuario eliminado",
+      description: "El usuario ha sido eliminado exitosamente."
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -280,20 +288,13 @@ const UserManagement = () => {
               </p>
             </div>
             
-            {/* Grid de tarjetas de usuarios */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filteredUsers.map((user) => (
-                <UserCard
-                  key={user.id}
-                  user={user}
-                  onEdit={handleEditUser}
-                  onSetupEmployee={handleSetupEmployee}
-                  onApprovalChange={handleApprovalChange}
-                  onRoleChange={handleRoleChange}
-                  canManage={canManageUsers}
-                />
-              ))}
-            </div>
+            {/* Tabla de usuarios */}
+            <UserManagementTable
+              users={filteredUsers}
+              currentUserRole={currentUserRole}
+              onUserUpdated={fetchUsers}
+              onUserDeleted={handleUserDeleted}
+            />
             
             {filteredUsers.length === 0 && (
               <div className="text-center py-12">
