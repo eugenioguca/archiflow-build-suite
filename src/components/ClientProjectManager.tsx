@@ -68,7 +68,7 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
     project_name: '',
     project_description: '',
     budget: '',
-    square_meters: '',
+    land_square_meters: '',
     service_type: 'diseño',
     status: 'potential' as 'potential' | 'active' | 'existing' | 'completed',
     sales_pipeline_stage: 'nuevo_lead' as 'nuevo_lead' | 'en_contacto' | 'lead_perdido' | 'cliente_cerrado'
@@ -116,7 +116,7 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
         project_name: newProject.project_name,
         project_description: newProject.project_description,
         budget: newProject.budget ? parseFloat(newProject.budget.replace(/[^\d]/g, '')) : 0,
-        square_meters: newProject.square_meters ? parseFloat(newProject.square_meters) : null,
+        land_square_meters: newProject.land_square_meters ? parseFloat(newProject.land_square_meters) : null,
         service_type: newProject.service_type,
         status: newProject.status,
         sales_pipeline_stage: newProject.sales_pipeline_stage,
@@ -139,7 +139,7 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
         project_name: '',
         project_description: '',
         budget: '',
-        square_meters: '',
+        land_square_meters: '',
         service_type: 'diseño',
         status: 'potential',
         sales_pipeline_stage: 'nuevo_lead'
@@ -424,11 +424,11 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Metros Cuadrados</label>
+                  <label className="text-sm font-medium">Metros Cuadrados del Terreno</label>
                   <Input
                     type="number"
-                    value={newProject.square_meters}
-                    onChange={(e) => setNewProject({...newProject, square_meters: e.target.value})}
+                    value={newProject.land_square_meters}
+                    onChange={(e) => setNewProject({...newProject, land_square_meters: e.target.value})}
                     placeholder="250"
                     min="0"
                     step="0.01"
