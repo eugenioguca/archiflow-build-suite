@@ -214,10 +214,11 @@ export const PaymentPlansFinance = ({ selectedClientId, selectedProjectId }: Pay
         description: "Cuota marcada como pagada e ingreso registrado correctamente",
       });
 
-      // Refresh installments
+      // Refresh installments and payment plans
       if (selectedPlan) {
         fetchInstallments(selectedPlan);
       }
+      fetchPaymentPlans(); // Refresh payment plans to update dashboard cards
       
       setPaymentDialog(null);
       setPaymentForm({
