@@ -27,7 +27,7 @@ interface UserProfile {
   full_name: string | null;
   phone: string | null;
   email: string | null;
-  role: 'admin' | 'employee' | 'client';
+  role: string;
   approval_status: string;
   created_at: string;
   department_enum?: string;
