@@ -55,7 +55,7 @@ export const PaymentHistoryPanel: React.FC<PaymentHistoryPanelProps> = ({ paymen
     }
   };
 
-  const totalPaid = payments.reduce((sum, payment) => sum + payment.amount_paid, 0);
+  const totalPaid = (payments || []).reduce((sum, payment) => sum + payment.amount_paid, 0);
 
   return (
     <Card className="h-full">
