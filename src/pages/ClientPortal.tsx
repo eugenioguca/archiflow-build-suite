@@ -550,7 +550,7 @@ const ClientPortal: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ClientFiscalDocuments 
+            <ClientDocumentHub 
               clientId={project.client_id} 
               projectId={selectedProjectId}
             />

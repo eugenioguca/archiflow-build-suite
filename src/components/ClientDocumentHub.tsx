@@ -1,242 +1,272 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, Search, Filter, Calendar, Download, Eye } from 'lucide-react';
-import { ClientFiscalDocuments } from './ClientFiscalDocuments';
-import { DesignDocumentsViewer } from './DesignDocumentsViewer';
-import { ProgressPhotosCarousel } from './ProgressPhotosCarousel';
-import { ClientInvoiceViewer } from './ClientInvoiceViewer';
+import { Badge } from '@/components/ui/badge';
+import { ClientDocumentUploader } from './ClientDocumentUploader';
 import { ClientPaymentProofUploader } from './ClientPaymentProofUploader';
+import { ClientInvoiceViewer } from './ClientInvoiceViewer';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { FileText, Upload, CreditCard, Receipt, Folder, Download, Eye } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+
+interface ClientDocument {
+  id: string;
+  document_name: string;
+  document_type: string;
+  file_path: string;
+  file_type: string;
+  file_size: number;
+  created_at: string;
+}
 
 interface ClientDocumentHubProps {
   clientId: string;
   projectId: string;
 }
 
-interface DocumentStats {
-  fiscal: number;
-  design: number;
-  invoices: number;
-  paymentProofs: number;
-  photos: number;
-}
-
 export const ClientDocumentHub = ({ clientId, projectId }: ClientDocumentHubProps) => {
-  const [activeTab, setActiveTab] = useState('fiscal');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [dateFilter, setDateFilter] = useState('all');
-  const [stats, setStats] = useState<DocumentStats>({
-    fiscal: 0,
-    design: 0,
-    invoices: 0,
-    paymentProofs: 0,
-    photos: 0
-  });
+  const [documents, setDocuments] = useState<ClientDocument[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-  // Esta función se podría usar para obtener estadísticas reales de cada tipo de documento
   useEffect(() => {
-    // Placeholder para futuras estadísticas en tiempo real
-    setStats({
-      fiscal: 0,
-      design: 0,
-      invoices: 0,
-      paymentProofs: 0,
-      photos: 0
-    });
-  }, [clientId, projectId]);
+    const fetchDocuments = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('client_documents')
+          .select('*')
+          .eq('client_id', clientId)
+          .eq('project_id', projectId)
+          .order('created_at', { ascending: false });
 
-  const documentTypes = [
-    {
-      id: 'fiscal',
-      label: 'Documentos Fiscales',
-      count: stats.fiscal,
-      icon: FileText,
-      description: 'RFC, constancias y documentos fiscales'
-    },
-    {
-      id: 'design',
-      label: 'Documentos de Diseño',
-      count: stats.design,
-      icon: FileText,
-      description: 'Planos, renders y documentos del proyecto'
-    },
-    {
-      id: 'payments',
-      label: 'Comprobantes de Pago',
-      count: stats.paymentProofs,
-      icon: FileText,
-      description: 'Comprobantes y evidencias de pagos'
-    },
-    {
-      id: 'invoices',
-      label: 'Facturas Electrónicas',
-      count: stats.invoices,
-      icon: FileText,
-      description: 'Facturas generadas para el proyecto'
-    },
-    {
-      id: 'photos',
-      label: 'Fotos de Avance',
-      count: stats.photos,
-      icon: FileText,
-      description: 'Fotografías del progreso de construcción'
+        if (error) throw error;
+        setDocuments(data || []);
+      } catch (error) {
+        console.error('Error fetching documents:', error);
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los documentos",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDocuments();
+
+    // Real-time subscription for document updates
+    const channel = supabase
+      .channel('client-documents-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'client_documents',
+          filter: `client_id=eq.${clientId}`
+        },
+        () => {
+          fetchDocuments();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [clientId, projectId, toast]);
+
+  const getDocumentTypeIcon = (type: string) => {
+    switch (type) {
+      case 'contract':
+        return <FileText className="h-4 w-4" />;
+      case 'identification':
+        return <Receipt className="h-4 w-4" />;
+      case 'fiscal':
+        return <CreditCard className="h-4 w-4" />;
+      default:
+        return <Folder className="h-4 w-4" />;
     }
-  ];
+  };
+
+  const getDocumentTypeName = (type: string) => {
+    const typeMap = {
+      'contract': 'Contrato',
+      'identification': 'Identificación',
+      'fiscal': 'Documento Fiscal',
+      'payment_proof': 'Comprobante de Pago',
+      'other': 'Otro'
+    };
+    return typeMap[type as keyof typeof typeMap] || type;
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const handleDownload = async (document: ClientDocument) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('client-documents')
+        .download(document.file_path);
+
+      if (error) throw error;
+
+      const url = URL.createObjectURL(data);
+      const a = window.document.createElement('a');
+      a.href = url;
+      a.download = document.document_name;
+      window.document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(url);
+      window.document.body.removeChild(a);
+
+      toast({
+        title: "Descarga exitosa",
+        description: `Se ha descargado ${document.document_name}`
+      });
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo descargar el documento",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleRefreshDocuments = () => {
+    setLoading(true);
+    const fetchDocuments = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('client_documents')
+          .select('*')
+          .eq('client_id', clientId)
+          .eq('project_id', projectId)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setDocuments(data || []);
+      } catch (error) {
+        console.error('Error fetching documents:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDocuments();
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Header with Search and Filters */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Centro de Documentos
-            </CardTitle>
-            <Badge variant="outline" className="text-sm">
-              {Object.values(stats).reduce((a, b) => a + b, 0)} documentos
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4 mb-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar documentos..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Folder className="h-5 w-5" />
+          Centro de Documentos
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="documents" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="documents" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Documentos
+            </TabsTrigger>
+            <TabsTrigger value="upload" className="flex items-center gap-2">
+              <Upload className="h-4 w-4" />
+              Subir
+            </TabsTrigger>
+            <TabsTrigger value="payments" className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4" />
+              Pagos
+            </TabsTrigger>
+            <TabsTrigger value="invoices" className="flex items-center gap-2">
+              <Receipt className="h-4 w-4" />
+              Facturas
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="documents" className="mt-6">
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                <p className="mt-2 text-sm text-muted-foreground">Cargando documentos...</p>
               </div>
-            </div>
-            <Select value={dateFilter} onValueChange={setDateFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filtrar por fecha" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas las fechas</SelectItem>
-                <SelectItem value="today">Hoy</SelectItem>
-                <SelectItem value="week">Esta semana</SelectItem>
-                <SelectItem value="month">Este mes</SelectItem>
-                <SelectItem value="quarter">Este trimestre</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+            ) : documents.length === 0 ? (
+              <div className="text-center py-8">
+                <Folder className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No hay documentos disponibles.</p>
+                <p className="text-sm text-muted-foreground">Usa la pestaña "Subir" para agregar documentos.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {documents.map((doc) => (
+                  <Card key={doc.id} className="border-l-4 border-l-primary">
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-2 flex-1">
+                          <div className="flex items-center gap-2">
+                            {getDocumentTypeIcon(doc.document_type)}
+                            <h4 className="font-semibold">{doc.document_name}</h4>
+                            <Badge variant="outline">
+                              {getDocumentTypeName(doc.document_type)}
+                            </Badge>
+                          </div>
+                          
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            <p>Tamaño: {formatFileSize(doc.file_size)}</p>
+                            <p>Fecha: {format(new Date(doc.created_at), 'dd/MM/yyyy HH:mm', { locale: es })}</p>
+                            <p>Tipo: {doc.file_type}</p>
+                          </div>
+                        </div>
 
-          {/* Document Type Overview */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {documentTypes.map((type) => {
-              const Icon = type.icon;
-              return (
-                <Card 
-                  key={type.id}
-                  className={`cursor-pointer transition-all hover:shadow-md ${
-                    activeTab === type.id ? 'ring-2 ring-primary' : ''
-                  }`}
-                  onClick={() => setActiveTab(type.id)}
-                >
-                  <CardContent className="p-4 text-center">
-                    <Icon className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                    <p className="font-medium text-sm">{type.label}</p>
-                    <Badge variant="secondary" className="mt-1">
-                      {type.count}
-                    </Badge>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {type.description}
-                    </p>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+                        <div className="flex gap-2 ml-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownload(doc)}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
 
-      {/* Document Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="fiscal">Fiscales</TabsTrigger>
-          <TabsTrigger value="design">Diseño</TabsTrigger>
-          <TabsTrigger value="payments">Pagos</TabsTrigger>
-          <TabsTrigger value="invoices">Facturas</TabsTrigger>
-          <TabsTrigger value="photos">Fotos</TabsTrigger>
-        </TabsList>
+          <TabsContent value="upload" className="mt-6">
+            <ClientDocumentUploader 
+              clientId={clientId} 
+              projectId={projectId}
+            />
+          </TabsContent>
 
-        <TabsContent value="fiscal" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Documentos Fiscales</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ClientFiscalDocuments 
-                clientId={clientId} 
-                projectId={projectId}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
+          <TabsContent value="payments" className="mt-6">
+            <ClientPaymentProofUploader 
+              clientId={clientId} 
+              projectId={projectId}
+            />
+          </TabsContent>
 
-        <TabsContent value="design" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Documentos de Diseño</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DesignDocumentsViewer 
-                projectId={projectId}
-                clientId={clientId}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="payments" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Comprobantes de Pago</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ClientPaymentProofUploader
-                clientId={clientId}
-                projectId={projectId}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="invoices" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Facturas Electrónicas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ClientInvoiceViewer
-                clientId={clientId}
-                projectId={projectId}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="photos" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Fotos de Avance de Construcción</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ProgressPhotosCarousel
-                photos={[]}
-                onPhotoDownload={(photo) => console.log('Download photo:', photo)}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+          <TabsContent value="invoices" className="mt-6">
+            <ClientInvoiceViewer 
+              clientId={clientId} 
+              projectId={projectId}
+            />
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 };
