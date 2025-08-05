@@ -12,6 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Search, Building, Phone, Mail, MapPin, Star, Eye, Edit, Trash2 } from "lucide-react";
 import { EditableField } from "@/components/EditableField";
+import { CFDIViewer } from "@/components/CFDIViewer";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface Supplier {
   id: string;
@@ -53,6 +55,20 @@ interface AccountsPayable {
   supplier: Supplier;
 }
 
+interface CFDIDocument {
+  id: string;
+  uuid_fiscal: string;
+  rfc_emisor: string;
+  rfc_receptor: string;
+  fecha_emision: string;
+  total: number;
+  tipo_comprobante: string;
+  status: string;
+  file_path: string;
+  supplier_id: string | null;
+  created_at: string;
+}
+
 const categoryLabels = {
   materials: 'Materiales',
   equipment: 'Equipos',
@@ -80,6 +96,7 @@ const paymentStatusLabels = {
 export default function Suppliers() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [accountsPayable, setAccountsPayable] = useState<AccountsPayable[]>([]);
+  const [cfdiDocuments, setCfdiDocuments] = useState<CFDIDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -87,6 +104,9 @@ export default function Suppliers() {
   const [showDialog, setShowDialog] = useState(false);
   const [showPayableDialog, setShowPayableDialog] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [selectedCFDI, setSelectedCFDI] = useState<any>(null);
+  const [showCFDIViewer, setShowCFDIViewer] = useState(false);
+  const [deletingCFDI, setDeletingCFDI] = useState<string | null>(null);
   const { toast } = useToast();
 
   type SupplierCategory = 'materials' | 'equipment' | 'services' | 'subcontractor' | 'utilities' | 'other';
@@ -127,7 +147,7 @@ export default function Suppliers() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      await Promise.all([fetchSuppliers(), fetchAccountsPayable()]);
+      await Promise.all([fetchSuppliers(), fetchAccountsPayable(), fetchCFDIDocuments()]);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
@@ -183,6 +203,64 @@ export default function Suppliers() {
     }));
     
     setAccountsPayable(transformedData);
+  };
+
+  const fetchCFDIDocuments = async () => {
+    const { data, error } = await supabase
+      .from('cfdi_documents')
+      .select('*')
+      .not('supplier_id', 'is', null)
+      .order('fecha_emision', { ascending: false });
+
+    if (error) throw error;
+    setCfdiDocuments(data || []);
+  };
+
+  const handleViewCFDI = (cfdi: CFDIDocument) => {
+    const cfdiData = {
+      uuid: cfdi.uuid_fiscal,
+      rfcEmisor: cfdi.rfc_emisor,
+      rfcReceptor: cfdi.rfc_receptor,
+      fechaEmision: cfdi.fecha_emision,
+      total: cfdi.total,
+      tipoComprobante: cfdi.tipo_comprobante,
+      status: cfdi.status,
+      filePath: cfdi.file_path
+    };
+    setSelectedCFDI(cfdiData);
+    setShowCFDIViewer(true);
+  };
+
+  const handleDeleteCFDI = async (cfdiId: string) => {
+    setDeletingCFDI(cfdiId);
+  };
+
+  const confirmDeleteCFDI = async () => {
+    if (!deletingCFDI) return;
+
+    try {
+      const { error } = await supabase
+        .from('cfdi_documents')
+        .delete()
+        .eq('id', deletingCFDI);
+
+      if (error) throw error;
+
+      toast({
+        title: "Éxito",
+        description: "Documento CFDI eliminado correctamente",
+      });
+
+      setDeletingCFDI(null);
+      fetchCFDIDocuments();
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "Error al eliminar el documento CFDI",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -735,6 +813,7 @@ export default function Suppliers() {
         <TabsList>
           <TabsTrigger value="suppliers">Proveedores</TabsTrigger>
           <TabsTrigger value="payables">Cuentas por Pagar</TabsTrigger>
+          <TabsTrigger value="cfdi">Documentos CFDI</TabsTrigger>
           <TabsTrigger value="reports">Reportes</TabsTrigger>
         </TabsList>
 
@@ -948,6 +1027,73 @@ export default function Suppliers() {
           </div>
         </TabsContent>
 
+        <TabsContent value="cfdi" className="space-y-4">
+          <div className="grid gap-4">
+            {cfdiDocuments.map((cfdi) => (
+              <Card key={cfdi.id}>
+                <CardContent className="p-6">
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={cfdi.status === 'active' ? 'default' : 'secondary'}>
+                          {cfdi.status === 'active' ? 'Activo' : 'Inactivo'}
+                        </Badge>
+                        <Badge variant="outline">
+                          {cfdi.tipo_comprobante === 'I' ? 'Ingreso' : 
+                           cfdi.tipo_comprobante === 'E' ? 'Egreso' : 
+                           cfdi.tipo_comprobante === 'T' ? 'Traslado' : 
+                           cfdi.tipo_comprobante === 'N' ? 'Nómina' : 
+                           cfdi.tipo_comprobante === 'P' ? 'Pago' : cfdi.tipo_comprobante}
+                        </Badge>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">UUID: {cfdi.uuid_fiscal}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Emisor: {cfdi.rfc_emisor} | Receptor: {cfdi.rfc_receptor}
+                        </p>
+                      </div>
+                      <div className="text-sm">
+                        <span className="font-medium">Fecha:</span> {formatDate(cfdi.fecha_emision)}
+                      </div>
+                    </div>
+                    <div className="text-right space-y-2">
+                      <div className="text-lg font-bold">{formatCurrency(cfdi.total)}</div>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleViewCFDI(cfdi)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Ver Detalles
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          onClick={() => handleDeleteCFDI(cfdi.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+
+            {cfdiDocuments.length === 0 && (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <h3 className="text-lg font-medium mb-2">No hay documentos CFDI</h3>
+                  <p className="text-muted-foreground">
+                    Los documentos CFDI de proveedores aparecerán aquí cuando los cargues
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </TabsContent>
+
         <TabsContent value="reports" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
@@ -983,6 +1129,31 @@ export default function Suppliers() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* CFDI Viewer Modal */}
+      <CFDIViewer
+        isOpen={showCFDIViewer}
+        onClose={() => setShowCFDIViewer(false)}
+        cfdiData={selectedCFDI}
+      />
+
+      {/* Delete CFDI Confirmation Dialog */}
+      <AlertDialog open={!!deletingCFDI} onOpenChange={() => setDeletingCFDI(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Eliminación</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Estás seguro de que quieres eliminar este documento CFDI? Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteCFDI} className="bg-red-600 hover:bg-red-700">
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
