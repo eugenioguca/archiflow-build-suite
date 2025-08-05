@@ -223,6 +223,7 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
           project_name: `Proyecto Principal - ${formData.full_name}`,
           project_description: 'Primer proyecto del cliente',
           service_type: 'diseño',
+          status: 'potential' as const,
           budget: formData.budget ? parseFloat(formData.budget) : null,
           land_square_meters: formData.land_square_meters ? parseFloat(formData.land_square_meters) : null,
           branch_office_id: formData.branch_office_id || null,
