@@ -19,6 +19,7 @@ import { PaymentStatusIndicator } from "@/components/PaymentStatusIndicator";
 import { SalesDesignCalendar } from "@/components/SalesDesignCalendar";
 import { SalesExecutiveDashboard } from "@/components/SalesExecutiveDashboard";
 import { ContractTemplateManager } from "@/components/ContractTemplateManager";
+import { SalesAppointmentScheduler } from "@/components/SalesAppointmentScheduler";
 import {
   Users, 
   TrendingUp, 
@@ -608,7 +609,21 @@ export default function Sales() {
                         )}
                       </div>
 
-                      <div className="flex gap-2 ml-4">
+                          <div className="flex gap-2 ml-4">
+                        <SalesAppointmentScheduler 
+                          clientProject={{
+                            id: project.id,
+                            client_id: project.client_id,
+                            project_name: project.project_name,
+                            client: { full_name: project.clients?.full_name || '' }
+                          }}
+                          triggerButton={
+                            <Button variant="outline" size="sm">
+                              <CalendarLucide className="h-4 w-4 mr-2" />
+                              Programar Cita
+                            </Button>
+                          }
+                        />
                         <Button
                           variant="outline"
                           size="sm"
@@ -770,6 +785,10 @@ export default function Sales() {
                     lastContactDate={selectedProject.last_contact_date}
                     leadScore={selectedProject.probability_percentage || 0}
                     status={selectedProject.sales_pipeline_stage}
+                    clientProject={{
+                      id: selectedProject.id,
+                      project_name: selectedProject.project_name
+                    }}
                   />
                 </div>
               </TabsContent>

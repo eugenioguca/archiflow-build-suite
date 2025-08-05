@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Bell, Calendar, Clock, Send, Plus, Brain, TrendingUp } from "lucide-react";
 import { format, addDays, addWeeks, addMonths } from "date-fns";
 import { es } from "date-fns/locale";
+import { SalesAppointmentScheduler } from "./SalesAppointmentScheduler";
 
 interface CRMReminder {
   id: string;
@@ -40,9 +41,13 @@ interface SmartCRMProps {
   lastContactDate?: string;
   leadScore?: number;
   status: string;
+  clientProject?: {
+    id: string;
+    project_name: string;
+  };
 }
 
-export function SmartCRM({ clientId, clientName, lastContactDate, leadScore = 0, status }: SmartCRMProps) {
+export function SmartCRM({ clientId, clientName, lastContactDate, leadScore = 0, status, clientProject }: SmartCRMProps) {
   const { toast } = useToast();
   const [reminders, setReminders] = useState<CRMReminder[]>([]);
   const [insights, setInsights] = useState<AIInsight[]>([]);
@@ -428,35 +433,52 @@ export function SmartCRM({ clientId, clientName, lastContactDate, leadScore = 0,
           <CardTitle>Acciones Rápidas</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => createQuickReminder(1, "Seguimiento 24h")}
-            >
-              Recordar en 1 día
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => createQuickReminder(3, "Seguimiento 3 días")}
-            >
-              Recordar en 3 días
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => createQuickReminder(7, "Seguimiento semanal")}
-            >
-              Recordar en 1 semana
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => createQuickReminder(30, "Seguimiento mensual")}
-            >
-              Recordar en 1 mes
-            </Button>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => createQuickReminder(1, "Seguimiento 24h")}
+              >
+                Recordar en 1 día
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => createQuickReminder(3, "Seguimiento 3 días")}
+              >
+                Recordar en 3 días
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => createQuickReminder(7, "Seguimiento semanal")}
+              >
+                Recordar en 1 semana
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => createQuickReminder(30, "Seguimiento mensual")}
+              >
+                Recordar en 1 mes
+              </Button>
+            </div>
+            
+            {/* Appointment Scheduling */}
+            {clientProject && (
+              <div className="border-t pt-4">
+                <h4 className="text-sm font-medium mb-2">Gestión de Citas</h4>
+                <SalesAppointmentScheduler 
+                  clientProject={{
+                    id: clientProject.id,
+                    client_id: clientId,
+                    project_name: clientProject.project_name,
+                    client: { full_name: clientName }
+                  }}
+                />
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
