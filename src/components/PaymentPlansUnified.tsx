@@ -15,7 +15,6 @@ interface PaymentPlan {
   total_amount: number;
   currency: string;
   status: string;
-  plan_category: string;
   client_name: string;
   project_name: string;
   client_id: string;
@@ -24,12 +23,12 @@ interface PaymentPlan {
 
 interface PaymentInstallment {
   id: string;
+  payment_plan_id: string;
   installment_number: number;
   amount: number;
   due_date: string;
   status: string;
-  payment_date?: string;
-  payment_method?: string;
+  paid_date?: string;
   description?: string;
 }
 
@@ -119,15 +118,19 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const getPlanCategoryBadge = (category: string) => {
-    const categoryConfig = {
-      design: { label: 'Diseño', color: 'bg-blue-500/10 text-blue-700' },
-      construction: { label: 'Construcción', color: 'bg-green-500/10 text-green-700' },
-      mixed: { label: 'Mixto', color: 'bg-purple-500/10 text-purple-700' },
-    };
+  const getPlanCategoryBadge = (planName: string) => {
+    // Derive category from plan name
+    const lowerName = planName.toLowerCase();
+    let category = 'general';
+    let config = { label: 'General', color: 'bg-gray-500/10 text-gray-700' };
     
-    const config = categoryConfig[category as keyof typeof categoryConfig] || 
-                   { label: category || 'General', color: 'bg-gray-500/10 text-gray-700' };
+    if (lowerName.includes('diseño') || lowerName.includes('design')) {
+      category = 'design';
+      config = { label: 'Diseño', color: 'bg-blue-500/10 text-blue-700' };
+    } else if (lowerName.includes('construcción') || lowerName.includes('construction')) {
+      category = 'construction';
+      config = { label: 'Construcción', color: 'bg-green-500/10 text-green-700' };
+    }
     
     return (
       <Badge variant="outline" className={config.color}>
@@ -185,7 +188,7 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-lg">{plan.plan_name}</CardTitle>
-                    {getPlanCategoryBadge(plan.plan_category)}
+                    {getPlanCategoryBadge(plan.plan_name)}
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {plan.client_name} - {plan.project_name}
@@ -263,7 +266,7 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
                             </div>
                             <div>
                               <p className="text-sm text-muted-foreground">Categoría</p>
-                              <div className="mt-1">{getPlanCategoryBadge(selectedPlan.plan_category)}</div>
+                              <div className="mt-1">{getPlanCategoryBadge(selectedPlan.plan_name)}</div>
                             </div>
                           </div>
                           
@@ -286,13 +289,13 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
                                   <TableCell>{formatCurrency(installment.amount)}</TableCell>
                                   <TableCell>{new Date(installment.due_date).toLocaleDateString()}</TableCell>
                                   <TableCell>{getStatusBadge(installment.status)}</TableCell>
-                                  <TableCell>
-                                    {installment.payment_date 
-                                      ? new Date(installment.payment_date).toLocaleDateString()
-                                      : '-'
-                                    }
-                                  </TableCell>
-                                  <TableCell>{installment.payment_method || '-'}</TableCell>
+                                   <TableCell>
+                                     {installment.paid_date 
+                                       ? new Date(installment.paid_date).toLocaleDateString()
+                                       : '-'
+                                     }
+                                   </TableCell>
+                                   <TableCell>-</TableCell>
                                   {mode === 'sales' && (
                                     <TableCell>
                                       {installment.status !== 'paid' && (
