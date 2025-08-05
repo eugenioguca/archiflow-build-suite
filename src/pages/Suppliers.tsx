@@ -68,6 +68,9 @@ interface CFDIDocument {
   file_path: string;
   supplier_id: string | null;
   created_at: string;
+  supplier?: {
+    company_name: string;
+  };
 }
 
 const categoryLabels = {
@@ -209,8 +212,10 @@ export default function Suppliers() {
   const fetchCFDIDocuments = async () => {
     const { data, error } = await supabase
       .from('cfdi_documents')
-      .select('*')
-      .not('supplier_id', 'is', null)
+      .select(`
+        *,
+        supplier:suppliers(company_name)
+      `)
       .order('fecha_emision', { ascending: false });
 
     if (error) throw error;
@@ -1035,63 +1040,67 @@ export default function Suppliers() {
             </CardHeader>
             <CardContent>
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>UUID</TableHead>
-                    <TableHead>Emisor</TableHead>
-                    <TableHead>Receptor</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Fecha</TableHead>
-                    <TableHead>Total</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
+                 <TableHeader>
+                   <TableRow>
+                     <TableHead>UUID</TableHead>
+                     <TableHead>Proveedor</TableHead>
+                     <TableHead>Emisor</TableHead>
+                     <TableHead>Receptor</TableHead>
+                     <TableHead>Tipo</TableHead>
+                     <TableHead>Fecha</TableHead>
+                     <TableHead>Total</TableHead>
+                     <TableHead>Estado</TableHead>
+                     <TableHead>Acciones</TableHead>
+                   </TableRow>
+                 </TableHeader>
                 <TableBody>
-                  {cfdiDocuments.map((cfdi) => (
-                    <TableRow key={cfdi.id}>
-                      <TableCell className="font-mono text-sm">
-                        {cfdi.uuid_fiscal.substring(0, 8)}...
-                      </TableCell>
-                      <TableCell>{cfdi.rfc_emisor}</TableCell>
-                      <TableCell>{cfdi.rfc_receptor}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {cfdi.tipo_comprobante === 'I' ? 'Ingreso' : 
-                           cfdi.tipo_comprobante === 'E' ? 'Egreso' : 
-                           cfdi.tipo_comprobante === 'T' ? 'Traslado' : 
-                           cfdi.tipo_comprobante === 'N' ? 'Nómina' : 
-                           cfdi.tipo_comprobante === 'P' ? 'Pago' : cfdi.tipo_comprobante}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{formatDate(cfdi.fecha_emision)}</TableCell>
-                      <TableCell>{formatCurrency(cfdi.total)}</TableCell>
-                      <TableCell>
-                        <Badge variant={cfdi.status === 'active' ? 'default' : 'secondary'}>
-                          {cfdi.status === 'active' ? 'Activo' : 'Inactivo'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            onClick={() => handleViewCFDI(cfdi)}
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            Ver Detalles
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            onClick={() => handleDeleteCFDI(cfdi.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-red-600" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                   {cfdiDocuments.map((cfdi) => (
+                     <TableRow key={cfdi.id}>
+                       <TableCell className="font-mono text-sm">
+                         {cfdi.uuid_fiscal.substring(0, 8)}...
+                       </TableCell>
+                       <TableCell>
+                         {cfdi.supplier?.company_name || 'Sin asignar'}
+                       </TableCell>
+                       <TableCell>{cfdi.rfc_emisor}</TableCell>
+                       <TableCell>{cfdi.rfc_receptor}</TableCell>
+                       <TableCell>
+                         <Badge variant="outline">
+                           {cfdi.tipo_comprobante === 'I' ? 'Ingreso' : 
+                            cfdi.tipo_comprobante === 'E' ? 'Egreso' : 
+                            cfdi.tipo_comprobante === 'T' ? 'Traslado' : 
+                            cfdi.tipo_comprobante === 'N' ? 'Nómina' : 
+                            cfdi.tipo_comprobante === 'P' ? 'Pago' : cfdi.tipo_comprobante}
+                         </Badge>
+                       </TableCell>
+                       <TableCell>{formatDate(cfdi.fecha_emision)}</TableCell>
+                       <TableCell>{formatCurrency(cfdi.total)}</TableCell>
+                       <TableCell>
+                         <Badge variant={cfdi.status === 'active' ? 'default' : 'secondary'}>
+                           {cfdi.status === 'active' ? 'Activo' : 'Inactivo'}
+                         </Badge>
+                       </TableCell>
+                       <TableCell>
+                         <div className="flex items-center gap-2">
+                           <Button 
+                             size="sm" 
+                             variant="outline" 
+                             onClick={() => handleViewCFDI(cfdi)}
+                           >
+                             <Eye className="h-4 w-4 mr-1" />
+                             Ver Detalles
+                           </Button>
+                           <Button 
+                             size="sm" 
+                             variant="ghost" 
+                             onClick={() => handleDeleteCFDI(cfdi.id)}
+                           >
+                             <Trash2 className="h-4 w-4 text-red-600" />
+                           </Button>
+                         </div>
+                       </TableCell>
+                     </TableRow>
+                   ))}
                 </TableBody>
               </Table>
 
