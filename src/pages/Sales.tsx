@@ -665,8 +665,8 @@ export default function Sales() {
 
       {/* Dialog CRM completo */}
       <Dialog open={!!selectedProject} onOpenChange={() => setSelectedProject(null)}>
-        <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-[95vw] lg:max-w-7xl max-h-[90vh] h-[90vh] overflow-hidden flex flex-col p-0">
+          <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <Crown className="h-6 w-6 text-primary" />
               CRM Completo - {selectedProject?.clients?.full_name}
@@ -674,8 +674,8 @@ export default function Sales() {
           </DialogHeader>
           
           {selectedProject && (
-            <Tabs defaultValue="crm" className="w-full">
-              <TabsList className="grid grid-cols-4 w-full">
+            <Tabs defaultValue="crm" className="w-full flex flex-col flex-1 overflow-hidden">
+              <TabsList className="grid grid-cols-4 w-full flex-shrink-0 mx-6">
                 <TabsTrigger value="crm">CRM & Información</TabsTrigger>
                 <TabsTrigger 
                   value="documents" 
@@ -694,7 +694,7 @@ export default function Sales() {
                 <TabsTrigger value="projects">Gestión de Proyectos</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="crm" className="space-y-6 mt-6">
+              <TabsContent value="crm" className="space-y-6 px-6 pb-6 overflow-y-auto flex-1">
                 {/* Información básica y SmartCRM */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <Card>
@@ -774,7 +774,7 @@ export default function Sales() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="documents" className="mt-6">
+              <TabsContent value="documents" className="px-6 pb-6 overflow-y-auto flex-1">
                 {selectedProject.sales_pipeline_stage !== 'nuevo_lead' ? (
                   <RequiredDocumentsManager
                     clientProjectId={selectedProject.id}
@@ -821,7 +821,7 @@ export default function Sales() {
                 )}
               </TabsContent>
 
-              <TabsContent value="payments" className="mt-6">
+              <TabsContent value="payments" className="px-6 pb-6 overflow-y-auto flex-1">
                 {['en_contacto', 'cliente_cerrado'].includes(selectedProject.sales_pipeline_stage) ? (
                   <div className="space-y-6">
                     {/* Plan Builder para crear/gestionar planes */}
@@ -860,7 +860,7 @@ export default function Sales() {
                 )}
               </TabsContent>
 
-              <TabsContent value="projects" className="mt-6">
+              <TabsContent value="projects" className="px-6 pb-6 overflow-y-auto flex-1">
                 <ClientProjectManager
                   clientId={selectedProject.client_id}
                   clientName={selectedProject.clients?.full_name || ''}
