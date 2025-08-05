@@ -161,6 +161,7 @@ export default function Suppliers() {
       });
     } finally {
       setLoading(false);
+      console.log('📊 Datos cargados - Suppliers:', suppliers.length, 'CFDI:', cfdiDocuments.length);
     }
   };
 
@@ -210,6 +211,7 @@ export default function Suppliers() {
   };
 
   const fetchCFDIDocuments = async () => {
+    console.log('🔍 INICIANDO fetchCFDIDocuments...');
     const { data, error } = await supabase
       .from('cfdi_documents')
       .select(`
@@ -218,7 +220,12 @@ export default function Suppliers() {
       `)
       .order('fecha_emision', { ascending: false });
 
-    if (error) throw error;
+    console.log('📄 CFDI Query result:', { data, error });
+    if (error) {
+      console.error('❌ Error fetching CFDI:', error);
+      throw error;
+    }
+    console.log('✅ Setting CFDI documents:', data?.length || 0);
     setCfdiDocuments(data || []);
   };
 
@@ -1034,6 +1041,10 @@ export default function Suppliers() {
         </TabsContent>
 
         <TabsContent value="cfdi" className="space-y-4">
+          {(() => {
+            console.log('🔖 Renderizando tab CFDI, documentos:', cfdiDocuments.length);
+            return null;
+          })()}
           <Card>
             <CardHeader>
               <CardTitle>Documentos CFDI de Proveedores</CardTitle>
