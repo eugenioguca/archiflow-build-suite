@@ -66,8 +66,12 @@ interface PaymentTemplate {
 
 interface PaymentPlanBuilderProps {
   clientProjectId: string;
-  clientName: string;
+  clientName?: string;
+  totalAmount?: number;
+  planType?: 'sales_to_design' | 'design_to_construction';
   onPlanUpdate?: () => void;
+  onSuccess?: () => void;
+  onCancel?: () => void;
 }
 
 const PAYMENT_TEMPLATES: PaymentTemplate[] = [
@@ -111,8 +115,12 @@ const PAYMENT_TEMPLATES: PaymentTemplate[] = [
 
 export const PaymentPlanBuilder = ({ 
   clientProjectId, 
-  clientName, 
-  onPlanUpdate 
+  clientName = '',
+  totalAmount,
+  planType = 'sales_to_design',
+  onPlanUpdate,
+  onSuccess,
+  onCancel
 }: PaymentPlanBuilderProps) => {
   const [paymentPlans, setPaymentPlans] = useState<PaymentPlan[]>([]);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -145,6 +153,7 @@ export const PaymentPlanBuilder = ({
           )
         `)
         .eq('client_project_id', clientProjectId)
+        .eq('plan_type', planType)
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
@@ -240,16 +249,47 @@ export const PaymentPlanBuilder = ({
         status: 'pending'
       }));
 
-      const { data: planData, error: createError } = await supabase
-        .rpc('create_payment_plan_from_sales', {
-          p_client_project_id: clientProjectId,
-          p_plan_name: planName,
-          p_total_amount: planAmountNumber,
-          p_currency: 'MXN',
-          p_installments_data: installmentsData
-        });
+      // Get current user profile for created_by
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuario no autenticado');
 
-      if (createError) throw createError;
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile) throw new Error('Perfil de usuario no encontrado');
+
+      // Create payment plan with plan_type
+      const { data: planData, error: planError } = await supabase
+        .from('payment_plans')
+        .insert({
+          client_project_id: clientProjectId,
+          plan_name: planName,
+          total_amount: planAmountNumber,
+          currency: 'MXN',
+          plan_type: planType,
+          status: 'active',
+          created_by: profile.id,
+          start_date: startDate.toISOString().split('T')[0]
+        })
+        .select()
+        .single();
+
+      if (planError) throw planError;
+
+      // Create installments
+      const { error: installmentsError } = await supabase
+        .from('payment_installments')
+        .insert(
+          installmentsData.map(inst => ({
+            ...inst,
+            payment_plan_id: planData.id
+          }))
+        );
+
+      if (installmentsError) throw installmentsError;
 
       toast({
         title: "Éxito",
@@ -259,6 +299,7 @@ export const PaymentPlanBuilder = ({
       setShowCreateDialog(false);
       resetForm();
       onPlanUpdate?.();
+      onSuccess?.();
       
       // Refrescar la lista de planes
       await fetchPaymentPlans();

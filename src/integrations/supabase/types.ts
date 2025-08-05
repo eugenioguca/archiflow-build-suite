@@ -3971,6 +3971,7 @@ export type Database = {
           notes: string | null
           payment_frequency: string
           plan_name: string
+          plan_type: Database["public"]["Enums"]["plan_type"] | null
           start_date: string
           status: string
           total_amount: number
@@ -3986,6 +3987,7 @@ export type Database = {
           notes?: string | null
           payment_frequency?: string
           plan_name: string
+          plan_type?: Database["public"]["Enums"]["plan_type"] | null
           start_date: string
           status?: string
           total_amount?: number
@@ -4001,6 +4003,7 @@ export type Database = {
           notes?: string | null
           payment_frequency?: string
           plan_name?: string
+          plan_type?: Database["public"]["Enums"]["plan_type"] | null
           start_date?: string
           status?: string
           total_amount?: number
@@ -6250,6 +6253,7 @@ export type Database = {
         | "transporte"
         | "otros"
       payable_status: "pending" | "partial" | "paid" | "overdue" | "cancelled"
+      plan_type: "sales_to_design" | "design_to_construction"
       position_hierarchy:
         | "direccion_general"
         | "director"
@@ -6520,6 +6524,7 @@ export const Constants = {
         "otros",
       ],
       payable_status: ["pending", "partial", "paid", "overdue", "cancelled"],
+      plan_type: ["sales_to_design", "design_to_construction"],
       position_hierarchy: [
         "direccion_general",
         "director",

@@ -17,6 +17,7 @@ import { ClientInfoPanel } from "@/components/ClientInfoPanel";
 import { DesignCompletionManager } from "@/components/DesignCompletionManager";
 import { CompletedDesignsTab } from "@/components/CompletedDesignsTab";
 import { DesignDocumentManager } from "@/components/DesignDocumentManager";
+import { PaymentPlansUnified } from "@/components/PaymentPlansUnified";
 import { 
   Clock, 
   User, 
@@ -619,7 +620,7 @@ export default function Design() {
 
       {/* Main Content with Tabs */}
       <Tabs defaultValue="phases" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-6 bg-muted h-9">
+        <TabsList className="grid w-full grid-cols-7 bg-muted h-9">
           <TabsTrigger value="phases" className="text-xs">
             <Layers className="h-3 w-3 mr-1" />
             Fases
@@ -635,6 +636,10 @@ export default function Design() {
           <TabsTrigger value="budget" className="text-xs">
             <DollarSign className="h-3 w-3 mr-1" />
             Presupuesto
+          </TabsTrigger>
+          <TabsTrigger value="payments" className="text-xs">
+            <DollarSign className="h-3 w-3 mr-1" />
+            Pagos
           </TabsTrigger>
           <TabsTrigger value="documents" className="text-xs">
             <FileText className="h-3 w-3 mr-1" />
@@ -751,6 +756,16 @@ export default function Design() {
         <TabsContent value="budget">
           <div className="bg-card rounded-lg p-4 border">
             <ProjectBudgetManager projectId={projectId} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="payments">
+          <div className="bg-card rounded-lg p-4 border">
+            <PaymentPlansUnified 
+              selectedProjectId={projectId}
+              mode="design"
+              planType="design_to_construction"
+            />
           </div>
         </TabsContent>
 

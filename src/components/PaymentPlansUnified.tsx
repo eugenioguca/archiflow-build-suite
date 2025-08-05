@@ -35,7 +35,8 @@ interface PaymentInstallment {
 interface PaymentPlansUnifiedProps {
   selectedClientId?: string;
   selectedProjectId?: string;
-  mode: 'sales' | 'finance';
+  mode: 'sales' | 'finance' | 'design';
+  planType?: 'sales_to_design' | 'design_to_construction' | 'all';
   onPaymentUpdate?: () => void;
 }
 
@@ -43,6 +44,7 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
   selectedClientId,
   selectedProjectId,
   mode = 'finance',
+  planType = 'all',
   onPaymentUpdate
 }) => {
   const [paymentPlans, setPaymentPlans] = useState<PaymentPlan[]>([]);
@@ -71,6 +73,16 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
         `)
         .eq('status', 'active')
         .order('created_at', { ascending: false });
+
+      // Filter by plan_type based on mode and planType prop
+      if (planType !== 'all') {
+        query = query.eq('plan_type', planType);
+      } else if (mode === 'sales') {
+        query = query.eq('plan_type', 'sales_to_design');
+      } else if (mode === 'design') {
+        query = query.eq('plan_type', 'design_to_construction');
+      }
+      // Finance mode shows all plan types by default
 
       if (selectedProjectId) {
         query = query.eq('client_project_id', selectedProjectId);

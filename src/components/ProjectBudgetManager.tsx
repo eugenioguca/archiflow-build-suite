@@ -6,12 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-// import { BudgetPDFExporter } from "@/components/BudgetPDFExporter"; // Component removed
 import { CurrencyInput } from "@/components/CurrencyInput";
-import { Calculator, FileText, Download, Plus, Trash2, Edit } from "lucide-react";
+import { PaymentPlanBuilder } from '@/components/PaymentPlanBuilder';
+import { Calculator, FileText, Download, Plus, Trash2, Edit, CheckCircle } from "lucide-react";
+import { toast as sonnerToast } from "sonner";
 
 interface BudgetItem {
   id: string;
@@ -46,6 +47,7 @@ export function ProjectBudgetManager({ projectId, projectName, clientName, onBud
   const [items, setItems] = useState<BudgetItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showAcceptBudgetDialog, setShowAcceptBudgetDialog] = useState(false);
   const [editingItem, setEditingItem] = useState<BudgetItem | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -293,6 +295,42 @@ export function ProjectBudgetManager({ projectId, projectName, clientName, onBud
     }
   };
 
+  const handleAcceptBudget = async () => {
+    if (!budget) return;
+    
+    try {
+      setSaving(true);
+      
+      // Update budget status to accepted and sync construction_budget
+      const { error: budgetError } = await supabase
+        .from('project_budgets')
+        .update({ status: 'accepted' })
+        .eq('id', budget.id);
+        
+      if (budgetError) throw budgetError;
+      
+      // Update client_projects construction_budget
+      const { error: projectError } = await supabase
+        .from('client_projects')
+        .update({ construction_budget: budget.total_amount })
+        .eq('id', projectId);
+        
+      if (projectError) throw projectError;
+      
+      sonnerToast.success('Presupuesto aceptado. Ahora se puede crear el plan de pagos de construcción.');
+      setShowAcceptBudgetDialog(false);
+      
+      // Refresh budget data
+      await fetchBudget();
+      
+    } catch (error) {
+      console.error('Error accepting budget:', error);
+      sonnerToast.error('Error al aceptar el presupuesto');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const exportToPDF = async () => {
     // This would integrate with a PDF generation library
     toast({
@@ -336,6 +374,16 @@ export function ProjectBudgetManager({ projectId, projectName, clientName, onBud
             <Button onClick={exportToPDF} variant="outline" size="sm">
               <Download className="h-4 w-4 mr-2" />
               Exportar PDF
+            </Button>
+            
+            <Button 
+              variant="default" 
+              size="sm"
+              onClick={() => setShowAcceptBudgetDialog(true)}
+              disabled={!budget || budget.total_amount <= 0}
+            >
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Cliente Acepta Presupuesto
             </Button>
           </div>
         </div>
@@ -467,6 +515,31 @@ export function ProjectBudgetManager({ projectId, projectName, clientName, onBud
           </div>
         </div>
       )}
+      
+      <Dialog open={showAcceptBudgetDialog} onOpenChange={setShowAcceptBudgetDialog}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Crear Plan de Pagos de Construcción</DialogTitle>
+            <DialogDescription>
+              El cliente ha aceptado el presupuesto de obra por {formatCurrency(budget?.total_amount || 0)}. 
+              Ahora puedes crear el plan de pagos para la construcción.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {budget && (
+            <PaymentPlanBuilder
+              clientProjectId={projectId}
+              totalAmount={budget.total_amount}
+              planType="design_to_construction"
+              onSuccess={() => {
+                setShowAcceptBudgetDialog(false);
+                sonnerToast.success('Plan de pagos de construcción creado exitosamente');
+              }}
+              onCancel={() => setShowAcceptBudgetDialog(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
