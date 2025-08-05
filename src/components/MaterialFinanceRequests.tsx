@@ -35,6 +35,10 @@ interface MaterialFinanceRequest {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  selected_for_payment: boolean;
+  exported_to_treasury: boolean;
+  treasury_export_date: string | null;
+  payment_reference: string | null;
   // Joined data
   material_name: string;
   descripcion_producto: string | null;
@@ -49,6 +53,13 @@ interface MaterialFinanceRequest {
   requester_name: string;
 }
 
+interface SupplierSummary {
+  supplier_id: string;
+  supplier_name: string;
+  total_amount: number;
+  items_count: number;
+}
+
 interface MaterialFinanceRequestsProps {
   selectedClientId?: string;
   selectedProjectId?: string;
@@ -60,6 +71,8 @@ export function MaterialFinanceRequests({ selectedClientId, selectedProjectId }:
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [attendedFilter, setAttendedFilter] = useState("");
+  const [selectedForPayment, setSelectedForPayment] = useState<Set<string>>(new Set());
+  const [isExporting, setIsExporting] = useState(false);
 
   const fetchRequests = async () => {
     try {
@@ -69,6 +82,7 @@ export function MaterialFinanceRequests({ selectedClientId, selectedProjectId }:
       let query = supabase
         .from('material_finance_requests')
         .select('*')
+        .eq('exported_to_treasury', false) // Only show non-exported requests
         .order('created_at', { ascending: false });
 
       // Apply filters
@@ -235,6 +249,152 @@ export function MaterialFinanceRequests({ selectedClientId, selectedProjectId }:
     }
   };
 
+  // Toggle payment selection for a single request
+  const togglePaymentSelection = (requestId: string) => {
+    const newSelected = new Set(selectedForPayment);
+    if (newSelected.has(requestId)) {
+      newSelected.delete(requestId);
+    } else {
+      newSelected.add(requestId);
+    }
+    setSelectedForPayment(newSelected);
+  };
+
+  // Toggle all payment selections
+  const toggleAllPaymentSelections = () => {
+    if (selectedForPayment.size === filteredRequests.length) {
+      setSelectedForPayment(new Set());
+    } else {
+      setSelectedForPayment(new Set(filteredRequests.map(r => r.id)));
+    }
+  };
+
+  // Get supplier summaries for selected items
+  const getSupplierSummaries = (): SupplierSummary[] => {
+    const selectedRequests = filteredRequests.filter(r => selectedForPayment.has(r.id));
+    const supplierMap = new Map<string, SupplierSummary>();
+
+    selectedRequests.forEach(request => {
+      const finalCost = calculateFinalCost(
+        request.unit_cost || 0,
+        request.adjustment_additive || 0,
+        request.adjustment_deductive || 0,
+        request.quantity_required
+      );
+
+      const key = request.supplier_id || 'sin-proveedor';
+      if (!supplierMap.has(key)) {
+        supplierMap.set(key, {
+          supplier_id: request.supplier_id || '',
+          supplier_name: request.supplier_name || 'Sin proveedor asignado',
+          total_amount: 0,
+          items_count: 0
+        });
+      }
+      
+      const summary = supplierMap.get(key)!;
+      summary.total_amount += finalCost;
+      summary.items_count += 1;
+    });
+
+    return Array.from(supplierMap.values());
+  };
+
+  // Export to treasury
+  const handleExportToTreasury = async () => {
+    if (selectedForPayment.size === 0) {
+      toast.error('Seleccione al menos un material para exportar');
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      // Get current user profile
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) throw new Error('Usuario no autenticado');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', userData.user.id)
+        .single();
+
+      if (!profile) throw new Error('Perfil no encontrado');
+
+      const selectedRequests = filteredRequests.filter(r => selectedForPayment.has(r.id));
+      const supplierSummaries = getSupplierSummaries();
+
+      // Create treasury material payments for each supplier
+      for (const summary of supplierSummaries) {
+        // Generate reference code
+        const { data: referenceCode } = await supabase.rpc('generate_material_payment_reference');
+        if (!referenceCode) throw new Error('No se pudo generar código de referencia');
+
+        // Create payment record
+        const { data: payment, error: paymentError } = await supabase
+          .from('treasury_material_payments')
+          .insert({
+            reference_code: referenceCode,
+            supplier_id: summary.supplier_id || null,
+            supplier_name: summary.supplier_name,
+            total_amount: summary.total_amount,
+            material_count: summary.items_count,
+            created_by: profile.id
+          })
+          .select()
+          .single();
+
+        if (paymentError) throw paymentError;
+
+        // Create payment items for tracking
+        const supplierRequests = selectedRequests.filter(r => 
+          (r.supplier_id || 'sin-proveedor') === (summary.supplier_id || 'sin-proveedor')
+        );
+
+        const paymentItems = supplierRequests.map(request => ({
+          payment_id: payment.id,
+          material_finance_request_id: request.id,
+          amount: calculateFinalCost(
+            request.unit_cost || 0,
+            request.adjustment_additive || 0,
+            request.adjustment_deductive || 0,
+            request.quantity_required
+          )
+        }));
+
+        const { error: itemsError } = await supabase
+          .from('treasury_material_payment_items')
+          .insert(paymentItems);
+
+        if (itemsError) throw itemsError;
+
+        // Update material finance requests as exported
+        const { error: updateError } = await supabase
+          .from('material_finance_requests')
+          .update({
+            exported_to_treasury: true,
+            treasury_export_date: new Date().toISOString(),
+            payment_reference: referenceCode
+          })
+          .in('id', supplierRequests.map(r => r.id));
+
+        if (updateError) throw updateError;
+      }
+
+      toast.success(`${supplierSummaries.length} agrupaciones exportadas a tesorería correctamente`);
+      
+      // Reset selections and refresh
+      setSelectedForPayment(new Set());
+      fetchRequests();
+
+    } catch (error) {
+      console.error('Error exporting to treasury:', error);
+      toast.error('Error al exportar a tesorería');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // Filter requests based on search and filters
   const filteredRequests = requests.filter(request => {
     const matchesSearch = !searchTerm || 
@@ -288,6 +448,38 @@ export function MaterialFinanceRequests({ selectedClientId, selectedProjectId }:
       </CardHeader>
 
       <CardContent>
+        {/* Payment Selection Summary */}
+        {selectedForPayment.size > 0 && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-green-600" />
+                <h3 className="font-semibold text-green-700">Resumen por Proveedor</h3>
+              </div>
+              <Button
+                onClick={handleExportToTreasury}
+                disabled={isExporting}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                {isExporting ? "Exportando..." : "Pagar y Exportar a Tesorería"}
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {getSupplierSummaries().map((summary, index) => (
+                <div key={index} className="bg-white p-3 rounded border">
+                  <p className="font-medium text-gray-900">{summary.supplier_name}</p>
+                  <p className="text-lg font-bold text-green-600">
+                    ${summary.total_amount.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {summary.items_count} material{summary.items_count !== 1 ? 'es' : ''}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Filters */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="relative">
@@ -352,6 +544,15 @@ export function MaterialFinanceRequests({ selectedClientId, selectedProjectId }:
             <table className="w-full border border-border rounded-lg overflow-hidden">
               <thead>
                  <tr className="border-b bg-muted/50">
+                  <th className="text-center p-3 font-semibold">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        checked={selectedForPayment.size === filteredRequests.length && filteredRequests.length > 0}
+                        onCheckedChange={toggleAllPaymentSelections}
+                      />
+                      <span>Selección para Pago</span>
+                    </div>
+                  </th>
                   <th className="text-left p-3 font-semibold">Material</th>
                   <th className="text-left p-3 font-semibold">Cliente/Proyecto</th>
                   <th className="text-left p-3 font-semibold">Cantidad</th>
@@ -368,6 +569,12 @@ export function MaterialFinanceRequests({ selectedClientId, selectedProjectId }:
                   const isOrdered = request.status === 'ordered';
                   return (
                     <tr key={request.id} className={`border-b hover:bg-muted/30 transition-colors ${isOrdered ? 'bg-green-50/50' : ''}`}>
+                      <td className="p-3 text-center">
+                        <Checkbox
+                          checked={selectedForPayment.has(request.id)}
+                          onCheckedChange={() => togglePaymentSelection(request.id)}
+                        />
+                      </td>
                       <td className="p-3">
                         <div className="space-y-1">
                           <p className="font-medium text-foreground">{request.material_name}</p>

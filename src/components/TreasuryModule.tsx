@@ -12,6 +12,7 @@ import { MaterialToTreasuryExporter } from "./MaterialToTreasuryExporter";
 import { TreasuryPaymentProcessor } from "./TreasuryPaymentProcessor";
 import { TreasuryEmptyState } from "./TreasuryEmptyState";
 import { TreasuryDashboard } from "./TreasuryDashboard";
+import { TreasuryMaterialsPayments } from "./TreasuryMaterialsPayments";
 import { GlobalFilters } from "./GlobalFilters";
 import { useClientProjectFilters } from "@/hooks/useClientProjectFilters";
 
@@ -88,6 +89,12 @@ export const TreasuryModule: React.FC<TreasuryModuleProps> = ({
 
       {/* Treasury Payment Processor */}
       <TreasuryPaymentProcessor 
+        selectedClientId={effectiveClientId}
+        selectedProjectId={effectiveProjectId}
+      />
+
+      {/* Treasury Materials Payments */}
+      <TreasuryMaterialsPayments 
         selectedClientId={effectiveClientId}
         selectedProjectId={effectiveProjectId}
       />

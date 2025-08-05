@@ -3215,18 +3215,22 @@ export type Database = {
           attended_date: string | null
           client_id: string
           created_at: string
+          exported_to_treasury: boolean | null
           id: string
           is_attended: boolean | null
           material_name: string | null
           material_requirement_id: string
           notes: string | null
+          payment_reference: string | null
           project_id: string
           purchase_order_number: string | null
           quantity: number | null
           request_date: string
           requested_by: string
+          selected_for_payment: boolean | null
           status: string
           supplier_id: string | null
+          treasury_export_date: string | null
           unit_cost: number | null
           updated_at: string
         }
@@ -3235,18 +3239,22 @@ export type Database = {
           attended_date?: string | null
           client_id: string
           created_at?: string
+          exported_to_treasury?: boolean | null
           id?: string
           is_attended?: boolean | null
           material_name?: string | null
           material_requirement_id: string
           notes?: string | null
+          payment_reference?: string | null
           project_id: string
           purchase_order_number?: string | null
           quantity?: number | null
           request_date?: string
           requested_by: string
+          selected_for_payment?: boolean | null
           status?: string
           supplier_id?: string | null
+          treasury_export_date?: string | null
           unit_cost?: number | null
           updated_at?: string
         }
@@ -3255,18 +3263,22 @@ export type Database = {
           attended_date?: string | null
           client_id?: string
           created_at?: string
+          exported_to_treasury?: boolean | null
           id?: string
           is_attended?: boolean | null
           material_name?: string | null
           material_requirement_id?: string
           notes?: string | null
+          payment_reference?: string | null
           project_id?: string
           purchase_order_number?: string | null
           quantity?: number | null
           request_date?: string
           requested_by?: string
+          selected_for_payment?: boolean | null
           status?: string
           supplier_id?: string | null
+          treasury_export_date?: string | null
           unit_cost?: number | null
           updated_at?: string
         }
@@ -5350,6 +5362,121 @@ export type Database = {
         }
         Relationships: []
       }
+      treasury_material_payment_items: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          material_finance_request_id: string
+          payment_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          material_finance_request_id: string
+          payment_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          material_finance_request_id?: string
+          payment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treasury_material_payment_item_material_finance_request_id_fkey"
+            columns: ["material_finance_request_id"]
+            isOneToOne: false
+            referencedRelation: "material_finance_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treasury_material_payment_items_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "treasury_material_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      treasury_material_payments: {
+        Row: {
+          account_id: string | null
+          account_type: string | null
+          created_at: string
+          created_by: string
+          id: string
+          material_count: number
+          notes: string | null
+          processed_at: string | null
+          processed_by: string | null
+          reference_code: string
+          status: string
+          supplier_id: string | null
+          supplier_name: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          account_type?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          material_count?: number
+          notes?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          reference_code: string
+          status?: string
+          supplier_id?: string | null
+          supplier_name: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          account_type?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          material_count?: number
+          notes?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          reference_code?: string
+          status?: string
+          supplier_id?: string | null
+          supplier_name?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treasury_material_payments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treasury_material_payments_processed_by_fkey"
+            columns: ["processed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treasury_material_payments_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       treasury_payment_references: {
         Row: {
           account_id: string
@@ -5441,6 +5568,7 @@ export type Database = {
           id: string
           invoice_number: string | null
           invoice_url: string | null
+          material_payment_reference: string | null
           notes: string | null
           partida: string | null
           payment_reference_id: string | null
@@ -5473,6 +5601,7 @@ export type Database = {
           id?: string
           invoice_number?: string | null
           invoice_url?: string | null
+          material_payment_reference?: string | null
           notes?: string | null
           partida?: string | null
           payment_reference_id?: string | null
@@ -5505,6 +5634,7 @@ export type Database = {
           id?: string
           invoice_number?: string | null
           invoice_url?: string | null
+          material_payment_reference?: string | null
           notes?: string | null
           partida?: string | null
           payment_reference_id?: string | null
@@ -5834,6 +5964,10 @@ export type Database = {
           p_currency?: string
           p_installments_data?: Json
         }
+        Returns: string
+      }
+      generate_material_payment_reference: {
+        Args: Record<PropertyKey, never>
         Returns: string
       }
       generate_payment_reference: {
