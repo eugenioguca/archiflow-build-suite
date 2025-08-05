@@ -148,6 +148,18 @@ export default function Suppliers() {
     fetchData();
   }, []);
 
+  // useEffect separado para CFDI documents para evitar condiciones de carrera
+  useEffect(() => {
+    console.log('🚀 CFDI useEffect triggered');
+    fetchCFDIDocuments();
+  }, []);
+
+  // Debug effect para monitorear cambios en cfdiDocuments
+  useEffect(() => {
+    console.log('📊 CFDI Documents state changed:', cfdiDocuments.length, 'documents');
+    console.log('📊 Current CFDI documents:', cfdiDocuments);
+  }, [cfdiDocuments]);
+
   const fetchData = async () => {
     try {
       setLoading(true);
