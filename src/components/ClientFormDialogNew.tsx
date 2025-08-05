@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Combobox } from '@/components/ui/combobox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, User } from 'lucide-react';
 
@@ -284,8 +285,8 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
             {client ? 'Editar Cliente' : 'Nuevo Cliente'}
@@ -295,194 +296,196 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Información Básica del Cliente */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Información Básica del Cliente</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="full_name">Nombre Completo *</Label>
-                <Input
-                  id="full_name"
-                  value={formData.full_name}
-                  onChange={(e) => handleInputChange('full_name', e.target.value)}
-                  placeholder="Nombre completo del cliente"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone">Teléfono *</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  placeholder="Ej: +52 55 1234 5678"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  placeholder="correo@ejemplo.com"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="state">Estado de la República</Label>
-                <Combobox
-                  items={mexicanStates}
-                  value={formData.state}
-                  onValueChange={(value) => handleInputChange('state', value)}
-                  placeholder="Selecciona un estado..."
-                  emptyText="No se encontraron estados"
-                />
-              </div>
-
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="address">Dirección</Label>
-                <Input
-                  id="address"
-                  value={formData.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
-                  placeholder="Dirección del cliente"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Información del Proyecto */}
-          {!client && (
+        <ScrollArea className="flex-1 px-6">
+          <form onSubmit={handleSubmit} className="space-y-6 pb-4">
+            {/* Información Básica del Cliente */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Información del Proyecto</h3>
+              <h3 className="text-lg font-semibold">Información Básica del Cliente</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="budget">Presupuesto Estimado</Label>
+                  <Label htmlFor="full_name">Nombre Completo *</Label>
                   <Input
-                    id="budget"
-                    type="text"
-                    value={formatCurrency(formData.budget)}
-                    onChange={handleBudgetChange}
-                    placeholder="Ej: $1,500,000"
+                    id="full_name"
+                    value={formData.full_name}
+                    onChange={(e) => handleInputChange('full_name', e.target.value)}
+                    placeholder="Nombre completo del cliente"
+                    required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="land_square_meters">Metros Cuadrados del Terreno</Label>
+                  <Label htmlFor="phone">Teléfono *</Label>
                   <Input
-                    id="land_square_meters"
-                    type="number"
-                    value={formData.land_square_meters}
-                    onChange={(e) => handleInputChange('land_square_meters', e.target.value)}
-                    placeholder="Ej: 250"
-                    min="0"
-                    step="0.01"
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    placeholder="Ej: +52 55 1234 5678"
+                    required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="branch_office_id">Sucursal</Label>
-                  <Select
-                    value={formData.branch_office_id}
-                    onValueChange={(value) => handleInputChange('branch_office_id', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona una sucursal..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {branchOffices.map((office) => (
-                        <SelectItem key={office.id} value={office.id}>
-                          {office.name} {office.city ? `- ${office.city}` : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    placeholder="correo@ejemplo.com"
+                  />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="lead_source">Origen del Lead</Label>
-                  <Select
-                    value={formData.lead_source}
-                    onValueChange={(value) => handleInputChange('lead_source', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona el origen..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {leadSources.map((source) => (
-                        <SelectItem key={source.value} value={source.value}>
-                          {source.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="state">Estado de la República</Label>
+                  <Combobox
+                    items={mexicanStates}
+                    value={formData.state}
+                    onValueChange={(value) => handleInputChange('state', value)}
+                    placeholder="Selecciona un estado..."
+                    emptyText="No se encontraron estados"
+                  />
                 </div>
 
-                {formData.lead_source === 'alianzas' && (
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="address">Dirección</Label>
+                  <Input
+                    id="address"
+                    value={formData.address}
+                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    placeholder="Dirección del cliente"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Información del Proyecto */}
+            {!client && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Información del Proyecto</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="alliance_id">Alianza Comercial</Label>
+                    <Label htmlFor="budget">Presupuesto Estimado</Label>
+                    <Input
+                      id="budget"
+                      type="text"
+                      value={formatCurrency(formData.budget)}
+                      onChange={handleBudgetChange}
+                      placeholder="Ej: $1,500,000"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="land_square_meters">Metros Cuadrados del Terreno</Label>
+                    <Input
+                      id="land_square_meters"
+                      type="number"
+                      value={formData.land_square_meters}
+                      onChange={(e) => handleInputChange('land_square_meters', e.target.value)}
+                      placeholder="Ej: 250"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="branch_office_id">Sucursal</Label>
                     <Select
-                      value={formData.alliance_id}
-                      onValueChange={(value) => handleInputChange('alliance_id', value)}
+                      value={formData.branch_office_id}
+                      onValueChange={(value) => handleInputChange('branch_office_id', value)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecciona una alianza..." />
+                        <SelectValue placeholder="Selecciona una sucursal..." />
                       </SelectTrigger>
-                      <SelectContent>
-                        {commercialAlliances.map((alliance) => (
-                          <SelectItem key={alliance.id} value={alliance.id}>
-                            {alliance.name} {alliance.contact_person ? `- ${alliance.contact_person}` : ''}
+                      <SelectContent className="bg-background border z-50">
+                        {branchOffices.map((office) => (
+                          <SelectItem key={office.id} value={office.id}>
+                            {office.name} {office.city ? `- ${office.city}` : ''}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                )}
 
-                {(formData.lead_source === 'referencia' || formData.lead_source === 'otro' || formData.lead_source === 'alianzas') && (
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="lead_source_details">Detalles del Origen</Label>
-                    <Input
-                      id="lead_source_details"
-                      value={formData.lead_source_details}
-                      onChange={(e) => handleInputChange('lead_source_details', e.target.value)}
-                      placeholder="Detalles adicionales sobre el origen del lead..."
-                    />
+                  <div className="space-y-2">
+                    <Label htmlFor="lead_source">Origen del Lead</Label>
+                    <Select
+                      value={formData.lead_source}
+                      onValueChange={(value) => handleInputChange('lead_source', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona el origen..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background border z-50">
+                        {leadSources.map((source) => (
+                          <SelectItem key={source.value} value={source.value}>
+                            {source.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                )}
+
+                  {formData.lead_source === 'alianzas' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="alliance_id">Alianza Comercial</Label>
+                      <Select
+                        value={formData.alliance_id}
+                        onValueChange={(value) => handleInputChange('alliance_id', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona una alianza..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border z-50">
+                          {commercialAlliances.map((alliance) => (
+                            <SelectItem key={alliance.id} value={alliance.id}>
+                              {alliance.name} {alliance.contact_person ? `- ${alliance.contact_person}` : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {(formData.lead_source === 'referencia' || formData.lead_source === 'otro' || formData.lead_source === 'alianzas') && (
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="lead_source_details">Detalles del Origen</Label>
+                      <Input
+                        id="lead_source_details"
+                        value={formData.lead_source_details}
+                        onChange={(e) => handleInputChange('lead_source_details', e.target.value)}
+                        placeholder="Detalles adicionales sobre el origen del lead..."
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
+            )}
+
+            {/* Notas */}
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notas Adicionales</Label>
+              <Textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => handleInputChange('notes', e.target.value)}
+                rows={3}
+                placeholder="Información adicional sobre el cliente..."
+              />
             </div>
-          )}
-
-          {/* Notas */}
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notas Adicionales</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => handleInputChange('notes', e.target.value)}
-              rows={3}
-              placeholder="Información adicional sobre el cliente..."
-            />
-          </div>
-
-          <div className="flex gap-2 pt-4">
-            <Button type="submit" className="flex-1" disabled={loading}>
-              {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {client ? 'Actualizar' : 'Crear'} Cliente
-            </Button>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-          </div>
-        </form>
+          </form>
+        </ScrollArea>
+        
+        <div className="flex gap-2 px-6 py-4 border-t flex-shrink-0">
+          <Button type="submit" className="flex-1" disabled={loading} onClick={handleSubmit}>
+            {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {client ? 'Actualizar' : 'Crear'} Cliente
+          </Button>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

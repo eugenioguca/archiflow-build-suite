@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Combobox } from '@/components/ui/combobox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, MapPin } from 'lucide-react';
 
@@ -205,8 +206,8 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <MapPin className="h-5 w-5" />
             {client ? 'Editar Expediente del Cliente' : 'Nuevo Expediente de Cliente'}
@@ -216,78 +217,80 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Información Básica */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Información Básica del Cliente</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="full_name">Nombre Completo *</Label>
-                <Input
-                  id="full_name"
-                  value={formData.full_name}
-                  onChange={(e) => handleInputChange('full_name', e.target.value)}
-                  required
-                />
-              </div>
+        <ScrollArea className="flex-1 px-6">
+          <form onSubmit={handleSubmit} className="space-y-6 pb-4">
+            {/* Información Básica */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Información Básica del Cliente</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="full_name">Nombre Completo *</Label>
+                  <Input
+                    id="full_name"
+                    value={formData.full_name}
+                    onChange={(e) => handleInputChange('full_name', e.target.value)}
+                    required
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="phone">Teléfono *</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  placeholder="Ej: +52 55 1234 5678"
-                  required
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Teléfono *</Label>
+                  <Input
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    placeholder="Ej: +52 55 1234 5678"
+                    required
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  required
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    required
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="address">Dirección</Label>
-                <Input
-                  id="address"
-                  value={formData.address}
-                  onChange={(e) => handleInputChange('address', e.target.value)}
-                  placeholder="Dirección del cliente"
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="address">Dirección</Label>
+                  <Input
+                    id="address"
+                    value={formData.address}
+                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    placeholder="Dirección del cliente"
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Notas */}
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notas Adicionales</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => handleInputChange('notes', e.target.value)}
-              rows={3}
-              placeholder="Información adicional sobre el cliente..."
-            />
-          </div>
-
-          <div className="flex gap-2 pt-4">
-            <Button type="submit" className="flex-1" disabled={loading}>
-              {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {client ? 'Actualizar' : 'Crear'} Expediente
-            </Button>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-          </div>
-        </form>
+            {/* Notas */}
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notas Adicionales</Label>
+              <Textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => handleInputChange('notes', e.target.value)}
+                rows={3}
+                placeholder="Información adicional sobre el cliente..."
+              />
+            </div>
+          </form>
+        </ScrollArea>
+        
+        <div className="flex gap-2 px-6 py-4 border-t flex-shrink-0">
+          <Button type="submit" className="flex-1" disabled={loading} onClick={handleSubmit}>
+            {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {client ? 'Actualizar' : 'Crear'} Expediente
+          </Button>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
