@@ -67,7 +67,8 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
   const [newProject, setNewProject] = useState({
     project_name: '',
     project_description: '',
-    budget: 0,
+    budget: '',
+    square_meters: '',
     service_type: 'diseño',
     status: 'potential' as 'potential' | 'active' | 'existing' | 'completed',
     sales_pipeline_stage: 'nuevo_lead' as 'nuevo_lead' | 'en_contacto' | 'lead_perdido' | 'cliente_cerrado'
@@ -110,13 +111,21 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
 
       if (!profile) throw new Error('No se pudo obtener el perfil del usuario');
 
+      const projectData = {
+        client_id: clientId,
+        project_name: newProject.project_name,
+        project_description: newProject.project_description,
+        budget: newProject.budget ? parseFloat(newProject.budget.replace(/[^\d]/g, '')) : 0,
+        square_meters: newProject.square_meters ? parseFloat(newProject.square_meters) : null,
+        service_type: newProject.service_type,
+        status: newProject.status,
+        sales_pipeline_stage: newProject.sales_pipeline_stage,
+        assigned_advisor_id: profile.id
+      };
+
       const { error } = await supabase
         .from('client_projects')
-        .insert({
-          client_id: clientId,
-          ...newProject,
-          assigned_advisor_id: profile.id
-        });
+        .insert(projectData);
 
       if (error) throw error;
 
@@ -129,7 +138,8 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
       setNewProject({
         project_name: '',
         project_description: '',
-        budget: 0,
+        budget: '',
+        square_meters: '',
         service_type: 'diseño',
         status: 'potential',
         sales_pipeline_stage: 'nuevo_lead'
@@ -330,6 +340,25 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
     }).format(amount);
   };
 
+  const formatCurrencyInput = (value: string) => {
+    // Remover todo excepto números
+    const numericValue = value.replace(/[^\d]/g, '');
+    
+    // Si está vacío, devolver vacío
+    if (!numericValue) return '';
+    
+    // Formatear con comas
+    const formatted = new Intl.NumberFormat('es-MX').format(parseInt(numericValue));
+    return `$${formatted}`;
+  };
+
+  const handleBudgetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value;
+    // Extraer solo números para almacenar
+    const numericValue = rawValue.replace(/[^\d]/g, '');
+    setNewProject({...newProject, budget: numericValue});
+  };
+
   if (loading) {
     return (
       <Card>
@@ -384,14 +413,27 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
                 />
               </div>
               
-              <div>
-                <label className="text-sm font-medium">Presupuesto Estimado</label>
-                <Input
-                  type="number"
-                  value={newProject.budget}
-                  onChange={(e) => setNewProject({...newProject, budget: Number(e.target.value)})}
-                  placeholder="0"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Presupuesto Estimado</label>
+                  <Input
+                    type="text"
+                    value={formatCurrencyInput(newProject.budget)}
+                    onChange={handleBudgetChange}
+                    placeholder="Ej: $1,500,000"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Metros Cuadrados</label>
+                  <Input
+                    type="number"
+                    value={newProject.square_meters}
+                    onChange={(e) => setNewProject({...newProject, square_meters: e.target.value})}
+                    placeholder="250"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
               </div>
               
               <div>
