@@ -68,30 +68,27 @@ export function TreasuryDashboard({ selectedClientId, selectedProjectId, onFilte
 
   const fetchTreasuryData = async () => {
     try {
-      // Build queries with client/project filters
+      // Fetch cash accounts
       let accountsQuery = supabase
         .from('cash_accounts')
         .select('*')
         .eq('status', 'active');
-      
-      // Use expenses table for recent transactions since cash_transactions was deleted
+
+      // Apply project filter if selected
+      if (internalProjectId) {
+        accountsQuery = accountsQuery.eq('project_id', internalProjectId);
+      }
+
+      // Fetch treasury transactions for recent activity
       let transactionsQuery = supabase
-        .from('expenses')
-        .select(`
-          id,
-          description,
-          amount,
-          category,
-          created_at,
-          client_id,
-          project_id
-        `)
-        .order('created_at', { ascending: false })
+        .from('treasury_transactions')
+        .select('*')
+        .eq('account_type', 'cash')
+        .order('transaction_date', { ascending: false })
         .limit(10);
 
       // Apply filters if selected
       if (internalProjectId) {
-        accountsQuery = accountsQuery.eq('project_id', internalProjectId);
         transactionsQuery = transactionsQuery.eq('project_id', internalProjectId);
       } else if (internalClientId) {
         transactionsQuery = transactionsQuery.eq('client_id', internalClientId);
@@ -105,27 +102,27 @@ export function TreasuryDashboard({ selectedClientId, selectedProjectId, onFilte
       if (accountsResult.error) throw accountsResult.error;
       if (transactionsResult.error) throw transactionsResult.error;
 
+      // Process accounts
       const processedAccounts: CashAccount[] = (accountsResult.data || []).map(account => ({
-        ...account,
-        project: null // Remove project relation as it's causing issues
+        ...account
       }));
       
       setCashAccounts(processedAccounts);
       
-      // Process expense transactions as recent transactions
-      const processedTransactions: CashTransaction[] = (transactionsResult.data || []).map(expense => ({
-        id: expense.id,
-        transaction_type: 'expense',
-        category: expense.category,
-        amount: expense.amount,
-        description: expense.description,
-        created_at: expense.created_at,
-        approval_status: 'approved',
-        cash_account: { name: 'Cuenta General' }
+      // Process treasury transactions as recent transactions
+      const processedTransactions: CashTransaction[] = (transactionsResult.data || []).map(transaction => ({
+        id: transaction.id,
+        transaction_type: transaction.transaction_type,
+        category: transaction.department || 'general',
+        amount: transaction.amount,
+        description: transaction.description,
+        created_at: transaction.transaction_date,
+        approval_status: transaction.status,
+        cash_account: { name: 'Cuenta de Efectivo' }
       }));
       
       setRecentTransactions(processedTransactions);
-      setPendingAdvances([]); // No more employee advances table
+      setPendingAdvances([]); // No employee advances in this version
     } catch (error) {
       console.error('Error fetching treasury data:', error);
     } finally {

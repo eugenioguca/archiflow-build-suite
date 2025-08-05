@@ -66,7 +66,15 @@ export type Database = {
           swift_code?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_bank_created_by"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       billing_clients: {
         Row: {
@@ -304,6 +312,34 @@ export type Database = {
           },
           {
             foreignKeyName: "fk_cash_accounts_responsible_user"
+            columns: ["responsible_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_cash_created_by"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_cash_project_id"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_cash_project_id"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "financial_summary_by_client_project"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "fk_cash_responsible_user"
             columns: ["responsible_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -5650,7 +5686,50 @@ export type Database = {
           unit?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_treasury_approved_by"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_treasury_client_id"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_treasury_created_by"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_treasury_project_id"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_treasury_project_id"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "financial_summary_by_client_project"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "fk_treasury_supplier_id"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_branch_assignments: {
         Row: {

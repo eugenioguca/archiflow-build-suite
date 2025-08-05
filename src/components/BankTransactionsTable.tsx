@@ -51,14 +51,7 @@ export const BankTransactionsTable: React.FC<BankTransactionsTableProps> = ({
     try {
       let query = supabase
         .from('treasury_transactions')
-        .select(`
-          *,
-          bank_accounts (bank_name, account_number, account_holder),
-          clients (full_name),
-          client_projects (project_name),
-          suppliers (name),
-          treasury_payment_references (reference_code)
-        `)
+        .select('*')
         .eq('account_type', 'bank')
         .order('transaction_date', { ascending: false });
 
@@ -73,23 +66,38 @@ export const BankTransactionsTable: React.FC<BankTransactionsTableProps> = ({
 
       if (error) throw error;
 
-      const formattedTransactions: TreasuryTransaction[] = (data || []).map((transaction: any) => ({
-        id: transaction.id,
-        transaction_type: transaction.transaction_type,
-        transaction_date: transaction.transaction_date,
-        amount: transaction.amount,
-        description: transaction.description || 'Sin descripción',
-        cuenta_mayor: transaction.cuenta_mayor,
-        partida: transaction.partida,
-        department: transaction.department,
-        status: transaction.status,
-        client_name: transaction.clients?.full_name || 'Sin cliente',
-        project_name: transaction.client_projects?.project_name || 'Sin proyecto',
-        supplier_name: transaction.suppliers?.name || 'Sin proveedor',
-        bank_name: transaction.bank_accounts?.bank_name || 'N/A',
-        account_number: transaction.bank_accounts?.account_number || 'N/A',
-        payment_reference: transaction.treasury_payment_references?.reference_code
-      }));
+      // Get additional data separately to avoid JOIN issues
+      const [bankAccounts, clients, projects, suppliers] = await Promise.all([
+        supabase.from('bank_accounts').select('id, bank_name, account_number, account_holder'),
+        supabase.from('clients').select('id, full_name'),
+        supabase.from('client_projects').select('id, project_name'),
+        supabase.from('suppliers').select('id, company_name')
+      ]);
+
+      const formattedTransactions: TreasuryTransaction[] = (data || []).map((transaction: any) => {
+        const bankAccount = bankAccounts.data?.find(ba => ba.id === transaction.account_id);
+        const client = clients.data?.find(c => c.id === transaction.client_id);
+        const project = projects.data?.find(p => p.id === transaction.project_id);
+        const supplier = suppliers.data?.find(s => s.id === transaction.supplier_id);
+
+        return {
+          id: transaction.id,
+          transaction_type: transaction.transaction_type,
+          transaction_date: transaction.transaction_date,
+          amount: transaction.amount,
+          description: transaction.description || 'Sin descripción',
+          cuenta_mayor: transaction.cuenta_mayor || '',
+          partida: transaction.partida || '',
+          department: transaction.department || '',
+          status: transaction.status,
+          client_name: client?.full_name || 'Sin cliente',
+          project_name: project?.project_name || 'Sin proyecto',
+          supplier_name: supplier?.company_name || 'Sin proveedor',
+          bank_name: bankAccount?.bank_name || 'N/A',
+          account_number: bankAccount?.account_number || 'N/A',
+          payment_reference: transaction.reference_number
+        };
+      });
 
       setTransactions(formattedTransactions);
     } catch (error) {
