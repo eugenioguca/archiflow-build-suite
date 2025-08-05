@@ -238,6 +238,20 @@ export default function Design() {
     if (!projectId) return;
     
     try {
+      // First check if phases already exist for this project
+      const { data: existingPhases, error: checkError } = await supabase
+        .from("design_phases")
+        .select("id")
+        .eq("project_id", projectId)
+        .limit(1);
+
+      if (checkError) throw checkError;
+      
+      // If phases already exist, don't create new ones
+      if (existingPhases && existingPhases.length > 0) {
+        return;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuario no autenticado");
 
