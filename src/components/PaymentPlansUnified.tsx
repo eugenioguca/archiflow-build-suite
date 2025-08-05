@@ -75,16 +75,20 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
-      // Filter by plan_type based on mode and planType prop
-      if (planType !== 'all') {
+      // Filter by plan_type - prioritize explicit planType filter over mode
+      if (planType && planType !== 'all') {
+        // Explicit filter selected from UI
         query = query.eq('plan_type', planType);
-      } else if (mode === 'sales') {
-        // Sales mode shows both sales_to_design and design_to_construction plans
-        query = query.in('plan_type', ['sales_to_design', 'design_to_construction']);
-      } else if (mode === 'design') {
-        query = query.eq('plan_type', 'design_to_construction');
+      } else {
+        // Default filters based on mode when no explicit planType is selected
+        if (mode === 'sales') {
+          // Sales mode shows both sales_to_design and design_to_construction plans
+          query = query.in('plan_type', ['sales_to_design', 'design_to_construction']);
+        } else if (mode === 'design') {
+          query = query.eq('plan_type', 'design_to_construction');
+        }
+        // Finance mode without explicit filter shows all plan types
       }
-      // Finance mode shows all plan types by default
 
       if (selectedProjectId) {
         query = query.eq('client_project_id', selectedProjectId);
