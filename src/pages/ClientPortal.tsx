@@ -44,6 +44,9 @@ import { EnhancedClientPortalChat } from '@/components/EnhancedClientPortalChat'
 import { ClientDocumentUploader } from '@/components/ClientDocumentUploader';
 import { ClientFiscalDocuments } from '@/components/ClientFiscalDocuments';
 import { DesignDocumentsViewer } from '@/components/DesignDocumentsViewer';
+import { ClientProjectTimeline } from '@/components/ClientProjectTimeline';
+import { ClientNotificationsPanel } from '@/components/ClientNotificationsPanel';
+import { ClientProgressPhotosViewer } from '@/components/ClientProgressPhotosViewer';
 import ClientLayout from '@/components/ClientLayout';
 
 interface ClientProject {
@@ -515,10 +518,45 @@ const ClientPortal: React.FC = () => {
         )}
 
         <TabsContent value="resumen" className="space-y-6">
-          {/* Project Progress Card */}
-          <ProjectProgressCard project={project} />
+          {/* Timeline del proyecto y notificaciones */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <PaymentPlanViewer 
+              projectId={selectedProjectId} 
+              clientId={project.client_id}
+            />
+            <ClientProjectTimeline 
+              projectId={selectedProjectId} 
+              projectStatus={project.status}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ClientNotificationsPanel 
+              clientId={project.client_id} 
+              projectId={selectedProjectId}
+            />
+            <DesignDocumentsViewer 
+              projectId={selectedProjectId}
+              clientId={project.client_id}
+            />
+          </div>
+
+          <div className="space-y-6">
+            <ClientProgressPhotosViewer projectId={selectedProjectId} />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ClientFiscalDocuments 
+              clientId={project.client_id} 
+              projectId={selectedProjectId}
+            />
+            <EnhancedClientPortalChat
+              clientId={project.client_id}
+              projectId={selectedProjectId}
+            />
+          </div>
           
-          {/* Two column layout with overview cards */}
+          {/* Información adicional */}
           <div className={`${isMobile ? 'space-y-6' : 'grid grid-cols-1 lg:grid-cols-2 gap-6'}`}>
             <PaymentHistoryPanel payments={payments} />
             <Card>
