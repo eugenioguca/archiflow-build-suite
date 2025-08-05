@@ -125,14 +125,19 @@ export const RequiredDocumentsManager = ({
 
   const checkPaymentPlanCompleted = async () => {
     try {
+      console.log('Checking payment plan for project:', clientProjectId);
+      
       // Primero obtener los IDs de los planes de pago para este proyecto
       const { data: plans, error: plansError } = await supabase
         .from('payment_plans')
-        .select('id')
+        .select('id, plan_name')
         .eq('client_project_id', clientProjectId)
         .eq('status', 'active');
 
+      console.log('Payment plans found:', plans);
+
       if (plansError || !plans || plans.length === 0) {
+        console.log('No active payment plans found');
         return false;
       }
 
@@ -141,17 +146,22 @@ export const RequiredDocumentsManager = ({
       // Verificar si existe al menos un installment pagado
       const { data: paidInstallments, error } = await supabase
         .from('payment_installments')
-        .select('id')
+        .select('id, status, amount')
         .in('payment_plan_id', planIds)
         .eq('status', 'paid')
         .limit(1);
+
+      console.log('Paid installments found:', paidInstallments);
 
       if (error) {
         console.error('Error checking payment plan:', error);
         return false;
       }
 
-      return paidInstallments && paidInstallments.length > 0;
+      const hasPayment = paidInstallments && paidInstallments.length > 0;
+      console.log('Payment plan completed:', hasPayment);
+      
+      return hasPayment;
     } catch (error) {
       console.error('Error checking payment plan:', error);
       return false;
@@ -159,9 +169,14 @@ export const RequiredDocumentsManager = ({
   };
 
   const getCurrentStageRequiredDocs = () => {
-    return REQUIRED_DOCUMENTS.filter(doc => 
+    const filteredDocs = REQUIRED_DOCUMENTS.filter(doc => 
       doc.required_for_stages.includes(clientProject.sales_pipeline_stage)
     );
+    
+    console.log('Current stage:', clientProject.sales_pipeline_stage);
+    console.log('Required docs for stage:', filteredDocs.map(d => d.name));
+    
+    return filteredDocs;
   };
 
   const getDocumentStatus = (doc: RequiredDocument) => {
