@@ -116,6 +116,8 @@ export const PaymentPlanBuilder = ({
 }: PaymentPlanBuilderProps) => {
   const [paymentPlans, setPaymentPlans] = useState<PaymentPlan[]>([]);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<PaymentPlan | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [customInstallments, setCustomInstallments] = useState<PaymentInstallment[]>([]);
   const [planName, setPlanName] = useState('');
@@ -255,6 +257,91 @@ export const PaymentPlanBuilder = ({
     setSelectedTemplate('');
     setCustomInstallments([]);
     setStartDate(new Date());
+    setEditingPlan(null);
+  };
+
+  const startEditPlan = (plan: PaymentPlan) => {
+    setEditingPlan(plan);
+    setPlanName(plan.plan_name);
+    setPlanAmount(plan.total_amount.toLocaleString());
+    setCustomInstallments(plan.payments.map(payment => ({
+      ...payment,
+      due_date: payment.due_date.split('T')[0] // Ensure date format
+    })));
+    setSelectedTemplate('template_custom');
+    setShowEditDialog(true);
+  };
+
+  const updateExistingPlan = async () => {
+    if (!editingPlan) return;
+
+    try {
+      const planAmountNumber = parseCurrency(planAmount);
+      if (!planName || !planAmount || planAmountNumber === 0 || customInstallments.length === 0) {
+        toast({
+          title: "Error",
+          description: "Por favor completa todos los campos incluyendo el monto del plan",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Verificar que las cuotas sumen el total del plan
+      const totalInstallments = customInstallments.reduce((sum, inst) => sum + inst.amount, 0);
+      if (Math.abs(totalInstallments - planAmountNumber) > 0.01) {
+        toast({
+          title: "Error",
+          description: `Las cuotas deben sumar exactamente $${formatCurrencyDisplay(planAmountNumber)}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Actualizar plan existente
+      const updatedPlan: PaymentPlan = {
+        ...editingPlan,
+        plan_name: planName,
+        total_amount: planAmountNumber,
+        updated_at: new Date().toISOString(),
+        payments: customInstallments.map((inst, index) => ({
+          ...inst,
+          installment_number: index + 1
+        }))
+      };
+
+      // Actualizar en la lista de planes
+      const updatedPlans = paymentPlans.map(plan => 
+        plan.id === editingPlan.id ? updatedPlan : plan
+      );
+      
+      const { error } = await supabase
+        .from('client_projects')
+        .update({ 
+          payment_plan: updatedPlans as any,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', clientProjectId);
+
+      if (error) throw error;
+
+      setPaymentPlans(updatedPlans);
+
+      toast({
+        title: "Éxito",
+        description: "Plan de pago actualizado exitosamente",
+      });
+
+      setShowEditDialog(false);
+      resetForm();
+      onPlanUpdate?.();
+    } catch (error) {
+      console.error('Error updating payment plan:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el plan de pago",
+        variant: "destructive",
+      });
+    }
   };
 
   const formatCurrency = (value: string) => {
@@ -683,14 +770,22 @@ export const PaymentPlanBuilder = ({
                           {progress}% completado
                         </div>
                       </div>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => deletePlan(plan.id)}
-                        className="ml-2"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => startEditPlan(plan)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => deletePlan(plan.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </CardHeader>
@@ -763,6 +858,154 @@ export const PaymentPlanBuilder = ({
           })
         )}
       </div>
+
+      {/* Dialog de edición */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Plan de Pagos</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Configuración básica */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-medium">Nombre del Plan</label>
+                <Input
+                  value={planName}
+                  onChange={(e) => setPlanName(e.target.value)}
+                  placeholder="Ej: Plan diseño arquitectónico"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Monto Total del Plan</label>
+                <Input
+                  value={planAmount}
+                  onChange={(e) => handlePlanAmountChange(e.target.value)}
+                  placeholder="Ingresa el monto"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Estado del Plan</label>
+                <Badge variant={editingPlan?.status === 'active' ? 'default' : 'secondary'}>
+                  {editingPlan?.status === 'draft' && 'Borrador'}
+                  {editingPlan?.status === 'approved' && 'Aprobado'}
+                  {editingPlan?.status === 'active' && 'Activo'}
+                  {editingPlan?.status === 'completed' && 'Completado'}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Cuotas editables */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <label className="text-sm font-medium">Cuotas de Pago</label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addCustomInstallment}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar Cuota
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                {customInstallments.map((installment, index) => (
+                  <div key={installment.id} className="flex items-center gap-4 p-4 border rounded-lg">
+                    <div className="w-16">
+                      <Badge variant="outline">#{index + 1}</Badge>
+                    </div>
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Input
+                          type="number"
+                          placeholder="Monto"
+                          value={installment.amount}
+                          onChange={(e) => updateInstallment(index, 'amount', parseFloat(e.target.value) || 0)}
+                          disabled={installment.status === 'paid'}
+                        />
+                      </div>
+                      <div>
+                        <Input
+                          type="date"
+                          value={installment.due_date}
+                          onChange={(e) => updateInstallment(index, 'due_date', e.target.value)}
+                          disabled={installment.status === 'paid'}
+                        />
+                      </div>
+                      <div>
+                        <Input
+                          placeholder="Descripción"
+                          value={installment.description}
+                          onChange={(e) => updateInstallment(index, 'description', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge 
+                        variant={installment.status === 'paid' ? 'default' : 'secondary'}
+                        className={installment.status === 'paid' ? 'bg-green-100 text-green-700' : ''}
+                      >
+                        {installment.status === 'pending' && 'Pendiente'}
+                        {installment.status === 'paid' && 'Pagado'}
+                        {installment.status === 'overdue' && 'Vencido'}
+                        {installment.status === 'partial' && 'Parcial'}
+                      </Badge>
+                      {installment.status !== 'paid' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeInstallment(index)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {customInstallments.length > 0 && (
+                <div className="mt-4 p-4 bg-muted rounded-lg">
+                  <div className="flex justify-between text-sm">
+                    <span>Total de cuotas:</span>
+                    <span className="font-medium">
+                      ${formatCurrencyDisplay(customInstallments.reduce((sum, inst) => sum + inst.amount, 0))}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Monto del plan:</span>
+                    <span className="font-medium">${formatCurrencyDisplay(parseCurrency(planAmount))}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-medium border-t pt-2 mt-2">
+                    <span>Diferencia:</span>
+                    <span className={customInstallments.reduce((sum, inst) => sum + inst.amount, 0) === parseCurrency(planAmount) ? 'text-green-600' : 'text-red-600'}>
+                      ${formatCurrencyDisplay(customInstallments.reduce((sum, inst) => sum + inst.amount, 0) - parseCurrency(planAmount))}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={updateExistingPlan} className="flex-1">
+                Actualizar Plan de Pagos
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowEditDialog(false);
+                  resetForm();
+                }}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

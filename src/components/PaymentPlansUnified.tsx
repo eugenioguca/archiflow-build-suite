@@ -193,6 +193,50 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
     }
   };
 
+  const handleMarkPlanAsPaid = async (planId: string) => {
+    if (mode === 'sales') {
+      handleInformativeAction();
+      return;
+    }
+
+    try {
+      // Get all installments for this plan
+      const { data: planInstallments, error: fetchError } = await supabase
+        .from('payment_installments')
+        .select('*')
+        .eq('payment_plan_id', planId)
+        .neq('status', 'paid');
+
+      if (fetchError) throw fetchError;
+
+      if (!planInstallments || planInstallments.length === 0) {
+        toast.info('Todas las cuotas de este plan ya están marcadas como pagadas');
+        return;
+      }
+
+      // Update all unpaid installments to paid
+      const { error } = await supabase
+        .from('payment_installments')
+        .update({ 
+          status: 'paid',
+          paid_date: new Date().toISOString().split('T')[0]
+        })
+        .eq('payment_plan_id', planId)
+        .neq('status', 'paid');
+
+      if (error) throw error;
+
+      // Refresh data
+      await fetchPaymentPlans();
+      onPaymentUpdate?.();
+
+      toast.success(`Plan completo marcado como pagado (${planInstallments.length} cuotas actualizadas)`);
+    } catch (error) {
+      console.error('Error marking plan as paid:', error);
+      toast.error('Error al marcar el plan como pagado');
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -272,8 +316,19 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
                     </DialogTrigger>
                     <DialogContent className="max-w-4xl">
                       <DialogHeader>
-                        <DialogTitle>
-                          Detalles del Plan: {selectedPlan?.plan_name}
+                        <DialogTitle className="flex items-center justify-between">
+                          <span>Detalles del Plan: {selectedPlan?.plan_name}</span>
+                          {mode === 'finance' && selectedPlan && (
+                            <Button 
+                              variant="default"
+                              size="sm"
+                              onClick={() => handleMarkPlanAsPaid(selectedPlan.id)}
+                              className="ml-4"
+                            >
+                              <CheckCircle2 className="h-4 w-4 mr-1" />
+                              Marcar Plan Completo como Pagado
+                            </Button>
+                          )}
                         </DialogTitle>
                       </DialogHeader>
                       
@@ -361,6 +416,17 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
                       )}
                     </DialogContent>
                   </Dialog>
+                  
+                  {mode === 'finance' && (
+                    <Button 
+                      variant="default" 
+                      size="sm"
+                      onClick={() => handleMarkPlanAsPaid(plan.id)}
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                      Marcar Plan Pagado
+                    </Button>
+                  )}
                   
                   {mode === 'sales' && (
                     <Button 
