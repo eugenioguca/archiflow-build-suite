@@ -104,7 +104,6 @@ export default function Design() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [projects, setProjects] = useState<ClientProject[]>([]);
   const [loading, setLoading] = useState(true);
-  const [actualProjectId, setActualProjectId] = useState<string | null>(null);
 
   // Design phases definition
   const designPhases = [
@@ -118,18 +117,13 @@ export default function Design() {
   useEffect(() => {
     if (projectId) {
       fetchProjectData();
+      fetchDesignPhases();
+      fetchTeamMembers();
       updateDaysElapsed();
     } else {
       fetchDesignProjects();
     }
   }, [projectId]);
-
-  useEffect(() => {
-    if (actualProjectId) {
-      fetchDesignPhases();
-      fetchTeamMembers();
-    }
-  }, [actualProjectId]);
 
   const handleSelectProject = (selectedProjectId: string) => {
     setSearchParams({ project: selectedProjectId });
@@ -178,7 +172,6 @@ export default function Design() {
     if (!projectId) return;
     
     try {
-      // First, get client_project data
       const { data, error } = await supabase
         .from("client_projects")
         .select(`
@@ -203,19 +196,6 @@ export default function Design() {
         return;
       }
       
-      // Find the corresponding project.id for design_phases operations
-      const { data: projectData, error: projectError } = await supabase
-        .from("projects")
-        .select("id")
-        .eq("client_id", data.client_id)
-        .maybeSingle();
-      
-      if (projectError) {
-        console.error("Error finding project:", projectError);
-      }
-      
-      // Set the actual project ID for design_phases operations
-      setActualProjectId(projectData?.id || null);
       setProject(data);
     } catch (error: any) {
       toast({
@@ -227,13 +207,13 @@ export default function Design() {
   };
 
   const fetchDesignPhases = async () => {
-    if (!projectId || !actualProjectId) return;
+    if (!projectId) return;
     
     try {
       const { data, error } = await supabase
         .from("design_phases")
         .select("*")
-        .eq("project_id", actualProjectId)
+        .eq("project_id", projectId)
         .order("phase_order");
 
       if (error) throw error;
@@ -255,7 +235,7 @@ export default function Design() {
   };
 
   const createDefaultPhases = async () => {
-    if (!actualProjectId) return;
+    if (!projectId) return;
     
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -270,7 +250,7 @@ export default function Design() {
       if (!profile) throw new Error("Perfil no encontrado");
 
       const phasesToCreate = designPhases.map(phase => ({
-        project_id: actualProjectId,
+        project_id: projectId,
         phase_name: phase.name,
         phase_order: phase.order,
         status: phase.order === 1 ? "pending" : "pending",
@@ -294,7 +274,7 @@ export default function Design() {
   };
 
   const fetchTeamMembers = async () => {
-    if (!projectId || !actualProjectId) return;
+    if (!projectId) return;
     
     try {
       await ensureSalesAdvisorInTeam();
@@ -315,7 +295,7 @@ export default function Design() {
             skills
           )
         `)
-        .eq("project_id", actualProjectId);
+        .eq("project_id", projectId);
 
       if (error) throw error;
 
@@ -346,7 +326,7 @@ export default function Design() {
   };
 
   const ensureSalesAdvisorInTeam = async () => {
-    if (!actualProjectId) return;
+    if (!projectId) return;
     
     try {
       const { data: projectData, error: projectError } = await supabase
@@ -360,7 +340,7 @@ export default function Design() {
       const { data: existingMember } = await supabase
         .from("project_team_members")
         .select("id")
-        .eq("project_id", actualProjectId)
+        .eq("project_id", projectId)
         .eq("user_id", projectData.assigned_advisor_id)
         .single();
 
@@ -368,7 +348,7 @@ export default function Design() {
         await supabase
           .from("project_team_members")
           .insert({
-            project_id: actualProjectId,
+            project_id: projectId,
             user_id: projectData.assigned_advisor_id,
             role: "sales_advisor",
             responsibilities: "Asesor de ventas que cerró al cliente"
@@ -737,7 +717,7 @@ export default function Design() {
         <TabsContent value="team">
           <div className="bg-card rounded-lg p-4 border">
             <TeamMemberSelector 
-              projectId={actualProjectId || projectId} 
+              projectId={projectId} 
               teamMembers={teamMembers}
               onTeamUpdate={setTeamMembers}
             />
@@ -746,7 +726,7 @@ export default function Design() {
 
         <TabsContent value="calendar">
           <div className="bg-card rounded-lg p-4 border">
-            <DesignCalendar projectId={actualProjectId || projectId} teamMembers={teamMembers.map(member => ({
+            <DesignCalendar projectId={projectId} teamMembers={teamMembers.map(member => ({
               id: member.profile.id,
               full_name: member.profile.full_name,
               avatar_url: member.profile.avatar_url
