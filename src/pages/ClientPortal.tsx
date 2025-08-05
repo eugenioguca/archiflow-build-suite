@@ -47,6 +47,9 @@ import { DesignDocumentsViewer } from '@/components/DesignDocumentsViewer';
 import { ClientProjectTimeline } from '@/components/ClientProjectTimeline';
 import { ClientNotificationsPanel } from '@/components/ClientNotificationsPanel';
 import { ClientProgressPhotosViewer } from '@/components/ClientProgressPhotosViewer';
+import { ClientDocumentHub } from '@/components/ClientDocumentHub';
+import { ClientInvoiceViewer } from '@/components/ClientInvoiceViewer';
+import { ClientPaymentProofUploader } from '@/components/ClientPaymentProofUploader';
 import ClientLayout from '@/components/ClientLayout';
 
 interface ClientProject {
@@ -613,79 +616,10 @@ const ClientPortal: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="documentos" className="space-y-6">
-          {/* Fiscal Documents */}
-          <ClientFiscalDocuments 
-            projectId={project.id}
+          {/* Unified Document Hub - Contains all document types */}
+          <ClientDocumentHub
             clientId={project.client_id}
-            isClientView={true}
-          />
-          
-          {/* Design Documents */}
-          <DesignDocumentsViewer 
             projectId={project.id}
-            clientId={project.client_id}
-          />
-          
-          {/* General Documents */}
-          <ClientDocumentUploader 
-            projectId={project.id}
-            clientId={project.client_id}
-            onUploadComplete={() => fetchProjectData(selectedProjectId)}
-          />
-          <DocumentsPanel 
-            documents={documents}
-            onDocumentView={async (doc) => {
-              try {
-                // Validate file exists before opening
-                const { data } = await supabase.storage
-                  .from('project-documents')
-                  .getPublicUrl(doc.file_path);
-                
-                if (data?.publicUrl) {
-                  window.open(data.publicUrl, '_blank');
-                } else {
-                  toast({
-                    variant: "destructive",
-                    title: "Error",
-                    description: "No se pudo acceder al archivo"
-                  });
-                }
-              } catch (error) {
-                toast({
-                  variant: "destructive",
-                  title: "Error",
-                  description: "El archivo no está disponible"
-                });
-              }
-            }}
-            onDocumentDownload={async (doc) => {
-              try {
-                const { data } = await supabase.storage
-                  .from('project-documents')
-                  .download(doc.file_path);
-                
-                if (data) {
-                  const url = URL.createObjectURL(data);
-                  const link = document.createElement('a');
-                  link.href = url;
-                  link.download = doc.name;
-                  link.click();
-                  URL.revokeObjectURL(url);
-                } else {
-                  toast({
-                    variant: "destructive",
-                    title: "Error",
-                    description: "No se pudo descargar el archivo"
-                  });
-                }
-              } catch (error) {
-                toast({
-                  variant: "destructive",
-                  title: "Error",
-                  description: "El archivo no está disponible para descarga"
-                });
-              }
-            }}
           />
         </TabsContent>
 
