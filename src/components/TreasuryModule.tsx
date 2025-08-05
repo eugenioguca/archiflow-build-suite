@@ -10,6 +10,10 @@ import { CashTransactionsTable } from "./CashTransactionsTable";
 import { TreasuryTransactionForm } from "./TreasuryTransactionForm";
 import { MaterialToTreasuryExporter } from "./MaterialToTreasuryExporter";
 import { TreasuryPaymentProcessor } from "./TreasuryPaymentProcessor";
+import { TreasuryEmptyState } from "./TreasuryEmptyState";
+import { TreasuryDashboard } from "./TreasuryDashboard";
+import { GlobalFilters } from "./GlobalFilters";
+import { useClientProjectFilters } from "@/hooks/useClientProjectFilters";
 
 interface TreasuryModuleProps {
   selectedClientId?: string;
@@ -17,9 +21,22 @@ interface TreasuryModuleProps {
 }
 
 export const TreasuryModule: React.FC<TreasuryModuleProps> = ({
-  selectedClientId,
-  selectedProjectId
+  selectedClientId: propClientId,
+  selectedProjectId: propProjectId
 }) => {
+  const {
+    selectedClientId,
+    selectedProjectId,
+    setClientId,
+    setProjectId,
+    clearFilters,
+    hasFilters
+  } = useClientProjectFilters();
+
+  // Use prop values if provided, otherwise use filter values
+  const effectiveClientId = propClientId || selectedClientId;
+  const effectiveProjectId = propProjectId || selectedProjectId;
+
   const [activeTab, setActiveTab] = useState("banks");
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
   const [formAccountType, setFormAccountType] = useState<"bank" | "cash">("bank");
@@ -42,20 +59,37 @@ export const TreasuryModule: React.FC<TreasuryModuleProps> = ({
           </p>
         </div>
         <Badge variant="outline" className="text-sm">
-          Cliente-Proyecto
+          {hasFilters ? "Con Filtros" : "Todos los Datos"}
         </Badge>
       </div>
 
+      {/* Global Filters */}
+      {!propClientId && !propProjectId && (
+        <GlobalFilters
+          selectedClientId={selectedClientId}
+          selectedProjectId={selectedProjectId}
+          onClientChange={setClientId}
+          onProjectChange={setProjectId}
+          onClearFilters={clearFilters}
+        />
+      )}
+
+      {/* Treasury Dashboard */}
+      <TreasuryDashboard 
+        selectedClientId={effectiveClientId}
+        selectedProjectId={effectiveProjectId}
+      />
+
       {/* Material Export Section */}
       <MaterialToTreasuryExporter 
-        selectedClientId={selectedClientId}
-        selectedProjectId={selectedProjectId}
+        selectedClientId={effectiveClientId}
+        selectedProjectId={effectiveProjectId}
       />
 
       {/* Treasury Payment Processor */}
       <TreasuryPaymentProcessor 
-        selectedClientId={selectedClientId}
-        selectedProjectId={selectedProjectId}
+        selectedClientId={effectiveClientId}
+        selectedProjectId={effectiveProjectId}
       />
 
       {/* Main Treasury Tabs */}
@@ -122,8 +156,8 @@ export const TreasuryModule: React.FC<TreasuryModuleProps> = ({
               </CardHeader>
               <CardContent>
                 <BankTransactionsTable 
-                  selectedClientId={selectedClientId}
-                  selectedProjectId={selectedProjectId}
+                  selectedClientId={effectiveClientId}
+                  selectedProjectId={effectiveProjectId}
                 />
               </CardContent>
             </Card>
@@ -160,8 +194,8 @@ export const TreasuryModule: React.FC<TreasuryModuleProps> = ({
             </CardHeader>
             <CardContent>
               <CashTransactionsTable 
-                selectedClientId={selectedClientId}
-                selectedProjectId={selectedProjectId}
+                selectedClientId={effectiveClientId}
+                selectedProjectId={effectiveProjectId}
               />
             </CardContent>
           </Card>
@@ -175,8 +209,8 @@ export const TreasuryModule: React.FC<TreasuryModuleProps> = ({
           onClose={() => setIsFormDialogOpen(false)}
           accountType={formAccountType}
           transactionType={formTransactionType}
-          selectedClientId={selectedClientId}
-          selectedProjectId={selectedProjectId}
+          selectedClientId={effectiveClientId}
+          selectedProjectId={effectiveProjectId}
         />
       )}
     </div>

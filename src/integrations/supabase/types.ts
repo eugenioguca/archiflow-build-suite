@@ -3217,14 +3217,17 @@ export type Database = {
           created_at: string
           id: string
           is_attended: boolean | null
+          material_name: string | null
           material_requirement_id: string
           notes: string | null
           project_id: string
           purchase_order_number: string | null
+          quantity: number | null
           request_date: string
           requested_by: string
           status: string
           supplier_id: string | null
+          unit_cost: number | null
           updated_at: string
         }
         Insert: {
@@ -3234,14 +3237,17 @@ export type Database = {
           created_at?: string
           id?: string
           is_attended?: boolean | null
+          material_name?: string | null
           material_requirement_id: string
           notes?: string | null
           project_id: string
           purchase_order_number?: string | null
+          quantity?: number | null
           request_date?: string
           requested_by: string
           status?: string
           supplier_id?: string | null
+          unit_cost?: number | null
           updated_at?: string
         }
         Update: {
@@ -3251,14 +3257,17 @@ export type Database = {
           created_at?: string
           id?: string
           is_attended?: boolean | null
+          material_name?: string | null
           material_requirement_id?: string
           notes?: string | null
           project_id?: string
           purchase_order_number?: string | null
+          quantity?: number | null
           request_date?: string
           requested_by?: string
           status?: string
           supplier_id?: string | null
+          unit_cost?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -5345,11 +5354,13 @@ export type Database = {
         Row: {
           account_id: string
           account_type: string
+          client_id: string | null
           created_at: string
           created_by: string
           id: string
           notes: string | null
           payment_date: string | null
+          project_id: string | null
           reference_code: string
           status: string
           supplier_id: string | null
@@ -5359,11 +5370,13 @@ export type Database = {
         Insert: {
           account_id: string
           account_type: string
+          client_id?: string | null
           created_at?: string
           created_by: string
           id?: string
           notes?: string | null
           payment_date?: string | null
+          project_id?: string | null
           reference_code: string
           status?: string
           supplier_id?: string | null
@@ -5373,18 +5386,42 @@ export type Database = {
         Update: {
           account_id?: string
           account_type?: string
+          client_id?: string | null
           created_at?: string
           created_by?: string
           id?: string
           notes?: string | null
           payment_date?: string | null
+          project_id?: string | null
           reference_code?: string
           status?: string
           supplier_id?: string | null
           total_amount?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "treasury_payment_references_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treasury_payment_references_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treasury_payment_references_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "financial_summary_by_client_project"
+            referencedColumns: ["project_id"]
+          },
+        ]
       }
       treasury_transactions: {
         Row: {
@@ -5404,10 +5441,12 @@ export type Database = {
           id: string
           invoice_number: string | null
           invoice_url: string | null
+          notes: string | null
           partida: string | null
           payment_reference_id: string | null
           project_id: string | null
           quantity: number | null
+          reference_number: string | null
           requires_approval: boolean | null
           status: string
           sub_partida: string | null
@@ -5434,10 +5473,12 @@ export type Database = {
           id?: string
           invoice_number?: string | null
           invoice_url?: string | null
+          notes?: string | null
           partida?: string | null
           payment_reference_id?: string | null
           project_id?: string | null
           quantity?: number | null
+          reference_number?: string | null
           requires_approval?: boolean | null
           status?: string
           sub_partida?: string | null
@@ -5464,10 +5505,12 @@ export type Database = {
           id?: string
           invoice_number?: string | null
           invoice_url?: string | null
+          notes?: string | null
           partida?: string | null
           payment_reference_id?: string | null
           project_id?: string | null
           quantity?: number | null
+          reference_number?: string | null
           requires_approval?: boolean | null
           status?: string
           sub_partida?: string | null

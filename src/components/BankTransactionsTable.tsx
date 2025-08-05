@@ -53,7 +53,10 @@ export const BankTransactionsTable: React.FC<BankTransactionsTableProps> = ({
         .from('treasury_transactions')
         .select(`
           *,
-          bank_accounts (bank_name, account_number),
+          bank_accounts (bank_name, account_number, account_holder),
+          clients (full_name),
+          client_projects (project_name),
+          suppliers (name),
           treasury_payment_references (reference_code)
         `)
         .eq('account_type', 'bank')
@@ -75,14 +78,14 @@ export const BankTransactionsTable: React.FC<BankTransactionsTableProps> = ({
         transaction_type: transaction.transaction_type,
         transaction_date: transaction.transaction_date,
         amount: transaction.amount,
-        description: transaction.description,
+        description: transaction.description || 'Sin descripción',
         cuenta_mayor: transaction.cuenta_mayor,
         partida: transaction.partida,
         department: transaction.department,
         status: transaction.status,
-        client_name: 'Cliente',
-        project_name: 'Proyecto',
-        supplier_name: 'Proveedor',
+        client_name: transaction.clients?.full_name || 'Sin cliente',
+        project_name: transaction.client_projects?.project_name || 'Sin proyecto',
+        supplier_name: transaction.suppliers?.name || 'Sin proveedor',
         bank_name: transaction.bank_accounts?.bank_name || 'N/A',
         account_number: transaction.bank_accounts?.account_number || 'N/A',
         payment_reference: transaction.treasury_payment_references?.reference_code

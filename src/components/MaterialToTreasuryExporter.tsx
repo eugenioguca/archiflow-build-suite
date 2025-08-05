@@ -61,6 +61,9 @@ export const MaterialToTreasuryExporter: React.FC<MaterialToTreasuryExporterProp
           client_id,
           project_id,
           status,
+          material_name,
+          unit_cost,
+          quantity,
           material_requirements (
             material_name,
             quantity,
@@ -68,7 +71,7 @@ export const MaterialToTreasuryExporter: React.FC<MaterialToTreasuryExporterProp
             total_cost
           ),
           suppliers (
-            company_name
+            name
           ),
           clients (
             full_name
@@ -77,8 +80,7 @@ export const MaterialToTreasuryExporter: React.FC<MaterialToTreasuryExporterProp
             project_name
           )
         `)
-        .eq('status', 'pending')
-        .eq('is_attended', false);
+        .in('status', ['pending', 'not_attended']);
 
       if (selectedClientId) {
         query = query.eq('client_id', selectedClientId);
@@ -98,11 +100,11 @@ export const MaterialToTreasuryExporter: React.FC<MaterialToTreasuryExporterProp
         client_id: request.client_id,
         project_id: request.project_id,
         status: request.status,
-        material_name: request.material_requirements?.material_name || '',
-        quantity: request.material_requirements?.quantity || 0,
-        unit_cost: request.material_requirements?.unit_cost || 0,
-        total_cost: request.material_requirements?.total_cost || 0,
-        supplier_name: request.suppliers?.company_name || '',
+        material_name: request.material_requirements?.material_name || request.material_name || 'Material no especificado',
+        quantity: request.material_requirements?.quantity || request.quantity || 1,
+        unit_cost: request.material_requirements?.unit_cost || request.unit_cost || 0,
+        total_cost: request.material_requirements?.total_cost || (request.unit_cost * request.quantity) || 0,
+        supplier_name: request.suppliers?.name || 'Sin proveedor',
         client_name: request.clients?.full_name || '',
         project_name: request.client_projects?.project_name || ''
       }));

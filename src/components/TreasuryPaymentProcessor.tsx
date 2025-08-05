@@ -90,9 +90,18 @@ export const TreasuryPaymentProcessor: React.FC<TreasuryPaymentProcessorProps> =
         .select(`
           *,
           suppliers (name),
+          clients (full_name),
+          client_projects (project_name),
           treasury_transactions (id, description, amount, partida)
         `)
         .eq('status', 'pending');
+
+      if (selectedClientId) {
+        query = query.eq('client_id', selectedClientId);
+      }
+      if (selectedProjectId) {
+        query = query.eq('project_id', selectedProjectId);
+      }
 
       const { data, error } = await query.order('created_at', { ascending: false });
       

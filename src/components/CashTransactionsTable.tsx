@@ -54,6 +54,9 @@ export const CashTransactionsTable: React.FC<CashTransactionsTableProps> = ({
         .select(`
           *,
           cash_accounts (name),
+          clients (full_name),
+          client_projects (project_name),
+          suppliers (name),
           treasury_payment_references (reference_code)
         `)
         .eq('account_type', 'cash')
@@ -75,15 +78,15 @@ export const CashTransactionsTable: React.FC<CashTransactionsTableProps> = ({
         transaction_type: transaction.transaction_type,
         transaction_date: transaction.transaction_date,
         amount: transaction.amount,
-        description: transaction.description,
+        description: transaction.description || 'Sin descripción',
         cuenta_mayor: transaction.cuenta_mayor,
         partida: transaction.partida,
         department: transaction.department,
         status: transaction.status,
         invoice_number: transaction.invoice_number,
-        client_name: 'Cliente',
-        project_name: 'Proyecto', 
-        supplier_name: 'Proveedor',
+        client_name: transaction.clients?.full_name || 'Sin cliente',
+        project_name: transaction.client_projects?.project_name || 'Sin proyecto', 
+        supplier_name: transaction.suppliers?.name || 'Sin proveedor',
         cash_account_name: transaction.cash_accounts?.name || 'N/A',
         payment_reference: transaction.treasury_payment_references?.reference_code
       }));
