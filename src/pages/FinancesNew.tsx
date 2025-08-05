@@ -17,6 +17,8 @@ import {
   AlertTriangle,
   Package
 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { MaterialFinanceRequests } from '@/components/MaterialFinanceRequests';
 import { GlobalFilters } from '@/components/GlobalFilters';
 
@@ -24,6 +26,8 @@ const FinancesNew: React.FC = () => {
   // Estado para filtros cliente-proyecto
   const [selectedClientId, setSelectedClientId] = useState<string | undefined>();
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>();
+  // Estado para filtro de tipo de plan de pago
+  const [selectedPlanType, setSelectedPlanType] = useState<'all' | 'sales_to_design' | 'design_to_construction'>('all');
 
   return (
     <div className="container mx-auto p-2 sm:p-4 max-w-full">
@@ -107,12 +111,32 @@ const FinancesNew: React.FC = () => {
             onClearFilters={() => {
               setSelectedClientId(undefined);
               setSelectedProjectId(undefined);
+              setSelectedPlanType('all');
             }}
           />
+          
+          {/* Filtro adicional por tipo de plan */}
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="plan-type-filter">Tipo de Plan:</Label>
+              <Select value={selectedPlanType} onValueChange={(value: 'all' | 'sales_to_design' | 'design_to_construction') => setSelectedPlanType(value)}>
+                <SelectTrigger className="w-48" id="plan-type-filter">
+                  <SelectValue placeholder="Seleccionar tipo de plan" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los planes</SelectItem>
+                  <SelectItem value="sales_to_design">Planes de Ventas</SelectItem>
+                  <SelectItem value="design_to_construction">Planes de Construcción</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
           <PaymentPlansUnified 
             mode="finance"
             selectedClientId={selectedClientId}
             selectedProjectId={selectedProjectId}
+            planType={selectedPlanType}
           />
         </TabsContent>
 

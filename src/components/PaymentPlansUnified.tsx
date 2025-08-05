@@ -19,6 +19,7 @@ interface PaymentPlan {
   project_name: string;
   client_id: string;
   client_project_id: string;
+  plan_type?: 'sales_to_design' | 'design_to_construction';
 }
 
 interface PaymentInstallment {
@@ -78,7 +79,8 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
       if (planType !== 'all') {
         query = query.eq('plan_type', planType);
       } else if (mode === 'sales') {
-        query = query.eq('plan_type', 'sales_to_design');
+        // Sales mode shows both sales_to_design and design_to_construction plans
+        query = query.in('plan_type', ['sales_to_design', 'design_to_construction']);
       } else if (mode === 'design') {
         query = query.eq('plan_type', 'design_to_construction');
       }
@@ -118,7 +120,8 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
         client_project_id: plan.client_project_id,
         client_id: plan.client_projects?.client_id || '',
         client_name: plan.client_projects?.clients?.full_name || 'Cliente desconocido',
-        project_name: plan.client_projects?.project_name || 'Proyecto desconocido'
+        project_name: plan.client_projects?.project_name || 'Proyecto desconocido',
+        plan_type: plan.plan_type
       }));
 
       setPaymentPlans(mappedPlans);
@@ -197,18 +200,22 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const getPlanCategoryBadge = (planName: string) => {
-    // Derive category from plan name
-    const lowerName = planName.toLowerCase();
-    let category = 'general';
+  const getPlanCategoryBadge = (plan: PaymentPlan) => {
+    // Use plan_type to determine badge, fallback to plan name analysis
     let config = { label: 'General', color: 'bg-gray-500/10 text-gray-700' };
     
-    if (lowerName.includes('diseño') || lowerName.includes('design')) {
-      category = 'design';
-      config = { label: 'Diseño', color: 'bg-blue-500/10 text-blue-700' };
-    } else if (lowerName.includes('construcción') || lowerName.includes('construction')) {
-      category = 'construction';
+    if (plan.plan_type === 'sales_to_design') {
+      config = { label: 'Ventas', color: 'bg-blue-500/10 text-blue-700' };
+    } else if (plan.plan_type === 'design_to_construction') {
       config = { label: 'Construcción', color: 'bg-green-500/10 text-green-700' };
+    } else {
+      // Fallback to name analysis for existing plans without plan_type
+      const lowerName = plan.plan_name.toLowerCase();
+      if (lowerName.includes('diseño') || lowerName.includes('design')) {
+        config = { label: 'Diseño', color: 'bg-blue-500/10 text-blue-700' };
+      } else if (lowerName.includes('construcción') || lowerName.includes('construction')) {
+        config = { label: 'Construcción', color: 'bg-green-500/10 text-green-700' };
+      }
     }
     
     return (
@@ -342,7 +349,7 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-lg">{plan.plan_name}</CardTitle>
-                    {getPlanCategoryBadge(plan.plan_name)}
+                    {getPlanCategoryBadge(plan)}
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {plan.client_name} - {plan.project_name}
@@ -427,7 +434,7 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
                             </div>
                             <div>
                               <p className="text-sm text-muted-foreground">Categoría</p>
-                              <div className="mt-1">{getPlanCategoryBadge(selectedPlan.plan_name)}</div>
+                              <div className="mt-1">{getPlanCategoryBadge(selectedPlan)}</div>
                             </div>
                           </div>
                           
