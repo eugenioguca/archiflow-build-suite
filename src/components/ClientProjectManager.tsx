@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Eye, Edit, FolderOpen, Users, Calendar } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Plus, Eye, Edit, FolderOpen, Users, Calendar, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -62,6 +63,7 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
   const [projects, setProjects] = useState<ClientProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
+  const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
   const [newProject, setNewProject] = useState({
     project_name: '',
     project_description: '',
@@ -140,6 +142,184 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
         description: "No se pudo crear el proyecto",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string, projectName: string) => {
+    try {
+      setDeletingProjectId(projectId);
+      console.log(`Iniciando eliminación del proyecto: ${projectName} (${projectId})`);
+
+      // Eliminar payment_plans relacionados
+      const { error: paymentPlansError } = await supabase
+        .from('payment_plans')
+        .delete()
+        .eq('client_project_id', projectId);
+
+      if (paymentPlansError) {
+        console.warn('Error eliminando planes de pago:', paymentPlansError);
+      }
+
+      // Eliminar payment_installments relacionados (aunque deberían eliminarse en cascada)
+      const { error: installmentsError } = await supabase
+        .from('payment_installments')
+        .delete()
+        .in('payment_plan_id', 
+          await supabase
+            .from('payment_plans')
+            .select('id')
+            .eq('client_project_id', projectId)
+            .then(res => res.data?.map(p => p.id) || [])
+        );
+
+      if (installmentsError) {
+        console.warn('Error eliminando cuotas de pago:', installmentsError);
+      }
+
+      // Eliminar client_portal_chat del proyecto
+      const { error: portalChatError } = await supabase
+        .from('client_portal_chat')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (portalChatError) {
+        console.warn('Error eliminando chat del portal:', portalChatError);
+      }
+
+      // Eliminar client_portal_notifications del proyecto
+      const { error: portalNotificationsError } = await supabase
+        .from('client_portal_notifications')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (portalNotificationsError) {
+        console.warn('Error eliminando notificaciones del portal:', portalNotificationsError);
+      }
+
+      // Eliminar documentos del proyecto
+      const { error: documentsError } = await supabase
+        .from('documents')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (documentsError) {
+        console.warn('Error eliminando documentos:', documentsError);
+      }
+
+      // Eliminar expenses del proyecto
+      const { error: expensesError } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (expensesError) {
+        console.warn('Error eliminando gastos:', expensesError);
+      }
+
+      // Eliminar incomes del proyecto
+      const { error: incomesError } = await supabase
+        .from('incomes')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (incomesError) {
+        console.warn('Error eliminando ingresos:', incomesError);
+      }
+
+      // Eliminar design_phases del proyecto
+      const { error: designPhasesError } = await supabase
+        .from('design_phases')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (designPhasesError) {
+        console.warn('Error eliminando fases de diseño:', designPhasesError);
+      }
+
+      // Eliminar construction_phases del proyecto
+      const { error: constructionPhasesError } = await supabase
+        .from('construction_phases')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (constructionPhasesError) {
+        console.warn('Error eliminando fases de construcción:', constructionPhasesError);
+      }
+
+      // Eliminar construction_timeline del proyecto
+      const { error: timelineError } = await supabase
+        .from('construction_timeline')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (timelineError) {
+        console.warn('Error eliminando cronograma:', timelineError);
+      }
+
+      // Eliminar construction_budget_items del proyecto
+      const { error: budgetItemsError } = await supabase
+        .from('construction_budget_items')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (budgetItemsError) {
+        console.warn('Error eliminando elementos del presupuesto:', budgetItemsError);
+      }
+
+      // Eliminar construction_equipment del proyecto
+      const { error: equipmentError } = await supabase
+        .from('construction_equipment')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (equipmentError) {
+        console.warn('Error eliminando equipos:', equipmentError);
+      }
+
+      // Eliminar construction_teams del proyecto
+      const { error: teamsError } = await supabase
+        .from('construction_teams')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (teamsError) {
+        console.warn('Error eliminando equipos de trabajo:', teamsError);
+      }
+
+      // Eliminar material_requirements del proyecto
+      const { error: materialsError } = await supabase
+        .from('material_requirements')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (materialsError) {
+        console.warn('Error eliminando requerimientos de materiales:', materialsError);
+      }
+
+      // Finalmente, eliminar el proyecto
+      const { error: projectError } = await supabase
+        .from('client_projects')
+        .delete()
+        .eq('id', projectId);
+
+      if (projectError) throw projectError;
+
+      toast({
+        title: "Proyecto eliminado",
+        description: `El proyecto "${projectName}" y todos sus datos relacionados han sido eliminados`,
+      });
+
+      // Recargar la lista de proyectos
+      fetchProjects();
+    } catch (error) {
+      console.error('Error eliminando proyecto:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el proyecto. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingProjectId(null);
     }
   };
 
@@ -288,6 +468,57 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
                   >
                     <FolderOpen className="h-4 w-4" />
                   </Button>
+                  
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={deletingProjectId === project.id}
+                      >
+                        {deletingProjectId === project.id ? (
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+                        ) : (
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        )}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Eliminar proyecto?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta acción eliminará permanentemente el proyecto "{project.project_name}" y todos sus datos relacionados:
+                          <br />
+                          <br />
+                          • Planes de pago y cuotas
+                          <br />
+                          • Chat y notificaciones del portal
+                          <br />
+                          • Documentos y archivos
+                          <br />
+                          • Gastos e ingresos
+                          <br />
+                          • Fases de diseño y construcción
+                          <br />
+                          • Cronogramas y presupuestos
+                          <br />
+                          • Equipos y materiales
+                          <br />
+                          <br />
+                          El cliente y otros proyectos no se verán afectados.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDeleteProject(project.id, project.project_name)}
+                          className="bg-red-500 hover:bg-red-600"
+                        >
+                          Eliminar proyecto
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
             </CardContent>
