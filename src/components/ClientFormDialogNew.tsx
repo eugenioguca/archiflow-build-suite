@@ -285,8 +285,8 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-0">
-        <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
+      <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden p-6">
+        <DialogHeader className="pb-4">
           <DialogTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
             {client ? 'Editar Cliente' : 'Nuevo Cliente'}
@@ -296,8 +296,9 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
           </DialogDescription>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 px-6">
-          <form onSubmit={handleSubmit} className="space-y-6 pb-4">
+        <div className="flex flex-col max-h-[calc(85vh-120px)]">
+          <ScrollArea className="flex-1 pr-4">
+            <form onSubmit={handleSubmit} className="space-y-6 pb-6">
             {/* Información Básica del Cliente */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Información Básica del Cliente</h3>
@@ -474,17 +475,18 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
                 placeholder="Información adicional sobre el cliente..."
               />
             </div>
-          </form>
-        </ScrollArea>
-        
-        <div className="flex gap-2 px-6 py-4 border-t flex-shrink-0">
-          <Button type="submit" className="flex-1" disabled={loading} onClick={handleSubmit}>
-            {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            {client ? 'Actualizar' : 'Crear'} Cliente
-          </Button>
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
+            </form>
+          </ScrollArea>
+          
+          <div className="flex gap-2 pt-4 border-t">
+            <Button type="submit" className="flex-1" disabled={loading} onClick={handleSubmit}>
+              {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {client ? 'Actualizar' : 'Crear'} Cliente
+            </Button>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
