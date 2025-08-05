@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Search, Building, Phone, Mail, MapPin, Star, Eye, Edit, Trash2 } from "lucide-react";
@@ -1028,16 +1029,33 @@ export default function Suppliers() {
         </TabsContent>
 
         <TabsContent value="cfdi" className="space-y-4">
-          <div className="grid gap-4">
-            {cfdiDocuments.map((cfdi) => (
-              <Card key={cfdi.id}>
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Badge variant={cfdi.status === 'active' ? 'default' : 'secondary'}>
-                          {cfdi.status === 'active' ? 'Activo' : 'Inactivo'}
-                        </Badge>
+          <Card>
+            <CardHeader>
+              <CardTitle>Documentos CFDI de Proveedores</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>UUID</TableHead>
+                    <TableHead>Emisor</TableHead>
+                    <TableHead>Receptor</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead>Total</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {cfdiDocuments.map((cfdi) => (
+                    <TableRow key={cfdi.id}>
+                      <TableCell className="font-mono text-sm">
+                        {cfdi.uuid_fiscal.substring(0, 8)}...
+                      </TableCell>
+                      <TableCell>{cfdi.rfc_emisor}</TableCell>
+                      <TableCell>{cfdi.rfc_receptor}</TableCell>
+                      <TableCell>
                         <Badge variant="outline">
                           {cfdi.tipo_comprobante === 'I' ? 'Ingreso' : 
                            cfdi.tipo_comprobante === 'E' ? 'Egreso' : 
@@ -1045,53 +1063,48 @@ export default function Suppliers() {
                            cfdi.tipo_comprobante === 'N' ? 'Nómina' : 
                            cfdi.tipo_comprobante === 'P' ? 'Pago' : cfdi.tipo_comprobante}
                         </Badge>
-                      </div>
-                      <div>
-                        <h3 className="font-semibold">UUID: {cfdi.uuid_fiscal}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Emisor: {cfdi.rfc_emisor} | Receptor: {cfdi.rfc_receptor}
-                        </p>
-                      </div>
-                      <div className="text-sm">
-                        <span className="font-medium">Fecha:</span> {formatDate(cfdi.fecha_emision)}
-                      </div>
-                    </div>
-                    <div className="text-right space-y-2">
-                      <div className="text-lg font-bold">{formatCurrency(cfdi.total)}</div>
-                      <div className="flex items-center gap-2">
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          onClick={() => handleViewCFDI(cfdi)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          Ver Detalles
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
-                          onClick={() => handleDeleteCFDI(cfdi.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                      </TableCell>
+                      <TableCell>{formatDate(cfdi.fecha_emision)}</TableCell>
+                      <TableCell>{formatCurrency(cfdi.total)}</TableCell>
+                      <TableCell>
+                        <Badge variant={cfdi.status === 'active' ? 'default' : 'secondary'}>
+                          {cfdi.status === 'active' ? 'Activo' : 'Inactivo'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => handleViewCFDI(cfdi)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Ver Detalles
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            onClick={() => handleDeleteCFDI(cfdi.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-600" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
 
-            {cfdiDocuments.length === 0 && (
-              <Card>
-                <CardContent className="p-12 text-center">
+              {cfdiDocuments.length === 0 && (
+                <div className="p-12 text-center">
                   <h3 className="text-lg font-medium mb-2">No hay documentos CFDI</h3>
                   <p className="text-muted-foreground">
                     Los documentos CFDI de proveedores aparecerán aquí cuando los cargues
                   </p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-4">
