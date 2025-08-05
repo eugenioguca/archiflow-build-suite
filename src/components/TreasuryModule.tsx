@@ -9,6 +9,7 @@ import { BankTransactionsTable } from "./BankTransactionsTable";
 import { CashTransactionsTable } from "./CashTransactionsTable";
 import { TreasuryTransactionForm } from "./TreasuryTransactionForm";
 import { MaterialToTreasuryExporter } from "./MaterialToTreasuryExporter";
+import { TreasuryPaymentProcessor } from "./TreasuryPaymentProcessor";
 
 interface TreasuryModuleProps {
   selectedClientId?: string;
@@ -47,6 +48,12 @@ export const TreasuryModule: React.FC<TreasuryModuleProps> = ({
 
       {/* Material Export Section */}
       <MaterialToTreasuryExporter 
+        selectedClientId={selectedClientId}
+        selectedProjectId={selectedProjectId}
+      />
+
+      {/* Treasury Payment Processor */}
+      <TreasuryPaymentProcessor 
         selectedClientId={selectedClientId}
         selectedProjectId={selectedProjectId}
       />

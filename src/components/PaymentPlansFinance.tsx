@@ -154,7 +154,8 @@ export const PaymentPlansFinance = ({ selectedClientId, selectedProjectId }: Pay
     if (!paymentDialog) return;
 
     try {
-      const { error } = await supabase
+      // Update payment installment status
+      const { error: updateError } = await supabase
         .from('payment_installments')
         .update({
           status: 'paid',
@@ -163,11 +164,54 @@ export const PaymentPlansFinance = ({ selectedClientId, selectedProjectId }: Pay
         })
         .eq('id', paymentDialog.installment.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // Get current user profile for created_by
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!profile) throw new Error('Profile not found');
+
+      // Get payment plan details to get client and project IDs
+      const { data: planData } = await supabase
+        .from('payment_plans')
+        .select('client_project_id')
+        .eq('id', paymentDialog.installment.payment_plan_id)
+        .single();
+
+      if (!planData) throw new Error('Payment plan not found');
+
+      // Get project details to get client_id
+      const { data: projectData } = await supabase
+        .from('client_projects')
+        .select('client_id')
+        .eq('id', planData.client_project_id)
+        .single();
+
+      if (!projectData) throw new Error('Project not found');
+
+      // Create automatic income entry when installment is marked as paid
+      const { error: incomeError } = await supabase
+        .from('incomes')
+        .insert([{
+          client_id: projectData.client_id,
+          project_id: planData.client_project_id,
+          category: 'construction_service',
+          amount: paymentDialog.installment.amount,
+          description: `Pago de cuota ${paymentDialog.installment.installment_number} - Plan: ${paymentDialog.planName}`,
+          expense_date: paymentForm.paid_date,
+          reference_number: paymentForm.reference_number,
+          created_by: profile.id
+        }]);
+
+      if (incomeError) throw incomeError;
 
       toast({
         title: "Éxito",
-        description: "Cuota marcada como pagada correctamente",
+        description: "Cuota marcada como pagada e ingreso registrado correctamente",
       });
 
       // Refresh installments

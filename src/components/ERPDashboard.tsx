@@ -126,19 +126,26 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
       .gte('created_at', startOfCurrentMonth.toISOString())
       .lte('created_at', endOfCurrentMonth.toISOString());
 
-    let projectQuery = supabase.from('client_projects').select('id, budget, construction_budget')
+    let projectQuery = supabase.from('client_projects').select('id')
       .neq('status', 'completed');
+
+    // Get active payment plans instead of project budgets for real pipeline value
+    let pipelineQuery = supabase.from('payment_plans')
+      .select('total_amount')
+      .eq('status', 'active');
 
     if (selectedClientId) {
       incomeQuery = incomeQuery.eq('client_id', selectedClientId);
       expenseQuery = expenseQuery.eq('client_id', selectedClientId);
       projectQuery = projectQuery.eq('client_id', selectedClientId);
+      pipelineQuery = pipelineQuery.eq('client_project_id', selectedProjectId || null);
     }
 
     if (selectedProjectId) {
       incomeQuery = incomeQuery.eq('project_id', selectedProjectId);
       expenseQuery = expenseQuery.eq('project_id', selectedProjectId);
       projectQuery = projectQuery.eq('id', selectedProjectId);
+      pipelineQuery = pipelineQuery.eq('client_project_id', selectedProjectId);
     }
 
     const [
@@ -146,13 +153,15 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
       bankAccountsResult,
       incomeResult,
       expenseResult,
-      projectsResult
+      projectsResult,
+      pipelineResult
     ] = await Promise.all([
       supabase.from('cash_accounts').select('current_balance').eq('status', 'active'),
       supabase.from('bank_accounts').select('current_balance').eq('status', 'active'),
       incomeQuery,
       expenseQuery,
-      projectQuery
+      projectQuery,
+      pipelineQuery
     ]);
 
     const cashBalance = (cashAccountsResult.data || []).reduce((sum, account) => sum + (account.current_balance || 0), 0);
@@ -160,9 +169,8 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
     const monthlyIncome = (incomeResult.data || []).reduce((sum, income) => sum + (income.amount || 0), 0);
     const monthlyExpenses = (expenseResult.data || []).reduce((sum, expense) => sum + (expense.amount || 0), 0);
     const activeProjects = (projectsResult.data || []).length;
-    const pipelineValue = (projectsResult.data || []).reduce((sum, project) => {
-      return sum + Math.max(project.budget || 0, project.construction_budget || 0);
-    }, 0);
+    // Pipeline value now uses real payment plans, not project budgets
+    const pipelineValue = (pipelineResult.data || []).reduce((sum, plan) => sum + (plan.total_amount || 0), 0);
 
     return {
       totalCash: cashBalance + bankBalance,
