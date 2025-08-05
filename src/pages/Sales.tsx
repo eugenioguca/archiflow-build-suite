@@ -14,6 +14,8 @@ import { SmartCRM } from "@/components/SmartCRM";
 import { ClientProjectManager } from "@/components/ClientProjectManager";
 import { RequiredDocumentsManager } from "@/components/RequiredDocumentsManager";
 import { PaymentPlanBuilder } from "@/components/PaymentPlanBuilder";
+import { PaymentPlansUnified } from "@/components/PaymentPlansUnified";
+import { PaymentStatusIndicator } from "@/components/PaymentStatusIndicator";
 import { SalesDesignCalendar } from "@/components/SalesDesignCalendar";
 import { SalesExecutiveDashboard } from "@/components/SalesExecutiveDashboard";
 import { ContractTemplateManager } from "@/components/ContractTemplateManager";
@@ -358,9 +360,10 @@ export default function Sales() {
 
       {/* Tabs principales */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-5 w-full">
+        <TabsList className="grid grid-cols-6 w-full">
           <TabsTrigger value="list">Smart View</TabsTrigger>
           <TabsTrigger value="pipeline">Pipeline Kanban</TabsTrigger>
+          <TabsTrigger value="payment-status">Estado Pagos</TabsTrigger>
           <TabsTrigger value="calendar">Calendario</TabsTrigger>
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="contracts">Contratos</TabsTrigger>
@@ -441,6 +444,17 @@ export default function Sales() {
                                   <div className="w-2 h-2 bg-gray-400 rounded-full" />
                                 </div>
                               )}
+                            </div>
+                          )}
+                          
+                          {/* Indicador de estado de pagos */}
+                          {['en_contacto', 'cliente_cerrado'].includes(project.sales_pipeline_stage) && (
+                            <div className="space-y-1">
+                              <div className="text-xs text-muted-foreground mb-1">Estado de Pagos</div>
+                              <PaymentStatusIndicator 
+                                clientProjectId={project.id}
+                                size="sm"
+                              />
                             </div>
                           )}
                           
@@ -610,6 +624,27 @@ export default function Sales() {
               ))
             )}
           </div>
+        </TabsContent>
+
+        {/* Estado de Pagos - Nueva pestaña */}
+        <TabsContent value="payment-status">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-primary" />
+                Estado de Planes de Pago
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Vista unificada del estado de pagos por cliente/proyecto (solo lectura para ventas)
+              </p>
+            </CardHeader>
+            <CardContent>
+              <PaymentPlansUnified 
+                mode="sales"
+                selectedClientId={advisorFilter !== 'all' ? advisorFilter : undefined}
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Calendario de Diseño */}
@@ -787,12 +822,31 @@ export default function Sales() {
               </TabsContent>
 
               <TabsContent value="payments" className="mt-6">
-                 {['en_contacto', 'cliente_cerrado'].includes(selectedProject.sales_pipeline_stage) ? (
-                  <PaymentPlanBuilder
-                    clientProjectId={selectedProject.id}
-                    clientName={selectedProject.clients?.full_name || ''}
-                    onPlanUpdate={() => fetchData()}
-                  />
+                {['en_contacto', 'cliente_cerrado'].includes(selectedProject.sales_pipeline_stage) ? (
+                  <div className="space-y-6">
+                    {/* Plan Builder para crear/gestionar planes */}
+                    <PaymentPlanBuilder
+                      clientProjectId={selectedProject.id}
+                      clientName={selectedProject.clients?.full_name || ''}
+                      onPlanUpdate={() => fetchData()}
+                    />
+                    
+                    {/* Vista unificada de estado de pagos */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                          Estado Actual de Pagos
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <PaymentPlansUnified 
+                          mode="sales"
+                          selectedProjectId={selectedProject.id}
+                        />
+                      </CardContent>
+                    </Card>
+                  </div>
                 ) : (
                   <Card>
                     <CardContent className="p-8 text-center">

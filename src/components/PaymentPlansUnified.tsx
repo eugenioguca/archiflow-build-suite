@@ -164,6 +164,35 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
     }
   };
 
+  const handleMarkPaid = async (installmentId: string, planId: string) => {
+    if (mode === 'sales') {
+      handleInformativeAction();
+      return;
+    }
+    
+    try {
+      // Update payment installment status to paid
+      const { error } = await supabase
+        .from('payment_installments')
+        .update({ 
+          status: 'paid',
+          paid_date: new Date().toISOString().split('T')[0]
+        })
+        .eq('id', installmentId);
+
+      if (error) throw error;
+
+      // Refresh data
+      await fetchPaymentPlans();
+      onPaymentUpdate?.();
+
+      toast.success('Pago marcado como pagado exitosamente');
+    } catch (error) {
+      console.error('Error marking payment as paid:', error);
+      toast.error('Error al marcar el pago como pagado');
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -177,9 +206,8 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
   return (
     <div className="space-y-4">
       {paymentPlans.map((plan) => {
-        const planInstallments = installments.filter(i => i.payment_plan_id === plan.id);
-        const progress = calculateProgress(planInstallments);
-        const totalPaid = calculateTotalPaid(planInstallments);
+        const progress = calculateProgress(installments);
+        const totalPaid = calculateTotalPaid(installments);
         
         return (
           <Card key={plan.id} className="border-l-4 border-l-primary">
@@ -218,15 +246,15 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <CheckCircle2 className="h-4 w-4" />
-                    <span>{planInstallments.filter(i => i.status === 'paid').length} pagados</span>
+                    <span>{installments.filter(i => i.status === 'paid').length} pagados</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
-                    <span>{planInstallments.filter(i => i.status === 'pending').length} pendientes</span>
+                    <span>{installments.filter(i => i.status === 'pending').length} pendientes</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <AlertCircle className="h-4 w-4" />
-                    <span>{planInstallments.filter(i => i.status === 'overdue').length} vencidos</span>
+                    <span>{installments.filter(i => i.status === 'overdue').length} vencidos</span>
                   </div>
                 </div>
                 
@@ -278,7 +306,7 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
                                 <TableHead>Fecha Vencimiento</TableHead>
                                 <TableHead>Estado</TableHead>
                                 <TableHead>Fecha Pago</TableHead>
-                                <TableHead>Método</TableHead>
+                                {mode === 'finance' && <TableHead>Acciones</TableHead>}
                                 {mode === 'sales' && <TableHead>Acción</TableHead>}
                               </TableRow>
                             </TableHeader>
@@ -295,21 +323,36 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
                                        : '-'
                                      }
                                    </TableCell>
-                                   <TableCell>-</TableCell>
-                                  {mode === 'sales' && (
-                                    <TableCell>
-                                      {installment.status !== 'paid' && (
-                                        <Button 
-                                          variant="outline" 
-                                          size="sm"
-                                          onClick={handleInformativeAction}
-                                        >
-                                          <DollarSign className="h-4 w-4 mr-1" />
-                                          Marcar Pagado
-                                        </Button>
-                                      )}
-                                    </TableCell>
-                                  )}
+                                   {mode === 'finance' && (
+                                     <TableCell>
+                                       {installment.status !== 'paid' ? (
+                                         <Button 
+                                           variant="outline" 
+                                           size="sm"
+                                           onClick={() => handleMarkPaid(installment.id, plan.id)}
+                                         >
+                                           <DollarSign className="h-4 w-4 mr-1" />
+                                           Marcar Pagado
+                                         </Button>
+                                       ) : (
+                                         <Badge variant="default">Pagado</Badge>
+                                       )}
+                                     </TableCell>
+                                   )}
+                                   {mode === 'sales' && (
+                                     <TableCell>
+                                       {installment.status !== 'paid' && (
+                                         <Button 
+                                           variant="outline" 
+                                           size="sm"
+                                           onClick={handleInformativeAction}
+                                         >
+                                           <DollarSign className="h-4 w-4 mr-1" />
+                                           Marcar Pagado
+                                         </Button>
+                                       )}
+                                     </TableCell>
+                                   )}
                                 </TableRow>
                               ))}
                             </TableBody>

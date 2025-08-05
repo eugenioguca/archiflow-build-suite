@@ -6,7 +6,7 @@ import PPDMonitoringDashboard from '@/components/PPDMonitoringDashboard';
 import { PaymentComplementsDashboard } from '@/components/PaymentComplementsDashboard';
 import ProfitabilityAnalysis from '@/components/ProfitabilityAnalysis';
 import { ElectronicInvoicingDashboard } from '@/components/ElectronicInvoicingDashboard';
-import { PaymentPlansFinance } from '@/components/PaymentPlansFinance';
+import { PaymentPlansUnified } from '@/components/PaymentPlansUnified';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   LayoutDashboard, 
@@ -109,7 +109,8 @@ const FinancesNew: React.FC = () => {
               setSelectedProjectId(undefined);
             }}
           />
-          <PaymentPlansFinance 
+          <PaymentPlansUnified 
+            mode="finance"
             selectedClientId={selectedClientId}
             selectedProjectId={selectedProjectId}
           />
