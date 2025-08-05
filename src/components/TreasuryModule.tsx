@@ -64,16 +64,6 @@ export const TreasuryModule: React.FC<TreasuryModuleProps> = ({
         </Badge>
       </div>
 
-      {/* Global Filters */}
-      {!propClientId && !propProjectId && (
-        <GlobalFilters
-          selectedClientId={selectedClientId}
-          selectedProjectId={selectedProjectId}
-          onClientChange={setClientId}
-          onProjectChange={setProjectId}
-          onClearFilters={clearFilters}
-        />
-      )}
 
       {/* Treasury Dashboard */}
       <TreasuryDashboard 
