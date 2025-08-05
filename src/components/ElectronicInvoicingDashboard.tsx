@@ -24,6 +24,158 @@ interface DashboardStats {
   monthlyRevenue: number;
 }
 
+interface RecentInvoice {
+  id: string;
+  serie: string;
+  folio: string;
+  receptor_razon_social: string;
+  total: number;
+  estatus: string;
+  fecha_emision: string;
+}
+
+// Component for recent invoices with real data
+function RecentInvoicesSection() {
+  const [recentInvoices, setRecentInvoices] = useState<RecentInvoice[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchRecentInvoices();
+  }, []);
+
+  const fetchRecentInvoices = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('electronic_invoices')
+        .select('id, serie, folio, receptor_razon_social, total, estatus, fecha_emision')
+        .order('fecha_emision', { ascending: false })
+        .limit(5);
+
+      if (error) throw error;
+      setRecentInvoices(data || []);
+    } catch (error) {
+      console.error('Error fetching recent invoices:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN'
+    }).format(amount);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'timbrada':
+        return 'default';
+      case 'borrador':
+        return 'secondary';
+      case 'cancelada':
+        return 'destructive';
+      default:
+        return 'secondary';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'timbrada':
+        return 'Timbrada';
+      case 'borrador':
+        return 'Borrador';
+      case 'cancelada':
+        return 'Cancelada';
+      default:
+        return status;
+    }
+  };
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      <Card>
+        <CardHeader>
+          <CardTitle>Facturas Recientes</CardTitle>
+          <CardDescription>
+            Últimas facturas creadas en el sistema
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-4">
+              {[1, 2].map((i) => (
+                <div key={i} className="flex items-center justify-between p-4 border rounded-lg animate-pulse">
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-24"></div>
+                    <div className="h-3 bg-gray-200 rounded w-32"></div>
+                  </div>
+                  <div className="space-y-2 text-right">
+                    <div className="h-6 bg-gray-200 rounded w-16"></div>
+                    <div className="h-4 bg-gray-200 rounded w-20"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : recentInvoices.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No hay facturas recientes</p>
+              <p className="text-sm">Crea tu primera factura para verla aquí</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentInvoices.map((invoice) => (
+                <div key={invoice.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <p className="font-medium">{invoice.serie}-{invoice.folio}</p>
+                    <p className="text-sm text-muted-foreground">{invoice.receptor_razon_social}</p>
+                  </div>
+                  <div className="text-right">
+                    <Badge variant={getStatusColor(invoice.estatus)}>
+                      {getStatusLabel(invoice.estatus)}
+                    </Badge>
+                    <p className="text-sm font-medium">{formatCurrency(invoice.total)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Alertas Fiscales</CardTitle>
+          <CardDescription>
+            Notificaciones importantes del sistema
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-start gap-3 p-4 border rounded-lg bg-yellow-50">
+              <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
+              <div>
+                <p className="font-medium text-yellow-800">Certificado próximo a vencer</p>
+                <p className="text-sm text-yellow-700">El certificado CSD vence en 30 días</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-4 border rounded-lg bg-blue-50">
+              <FileText className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div>
+                <p className="font-medium text-blue-800">Actualización SAT</p>
+                <p className="text-sm text-blue-700">Nuevos catálogos SAT disponibles</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export function ElectronicInvoicingDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [stats, setStats] = useState<DashboardStats>({
@@ -235,67 +387,7 @@ export function ElectronicInvoicingDashboard() {
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Facturas Recientes</CardTitle>
-                <CardDescription>
-                  Últimas facturas creadas en el sistema
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium">FAC-001-2024</p>
-                      <p className="text-sm text-muted-foreground">Cliente ABC S.A. de C.V.</p>
-                    </div>
-                    <div className="text-right">
-                      <Badge variant="secondary">Timbrada</Badge>
-                      <p className="text-sm font-medium">{formatCurrency(15000)}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium">FAC-002-2024</p>
-                      <p className="text-sm text-muted-foreground">Cliente XYZ S.A. de C.V.</p>
-                    </div>
-                    <div className="text-right">
-                      <Badge variant="outline">Borrador</Badge>
-                      <p className="text-sm font-medium">{formatCurrency(8500)}</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Alertas Fiscales</CardTitle>
-                <CardDescription>
-                  Notificaciones importantes del sistema
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3 p-4 border rounded-lg bg-yellow-50">
-                    <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-yellow-800">Certificado próximo a vencer</p>
-                      <p className="text-sm text-yellow-700">El certificado CSD vence en 30 días</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-4 border rounded-lg bg-blue-50">
-                    <FileText className="h-5 w-5 text-blue-600 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-blue-800">Actualización SAT</p>
-                      <p className="text-sm text-blue-700">Nuevos catálogos SAT disponibles</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <RecentInvoicesSection />
         </TabsContent>
 
         <TabsContent value="invoices">

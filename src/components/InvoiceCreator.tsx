@@ -65,6 +65,7 @@ export function InvoiceCreator({ onInvoiceCreated }: InvoiceCreatorProps) {
 
   const [invoiceData, setInvoiceData] = useState({
     client_id: '',
+    project_id: '',
     serie: 'FAC',
     metodo_pago: 'PUE',
     forma_pago: '99',
@@ -279,6 +280,7 @@ export function InvoiceCreator({ onInvoiceCreated }: InvoiceCreatorProps) {
           }]
         },
         client_id: invoiceData.client_id || null,
+        project_id: invoiceData.project_id || null,
         observaciones: invoiceData.observaciones,
         created_by: user.id
       };
@@ -311,6 +313,7 @@ export function InvoiceCreator({ onInvoiceCreated }: InvoiceCreatorProps) {
       setItems([]);
       setInvoiceData({
         client_id: '',
+        project_id: '',
         serie: 'FAC',
         metodo_pago: 'PUE',
         forma_pago: '99',
