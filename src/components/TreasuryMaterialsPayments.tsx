@@ -103,20 +103,7 @@ export const TreasuryMaterialsPayments: React.FC<TreasuryMaterialsPaymentsProps>
         treasury_material_payment_items (
           id,
           material_finance_request_id,
-          amount,
-          material_finance_requests (
-            material_name,
-            quantity_required,
-            unit_cost,
-            client_id,
-            project_id,
-            clients!material_finance_requests_client_id_fkey (
-              full_name
-            ),
-            client_projects!material_finance_requests_project_id_fkey (
-              project_name
-            )
-          )
+          amount
         )
       `)
       .eq('status', 'pending')
@@ -138,13 +125,13 @@ export const TreasuryMaterialsPayments: React.FC<TreasuryMaterialsPaymentsProps>
         id: item.id,
         material_finance_request_id: item.material_finance_request_id,
         amount: item.amount,
-        material_name: item.material_finance_requests?.material_name || 'Material no especificado',
-        quantity: item.material_finance_requests?.quantity_required || 0,
-        unit_cost: item.material_finance_requests?.unit_cost || 0,
-        client_name: item.material_finance_requests?.clients?.full_name || '',
-        project_name: item.material_finance_requests?.client_projects?.project_name || '',
-        client_id: item.material_finance_requests?.client_id || '',
-        project_id: item.material_finance_requests?.project_id || ''
+        material_name: 'Material',
+        quantity: 1,
+        unit_cost: item.amount,
+        client_name: '',
+        project_name: '',
+        client_id: '',
+        project_id: ''
       }))
     }));
 

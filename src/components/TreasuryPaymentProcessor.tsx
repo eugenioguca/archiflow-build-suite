@@ -23,7 +23,7 @@ interface PaymentReference {
   created_at: string;
   notes: string;
   suppliers?: {
-    name: string;
+    company_name: string;
   };
   treasury_transactions?: Array<{
     id: string;
@@ -89,9 +89,7 @@ export const TreasuryPaymentProcessor: React.FC<TreasuryPaymentProcessorProps> =
         .from('treasury_payment_references')
         .select(`
           *,
-          suppliers (name),
-          clients (full_name),
-          client_projects (project_name),
+          suppliers (company_name),
           treasury_transactions (id, description, amount, partida)
         `)
         .eq('status', 'pending');
@@ -299,7 +297,7 @@ export const TreasuryPaymentProcessor: React.FC<TreasuryPaymentProcessorProps> =
                       {reference.reference_code}
                     </TableCell>
                     <TableCell>
-                      {reference.suppliers?.name || 'Proveedor no encontrado'}
+                      {reference.suppliers?.company_name || 'Proveedor no encontrado'}
                     </TableCell>
                     <TableCell className="font-semibold">
                       {formatCurrency(reference.total_amount)}
@@ -351,7 +349,7 @@ export const TreasuryPaymentProcessor: React.FC<TreasuryPaymentProcessorProps> =
                 <>
                   Referencia: {paymentDialog.reference.reference_code}
                   <br />
-                  Proveedor: {paymentDialog.reference.suppliers?.name}
+                  Proveedor: {paymentDialog.reference.suppliers?.company_name}
                   <br />
                   Total: {formatCurrency(paymentDialog.reference.total_amount)}
                 </>

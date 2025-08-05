@@ -61,17 +61,14 @@ export const MaterialToTreasuryExporter: React.FC<MaterialToTreasuryExporterProp
           client_id,
           project_id,
           status,
-          material_name,
-          unit_cost,
-          quantity,
           material_requirements (
             material_name,
             quantity,
-            unit_cost,
-            total_cost
+            estimated_cost,
+            supplier_id
           ),
           suppliers (
-            name
+            company_name
           ),
           clients (
             full_name
@@ -96,15 +93,15 @@ export const MaterialToTreasuryExporter: React.FC<MaterialToTreasuryExporterProp
       const formattedRequests: MaterialFinanceRequest[] = (data || []).map((request: any) => ({
         id: request.id,
         material_requirement_id: request.material_requirement_id,
-        supplier_id: request.supplier_id,
+        supplier_id: request.supplier_id || request.material_requirements?.supplier_id,
         client_id: request.client_id,
         project_id: request.project_id,
         status: request.status,
-        material_name: request.material_requirements?.material_name || request.material_name || 'Material no especificado',
-        quantity: request.material_requirements?.quantity || request.quantity || 1,
-        unit_cost: request.material_requirements?.unit_cost || request.unit_cost || 0,
-        total_cost: request.material_requirements?.total_cost || (request.unit_cost * request.quantity) || 0,
-        supplier_name: request.suppliers?.name || 'Sin proveedor',
+        material_name: request.material_requirements?.material_name || 'Material no especificado',
+        quantity: request.material_requirements?.quantity || 1,
+        unit_cost: request.material_requirements?.estimated_cost ? (request.material_requirements.estimated_cost / request.material_requirements.quantity) : 0,
+        total_cost: request.material_requirements?.estimated_cost || 0,
+        supplier_name: request.suppliers?.company_name || 'Sin proveedor',
         client_name: request.clients?.full_name || '',
         project_name: request.client_projects?.project_name || ''
       }));
