@@ -40,7 +40,10 @@ import { PaymentPlanViewer } from '@/components/PaymentPlanViewer';
 import { DocumentsPanel } from '@/components/DocumentsPanel';
 import { ProgressPhotosCarousel } from '@/components/ProgressPhotosCarousel';
 import { ClientPortalChat } from '@/components/ClientPortalChat';
+import { EnhancedClientPortalChat } from '@/components/EnhancedClientPortalChat';
 import { ClientDocumentUploader } from '@/components/ClientDocumentUploader';
+import { ClientFiscalDocuments } from '@/components/ClientFiscalDocuments';
+import { DesignDocumentsViewer } from '@/components/DesignDocumentsViewer';
 import ClientLayout from '@/components/ClientLayout';
 
 interface ClientProject {
@@ -572,7 +575,21 @@ const ClientPortal: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="documentos" className="space-y-6">
-            <ClientDocumentUploader 
+          {/* Fiscal Documents */}
+          <ClientFiscalDocuments 
+            projectId={project.id}
+            clientId={project.client_id}
+            isClientView={true}
+          />
+          
+          {/* Design Documents */}
+          <DesignDocumentsViewer 
+            projectId={project.id}
+            clientId={project.client_id}
+          />
+          
+          {/* General Documents */}
+          <ClientDocumentUploader 
             projectId={project.id}
             clientId={project.client_id}
             onUploadComplete={() => fetchProjectData(selectedProjectId)}
@@ -682,7 +699,7 @@ const ClientPortal: React.FC = () => {
                 </Button>
               </div>
               <div className="h-[400px]">
-                <ClientPortalChat 
+                <EnhancedClientPortalChat 
                   projectId={project.id}
                   clientId={project.client_id}
                 />
@@ -694,7 +711,7 @@ const ClientPortal: React.FC = () => {
                     <MobileDialogTitle>Chat del Proyecto</MobileDialogTitle>
                   </MobileDialogHeader>
                   <div className="flex-1 overflow-hidden">
-                    <ClientPortalChat 
+                    <EnhancedClientPortalChat 
                       projectId={project.id}
                       clientId={project.client_id}
                     />
@@ -703,7 +720,7 @@ const ClientPortal: React.FC = () => {
               </MobileDialog>
             </>
           ) : (
-            <ClientPortalChat 
+            <EnhancedClientPortalChat 
               projectId={project.id}
               clientId={project.client_id}
             />
