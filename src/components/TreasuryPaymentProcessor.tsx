@@ -85,13 +85,10 @@ export const TreasuryPaymentProcessor: React.FC<TreasuryPaymentProcessorProps> =
 
   const fetchPaymentReferences = async () => {
     try {
+      // Fetch payment references without joins first  
       let query = supabase
         .from('treasury_payment_references')
-        .select(`
-          *,
-          suppliers (company_name),
-          treasury_transactions (id, description, amount, partida)
-        `)
+        .select('*')
         .eq('status', 'pending');
 
       if (selectedClientId) {
@@ -101,10 +98,29 @@ export const TreasuryPaymentProcessor: React.FC<TreasuryPaymentProcessorProps> =
         query = query.eq('project_id', selectedProjectId);
       }
 
-      const { data, error } = await query.order('created_at', { ascending: false });
+      const { data: references, error } = await query.order('created_at', { ascending: false });
       
       if (error) throw error;
-      setPaymentReferences((data || []) as any);
+
+      // Get related data separately
+      const [suppliers, transactions] = await Promise.all([
+        supabase.from('suppliers').select('*'),
+        supabase.from('treasury_transactions').select('id, description, amount, partida, payment_reference_id')
+      ]);
+
+      // Map the data together
+      const enrichedReferences = (references || []).map((ref: any) => {
+        const supplier = suppliers.data?.find(s => s.id === ref.supplier_id);
+        const refTransactions = transactions.data?.filter(t => t.payment_reference_id === ref.id) || [];
+
+        return {
+          ...ref,
+          suppliers: supplier ? { company_name: supplier.company_name } : null,
+          treasury_transactions: refTransactions
+        };
+      });
+
+      setPaymentReferences(enrichedReferences);
     } catch (error) {
       console.error('Error fetching payment references:', error);
       toast({

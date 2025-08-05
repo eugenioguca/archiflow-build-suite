@@ -52,31 +52,10 @@ export const MaterialToTreasuryExporter: React.FC<MaterialToTreasuryExporterProp
 
   const fetchMaterialRequests = async () => {
     try {
+      // Fetch material finance requests without joins first
       let query = supabase
         .from('material_finance_requests')
-        .select(`
-          id,
-          material_requirement_id,
-          supplier_id,
-          client_id,
-          project_id,
-          status,
-          material_requirements (
-            material_name,
-            quantity,
-            estimated_cost,
-            supplier_id
-          ),
-          suppliers (
-            company_name
-          ),
-          clients (
-            full_name
-          ),
-          client_projects (
-            project_name
-          )
-        `)
+        .select('*')
         .in('status', ['pending', 'not_attended']);
 
       if (selectedClientId) {
@@ -86,25 +65,40 @@ export const MaterialToTreasuryExporter: React.FC<MaterialToTreasuryExporterProp
         query = query.eq('project_id', selectedProjectId);
       }
 
-      const { data, error } = await query;
+      const { data: requests, error } = await query;
 
       if (error) throw error;
 
-      const formattedRequests: MaterialFinanceRequest[] = (data || []).map((request: any) => ({
-        id: request.id,
-        material_requirement_id: request.material_requirement_id,
-        supplier_id: request.supplier_id || request.material_requirements?.supplier_id,
-        client_id: request.client_id,
-        project_id: request.project_id,
-        status: request.status,
-        material_name: request.material_requirements?.material_name || 'Material no especificado',
-        quantity: request.material_requirements?.quantity || 1,
-        unit_cost: request.material_requirements?.estimated_cost ? (request.material_requirements.estimated_cost / request.material_requirements.quantity) : 0,
-        total_cost: request.material_requirements?.estimated_cost || 0,
-        supplier_name: request.suppliers?.company_name || 'Sin proveedor',
-        client_name: request.clients?.full_name || '',
-        project_name: request.client_projects?.project_name || ''
-      }));
+      // Get related data separately to avoid JOIN issues
+      const [materialReqs, suppliers, clients, projects] = await Promise.all([
+        supabase.from('material_requirements').select('*'),
+        supabase.from('suppliers').select('*'),
+        supabase.from('clients').select('*'),
+        supabase.from('client_projects').select('*')
+      ]);
+
+      const formattedRequests: MaterialFinanceRequest[] = (requests || []).map((request: any) => {
+        const materialReq = materialReqs.data?.find(mr => mr.id === request.material_requirement_id);
+        const supplier = suppliers.data?.find(s => s.id === (request.supplier_id || materialReq?.supplier_id));
+        const client = clients.data?.find(c => c.id === request.client_id);
+        const project = projects.data?.find(p => p.id === request.project_id);
+
+        return {
+          id: request.id,
+          material_requirement_id: request.material_requirement_id,
+          supplier_id: request.supplier_id || materialReq?.supplier_id,
+          client_id: request.client_id,
+          project_id: request.project_id,
+          status: request.status,
+          material_name: materialReq?.material_name || 'Material no especificado',
+          quantity: materialReq?.quantity_required || 1,
+          unit_cost: materialReq?.unit_cost || 0,
+          total_cost: materialReq?.total_cost || 0,
+          supplier_name: supplier?.company_name || 'Sin proveedor',
+          client_name: client?.full_name || '',
+          project_name: project?.project_name || ''
+        };
+      });
 
       setRequests(formattedRequests);
     } catch (error) {
