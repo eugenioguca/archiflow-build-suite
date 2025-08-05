@@ -554,7 +554,7 @@ const ClientPortal: React.FC = () => {
               clientId={project.client_id} 
               projectId={selectedProjectId}
             />
-            <EnhancedClientPortalChat
+            <SuperiorClientPortalChat
               clientId={project.client_id}
               projectId={selectedProjectId}
             />
@@ -672,7 +672,7 @@ const ClientPortal: React.FC = () => {
                 </Button>
               </div>
               <div className="h-[400px]">
-                <EnhancedClientPortalChat 
+                <SuperiorClientPortalChat 
                   projectId={project.id}
                   clientId={project.client_id}
                 />
@@ -684,7 +684,7 @@ const ClientPortal: React.FC = () => {
                     <MobileDialogTitle>Chat del Proyecto</MobileDialogTitle>
                   </MobileDialogHeader>
                   <div className="flex-1 overflow-hidden">
-                    <EnhancedClientPortalChat 
+                    <SuperiorClientPortalChat 
                       projectId={project.id}
                       clientId={project.client_id}
                     />
@@ -693,7 +693,7 @@ const ClientPortal: React.FC = () => {
               </MobileDialog>
             </>
           ) : (
-            <EnhancedClientPortalChat 
+            <SuperiorClientPortalChat 
               projectId={project.id}
               clientId={project.client_id}
             />
