@@ -48,6 +48,7 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
   const [paymentPlans, setPaymentPlans] = useState<PaymentPlan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<PaymentPlan | null>(null);
   const [installments, setInstallments] = useState<PaymentInstallment[]>([]);
+  const [allInstallments, setAllInstallments] = useState<Record<string, PaymentInstallment[]>>({});
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -109,11 +110,43 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
       }));
 
       setPaymentPlans(mappedPlans);
+
+      // Fetch installments for all plans to calculate progress and total paid
+      if (mappedPlans.length > 0) {
+        await fetchAllInstallments(mappedPlans.map(p => p.id));
+      }
     } catch (error) {
       console.error('Error fetching payment plans:', error);
       toast.error('Error al cargar planes de pago');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAllInstallments = async (planIds: string[]) => {
+    try {
+      const { data, error } = await supabase
+        .from('payment_installments')
+        .select('*')
+        .in('payment_plan_id', planIds)
+        .order('installment_number');
+
+      if (error) throw error;
+
+      // Group installments by payment plan id
+      const installmentsByPlan: Record<string, PaymentInstallment[]> = {};
+      (data || []).forEach((installment: PaymentInstallment) => {
+        const planId = installment.payment_plan_id;
+        if (!installmentsByPlan[planId]) {
+          installmentsByPlan[planId] = [];
+        }
+        installmentsByPlan[planId].push(installment);
+      });
+
+      setAllInstallments(installmentsByPlan);
+    } catch (error) {
+      console.error('Error fetching installments:', error);
+      toast.error('Error al cargar cuotas');
     }
   };
 
@@ -262,6 +295,7 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
 
       // Refresh data
       await fetchPaymentPlans();
+      await fetchInstallments(planId);
       onPaymentUpdate?.();
 
       toast.success(`Plan completo marcado como pagado (${planInstallments.length} cuotas actualizadas)`);
@@ -284,9 +318,10 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
   return (
     <div className="space-y-4">
       {paymentPlans.map((plan) => {
-        // Por ahora mostrar progreso como 0 hasta que se implemente correctamente
-        const progress = 0;
-        const totalPaid = 0;
+        // Calculate real progress and total paid using installments
+        const planInstallments = allInstallments[plan.id] || [];
+        const progress = calculateProgress(planInstallments);
+        const totalPaid = calculateTotalPaid(planInstallments);
         
         return (
           <Card key={plan.id} className="border-l-4 border-l-primary">
