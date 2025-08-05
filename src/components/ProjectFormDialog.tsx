@@ -13,6 +13,8 @@ interface ProjectFormData {
   description: string;
   location: string;
   client_id: string;
+  budget: string;
+  square_meters: string;
   assigned_team: string[];
   phases: {
     name: string;
@@ -48,6 +50,8 @@ export function ProjectFormDialog({ open, onOpenChange, onSubmit }: ProjectFormD
     description: "",
     location: "",
     client_id: undefined,
+    budget: "",
+    square_meters: "",
     assigned_team: [""],
     phases: defaultPhases
   });
@@ -91,6 +95,8 @@ export function ProjectFormDialog({ open, onOpenChange, onSubmit }: ProjectFormD
       description: "",
       location: "",
       client_id: undefined,
+      budget: "",
+      square_meters: "",
       assigned_team: [""],
       phases: defaultPhases
     });
@@ -139,6 +145,25 @@ export function ProjectFormDialog({ open, onOpenChange, onSubmit }: ProjectFormD
       ...prev,
       phases: prev.phases.filter((_, i) => i !== index)
     }));
+  };
+
+  const formatCurrency = (value: string) => {
+    // Remover todo excepto números
+    const numericValue = value.replace(/[^\d]/g, '');
+    
+    // Si está vacío, devolver vacío
+    if (!numericValue) return '';
+    
+    // Formatear con comas
+    const formatted = new Intl.NumberFormat('es-MX').format(parseInt(numericValue));
+    return `$${formatted}`;
+  };
+
+  const handleBudgetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value;
+    // Extraer solo números para almacenar
+    const numericValue = rawValue.replace(/[^\d]/g, '');
+    setFormData(prev => ({ ...prev, budget: numericValue }));
   };
 
   return (
@@ -197,6 +222,31 @@ export function ProjectFormDialog({ open, onOpenChange, onSubmit }: ProjectFormD
                 Debe crear clientes primero en el módulo de Clientes
               </p>
             )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="budget">Presupuesto</Label>
+              <Input
+                id="budget"
+                type="text"
+                value={formatCurrency(formData.budget)}
+                onChange={handleBudgetChange}
+                placeholder="Ej: $1,500,000"
+              />
+            </div>
+            <div>
+              <Label htmlFor="square_meters">Metros Cuadrados</Label>
+              <Input
+                id="square_meters"
+                type="number"
+                value={formData.square_meters}
+                onChange={(e) => setFormData(prev => ({ ...prev, square_meters: e.target.value }))}
+                placeholder="250"
+                min="0"
+                step="0.01"
+              />
+            </div>
           </div>
 
           <div>
