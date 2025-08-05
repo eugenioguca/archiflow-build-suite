@@ -36,6 +36,7 @@ import { es } from 'date-fns/locale';
 // Import our new professional components
 import { ProjectProgressCard } from '@/components/ProjectProgressCard';
 import { PaymentHistoryPanel } from '@/components/PaymentHistoryPanel';
+import { PaymentPlanViewer } from '@/components/PaymentPlanViewer';
 import { DocumentsPanel } from '@/components/DocumentsPanel';
 import { ProgressPhotosCarousel } from '@/components/ProgressPhotosCarousel';
 import { ClientPortalChat } from '@/components/ClientPortalChat';
@@ -562,7 +563,11 @@ const ClientPortal: React.FC = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="pagos">
+        <TabsContent value="pagos" className="space-y-6">
+          <PaymentPlanViewer 
+            projectId={selectedProjectId}
+            clientId={project.client_id}
+          />
           <PaymentHistoryPanel payments={payments} />
         </TabsContent>
 

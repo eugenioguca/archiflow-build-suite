@@ -262,6 +262,7 @@ export function ProjectBudgetManager({ projectId, projectName, clientName, onBud
     const total = items.reduce((sum, item) => sum + item.total_price, 0);
 
     try {
+      // Actualizar total del presupuesto - el trigger se encargará de sync con construction_budget
       const { error } = await supabase
         .from("project_budgets")
         .update({ total_amount: total })
@@ -274,8 +275,21 @@ export function ProjectBudgetManager({ projectId, projectName, clientName, onBud
       if (onBudgetUpdate) {
         onBudgetUpdate({ ...budget, total_amount: total });
       }
+
+      // Mostrar mensaje de sincronización
+      if (total > 0) {
+        toast({
+          title: "Presupuesto actualizado",
+          description: "El presupuesto de obra ha sido sincronizado con el proyecto"
+        });
+      }
     } catch (error: any) {
       console.error("Error updating budget total:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el presupuesto",
+        variant: "destructive"
+      });
     }
   };
 
