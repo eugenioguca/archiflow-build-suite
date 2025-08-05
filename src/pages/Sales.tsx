@@ -442,7 +442,10 @@ export default function Sales() {
                                     <DollarSign className="h-3 w-3" />
                                     Plan
                                   </span>
-                                  <div className="w-2 h-2 bg-gray-400 rounded-full" />
+                                  <PaymentStatusIndicator 
+                                    clientProjectId={project.id}
+                                    size="sm"
+                                  />
                                 </div>
                               )}
                             </div>
