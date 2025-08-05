@@ -245,7 +245,36 @@ export default function Suppliers() {
   };
 
   const handleDeleteCFDI = async (cfdiId: string) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar este documento CFDI?')) {
+      return;
+    }
+
     setDeletingCFDI(cfdiId);
+    try {
+      const { error } = await supabase
+        .from('cfdi_documents')
+        .delete()
+        .eq('id', cfdiId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Documento eliminado",
+        description: "El documento CFDI ha sido eliminado correctamente",
+      });
+
+      // Recargar la lista
+      await fetchCFDIDocuments();
+    } catch (error) {
+      console.error('Error deleting CFDI:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el documento CFDI",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingCFDI(null);
+    }
   };
 
   const confirmDeleteCFDI = async () => {
