@@ -194,9 +194,8 @@ export function BudgetItemForm({ projectId, budgetVersion, initialData, onSucces
   };
 
   return (
-    <SmartScrollArea className="w-full" maxHeight="calc(100vh - 200px)">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FieldGroup 
             title="Información Básica" 
             description="Código y categorización de la partida"
@@ -531,6 +530,5 @@ export function BudgetItemForm({ projectId, budgetVersion, initialData, onSucces
           </div>
         </form>
       </Form>
-    </SmartScrollArea>
   );
 }

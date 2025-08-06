@@ -177,9 +177,8 @@ export function EquipmentForm({ projectId, initialData, onSuccess, onCancel }: E
   };
 
   return (
-    <SmartScrollArea className="w-full" maxHeight="calc(100vh - 200px)">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FieldGroup 
             title="Información Básica" 
             description="Datos principales del equipo"
@@ -608,6 +607,5 @@ export function EquipmentForm({ projectId, initialData, onSuccess, onCancel }: E
           </div>
         </form>
       </Form>
-    </SmartScrollArea>
   );
 }

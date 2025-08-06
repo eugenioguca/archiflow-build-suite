@@ -211,15 +211,14 @@ export function MaterialRequirementForm({
   }
 
   return (
-    <SmartScrollArea className="w-full" maxHeight="calc(100vh - 200px)">
-      <Card className="w-full max-w-4xl mx-auto">
-        <CardHeader>
-          <CardTitle>
-            {initialData ? "Editar Material" : "Nuevo Material"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+    <Card className="w-full max-w-4xl mx-auto">
+      <CardHeader>
+        <CardTitle>
+          {initialData ? "Editar Material" : "Nuevo Material"}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
             <FieldGroup 
               title="Información Principal" 
               description="Datos básicos del material"
@@ -439,6 +438,5 @@ export function MaterialRequirementForm({
           </form>
         </CardContent>
       </Card>
-    </SmartScrollArea>
   )
 }
