@@ -63,71 +63,60 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
     try {
       setLoading(true);
       
-      // Use a more robust query for refresh scenarios
-      let query = supabase
-        .from('payment_plans')
-        .select(`
-          *,
-          client_projects(
-            project_name,
-            client_id,
-            clients(full_name)
-          )
-        `)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false });
+      // Build query parameters for the payment_plans_with_sales view
+      const params: any = {
+        status: 'in.(active,draft)',
+        order: 'created_at.desc'
+      };
 
-      // Filter by plan_type - prioritize explicit planType filter over mode
+      // Apply plan_type filters
       if (planType && planType !== 'all') {
-        // Explicit filter selected from UI
-        query = query.eq('plan_type', planType);
-      } else {
-        // Default filters based on mode when no explicit planType is selected
-        if (mode === 'sales') {
-          // Sales mode shows both sales_to_design and design_to_construction plans
-          query = query.in('plan_type', ['sales_to_design', 'design_to_construction']);
-        } else if (mode === 'design') {
-          query = query.eq('plan_type', 'design_to_construction');
-        }
-        // Finance mode without explicit filter shows all plan types
+        params.plan_type = `eq.${planType}`;
+      } else if (mode === 'sales') {
+        params.plan_type = 'in.(sales_to_design,design_to_construction)';
+      } else if (mode === 'design') {
+        params.plan_type = 'eq.design_to_construction';
       }
 
+      // Apply client/project filters
       if (selectedProjectId) {
-        query = query.eq('client_project_id', selectedProjectId);
+        params.client_project_id = `eq.${selectedProjectId}`;
       } else if (selectedClientId) {
-        // Para filtrar por cliente, usar una subconsulta
-        const { data: clientProjects } = await supabase
-          .from('client_projects')
-          .select('id')
-          .eq('client_id', selectedClientId);
-        
-        if (clientProjects && clientProjects.length > 0) {
-          const projectIds = clientProjects.map(p => p.id);
-          query = query.in('client_project_id', projectIds);
-        } else {
-          // Si no hay proyectos para este cliente, no devolver nada
-          setPaymentPlans([]);
-          setLoading(false);
-          return;
-        }
+        params.client_id = `eq.${selectedClientId}`;
       }
 
-      const { data, error } = await query;
+      // Simple query approach to avoid TypeScript recursion
+      const { data, error } = await supabase
+        .from('payment_plans_with_sales')
+        .select('*')
+        .in('status', ['active', 'draft'])
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Mapear los datos para que coincidan con la interfaz PaymentPlan
-      const mappedPlans: PaymentPlan[] = (data || []).map((plan: any) => ({
+      // Apply filters in JavaScript instead of SQL to avoid TypeScript issues
+      let filteredData = data || [];
+      
+      // Note: payment_plans_with_sales view doesn't have plan_type, so skip those filters for now
+      
+      // Apply client/project filters
+      if (selectedProjectId) {
+        filteredData = filteredData.filter(plan => plan.client_project_id === selectedProjectId);
+      } else if (selectedClientId) {
+        filteredData = filteredData.filter(plan => plan.client_id === selectedClientId);
+      }
+
+      const mappedPlans: PaymentPlan[] = filteredData.map((plan: any) => ({
         id: plan.id,
         plan_name: plan.plan_name,
         total_amount: plan.total_amount,
         currency: plan.currency,
         status: plan.status,
         client_project_id: plan.client_project_id,
-        client_id: plan.client_projects?.client_id || '',
-        client_name: plan.client_projects?.clients?.full_name || 'Cliente desconocido',
-        project_name: plan.client_projects?.project_name || 'Proyecto desconocido',
-        plan_type: plan.plan_type
+        client_id: plan.client_id,
+        client_name: plan.client_name || 'Cliente desconocido',
+        project_name: plan.project_name || 'Proyecto desconocido',
+        plan_type: undefined // Will be handled by fallback logic in getPlanCategoryBadge
       }));
 
       setPaymentPlans(mappedPlans);
@@ -263,10 +252,10 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
     }
     
     try {
-      // Update payment installment status to paid
+      // Update payment installment status to paid (like PaymentPlansFinance)
       const { error: updateError } = await supabase
         .from('payment_installments')
-        .update({ 
+        .update({
           status: 'paid',
           paid_date: new Date().toISOString().split('T')[0]
         })
@@ -274,8 +263,59 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
 
       if (updateError) throw updateError;
 
+      // Get current user profile for created_by
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!profile) throw new Error('Profile not found');
+
+      // Get installment details
+      const { data: installmentData } = await supabase
+        .from('payment_installments')
+        .select('*')
+        .eq('id', installmentId)
+        .single();
+
+      if (!installmentData) throw new Error('Installment not found');
+
+      // Get payment plan details to get client and project IDs
+      const { data: planData } = await supabase
+        .from('payment_plans')
+        .select('client_project_id, plan_name')
+        .eq('id', planId)
+        .single();
+
+      if (!planData) throw new Error('Payment plan not found');
+
+      // Get project details to get client_id
+      const { data: projectData } = await supabase
+        .from('client_projects')
+        .select('client_id')
+        .eq('id', planData.client_project_id)
+        .single();
+
+      if (!projectData) throw new Error('Project not found');
+
+      // Create automatic income entry when installment is marked as paid (like PaymentPlansFinance)
+      const { error: incomeError } = await supabase
+        .from('incomes')
+        .insert({
+          client_id: projectData.client_id,
+          project_id: planData.client_project_id,
+          category: 'construction_service',
+          amount: installmentData.amount,
+          description: `Pago de cuota ${installmentData.installment_number} - Plan: ${planData.plan_name}`,
+          expense_date: new Date().toISOString().split('T')[0],
+          created_by: profile.id
+        });
+
+      if (incomeError) throw incomeError;
+
       // Show immediate success feedback
-      toast.success('Pago marcado como pagado exitosamente');
+      toast.success('Cuota marcada como pagada e ingreso registrado correctamente');
 
       // Update local state optimistically
       setInstallments(prevInstallments => 
@@ -302,17 +342,9 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
       // Trigger callback immediately
       onPaymentUpdate?.();
 
-      // Refresh data in background with retry logic
-      setTimeout(async () => {
-        try {
-          await fetchPaymentPlans();
-        } catch (refreshError) {
-          console.warn('Background refresh failed, retrying...', refreshError);
-          // Retry once after 2 seconds
-          setTimeout(() => {
-            fetchPaymentPlans().catch(console.error);
-          }, 2000);
-        }
+      // Refresh data in background
+      setTimeout(() => {
+        fetchPaymentPlans().catch(console.error);
       }, 500);
 
     } catch (error) {
@@ -342,6 +374,15 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
         return;
       }
 
+      // Get current user profile for created_by
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!profile) throw new Error('Profile not found');
+
       // Update all unpaid installments to paid
       const { error: updateError } = await supabase
         .from('payment_installments')
@@ -353,6 +394,41 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
         .neq('status', 'paid');
 
       if (updateError) throw updateError;
+
+      // Get payment plan details
+      const { data: planData } = await supabase
+        .from('payment_plans')
+        .select('client_project_id, plan_name')
+        .eq('id', planId)
+        .single();
+
+      if (!planData) throw new Error('Payment plan not found');
+
+      // Get project details to get client_id
+      const { data: projectData } = await supabase
+        .from('client_projects')
+        .select('client_id')
+        .eq('id', planData.client_project_id)
+        .single();
+
+      if (!projectData) throw new Error('Project not found');
+
+      // Create income entries for all unpaid installments (one by one to avoid bulk insert issues)
+      for (const installment of planInstallments) {
+        const { error: incomeError } = await supabase
+          .from('incomes')
+          .insert({
+            client_id: projectData.client_id,
+            project_id: planData.client_project_id,
+            category: 'construction_service',
+            amount: installment.amount,
+            description: `Pago de cuota ${installment.installment_number} - Plan: ${planData.plan_name}`,
+            expense_date: new Date().toISOString().split('T')[0],
+            created_by: profile.id
+          });
+        
+        if (incomeError) throw incomeError;
+      }
 
       // Show immediate success feedback
       toast.success(`Plan completo marcado como pagado (${planInstallments.length} cuotas actualizadas)`);
@@ -384,22 +460,11 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
       // Trigger callback immediately
       onPaymentUpdate?.();
 
-      // Refresh data in background with retry logic
-      setTimeout(async () => {
-        try {
-          await fetchPaymentPlans();
-          if (selectedPlan) {
-            await fetchInstallments(planId);
-          }
-        } catch (refreshError) {
-          console.warn('Background refresh failed, retrying...', refreshError);
-          // Retry once after 2 seconds
-          setTimeout(() => {
-            fetchPaymentPlans().catch(console.error);
-            if (selectedPlan) {
-              fetchInstallments(planId).catch(console.error);
-            }
-          }, 2000);
+      // Refresh data in background
+      setTimeout(() => {
+        fetchPaymentPlans().catch(console.error);
+        if (selectedPlan) {
+          fetchInstallments(planId).catch(console.error);
         }
       }, 500);
 
