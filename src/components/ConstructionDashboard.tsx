@@ -48,6 +48,7 @@ interface ConstructionStats {
   thisWeekReports: number;
   budgetExecuted: number;
   budgetRemaining: number;
+  totalBudget: number;
 }
 
 interface ConstructionDashboardProps {
@@ -74,6 +75,7 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
     thisWeekReports: 0,
     budgetExecuted: 0,
     budgetRemaining: 0,
+    totalBudget: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -97,11 +99,18 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
         .select("*")
         .eq("project_id", projectId);
 
-      // Fetch budget items
+      // Fetch budget items and project budget
       const { data: budgetItems } = await supabase
         .from("construction_budget_items")
         .select("*")
         .eq("project_id", projectId);
+
+      // Fetch project construction budget
+      const { data: projectData } = await supabase
+        .from("client_projects")
+        .select("construction_budget")
+        .eq("id", projectId)
+        .single();
 
       // Fetch equipment
       const { data: equipment } = await supabase
@@ -124,6 +133,10 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
       // Calculate stats
       const currentDate = new Date();
       const oneWeekAgo = new Date(currentDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+      // Calcular presupuesto total desde los items del presupuesto (más confiable)
+      const calculatedTotalBudget = budgetItems?.reduce((sum, item) => sum + (item.total_price || 0), 0) || 0;
+      const projectBudget = projectData?.construction_budget || 0;
 
       const newStats: ConstructionStats = {
         totalPhases: phases?.length || 0,
@@ -148,6 +161,7 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
         ).length || 0,
         budgetExecuted: budgetItems?.reduce((sum, item) => sum + (item.executed_amount || 0), 0) || 0,
         budgetRemaining: budgetItems?.reduce((sum, item) => sum + (item.total_price - (item.executed_amount || 0)), 0) || 0,
+        totalBudget: calculatedTotalBudget, // Usar el valor calculado directamente desde los items
       };
 
       setStats(newStats);
@@ -222,11 +236,26 @@ export function ConstructionDashboard({ projectId }: ConstructionDashboardProps)
         <Card>
           <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
             <div className={`flex items-center ${isMobile ? 'gap-3' : 'gap-4'}`}>
+              <DollarSign className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-blue-600`} />
+              <div className="flex-1 min-w-0">
+                <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-muted-foreground`}>Presupuesto Total</p>
+                <p className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>${stats.totalBudget.toLocaleString()}</p>
+                <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>
+                  {stats.totalBudgetItems} partidas
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
+            <div className={`flex items-center ${isMobile ? 'gap-3' : 'gap-4'}`}>
               <DollarSign className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-yellow-600`} />
               <div className="flex-1 min-w-0">
                 <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-muted-foreground`}>Presupuesto Ejecutado</p>
                 <p className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>${stats.budgetExecuted.toLocaleString()}</p>
-                <Progress value={budgetProgress} className={`mt-2 ${isMobile ? 'h-1' : 'h-2'}`} />
+                <Progress value={stats.totalBudget > 0 ? (stats.budgetExecuted / stats.totalBudget) * 100 : 0} className={`mt-2 ${isMobile ? 'h-1' : 'h-2'}`} />
               </div>
             </div>
           </CardContent>

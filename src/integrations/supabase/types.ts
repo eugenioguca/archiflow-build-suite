@@ -6281,6 +6281,10 @@ export type Database = {
         }
         Returns: string
       }
+      fix_budget_discrepancies: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       generate_material_payment_reference: {
         Args: Record<PropertyKey, never>
         Returns: string
