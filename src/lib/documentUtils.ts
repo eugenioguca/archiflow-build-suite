@@ -69,30 +69,24 @@ const normalizePath = (filePath: string, targetBucket: string): string => {
   // Limpiar slashes iniciales y finales
   let normalizedPath = filePath.replace(/^\/+|\/+$/g, '');
   
-  // Detectar si el path ya incluye un bucket
+  // Si el path ya incluye el bucket correcto, usarlo como está sin normalización adicional
+  if (normalizedPath.includes(`${targetBucket}/`)) {
+    console.log('normalizePath - Path already contains target bucket, using as is');
+    return normalizedPath;
+  }
+  
+  // Detectar si el path ya incluye un bucket diferente
   const hasClientBucket = normalizedPath.startsWith('client-documents/');
   const hasProjectBucket = normalizedPath.startsWith('project-documents/');
   
   console.log('normalizePath - Bucket detection:', { hasClientBucket, hasProjectBucket });
   
-  // Si el path ya incluye el bucket correcto, solo remover el prefijo
-  if (hasClientBucket && targetBucket === 'client-documents') {
+  // Si el path ya incluye algún bucket, remover el prefijo para usar el correcto
+  if (hasClientBucket) {
     normalizedPath = normalizedPath.substring('client-documents/'.length);
-  } else if (hasProjectBucket && targetBucket === 'project-documents') {
-    normalizedPath = normalizedPath.substring('project-documents/'.length);
-  } else if (hasClientBucket && targetBucket === 'project-documents') {
-    // Path tiene client-documents pero necesitamos project-documents
-    normalizedPath = normalizedPath.substring('client-documents/'.length);
-  } else if (hasProjectBucket && targetBucket === 'client-documents') {
-    // Path tiene project-documents pero necesitamos client-documents  
+  } else if (hasProjectBucket) {
     normalizedPath = normalizedPath.substring('project-documents/'.length);
   }
-  
-  // Limpiar duplicaciones que puedan haber quedado
-  normalizedPath = normalizedPath
-    .replace(/^client-documents\//, '')
-    .replace(/^project-documents\//, '')
-    .replace(/^\/+/, '');
   
   console.log('normalizePath - Output:', normalizedPath);
   return normalizedPath;
@@ -302,6 +296,99 @@ export const urlCache = new UrlCache();
 /**
  * Obtiene URL con cache para evitar regeneración constante
  */
+/**
+ * Abre un documento en una nueva pestaña con fallbacks robustos
+ */
+export const openDocumentInNewTab = async (
+  filePath: string,
+  source?: string
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    console.log('openDocumentInNewTab - Starting with:', { filePath, source });
+    
+    // Si ya es una URL completa, abrirla directamente
+    if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+      const newWindow = window.open(filePath, '_blank', 'noopener,noreferrer');
+      if (newWindow) {
+        return { success: true };
+      } else {
+        return { success: false, error: 'Popup bloqueado por el navegador' };
+      }
+    }
+
+    // Intentar múltiples opciones de URL en orden de preferencia
+    const fallbackOptions = [
+      // Opción 1: URL usando lógica estándar
+      async () => {
+        const result = await getDocumentViewUrl(filePath, source);
+        return result.url ? { url: result.url, source: 'standard' } : null;
+      },
+      
+      // Opción 2: Intentar con path directo sin bucket en client-documents
+      async () => {
+        try {
+          const { data } = await supabase.storage
+            .from('client-documents')
+            .createSignedUrl(filePath.replace(/^\/+/, ''), 3600);
+          return data?.signedUrl ? { url: data.signedUrl, source: 'direct-client' } : null;
+        } catch {
+          return null;
+        }
+      },
+      
+      // Opción 3: Intentar con path directo sin bucket en project-documents  
+      async () => {
+        try {
+          const { data } = supabase.storage
+            .from('project-documents')
+            .getPublicUrl(filePath.replace(/^\/+/, ''));
+          return data?.publicUrl ? { url: data.publicUrl, source: 'direct-project' } : null;
+        } catch {
+          return null;
+        }
+      },
+      
+      // Opción 4: Fallback final con URL pública de client-documents
+      async () => {
+        try {
+          const { data } = supabase.storage
+            .from('client-documents')
+            .getPublicUrl(filePath.replace(/^\/+/, ''));
+          return data?.publicUrl ? { url: data.publicUrl, source: 'public-fallback' } : null;
+        } catch {
+          return null;
+        }
+      }
+    ];
+
+    // Intentar cada opción hasta que una funcione
+    for (const [index, option] of fallbackOptions.entries()) {
+      try {
+        const result = await option();
+        if (result?.url) {
+          console.log(`openDocumentInNewTab - Success with option ${index + 1} (${result.source}):`, result.url);
+          const newWindow = window.open(result.url, '_blank', 'noopener,noreferrer');
+          if (newWindow) {
+            return { success: true };
+          } else {
+            return { success: false, error: 'Popup bloqueado por el navegador' };
+          }
+        }
+      } catch (error) {
+        console.warn(`openDocumentInNewTab - Option ${index + 1} failed:`, error);
+      }
+    }
+
+    return { success: false, error: 'No se pudo generar ninguna URL válida para el documento' };
+  } catch (error) {
+    console.error('openDocumentInNewTab - Fatal error:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Error desconocido'
+    };
+  }
+};
+
 export const getCachedDocumentUrl = async (
   filePath: string,
   source?: string

@@ -201,23 +201,37 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false }: Clie
   const handleView = async (document: ClientDocument) => {
     try {
       // Import the document utilities
-      const { getCachedDocumentUrl } = await import('@/lib/documentUtils');
+      const { openDocumentInNewTab } = await import('@/lib/documentUtils');
       
-      // Get the correct URL for the document
-      const result = await getCachedDocumentUrl(document.file_path, document.source);
+      // Open document in new tab with robust fallbacks
+      const result = await openDocumentInNewTab(document.file_path, document.source);
       
-      if (result.error) {
-        console.warn('Document URL warning:', result.error);
-      }
-      
-      if (result.url) {
-        setSelectedDocument({
-          ...document,
-          file_path: result.url
+      if (result.success) {
+        toast({
+          title: "Documento abierto",
+          description: "El documento se ha abierto en una nueva pestaña",
         });
-        setViewerOpen(true);
       } else {
-        throw new Error('No se pudo obtener la URL del documento');
+        // Si falla la apertura en nueva pestaña, usar el modal como fallback
+        console.warn('Failed to open in new tab, falling back to modal:', result.error);
+        
+        const { getCachedDocumentUrl } = await import('@/lib/documentUtils');
+        const urlResult = await getCachedDocumentUrl(document.file_path, document.source);
+        
+        if (urlResult.url) {
+          setSelectedDocument({
+            ...document,
+            file_path: urlResult.url
+          });
+          setViewerOpen(true);
+          
+          toast({
+            title: "Documento abierto en modal",
+            description: "Se abrió en modal como alternativa",
+          });
+        } else {
+          throw new Error(result.error || 'No se pudo abrir el documento');
+        }
       }
     } catch (error) {
       console.error('Error viewing document:', error);
@@ -380,7 +394,7 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false }: Clie
                                 className="flex-1 flex items-center gap-1"
                               >
                                 <Eye className="h-3 w-3" />
-                                <span className={compact ? 'text-xs' : 'text-sm'}>Ver</span>
+                                <span className={compact ? 'text-xs' : 'text-sm'}>Abrir</span>
                               </Button>
                               <Button
                                 variant="outline"
