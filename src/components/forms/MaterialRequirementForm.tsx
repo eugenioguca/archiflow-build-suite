@@ -211,13 +211,14 @@ export function MaterialRequirementForm({
   }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle>
-          {initialData ? "Editar Material" : "Nuevo Material"}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+    <div className="p-6">
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>
+            {initialData ? "Editar Material" : "Nuevo Material"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
             <FieldGroup 
               title="Información Principal" 
@@ -438,5 +439,6 @@ export function MaterialRequirementForm({
           </form>
         </CardContent>
       </Card>
+    </div>
   )
 }
