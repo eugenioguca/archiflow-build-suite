@@ -205,6 +205,67 @@ export type Database = {
           },
         ]
       }
+      budget_change_log: {
+        Row: {
+          budget_item_id: string
+          change_comments: string | null
+          change_reason: string
+          change_type: string
+          changed_by: string
+          created_at: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          project_id: string
+        }
+        Insert: {
+          budget_item_id: string
+          change_comments?: string | null
+          change_reason: string
+          change_type: string
+          changed_by: string
+          created_at?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          project_id: string
+        }
+        Update: {
+          budget_item_id?: string
+          change_comments?: string | null
+          change_reason?: string
+          change_type?: string
+          changed_by?: string
+          created_at?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_budget_change_log_changed_by"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_budget_change_log_project"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_budget_change_log_project"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "financial_summary_by_client_project"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
       budget_items: {
         Row: {
           budget_id: string
@@ -6331,6 +6392,10 @@ export type Database = {
       mask_sensitive_data: {
         Args: { data_value: string; data_type?: string }
         Returns: string
+      }
+      migrate_design_budget_to_construction: {
+        Args: { p_project_id: string }
+        Returns: undefined
       }
       refresh_financial_summary: {
         Args: Record<PropertyKey, never>
