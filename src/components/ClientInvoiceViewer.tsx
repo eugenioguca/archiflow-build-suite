@@ -33,24 +33,44 @@ export const ClientInvoiceViewer = ({ clientId, projectId }: ClientInvoiceViewer
   useEffect(() => {
     const fetchInvoices = async () => {
       try {
-        // For now, we'll show placeholder data since invoices table might not exist yet
-        const placeholderInvoices = [
-          {
-            id: '1',
-            invoice_number: 'INV-2024-001',
-            total_amount: 50000,
-            status: 'paid',
-            issue_date: '2024-01-15',
-            due_date: '2024-02-15',
-            currency: 'MXN',
-            client_name: 'Cliente Ejemplo',
-            project_name: 'Proyecto Ejemplo'
-          }
-        ];
+        // Fetch real invoices from database
+        const { data, error } = await supabase
+          .from('cfdi_documents')
+          .select(`
+            id,
+            uuid_fiscal,
+            folio,
+            serie,
+            total,
+            fecha_emision,
+            rfc_receptor,
+            status,
+            conceptos
+          `)
+          .eq('client_id', clientId)
+          .eq('tipo_comprobante', 'I');
 
-        setInvoices(placeholderInvoices);
+        if (error) {
+          console.error('Error fetching invoices:', error);
+          setInvoices([]);
+        } else {
+          // Transform CFDI data to invoice format
+          const transformedInvoices = (data || []).map(cfdi => ({
+            id: cfdi.id,
+            invoice_number: cfdi.serie ? `${cfdi.serie}-${cfdi.folio}` : cfdi.folio || cfdi.uuid_fiscal,
+            total_amount: cfdi.total || 0,
+            status: cfdi.status === 'active' ? 'issued' : 'cancelled',
+            issue_date: cfdi.fecha_emision,
+            due_date: cfdi.fecha_emision,
+            currency: 'MXN',
+            client_name: '',
+            project_name: ''
+          }));
+          setInvoices(transformedInvoices);
+        }
       } catch (error) {
         console.error('Error fetching invoices:', error);
+        setInvoices([]);
         toast({
           title: "Error",
           description: "No se pudieron cargar las facturas",

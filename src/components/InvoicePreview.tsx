@@ -138,14 +138,14 @@ export function InvoicePreview({ isOpen, onClose, template }: InvoicePreviewProp
                 
                 <div className="text-right">
                   <div className="bg-white/15 backdrop-blur-md rounded-lg p-4 shadow-xl">
-                    <h2 className="text-xl font-bold mb-2">Ejemplo Empresa S.A. de C.V.</h2>
+                    <h2 className="text-xl font-bold mb-2">[Nombre de la Empresa]</h2>
                     <div className="text-sm text-white/90 space-y-1">
-                      <p className="font-semibold">RFC: EMP010101000</p>
-                      <p>Av. Empresa 456, Col. Corporativa</p>
-                      <p>CP 54321, Ciudad de México</p>
+                      <p className="font-semibold">RFC: [RFC de la empresa]</p>
+                      <p>[Dirección de la empresa]</p>
+                      <p>[CP y Ciudad]</p>
                       <div className="flex items-center justify-end space-x-2 mt-2">
                         <Mail className="h-4 w-4" />
-                        <span className="text-xs">facturacion@ejemplo.com</span>
+                        <span className="text-xs">[email de facturación]</span>
                       </div>
                     </div>
                   </div>
