@@ -23,6 +23,7 @@ import { SalesAppointmentScheduler } from "@/components/SalesAppointmentSchedule
 import { TeamClientChat } from "@/components/TeamClientChat";
 import { ModuleNotifications } from "@/components/ModuleNotifications";
 import { SalesChatProjectSelector } from "@/components/SalesChatProjectSelector";
+import { SalesProjectFileManager } from "@/components/SalesProjectFileManager";
 import {
   Users, 
   TrendingUp, 
@@ -839,50 +840,11 @@ export default function Sales() {
               </TabsContent>
 
               <TabsContent value="documents" className="px-6 pb-6 overflow-y-auto flex-1">
-                {selectedProject.sales_pipeline_stage !== 'nuevo_lead' ? (
-                  <RequiredDocumentsManager
-                    clientProjectId={selectedProject.id}
-                    clientProject={selectedProject}
-                    onDocumentUpdate={async () => {
-                      // Refrescar datos
-                      await fetchData();
-                      
-                      // Obtener los datos actualizados directamente de la base de datos
-                      const { data: updatedProject } = await supabase
-                        .from('client_projects')
-                        .select(`
-                          *,
-                          clients!client_projects_client_id_fkey (
-                            id,
-                            full_name,
-                            email,
-                            phone,
-                            address
-                          ),
-                          assigned_advisor:profiles!client_projects_assigned_advisor_id_fkey (
-                            id,
-                            full_name
-                          )
-                        `)
-                        .eq('id', selectedProject.id)
-                        .single();
-                        
-                      if (updatedProject) {
-                        setSelectedProject(updatedProject);
-                      }
-                    }}
-                  />
-                ) : (
-                  <Card>
-                    <CardContent className="p-8 text-center">
-                      <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                      <h3 className="text-lg font-medium">Documentos no disponibles</h3>
-                      <p className="text-muted-foreground">
-                        Los documentos requeridos se activan cuando el cliente pasa a la fase "En Contacto"
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
+                <SalesProjectFileManager 
+                  clientId={selectedProject.client_id}
+                  projectId={selectedProject.id}
+                  projectName={selectedProject.project_name}
+                />
               </TabsContent>
 
               <TabsContent value="payments" className="px-6 pb-6 overflow-y-auto flex-1">
