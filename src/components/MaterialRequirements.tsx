@@ -376,9 +376,12 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                           <tr>
                             <th className="text-left p-3 text-sm font-medium">Material</th>
                             <th className="text-left p-3 text-sm font-medium">Cantidad</th>
+                            <th className="text-right p-3 text-sm font-medium">Costo Base</th>
+                            <th className="text-right p-3 text-sm font-medium">Ajuste +</th>
+                            <th className="text-right p-3 text-sm font-medium">Ajuste -</th>
+                            <th className="text-right p-3 text-sm font-medium">Total</th>
                             <th className="text-left p-3 text-sm font-medium">Estado</th>
                             <th className="text-left p-3 text-sm font-medium">Prioridad</th>
-                            <th className="text-right p-3 text-sm font-medium">Costo</th>
                             <th className="text-center p-3 text-sm font-medium">Entregado</th>
                             <th className="text-center p-3 text-sm font-medium">Acciones</th>
                           </tr>
@@ -399,6 +402,26 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                                 <div className="text-sm">
                                   <span className="font-semibold">{material.quantity_required}</span>
                                   <span className="text-muted-foreground ml-1">{material.unit_of_measure}</span>
+                                </div>
+                              </td>
+                              <td className="p-3 text-right">
+                                <div className="text-sm">
+                                  ${(material.unit_cost || 0).toLocaleString()}
+                                </div>
+                              </td>
+                              <td className="p-3 text-right">
+                                <div className="text-sm text-green-600">
+                                  {material.adjustment_additive ? `$${material.adjustment_additive.toLocaleString()}` : '-'}
+                                </div>
+                              </td>
+                              <td className="p-3 text-right">
+                                <div className="text-sm text-red-600">
+                                  {material.adjustment_deductive ? `$${material.adjustment_deductive.toLocaleString()}` : '-'}
+                                </div>
+                              </td>
+                              <td className="p-3 text-right">
+                                <div className="text-sm font-semibold text-blue-600">
+                                  ${(((material.unit_cost || 0) + (material.adjustment_additive || 0) - (material.adjustment_deductive || 0)) * material.quantity_required).toLocaleString()}
                                 </div>
                               </td>
                               <td className="p-3">
@@ -432,11 +455,6 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                                     <SelectItem value="urgent">Urgente</SelectItem>
                                   </SelectContent>
                                 </Select>
-                              </td>
-                              <td className="p-3 text-right">
-                                <div className="text-sm font-semibold text-green-600">
-                                  ${(((material.unit_cost || 0) + (material.adjustment_additive || 0) - (material.adjustment_deductive || 0)) * material.quantity_required).toLocaleString()}
-                                </div>
                               </td>
                               <td className="p-3">
                                 <div className="flex justify-center">
@@ -501,12 +519,23 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                               <span className="text-muted-foreground">Prioridad:</span>
                               <p className="font-medium">{getPriorityBadge(material.priority)}</p>
                             </div>
+                            <div>
+                              <span className="text-muted-foreground">Costo Base:</span>
+                              <p className="font-medium">${(material.unit_cost || 0).toLocaleString()}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Ajustes:</span>
+                              <div className="flex gap-2 text-xs">
+                                <span className="text-green-600">+${(material.adjustment_additive || 0).toLocaleString()}</span>
+                                <span className="text-red-600">-${(material.adjustment_deductive || 0).toLocaleString()}</span>
+                              </div>
+                            </div>
                           </div>
 
                           <div className="flex items-center justify-between pt-2 border-t">
                             <div>
                               <span className="text-sm text-muted-foreground">Costo Total:</span>
-                              <p className="font-bold text-green-700">
+                              <p className="font-bold text-blue-600">
                                 ${(((material.unit_cost || 0) + (material.adjustment_additive || 0) - (material.adjustment_deductive || 0)) * material.quantity_required).toLocaleString()}
                               </p>
                             </div>
