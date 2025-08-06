@@ -66,15 +66,50 @@ export function DocumentViewer({ isOpen, onClose, documentUrl, documentName, fil
     return extension;
   };
 
+  const normalizeFileType = (type: string) => {
+    // Normalizar MIME types a extensiones
+    const mimeToExt: { [key: string]: string } = {
+      'application/pdf': 'pdf',
+      'image/jpeg': 'jpg',
+      'image/jpg': 'jpg', 
+      'image/png': 'png',
+      'image/gif': 'gif',
+      'image/bmp': 'bmp',
+      'image/webp': 'webp',
+      'image/svg+xml': 'svg',
+      'text/plain': 'txt',
+      'text/csv': 'csv',
+      'application/json': 'json',
+      'application/xml': 'xml',
+      'text/xml': 'xml',
+      'application/msword': 'doc',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+      'application/vnd.ms-excel': 'xls',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+      'application/vnd.ms-powerpoint': 'ppt',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx'
+    };
+    
+    return mimeToExt[type] || type.toLowerCase();
+  };
+
   const detectedExtension = getFileTypeFromUrl(documentUrl);
-  const actualFileType = fileType?.toLowerCase() || detectedExtension;
+  const normalizedFileType = fileType ? normalizeFileType(fileType) : detectedExtension;
   
-  const isPDF = actualFileType === 'pdf' || detectedExtension === 'pdf';
-  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(actualFileType) || 
+  console.log('DocumentViewer Debug:', {
+    originalFileType: fileType,
+    normalizedFileType,
+    detectedExtension,
+    documentUrl,
+    documentName
+  });
+  
+  const isPDF = normalizedFileType === 'pdf' || detectedExtension === 'pdf';
+  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(normalizedFileType) || 
                   ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(detectedExtension);
-  const isText = ['txt', 'csv', 'json', 'xml'].includes(actualFileType) || 
+  const isText = ['txt', 'csv', 'json', 'xml'].includes(normalizedFileType) || 
                  ['txt', 'csv', 'json', 'xml'].includes(detectedExtension);
-  const isDocument = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(actualFileType) || 
+  const isDocument = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(normalizedFileType) || 
                      ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(detectedExtension);
 
   return (

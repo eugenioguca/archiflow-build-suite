@@ -61,6 +61,27 @@ export const detectBucketFromPath = (filePath: string): DocumentSource => {
 };
 
 /**
+ * Normaliza el path del archivo limpiando duplicaciones del bucket
+ */
+const normalizePath = (filePath: string): string => {
+  // Limpiar duplicaciones comunes del bucket en el path
+  let normalizedPath = filePath
+    .replace(/^client-documents\/client-documents\//, 'client-documents/')
+    .replace(/^project-documents\/project-documents\//, 'project-documents/')
+    .replace(/^\/+/, ''); // Limpiar slashes al inicio
+  
+  // Si el path ya incluye el bucket al inicio, removerlo ya que Supabase lo añade automáticamente
+  if (normalizedPath.startsWith('client-documents/')) {
+    normalizedPath = normalizedPath.substring('client-documents/'.length);
+  }
+  if (normalizedPath.startsWith('project-documents/')) {
+    normalizedPath = normalizedPath.substring('project-documents/'.length);
+  }
+  
+  return normalizedPath;
+};
+
+/**
  * Genera la URL correcta para visualizar un documento
  */
 export const getDocumentViewUrl = async (
@@ -68,27 +89,35 @@ export const getDocumentViewUrl = async (
   source?: string
 ): Promise<{ url: string; isSignedUrl: boolean; error?: string }> => {
   try {
+    console.log('getDocumentViewUrl - Input:', { filePath, source });
+    
     // Si ya es una URL completa, usarla directamente
     if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
       return { url: filePath, isSignedUrl: false };
     }
 
+    // Normalizar el path
+    const normalizedPath = normalizePath(filePath);
+    console.log('getDocumentViewUrl - Normalized path:', normalizedPath);
+
     // Determinar bucket y configuración
     const bucketInfo = source ? getBucketForDocument(source) : detectBucketFromPath(filePath);
+    console.log('getDocumentViewUrl - Bucket info:', bucketInfo);
     
     // Para buckets públicos, usar URL pública
     if (bucketInfo.isPublic) {
       const { data } = supabase.storage
         .from(bucketInfo.bucket)
-        .getPublicUrl(filePath);
+        .getPublicUrl(normalizedPath);
       
+      console.log('getDocumentViewUrl - Public URL generated:', data.publicUrl);
       return { url: data.publicUrl, isSignedUrl: false };
     }
 
     // Para buckets privados, generar URL firmada
     const { data, error } = await supabase.storage
       .from(bucketInfo.bucket)
-      .createSignedUrl(filePath, 3600); // 1 hora de expiración
+      .createSignedUrl(normalizedPath, 3600); // 1 hora de expiración
 
     if (error) {
       console.error('Error creating signed URL:', error);
@@ -96,8 +125,9 @@ export const getDocumentViewUrl = async (
       // Fallback: intentar con bucket público como último recurso
       const { data: fallbackData } = supabase.storage
         .from('project-documents')
-        .getPublicUrl(filePath);
+        .getPublicUrl(normalizedPath);
       
+      console.log('getDocumentViewUrl - Fallback URL:', fallbackData.publicUrl);
       return { 
         url: fallbackData.publicUrl, 
         isSignedUrl: false,
@@ -105,6 +135,7 @@ export const getDocumentViewUrl = async (
       };
     }
 
+    console.log('getDocumentViewUrl - Signed URL generated:', data.signedUrl);
     return { url: data.signedUrl, isSignedUrl: true };
   } catch (error) {
     console.error('Error getting document URL:', error);
