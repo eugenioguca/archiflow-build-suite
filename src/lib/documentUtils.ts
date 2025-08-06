@@ -306,14 +306,55 @@ export const openDocumentInNewTab = async (
   try {
     console.log('openDocumentInNewTab - Starting with:', { filePath, source });
     
+    // Helper function for intelligent tab opening detection
+    const openWithDetection = (url: string): Promise<boolean> => {
+      return new Promise((resolve) => {
+        const beforeOpen = Date.now();
+        const originalFocus = document.hasFocus();
+        
+        // Attempt to open in new tab
+        const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+        
+        // If we get a window reference, it's definitely successful
+        if (newWindow && !newWindow.closed) {
+          resolve(true);
+          return;
+        }
+        
+        // For cases where window.open returns null but might have opened
+        // Use a combination of timing and focus detection
+        const focusHandler = () => {
+          // If we lost focus quickly after opening, likely successful
+          if (originalFocus && !document.hasFocus()) {
+            cleanup();
+            resolve(true);
+          }
+        };
+        
+        const cleanup = () => {
+          window.removeEventListener('blur', focusHandler);
+          clearTimeout(timeout);
+        };
+        
+        // Listen for focus loss (indicates new tab opened)
+        window.addEventListener('blur', focusHandler);
+        
+        // Timeout fallback - if no clear indication in 1 second, assume failure
+        const timeout = setTimeout(() => {
+          cleanup();
+          // Check if we lost focus during this time
+          const focusLost = originalFocus && !document.hasFocus();
+          resolve(focusLost);
+        }, 1000);
+      });
+    };
+    
     // Si ya es una URL completa, abrirla directamente
     if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
-      const newWindow = window.open(filePath, '_blank', 'noopener,noreferrer');
-      if (newWindow) {
-        return { success: true };
-      } else {
-        return { success: false, error: 'Popup bloqueado por el navegador' };
-      }
+      const success = await openWithDetection(filePath);
+      return success 
+        ? { success: true }
+        : { success: false, error: 'No se pudo abrir el documento en nueva pestaña' };
     }
 
     // Intentar múltiples opciones de URL en orden de preferencia
@@ -367,11 +408,9 @@ export const openDocumentInNewTab = async (
         const result = await option();
         if (result?.url) {
           console.log(`openDocumentInNewTab - Success with option ${index + 1} (${result.source}):`, result.url);
-          const newWindow = window.open(result.url, '_blank', 'noopener,noreferrer');
-          if (newWindow) {
+          const success = await openWithDetection(result.url);
+          if (success) {
             return { success: true };
-          } else {
-            return { success: false, error: 'Popup bloqueado por el navegador' };
           }
         }
       } catch (error) {
