@@ -6281,6 +6281,14 @@ export type Database = {
         }
         Returns: string
       }
+      delete_client_cascade: {
+        Args: { client_id_param: string }
+        Returns: undefined
+      }
+      delete_project_cascade: {
+        Args: { project_id_param: string }
+        Returns: undefined
+      }
       fix_budget_discrepancies: {
         Args: Record<PropertyKey, never>
         Returns: undefined
