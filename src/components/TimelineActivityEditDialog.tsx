@@ -194,8 +194,8 @@ export function TimelineActivityEditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-6xl h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Editar Actividad</DialogTitle>
           <DialogDescription>
             Modifica los detalles de la actividad del cronograma
@@ -203,8 +203,9 @@ export function TimelineActivityEditDialog({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex-1 overflow-y-auto px-1">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pb-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
                 name="activity_name"
@@ -234,7 +235,7 @@ export function TimelineActivityEditDialog({
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               <FormField
                 control={form.control}
                 name="activity_type"
@@ -328,7 +329,7 @@ export function TimelineActivityEditDialog({
               )}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
                 name="estimated_start_date"
@@ -414,7 +415,7 @@ export function TimelineActivityEditDialog({
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
                 name="actual_start_date"
@@ -494,7 +495,7 @@ export function TimelineActivityEditDialog({
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
                 name="cost_budget"
@@ -570,7 +571,11 @@ export function TimelineActivityEditDialog({
               )}
             />
 
-            <div className="flex justify-end space-x-2">
+            </form>
+          </div>
+          
+          <div className="flex-shrink-0 border-t bg-background p-4">
+            <div className="flex justify-end gap-3">
               <Button
                 type="button"
                 variant="outline"
@@ -579,11 +584,15 @@ export function TimelineActivityEditDialog({
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? "Guardando..." : "Guardar Cambios"}
+              <Button 
+                type="submit" 
+                disabled={loading}
+                onClick={form.handleSubmit(onSubmit)}
+              >
+                {loading ? 'Guardando...' : 'Guardar Cambios'}
               </Button>
             </div>
-          </form>
+          </div>
         </Form>
       </DialogContent>
     </Dialog>

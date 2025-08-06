@@ -312,17 +312,19 @@ export function ConstructionGanttAdvanced({ projectId }: ConstructionGanttAdvanc
                     Nueva Actividad
                   </Button>
                 </ResponsiveDialogTrigger>
-                <ResponsiveDialogContent maxHeight="90vh">
+                <ResponsiveDialogContent maxHeight="90vh" className="sm:max-w-5xl">
                   <ResponsiveDialogHeader>
                     <ResponsiveDialogTitle>Nueva Actividad</ResponsiveDialogTitle>
                   </ResponsiveDialogHeader>
-                  <TimelineActivityForm
-                    projectId={projectId}
-                    onSuccess={() => {
-                      fetchData();
-                    }}
-                    onCancel={() => {}}
-                  />
+                  <div className="max-h-[70vh] overflow-y-auto px-1">
+                    <TimelineActivityForm
+                      projectId={projectId}
+                      onSuccess={() => {
+                        fetchData();
+                      }}
+                      onCancel={() => {}}
+                    />
+                  </div>
                 </ResponsiveDialogContent>
               </ResponsiveDialog>
               

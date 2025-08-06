@@ -207,7 +207,7 @@ export function TimelineActivityForm({ projectId, onSuccess, onCancel }: Timelin
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <FormField
             control={form.control}
             name="activity_name"
@@ -240,7 +240,7 @@ export function TimelineActivityForm({ projectId, onSuccess, onCancel }: Timelin
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <FormField
             control={form.control}
             name="activity_type"
@@ -317,7 +317,7 @@ export function TimelineActivityForm({ projectId, onSuccess, onCancel }: Timelin
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <FormField
             control={form.control}
             name="estimated_start_date"
@@ -421,7 +421,7 @@ export function TimelineActivityForm({ projectId, onSuccess, onCancel }: Timelin
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <FormField
             control={form.control}
             name="critical_path"
@@ -482,7 +482,7 @@ export function TimelineActivityForm({ projectId, onSuccess, onCancel }: Timelin
           )}
         />
 
-        <div className="flex justify-end gap-3 pt-4">
+        <div className="flex justify-end gap-3 pt-6 border-t bg-background sticky bottom-0">
           <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
             Cancelar
           </Button>
