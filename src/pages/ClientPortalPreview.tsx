@@ -20,16 +20,18 @@ import ClientPortalModern from '@/components/ClientPortalModern';
 
 interface PreviewProject {
   id: string;
-  project_name: string;
-  project_description?: string | null;
-  status: string;
-  budget?: number | null;
-  overall_progress_percentage?: number | null;
-  estimated_completion_date?: string | null;
-  project_location?: string | null;
-  service_type?: string | null;
-  timeline_months?: number | null;
   client_id: string;
+  project_name: string;
+  project_description: string;
+  status: string;
+  budget: number;
+  construction_budget: number;
+  overall_progress_percentage: number;
+  construction_start_date: string | null;
+  estimated_completion_date: string | null;
+  actual_completion_date: string | null;
+  construction_area: number;
+  service_type: string;
 }
 
 const ClientPortalPreview = () => {
@@ -64,10 +66,15 @@ const ClientPortalPreview = () => {
 
       if (projectError) throw projectError;
       
-      // Update project with real progress
+      // Update project with real progress and ensure all required fields
       setProjectData({
         ...project,
-        overall_progress_percentage: progress.overallProgress
+        overall_progress_percentage: progress.overallProgress,
+        budget: project.budget || 0,
+        construction_budget: project.construction_budget || 0,
+        construction_area: project.construction_area || 0,
+        project_description: project.project_description || '',
+        service_type: project.service_type || 'Residencial'
       });
 
       // Fetch payment plans count (datos reales del plan de pagos)
@@ -222,9 +229,17 @@ const ClientPortalPreview = () => {
                   </Badge>
                 </div>
                 
-                {/* Render the actual client portal component with simulation mode */}
+                {/* Render the actual client portal component with preview data */}
                 <div className="bg-background rounded-lg border">
-                  <ClientPortalModern />
+                  <ClientPortalModern 
+                    isPreview={true}
+                    previewData={{
+                      project: projectData,
+                      paymentPlans,
+                      documents,
+                      progressPhotos
+                    }}
+                  />
                 </div>
               </div>
             ) : (

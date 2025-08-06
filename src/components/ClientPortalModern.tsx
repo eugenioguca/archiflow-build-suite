@@ -57,7 +57,20 @@ interface ClientProject {
   service_type: string;
 }
 
-const ClientPortalModern = () => {
+interface ClientPortalModernProps {
+  isPreview?: boolean;
+  previewData?: {
+    project: ClientProject;
+    paymentPlans: any[];
+    documents: any[];
+    progressPhotos: any[];
+  };
+}
+
+const ClientPortalModern: React.FC<ClientPortalModernProps> = ({ 
+  isPreview = false, 
+  previewData 
+}) => {
   const { user } = useAuth();
   const [clientProjects, setClientProjects] = useState<ClientProject[]>([]);
   const [selectedProject, setSelectedProject] = useState<ClientProject | null>(null);
@@ -65,16 +78,21 @@ const ClientPortalModern = () => {
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
-    if (user) {
+    if (isPreview && previewData) {
+      // Use preview data
+      setClientProjects([previewData.project]);
+      setSelectedProject(previewData.project);
+      setLoading(false);
+    } else if (user && !isPreview) {
       fetchClientProjects();
     }
-  }, [user]);
+  }, [user, isPreview, previewData]);
 
   useEffect(() => {
-    if (selectedProject) {
+    if (selectedProject && !isPreview) {
       fetchProjectDetails(selectedProject.id);
     }
-  }, [selectedProject]);
+  }, [selectedProject, isPreview]);
 
   const fetchClientProjects = async () => {
     try {
@@ -387,9 +405,36 @@ const ClientPortalModern = () => {
 
           <TabsContent value="documents">
             <div className="space-y-4">
-              {selectedProject && (
+              {selectedProject && isPreview && previewData?.documents ? (
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle>Documentos del Proyecto</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {previewData.documents.length > 0 ? (
+                        previewData.documents.map((doc) => (
+                          <div key={doc.id} className="flex items-center space-x-3 p-3 bg-muted/30 rounded-lg">
+                            <FileText className="h-5 w-5 text-primary" />
+                            <div className="flex-1">
+                              <p className="font-medium">{doc.name}</p>
+                              <p className="text-sm text-muted-foreground">{doc.category}</p>
+                            </div>
+                            <Badge variant="outline">{doc.file_type}</Badge>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center text-muted-foreground p-8">
+                          <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                          <p>No hay documentos disponibles</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : selectedProject ? (
                 <ClientDocumentHub clientId={selectedProject.client_id} projectId={selectedProject.id} />
-              )}
+              ) : null}
             </div>
           </TabsContent>
 
@@ -399,10 +444,18 @@ const ClientPortalModern = () => {
                 <CardTitle>Fotos de Progreso</CardTitle>
               </CardHeader>
               <CardContent>
-                {selectedProject && (
+                {isPreview && previewData?.progressPhotos ? (
+                  previewData.progressPhotos.length > 0 ? (
+                    <ProgressPhotosCarousel photos={previewData.progressPhotos} />
+                  ) : (
+                    <div className="text-center text-muted-foreground p-8">
+                      <Camera className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No hay fotos de progreso disponibles</p>
+                    </div>
+                  )
+                ) : selectedProject ? (
                   <ProgressPhotosCarousel photos={[]} />
-                )}
-                {(!selectedProject || true) && (
+                ) : (
                   <div className="text-center text-muted-foreground p-8">
                     <Camera className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>Las fotos de progreso aparecerán aquí cuando el equipo las suba</p>
@@ -414,12 +467,24 @@ const ClientPortalModern = () => {
 
           <TabsContent value="chat">
             <div className="space-y-4">
-              {selectedProject && (
+              {isPreview ? (
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle>Chat del Proyecto</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center text-muted-foreground p-8">
+                      <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>Vista previa del chat - Funcionalidad disponible para el cliente</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : selectedProject ? (
                 <SuperiorClientPortalChat 
                   clientId={selectedProject.client_id} 
                   projectId={selectedProject.id} 
                 />
-              )}
+              ) : null}
             </div>
           </TabsContent>
         </Tabs>
