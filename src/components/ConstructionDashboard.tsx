@@ -447,7 +447,7 @@ function QuickActions({ projectId, onStatsRefresh }: QuickActionsProps) {
                     Agregar fotos del avance de la construcción
                   </DialogDescription>
                 </DialogHeader>
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 overflow-y-auto px-1">
                   <ProgressPhotoForm
                     projectId={projectId}
                     onSuccess={() => {
@@ -455,7 +455,24 @@ function QuickActions({ projectId, onStatsRefresh }: QuickActionsProps) {
                       onStatsRefresh();
                     }}
                     onCancel={() => setUploadPhotoDialog(false)}
+                    showButtons={false}
                   />
+                </div>
+                <div className="flex-shrink-0 flex justify-end gap-3 pt-4 border-t bg-background">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setUploadPhotoDialog(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    form="progress-photo-form"
+                    className="min-w-[120px]"
+                  >
+                    Subir Fotos
+                  </Button>
                 </div>
               </div>
             </DialogContent>

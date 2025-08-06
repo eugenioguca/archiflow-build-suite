@@ -28,9 +28,15 @@ interface ProgressPhotoFormProps {
   projectId: string;
   onSuccess: () => void;
   onCancel: () => void;
+  showButtons?: boolean;
 }
 
-export function ProgressPhotoForm({ projectId, onSuccess, onCancel }: ProgressPhotoFormProps) {
+export function ProgressPhotoForm({ 
+  projectId, 
+  onSuccess, 
+  onCancel,
+  showButtons = true 
+}: ProgressPhotoFormProps) {
   const [loading, setLoading] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
@@ -216,7 +222,11 @@ export function ProgressPhotoForm({ projectId, onSuccess, onCancel }: ProgressPh
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form 
+        id="progress-photo-form"
+        onSubmit={form.handleSubmit(onSubmit)} 
+        className="space-y-6"
+      >
         <div className="space-y-6">
           <div>
             <Label className="text-base font-medium">Seleccionar Fotos</Label>
@@ -360,14 +370,16 @@ export function ProgressPhotoForm({ projectId, onSuccess, onCancel }: ProgressPh
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 pt-6 border-t">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={loading || selectedFiles.length === 0}>
-            {loading ? "Subiendo..." : "Subir Fotos"}
-          </Button>
-        </div>
+        {showButtons && (
+          <div className="flex justify-end gap-3 pt-6 border-t">
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={loading || selectedFiles.length === 0}>
+              {loading ? "Subiendo..." : "Subir Fotos"}
+            </Button>
+          </div>
+        )}
       </form>
     </Form>
   );
