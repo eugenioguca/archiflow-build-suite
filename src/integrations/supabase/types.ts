@@ -6395,7 +6395,7 @@ export type Database = {
       }
       migrate_design_budget_to_construction: {
         Args: { p_project_id: string }
-        Returns: undefined
+        Returns: Json
       }
       refresh_financial_summary: {
         Args: Record<PropertyKey, never>
