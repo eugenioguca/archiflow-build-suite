@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ClientProjectManager } from "@/components/ClientProjectManager";
 import { ClientFormDialog } from "@/components/ClientFormDialogNew";
+import { ClientDeleteDialog } from "@/components/ClientDeleteDialog";
 
 interface Client {
   id: string;
@@ -49,6 +50,8 @@ export default function ClientsNew() {
   const [showProjectManager, setShowProjectManager] = useState(false);
   const [newClientForProject, setNewClientForProject] = useState(false);
   const [selectedExistingClientId, setSelectedExistingClientId] = useState("");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -150,93 +153,13 @@ export default function ClientsNew() {
     }).format(amount);
   };
 
-  const handleDelete = async (clientId: string) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este cliente y todo su expediente? Esta acción eliminará también todos sus proyectos y documentos asociados y no se puede deshacer.')) return;
+  const handleDeleteClick = (client: Client) => {
+    setClientToDelete(client);
+    setShowDeleteDialog(true);
+  };
 
-    try {
-      // Primero eliminar documentos del cliente
-      const { error: documentsError } = await supabase
-        .from('client_documents')
-        .delete()
-        .eq('client_id', clientId);
-
-      if (documentsError) {
-        console.warn('Error eliminando documentos del cliente:', documentsError);
-        // No detenemos el proceso por esto, solo advertimos
-      }
-
-      // Eliminar client_portal_settings
-      const { error: portalSettingsError } = await supabase
-        .from('client_portal_settings')
-        .delete()
-        .eq('client_id', clientId);
-
-      if (portalSettingsError) {
-        console.warn('Error eliminando configuración del portal del cliente:', portalSettingsError);
-      }
-
-      // Eliminar client_portal_chat
-      const { error: portalChatError } = await supabase
-        .from('client_portal_chat')
-        .delete()
-        .eq('client_id', clientId);
-
-      if (portalChatError) {
-        console.warn('Error eliminando chat del portal del cliente:', portalChatError);
-      }
-
-      // Eliminar client_portal_notifications
-      const { error: portalNotificationsError } = await supabase
-        .from('client_portal_notifications')
-        .delete()
-        .eq('client_id', clientId);
-
-      if (portalNotificationsError) {
-        console.warn('Error eliminando notificaciones del portal del cliente:', portalNotificationsError);
-      }
-
-      // Eliminar documentos en tabla general
-      const { error: generalDocsError } = await supabase
-        .from('documents')
-        .delete()
-        .eq('client_id', clientId);
-
-      if (generalDocsError) {
-        console.warn('Error eliminando documentos generales del cliente:', generalDocsError);
-      }
-
-      // Eliminar proyectos del cliente
-      const { error: projectsError } = await supabase
-        .from('client_projects')
-        .delete()
-        .eq('client_id', clientId);
-
-      if (projectsError) {
-        console.warn('Error eliminando proyectos del cliente:', projectsError);
-      }
-
-      // Finalmente eliminar el cliente
-      const { error: clientError } = await supabase
-        .from('clients')
-        .delete()
-        .eq('id', clientId);
-
-      if (clientError) throw clientError;
-
-      toast({
-        title: "Cliente eliminado",
-        description: "El expediente completo del cliente se eliminó correctamente, incluyendo proyectos y documentos",
-      });
-      
-      fetchClients();
-    } catch (error: any) {
-      console.error('Error eliminando cliente:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar el cliente. Por favor, inténtalo de nuevo.",
-        variant: "destructive",
-      });
-    }
+  const handleClientDeleted = (clientId: string) => {
+    fetchClients();
   };
 
   const filteredClients = clients.filter(client =>
@@ -413,7 +336,7 @@ export default function ClientsNew() {
                             Editar Cliente
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleDelete(client.id)}
+                            onClick={() => handleDeleteClick(client)}
                             className="text-destructive"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
@@ -481,6 +404,13 @@ export default function ClientsNew() {
           )}
         </DialogContent>
       </Dialog>
+
+      <ClientDeleteDialog
+        client={clientToDelete}
+        isOpen={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        onClientDeleted={handleClientDeleted}
+      />
     </div>
   );
 }
