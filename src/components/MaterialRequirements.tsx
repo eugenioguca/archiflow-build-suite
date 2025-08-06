@@ -374,8 +374,8 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                       <table className="w-full">
                         <thead className="bg-muted/50">
                           <tr>
-                            <th className="text-left p-3 text-sm font-medium">Material</th>
                             <th className="text-left p-3 text-sm font-medium">Cuenta Mayor</th>
+                            <th className="text-left p-3 text-sm font-medium">Material</th>
                             <th className="text-left p-3 text-sm font-medium">Cantidad</th>
                             <th className="text-right p-3 text-sm font-medium">Costo Base</th>
                             <th className="text-right p-3 text-sm font-medium">Ajuste +</th>
@@ -391,6 +391,11 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                           {filteredMaterials.map((material, index) => (
                             <tr key={material.id} className={`${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'} hover:bg-muted/40 transition-colors`}>
                               <td className="p-3">
+                                <div className="text-sm font-medium">
+                                  {material.cuenta_mayor || '-'}
+                                </div>
+                              </td>
+                              <td className="p-3">
                                 <div className="space-y-1">
                                   <p className="font-medium text-sm">{material.material_name}</p>
                                   {material.material_code && (
@@ -399,11 +404,6 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                                   {material.descripcion_producto && (
                                     <p className="text-xs text-muted-foreground">{material.descripcion_producto}</p>
                                   )}
-                                </div>
-                              </td>
-                              <td className="p-3">
-                                <div className="text-sm font-medium">
-                                  {material.cuenta_mayor || '-'}
                                 </div>
                               </td>
                               <td className="p-3">
