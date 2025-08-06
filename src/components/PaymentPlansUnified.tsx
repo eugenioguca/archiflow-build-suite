@@ -300,7 +300,12 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
 
       toast.success("Cuota marcada como pagada e ingreso registrado correctamente");
 
-      // Close dialog and reset form
+      // Refresh installments and payment plans
+      if (selectedPlan) {
+        await fetchInstallments(selectedPlan.id);
+      }
+      await fetchPaymentPlans(); // Refresh payment plans to update dashboard cards
+      
       setPaymentDialog(null);
       setPaymentForm({
         paid_date: '',
@@ -309,11 +314,6 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
         notes: ''
       });
 
-      // Refresh data
-      await fetchPaymentPlans();
-      if (selectedPlan) {
-        await fetchInstallments(selectedPlan.id);
-      }
       if (onUpdate) onUpdate();
 
     } catch (error) {
