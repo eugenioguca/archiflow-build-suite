@@ -10,6 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { SmartScrollArea } from "@/components/ui/smart-scroll-area";
+import { FieldGroup } from "@/components/ui/field-group";
+import { ResponsiveGrid } from "@/components/ui/responsive-grid";
 
 const budgetItemSchema = z.object({
   item_code: z.string().optional(),
@@ -191,9 +194,14 @@ export function BudgetItemForm({ projectId, budgetVersion, initialData, onSucces
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <SmartScrollArea className="w-full" maxHeight="calc(100vh - 200px)">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <FieldGroup 
+            title="Información Básica" 
+            description="Código y categorización de la partida"
+          >
+            <ResponsiveGrid cols={{ default: 1, md: 2 }}>
           <FormField
             control={form.control}
             name="item_code"
@@ -235,9 +243,14 @@ export function BudgetItemForm({ projectId, budgetVersion, initialData, onSucces
               </FormItem>
             )}
           />
-        </div>
+            </ResponsiveGrid>
+          </FieldGroup>
 
-        <FormField
+          <FieldGroup 
+            title="Concepto y Descripción" 
+            description="Nombre y detalles de la partida"
+          >
+            <FormField
           control={form.control}
           name="item_name"
           render={({ field }) => (
@@ -267,9 +280,14 @@ export function BudgetItemForm({ projectId, budgetVersion, initialData, onSucces
               <FormMessage />
             </FormItem>
           )}
-        />
+            />
+          </FieldGroup>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FieldGroup 
+            title="Especificaciones Técnicas" 
+            description="Especialidad, unidad y cantidad"
+          >
+            <ResponsiveGrid cols={{ default: 1, md: 3 }}>
           <FormField
             control={form.control}
             name="specialty"
@@ -339,9 +357,14 @@ export function BudgetItemForm({ projectId, budgetVersion, initialData, onSucces
               </FormItem>
             )}
           />
-        </div>
+            </ResponsiveGrid>
+          </FieldGroup>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FieldGroup 
+            title="Precios y Totales" 
+            description="Precio unitario y cálculo total"
+          >
+            <ResponsiveGrid cols={{ default: 1, md: 2 }}>
           <FormField
             control={form.control}
             name="unit_price"
@@ -371,9 +394,15 @@ export function BudgetItemForm({ projectId, budgetVersion, initialData, onSucces
               </span>
             </div>
           </div>
-        </div>
+            </ResponsiveGrid>
+          </FieldGroup>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FieldGroup 
+            title="Desglose de Costos" 
+            description="Detalle de materiales, mano de obra y equipo"
+            defaultOpen={false}
+          >
+            <ResponsiveGrid cols={{ default: 1, md: 3 }}>
           <FormField
             control={form.control}
             name="material_cost"
@@ -436,9 +465,15 @@ export function BudgetItemForm({ projectId, budgetVersion, initialData, onSucces
               </FormItem>
             )}
           />
-        </div>
+            </ResponsiveGrid>
+          </FieldGroup>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FieldGroup 
+            title="Indirectos y Utilidad" 
+            description="Porcentajes de indirectos y utilidad"
+            defaultOpen={false}
+          >
+            <ResponsiveGrid cols={{ default: 1, md: 2 }}>
           <FormField
             control={form.control}
             name="overhead_percentage"
@@ -480,9 +515,10 @@ export function BudgetItemForm({ projectId, budgetVersion, initialData, onSucces
               </FormItem>
             )}
           />
-        </div>
+            </ResponsiveGrid>
+          </FieldGroup>
 
-        <div className="flex justify-end gap-3 pt-4">
+          <div className="flex justify-end gap-3 pt-4">
           <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
             Cancelar
           </Button>
@@ -492,8 +528,9 @@ export function BudgetItemForm({ projectId, budgetVersion, initialData, onSucces
             : (initialData ? "Actualizar Partida" : "Crear Partida")
           }
         </Button>
-        </div>
-      </form>
-    </Form>
+          </div>
+        </form>
+      </Form>
+    </SmartScrollArea>
   );
 }

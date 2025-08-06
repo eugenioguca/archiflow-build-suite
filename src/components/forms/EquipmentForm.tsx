@@ -16,6 +16,9 @@ import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { SmartScrollArea } from "@/components/ui/smart-scroll-area";
+import { FieldGroup } from "@/components/ui/field-group";
+import { ResponsiveGrid } from "@/components/ui/responsive-grid";
 
 const equipmentSchema = z.object({
   equipment_name: z.string().min(1, "El nombre del equipo es requerido"),
@@ -174,9 +177,14 @@ export function EquipmentForm({ projectId, initialData, onSuccess, onCancel }: E
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <SmartScrollArea className="w-full" maxHeight="calc(100vh - 200px)">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <FieldGroup 
+            title="Información Básica" 
+            description="Datos principales del equipo"
+          >
+            <ResponsiveGrid cols={{ default: 1, md: 2 }}>
           <FormField
             control={form.control}
             name="equipment_name"
@@ -207,9 +215,14 @@ export function EquipmentForm({ projectId, initialData, onSuccess, onCancel }: E
               </FormItem>
             )}
           />
-        </div>
+            </ResponsiveGrid>
+          </FieldGroup>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FieldGroup 
+            title="Clasificación y Estado" 
+            description="Tipo de equipo y estado actual"
+          >
+            <ResponsiveGrid cols={{ default: 1, md: 2 }}>
           <FormField
             control={form.control}
             name="equipment_type"
@@ -259,9 +272,14 @@ export function EquipmentForm({ projectId, initialData, onSuccess, onCancel }: E
               </FormItem>
             )}
           />
-        </div>
+            </ResponsiveGrid>
+          </FieldGroup>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FieldGroup 
+            title="Especificaciones Técnicas" 
+            description="Marca, modelo y números de serie"
+          >
+            <ResponsiveGrid cols={{ default: 1, md: 3 }}>
           <FormField
             control={form.control}
             name="brand"
@@ -303,9 +321,14 @@ export function EquipmentForm({ projectId, initialData, onSuccess, onCancel }: E
               </FormItem>
             )}
           />
-        </div>
+            </ResponsiveGrid>
+          </FieldGroup>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FieldGroup 
+            title="Condición y Ubicación" 
+            description="Estado del equipo y ubicación actual"
+          >
+            <ResponsiveGrid cols={{ default: 1, md: 2 }}>
           <FormField
             control={form.control}
             name="condition_rating"
@@ -344,9 +367,14 @@ export function EquipmentForm({ projectId, initialData, onSuccess, onCancel }: E
               </FormItem>
             )}
           />
-        </div>
+            </ResponsiveGrid>
+          </FieldGroup>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FieldGroup 
+            title="Tarifas y Costos" 
+            description="Tarifas de alquiler por periodo"
+          >
+            <ResponsiveGrid cols={{ default: 1, md: 3 }}>
           <FormField
             control={form.control}
             name="hourly_rate"
@@ -409,9 +437,15 @@ export function EquipmentForm({ projectId, initialData, onSuccess, onCancel }: E
               </FormItem>
             )}
           />
-        </div>
+            </ResponsiveGrid>
+          </FieldGroup>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FieldGroup 
+            title="Fechas de Mantenimiento" 
+            description="Historial y programación de mantenimiento"
+            defaultOpen={false}
+          >
+            <ResponsiveGrid cols={{ default: 1, md: 3 }}>
           <FormField
             control={form.control}
             name="acquisition_date"
@@ -534,9 +568,15 @@ export function EquipmentForm({ projectId, initialData, onSuccess, onCancel }: E
               </FormItem>
             )}
           />
-        </div>
+            </ResponsiveGrid>
+          </FieldGroup>
 
-        <FormField
+          <FieldGroup 
+            title="Notas Adicionales" 
+            description="Observaciones sobre el equipo"
+            defaultOpen={false}
+          >
+            <FormField
           control={form.control}
           name="notes"
           render={({ field }) => (
@@ -552,9 +592,10 @@ export function EquipmentForm({ projectId, initialData, onSuccess, onCancel }: E
               <FormMessage />
             </FormItem>
           )}
-        />
+            />
+          </FieldGroup>
 
-        <div className="flex justify-end gap-3 pt-4">
+          <div className="flex justify-end gap-3 pt-4">
           <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
             Cancelar
           </Button>
@@ -564,8 +605,9 @@ export function EquipmentForm({ projectId, initialData, onSuccess, onCancel }: E
             : (initialData ? "Actualizar Equipo" : "Crear Equipo")
           }
         </Button>
-        </div>
-      </form>
-    </Form>
+          </div>
+        </form>
+      </Form>
+    </SmartScrollArea>
   );
 }

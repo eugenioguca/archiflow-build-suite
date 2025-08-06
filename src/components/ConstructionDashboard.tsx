@@ -16,6 +16,12 @@ import {
   Camera
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { 
+  ResponsiveDialog, 
+  ResponsiveDialogContent, 
+  ResponsiveDialogHeader, 
+  ResponsiveDialogTitle 
+} from "@/components/ui/responsive-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { EquipmentForm } from "@/components/forms/EquipmentForm";
 import { ConstructionPhaseForm } from "@/components/forms/ConstructionPhaseForm";
@@ -404,20 +410,17 @@ function QuickActions({ projectId, onStatsRefresh }: QuickActionsProps) {
             </DialogContent>
           </Dialog>
 
-          <Dialog open={newEquipmentDialog} onOpenChange={setNewEquipmentDialog}>
+          <ResponsiveDialog open={newEquipmentDialog} onOpenChange={setNewEquipmentDialog}>
             <DialogTrigger asChild>
               <Button variant="outline" className={`${isMobile ? 'h-16 flex-col gap-1' : 'h-20 flex-col gap-2'}`}>
                 <Wrench className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'}`} />
                 <span className={`${isMobile ? 'text-xs' : 'text-sm'}`}>Asignar Equipo</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Nuevo Equipo</DialogTitle>
-                <DialogDescription>
-                  Agregar un nuevo equipo al inventario del proyecto
-                </DialogDescription>
-              </DialogHeader>
+            <ResponsiveDialogContent maxHeight="90vh">
+              <ResponsiveDialogHeader>
+                <ResponsiveDialogTitle>Nuevo Equipo</ResponsiveDialogTitle>
+              </ResponsiveDialogHeader>
               <EquipmentForm
                 projectId={projectId}
                 onSuccess={() => {
@@ -426,8 +429,8 @@ function QuickActions({ projectId, onStatsRefresh }: QuickActionsProps) {
                 }}
                 onCancel={() => setNewEquipmentDialog(false)}
               />
-            </DialogContent>
-          </Dialog>
+            </ResponsiveDialogContent>
+          </ResponsiveDialog>
 
           <Dialog open={uploadPhotoDialog} onOpenChange={setUploadPhotoDialog}>
             <DialogTrigger asChild>

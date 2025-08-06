@@ -9,6 +9,9 @@ import { SmartCombobox } from "@/components/SmartCombobox"
 import { CurrencyInput } from "@/components/CurrencyInput"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
+import { SmartScrollArea } from "@/components/ui/smart-scroll-area"
+import { FieldGroup } from "@/components/ui/field-group"
+import { ResponsiveGrid } from "@/components/ui/responsive-grid"
 
 interface MaterialRequirementFormProps {
   projectId: string
@@ -208,16 +211,20 @@ export function MaterialRequirementForm({
   }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle>
-          {initialData ? "Editar Material" : "Nuevo Material"}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="overflow-visible">
-        <form onSubmit={handleSubmit} className="space-y-6 overflow-visible">
-          {/* Main Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-visible">
+    <SmartScrollArea className="w-full" maxHeight="calc(100vh - 200px)">
+      <Card className="w-full max-w-4xl mx-auto">
+        <CardHeader>
+          <CardTitle>
+            {initialData ? "Editar Material" : "Nuevo Material"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <FieldGroup 
+              title="Información Principal" 
+              description="Datos básicos del material"
+            >
+              <ResponsiveGrid cols={{ default: 1, md: 2 }}>
             <SmartCombobox
               label="Cuentas de Mayor"
               value={formData.cuenta_mayor}
@@ -270,9 +277,9 @@ export function MaterialRequirementForm({
               onItemsChange={fetchDropdownOptions}
               allowEdit
               required
-            />
+                />
 
-            <div className="space-y-2">
+                <div className="space-y-2">
               <Label htmlFor="unit_of_measure">Unidad *</Label>
               <Select 
                 value={formData.unit_of_measure} 
@@ -307,9 +314,16 @@ export function MaterialRequirementForm({
                 placeholder="0.00"
                 required
               />
-            </div>
+                </div>
+              </ResponsiveGrid>
+            </FieldGroup>
 
-            <div className="space-y-2">
+            <FieldGroup 
+              title="Cantidades y Costos" 
+              description="Información de cantidad, proveedor y precios"
+            >
+              <ResponsiveGrid cols={{ default: 1, md: 2 }}>
+                <div className="space-y-2">
               <Label htmlFor="supplier_id">Proveedor</Label>
               <Select 
                 value={formData.supplier_id} 
@@ -344,19 +358,19 @@ export function MaterialRequirementForm({
                 onChange={(value) => handleInputChange("adjustment_additive", value)}
                 placeholder="$0.00"
               />
-            </div>
+                </div>
 
-            <div className="space-y-2">
+                <div className="space-y-2">
               <Label htmlFor="adjustment_deductive">Ajuste Deductivo</Label>
               <CurrencyInput
                 value={formData.adjustment_deductive}
                 onChange={(value) => handleInputChange("adjustment_deductive", value)}
                 placeholder="$0.00"
               />
-            </div>
+                </div>
 
-            {/* Final Cost Display */}
-            <div className="space-y-2">
+                {/* Final Cost Display */}
+                <div className="space-y-2">
               <Label>Costo Final</Label>
               <div className="p-3 bg-muted rounded-md">
                 <p className="font-medium">
@@ -371,11 +385,16 @@ export function MaterialRequirementForm({
                             (parseFloat(formData.quantity_required) || 0)).toLocaleString()}
                 </p>
               </div>
-            </div>
-          </div>
+                </div>
+              </ResponsiveGrid>
+            </FieldGroup>
 
-          {/* Optional Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FieldGroup 
+              title="Información Adicional" 
+              description="Notas y requisitos especiales"
+              defaultOpen={false}
+            >
+              <ResponsiveGrid cols={{ default: 1, md: 2 }}>
             <div className="space-y-2">
               <Label htmlFor="notas_procuracion">Notas de Procuración</Label>
               <Textarea
@@ -385,9 +404,9 @@ export function MaterialRequirementForm({
                 placeholder="Notas sobre procuración (opcional)"
                 rows={3}
               />
-            </div>
+                </div>
 
-            <div className="space-y-2">
+                <div className="space-y-2">
               <Label htmlFor="requisito_almacenamiento">Requisito de Almacenamiento</Label>
               <Textarea
                 id="requisito_almacenamiento"
@@ -396,11 +415,12 @@ export function MaterialRequirementForm({
                 placeholder="Requisitos especiales de almacenamiento (opcional)"
                 rows={3}
               />
-            </div>
-          </div>
+                </div>
+              </ResponsiveGrid>
+            </FieldGroup>
 
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-2 pt-4">
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-2 pt-4">
             <Button
               type="button"
               variant="outline"
@@ -415,9 +435,10 @@ export function MaterialRequirementForm({
             >
               {loading ? "Guardando..." : (initialData ? "Actualizar Material" : "Crear Material")}
             </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </SmartScrollArea>
   )
 }
