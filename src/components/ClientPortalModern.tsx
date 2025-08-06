@@ -43,6 +43,7 @@ import { PaymentPlansViewer } from './PaymentPlansViewer';
 import { PaymentHistoryPanel } from './PaymentHistoryPanel';
 import { ProgressPhotosCarousel } from './ProgressPhotosCarousel';
 import { SuperiorClientPortalChat } from './SuperiorClientPortalChat';
+import { ClientAppointmentsCalendar } from './ClientAppointmentsCalendar';
 
 interface ClientProject {
   id: string;
@@ -442,7 +443,7 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
 
         {/* Navigation Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-6">
+          <TabsList className="grid w-full grid-cols-6 mb-6">
             <TabsTrigger value="overview" className="text-xs">
               <TrendingUp className="h-4 w-4 mb-1" />
               Resumen
@@ -458,6 +459,10 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
             <TabsTrigger value="photos" className="text-xs">
               <Camera className="h-4 w-4 mb-1" />
               Fotos
+            </TabsTrigger>
+            <TabsTrigger value="appointments" className="text-xs">
+              <Calendar className="h-4 w-4 mb-1" />
+              Citas
             </TabsTrigger>
             <TabsTrigger value="chat" className="text-xs">
               <MessageCircle className="h-4 w-4 mb-1" />
@@ -536,6 +541,17 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="appointments">
+            <div className="space-y-4">
+              {selectedProject && (
+                <ClientAppointmentsCalendar
+                  clientId={selectedProject.client_id}
+                  projectId={selectedProject.id}
+                />
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="chat">
