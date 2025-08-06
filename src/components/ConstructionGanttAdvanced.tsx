@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogTrigger } from "@/components/ui/responsive-dialog";
+import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogTrigger, ResponsiveDialogDescription } from "@/components/ui/responsive-dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, Plus, Filter, Download, Link, AlertTriangle, BarChart3, Zap, Edit, TrendingUp } from "lucide-react";
@@ -312,18 +312,23 @@ export function ConstructionGanttAdvanced({ projectId }: ConstructionGanttAdvanc
                     Nueva Actividad
                   </Button>
                 </ResponsiveDialogTrigger>
-                <ResponsiveDialogContent maxHeight="90vh" className="sm:max-w-5xl">
-                  <ResponsiveDialogHeader>
-                    <ResponsiveDialogTitle>Nueva Actividad</ResponsiveDialogTitle>
-                  </ResponsiveDialogHeader>
-                  <div className="max-h-[70vh] overflow-y-auto px-1">
-                    <TimelineActivityForm
-                      projectId={projectId}
-                      onSuccess={() => {
-                        fetchData();
-                      }}
-                      onCancel={() => {}}
-                    />
+                <ResponsiveDialogContent maxHeight="90vh" className="sm:max-w-6xl">
+                  <div className="flex flex-col h-full">
+                    <ResponsiveDialogHeader className="flex-shrink-0 p-6 pb-4">
+                      <ResponsiveDialogTitle>Nueva Actividad</ResponsiveDialogTitle>
+                      <ResponsiveDialogDescription>
+                        Complete la información para crear una nueva actividad en el cronograma de construcción.
+                      </ResponsiveDialogDescription>
+                    </ResponsiveDialogHeader>
+                    <div className="flex-1 overflow-y-auto px-6">
+                      <TimelineActivityForm
+                        projectId={projectId}
+                        onSuccess={() => {
+                          fetchData();
+                        }}
+                        onCancel={() => {}}
+                      />
+                    </div>
                   </div>
                 </ResponsiveDialogContent>
               </ResponsiveDialog>
