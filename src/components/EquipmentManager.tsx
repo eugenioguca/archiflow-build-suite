@@ -255,19 +255,19 @@ export function EquipmentManager({ projectId }: EquipmentManagerProps) {
                   Agregar Equipo
                 </Button>
               </DialogTrigger>
-                <ResponsiveDialogContent maxHeight="90vh">
-                  <ResponsiveDialogHeader>
-                    <ResponsiveDialogTitle>Nuevo Equipo</ResponsiveDialogTitle>
-                  </ResponsiveDialogHeader>
-                  <EquipmentForm
-                    projectId={projectId}
-                    onSuccess={() => {
-                      setNewEquipmentDialog(false);
-                      fetchEquipment();
-                    }}
-                    onCancel={() => setNewEquipmentDialog(false)}
-                  />
-                 </ResponsiveDialogContent>
+              <ResponsiveDialogContent maxHeight="90vh">
+                <ResponsiveDialogHeader>
+                  <ResponsiveDialogTitle>Nuevo Equipo</ResponsiveDialogTitle>
+                </ResponsiveDialogHeader>
+                <EquipmentForm
+                  projectId={projectId}
+                  onSuccess={() => {
+                    setNewEquipmentDialog(false);
+                    fetchEquipment();
+                  }}
+                  onCancel={() => setNewEquipmentDialog(false)}
+                />
+              </ResponsiveDialogContent>
             </ResponsiveDialog>
 
             {/* Edit Equipment Dialog */}

@@ -391,7 +391,7 @@ export function AdvancedBudgetManager({ projectId }: AdvancedBudgetManagerProps)
                 Exportar Excel
               </Button>
 
-              <Dialog open={newItemDialog} onOpenChange={setNewItemDialog}>
+              <ResponsiveDialog open={newItemDialog} onOpenChange={setNewItemDialog}>
                 <DialogTrigger asChild>
                   <Button>
                     <Plus className="h-4 w-4 mr-2" />
@@ -412,7 +412,7 @@ export function AdvancedBudgetManager({ projectId }: AdvancedBudgetManagerProps)
                     onCancel={() => setNewItemDialog(false)}
                   />
                 </ResponsiveDialogContent>
-              </Dialog>
+              </ResponsiveDialog>
 
               {/* Edit Item Dialog */}
               <ResponsiveDialog open={editItemDialog} onOpenChange={setEditItemDialog}>
