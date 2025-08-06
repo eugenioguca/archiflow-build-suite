@@ -36,7 +36,7 @@ export const ClientDocumentHub = ({ clientId, projectId }: ClientDocumentHubProp
   useEffect(() => {
     const fetchDocuments = async () => {
       try {
-        // Fetch from multiple document sources to get all relevant documents
+        // Fetch from multiple document sources
         const promises = [
           // Client documents from sales module
           supabase
@@ -51,33 +51,78 @@ export const ClientDocumentHub = ({ clientId, projectId }: ClientDocumentHubProp
             .select('*')
             .eq('project_id', projectId)
             .order('created_at', { ascending: false }),
+          
+          // Project fields with document URLs
+          supabase
+            .from('client_projects')
+            .select('contract_url, constancia_situacion_fiscal_url, created_at')
+            .eq('id', projectId)
+            .single()
         ];
 
-        const [clientDocsResult, projectDocsResult] = await Promise.all(promises);
+        const [clientDocsResult, projectDocsResult, projectFieldsResult] = await Promise.all(promises);
 
-        // Combine and standardize documents
-        const allDocuments = [
-          ...(clientDocsResult.data || []).map(doc => ({
+        // Start with empty array
+        const allDocuments: ClientDocument[] = [];
+
+        // Add client documents
+        if (clientDocsResult.data && Array.isArray(clientDocsResult.data)) {
+          allDocuments.push(...clientDocsResult.data.map(doc => ({
             id: doc.id,
             document_name: doc.document_name,
             document_type: doc.document_type,
             file_path: doc.file_path,
-            file_type: doc.file_type,
-            file_size: doc.file_size,
+            file_type: doc.file_type || 'application/pdf',
+            file_size: doc.file_size || 0,
             created_at: doc.created_at,
             source: 'sales'
-          })),
-          ...(projectDocsResult.data || []).map(doc => ({
+          })));
+        }
+
+        // Add project documents
+        if (projectDocsResult.data && Array.isArray(projectDocsResult.data)) {
+          allDocuments.push(...projectDocsResult.data.map(doc => ({
             id: doc.id,
             document_name: doc.name,
             document_type: doc.department || 'project',
             file_path: doc.file_path,
-            file_type: doc.file_type,
-            file_size: doc.file_size,
+            file_type: doc.file_type || 'application/pdf',
+            file_size: doc.file_size || 0,
             created_at: doc.created_at,
             source: 'project'
-          }))
-        ];
+          })));
+        }
+
+        // Add project field documents if they exist
+        if (projectFieldsResult.data) {
+          const projectData = projectFieldsResult.data as any;
+          
+          if (projectData.contract_url) {
+            allDocuments.push({
+              id: `contract-${projectId}`,
+              document_name: 'Contrato Firmado',
+              document_type: 'contract',
+              file_path: projectData.contract_url,
+              file_type: 'application/pdf',
+              file_size: 0,
+              created_at: projectData.created_at,
+              source: 'project_field'
+            });
+          }
+          
+          if (projectData.constancia_situacion_fiscal_url) {
+            allDocuments.push({
+              id: `fiscal-${projectId}`,
+              document_name: 'Constancia de Situación Fiscal',
+              document_type: 'fiscal',
+              file_path: projectData.constancia_situacion_fiscal_url,
+              file_type: 'application/pdf',
+              file_size: 0,
+              created_at: projectData.created_at,
+              source: 'project_field'
+            });
+          }
+        }
 
         setDocuments(allDocuments);
       } catch (error) {

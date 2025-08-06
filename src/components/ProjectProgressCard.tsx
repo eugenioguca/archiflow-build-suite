@@ -64,29 +64,10 @@ export const ProjectProgressCard: React.FC<ProjectProgressCardProps> = ({ projec
     }).format(amount);
   };
 
-  // Calculate real progress based on project status and payments
+  // Use real progress from database - no mock calculations
   const calculateRealProgress = () => {
-    const status = project.status;
-    let baseProgress = 0;
-    
-    switch (status) {
-      case 'potential':
-        baseProgress = 5;
-        break;
-      case 'design':
-        baseProgress = 35;
-        break;
-      case 'construction':
-        baseProgress = 75;
-        break;
-      case 'completed':
-        baseProgress = 100;
-        break;
-      default:
-        baseProgress = 0;
-    }
-    
-    return Math.min(100, Math.max(baseProgress, project.overall_progress_percentage || 0));
+    // Use the actual progress from the database
+    return project.overall_progress_percentage || 0;
   };
 
   const projectProgress = calculateRealProgress();
