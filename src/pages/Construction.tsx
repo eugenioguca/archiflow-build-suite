@@ -23,6 +23,7 @@ import { MaterialRequirements } from "@/components/MaterialRequirements";
 import { ConstructionTeamsManager } from "@/components/ConstructionTeamsManager";
 import { ConstructionReports } from "@/components/ConstructionReports";
 import { ConstructionAnalytics } from "@/components/ConstructionAnalytics";
+import { ConstructionTeamManager } from "@/components/ConstructionTeamManager";
 
 interface ConstructionProject {
   id: string;
@@ -59,7 +60,7 @@ export function Construction() {
   useEffect(() => {
     const navigationCategories = {
       principal: ["dashboard", "budget", "timeline"],
-      gestion: ["equipment", "materials", "teams", "quality"],
+      gestion: ["equipment", "materials", "team", "teams", "quality"],
       documentacion: ["photos", "reports", "analytics"]
     };
     
@@ -200,15 +201,16 @@ export function Construction() {
         { value: "timeline", label: "Cronograma", icon: CalendarDays },
       ]
     },
-    gestion: {
-      label: "Gestión",
-      tabs: [
-        { value: "equipment", label: "Equipos", icon: Wrench },
-        { value: "materials", label: "Materiales", icon: Building2 },
-        { value: "teams", label: "Equipos", icon: Users },
-        { value: "quality", label: "Calidad", icon: Building2 },
-      ]
-    },
+      gestion: {
+        label: "Gestión",
+        tabs: [
+          { value: "equipment", label: "Equipos", icon: Wrench },
+          { value: "materials", label: "Materiales", icon: Building2 },
+          { value: "team", label: "Equipo", icon: Users },
+          { value: "teams", label: "Cuadrillas", icon: Users },
+          { value: "quality", label: "Calidad", icon: Building2 },
+        ]
+      },
     documentacion: {
       label: "Documentación",
       tabs: [
@@ -463,6 +465,10 @@ export function Construction() {
 
                 <TabsContent value="materials" className="mt-6">
                   <MaterialRequirements projectId={selectedProject.id} />
+                </TabsContent>
+
+                <TabsContent value="team" className="mt-6">
+                  <ConstructionTeamManager projectId={selectedProject.id} />
                 </TabsContent>
 
                 <TabsContent value="teams" className="mt-6">
