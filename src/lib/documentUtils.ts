@@ -61,23 +61,40 @@ export const detectBucketFromPath = (filePath: string): DocumentSource => {
 };
 
 /**
- * Normaliza el path del archivo limpiando duplicaciones del bucket
+ * Normaliza el path del archivo para uso con Supabase Storage
  */
-const normalizePath = (filePath: string): string => {
-  // Limpiar duplicaciones comunes del bucket en el path
-  let normalizedPath = filePath
-    .replace(/^client-documents\/client-documents\//, 'client-documents/')
-    .replace(/^project-documents\/project-documents\//, 'project-documents/')
-    .replace(/^\/+/, ''); // Limpiar slashes al inicio
+const normalizePath = (filePath: string, targetBucket: string): string => {
+  console.log('normalizePath - Input:', { filePath, targetBucket });
   
-  // Si el path ya incluye el bucket al inicio, removerlo ya que Supabase lo añade automáticamente
-  if (normalizedPath.startsWith('client-documents/')) {
+  // Limpiar slashes iniciales y finales
+  let normalizedPath = filePath.replace(/^\/+|\/+$/g, '');
+  
+  // Detectar si el path ya incluye un bucket
+  const hasClientBucket = normalizedPath.startsWith('client-documents/');
+  const hasProjectBucket = normalizedPath.startsWith('project-documents/');
+  
+  console.log('normalizePath - Bucket detection:', { hasClientBucket, hasProjectBucket });
+  
+  // Si el path ya incluye el bucket correcto, solo remover el prefijo
+  if (hasClientBucket && targetBucket === 'client-documents') {
     normalizedPath = normalizedPath.substring('client-documents/'.length);
-  }
-  if (normalizedPath.startsWith('project-documents/')) {
+  } else if (hasProjectBucket && targetBucket === 'project-documents') {
+    normalizedPath = normalizedPath.substring('project-documents/'.length);
+  } else if (hasClientBucket && targetBucket === 'project-documents') {
+    // Path tiene client-documents pero necesitamos project-documents
+    normalizedPath = normalizedPath.substring('client-documents/'.length);
+  } else if (hasProjectBucket && targetBucket === 'client-documents') {
+    // Path tiene project-documents pero necesitamos client-documents  
     normalizedPath = normalizedPath.substring('project-documents/'.length);
   }
   
+  // Limpiar duplicaciones que puedan haber quedado
+  normalizedPath = normalizedPath
+    .replace(/^client-documents\//, '')
+    .replace(/^project-documents\//, '')
+    .replace(/^\/+/, '');
+  
+  console.log('normalizePath - Output:', normalizedPath);
   return normalizedPath;
 };
 
@@ -96,13 +113,14 @@ export const getDocumentViewUrl = async (
       return { url: filePath, isSignedUrl: false };
     }
 
-    // Normalizar el path
-    const normalizedPath = normalizePath(filePath);
-    console.log('getDocumentViewUrl - Normalized path:', normalizedPath);
-
-    // Determinar bucket y configuración
+    // Determinar bucket y configuración primero
     const bucketInfo = source ? getBucketForDocument(source) : detectBucketFromPath(filePath);
     console.log('getDocumentViewUrl - Bucket info:', bucketInfo);
+    
+    // Normalizar el path con el bucket objetivo
+    const normalizedPath = normalizePath(filePath, bucketInfo.bucket);
+    console.log('getDocumentViewUrl - Normalized path:', normalizedPath);
+
     
     // Para buckets públicos, usar URL pública
     if (bucketInfo.isPublic) {
@@ -122,16 +140,31 @@ export const getDocumentViewUrl = async (
     if (error) {
       console.error('Error creating signed URL:', error);
       
-      // Fallback: intentar con bucket público como último recurso
-      const { data: fallbackData } = supabase.storage
-        .from('project-documents')
+      // Fallback 1: intentar con el bucket alternativo
+      const fallbackBucket = bucketInfo.bucket === 'client-documents' ? 'project-documents' : 'client-documents';
+      const fallbackNormalizedPath = normalizePath(filePath, fallbackBucket);
+      
+      console.log('getDocumentViewUrl - Trying fallback bucket:', { fallbackBucket, fallbackNormalizedPath });
+      
+      const { data: fallbackData, error: fallbackError } = await supabase.storage
+        .from(fallbackBucket)
+        .createSignedUrl(fallbackNormalizedPath, 3600);
+      
+      if (!fallbackError && fallbackData) {
+        console.log('getDocumentViewUrl - Fallback signed URL generated:', fallbackData.signedUrl);
+        return { url: fallbackData.signedUrl, isSignedUrl: true };
+      }
+      
+      // Fallback 2: intentar con URL pública del bucket original
+      const { data: publicData } = supabase.storage
+        .from(bucketInfo.bucket)
         .getPublicUrl(normalizedPath);
       
-      console.log('getDocumentViewUrl - Fallback URL:', fallbackData.publicUrl);
+      console.log('getDocumentViewUrl - Final fallback public URL:', publicData.publicUrl);
       return { 
-        url: fallbackData.publicUrl, 
+        url: publicData.publicUrl, 
         isSignedUrl: false,
-        error: `URL firmada falló, usando fallback: ${error.message}`
+        error: `URLs firmadas fallaron, usando URL pública: ${error.message}`
       };
     }
 
@@ -174,20 +207,29 @@ export const downloadDocument = async (
       return { success: true };
     }
 
-    // Determinar bucket
+    // Determinar bucket y normalizar path
     const bucketInfo = source ? getBucketForDocument(source) : detectBucketFromPath(filePath);
+    const normalizedPath = normalizePath(filePath, bucketInfo.bucket);
+    
+    console.log('downloadDocument - Attempting download:', { bucketInfo, normalizedPath });
     
     // Intentar descarga directa desde Supabase Storage
     const { data, error } = await supabase.storage
       .from(bucketInfo.bucket)
-      .download(filePath);
+      .download(normalizedPath);
 
     if (error) {
+      console.error('downloadDocument - Primary bucket failed:', error);
+      
       // Si falla el bucket primario, intentar con el otro bucket
       const fallbackBucket = bucketInfo.bucket === 'client-documents' ? 'project-documents' : 'client-documents';
+      const fallbackNormalizedPath = normalizePath(filePath, fallbackBucket);
+      
+      console.log('downloadDocument - Trying fallback:', { fallbackBucket, fallbackNormalizedPath });
+      
       const { data: fallbackData, error: fallbackError } = await supabase.storage
         .from(fallbackBucket)
-        .download(filePath);
+        .download(fallbackNormalizedPath);
       
       if (fallbackError) {
         throw new Error(`Error en ambos buckets: ${error.message} | ${fallbackError.message}`);
