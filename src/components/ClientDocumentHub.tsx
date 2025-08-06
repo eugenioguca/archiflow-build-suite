@@ -203,35 +203,37 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false }: Clie
       // Import the document utilities
       const { openDocumentInNewTab } = await import('@/lib/documentUtils');
       
-      // Open document in new tab with robust fallbacks
+      // Try to open document in new tab first
       const result = await openDocumentInNewTab(document.file_path, document.source);
       
       if (result.success) {
+        // Success: document opened in new tab, show toast but DON'T open modal
         toast({
           title: "Documento abierto",
           description: "El documento se ha abierto en una nueva pestaña",
         });
+        return; // Exit early, don't open modal
+      }
+      
+      // Only if opening in new tab fails, use modal as fallback
+      console.warn('Failed to open in new tab, falling back to modal:', result.error);
+      
+      const { getCachedDocumentUrl } = await import('@/lib/documentUtils');
+      const urlResult = await getCachedDocumentUrl(document.file_path, document.source);
+      
+      if (urlResult.url) {
+        setSelectedDocument({
+          ...document,
+          file_path: urlResult.url
+        });
+        setViewerOpen(true);
+        
+        toast({
+          title: "Documento abierto en modal",
+          description: "Se abrió en modal como alternativa",
+        });
       } else {
-        // Si falla la apertura en nueva pestaña, usar el modal como fallback
-        console.warn('Failed to open in new tab, falling back to modal:', result.error);
-        
-        const { getCachedDocumentUrl } = await import('@/lib/documentUtils');
-        const urlResult = await getCachedDocumentUrl(document.file_path, document.source);
-        
-        if (urlResult.url) {
-          setSelectedDocument({
-            ...document,
-            file_path: urlResult.url
-          });
-          setViewerOpen(true);
-          
-          toast({
-            title: "Documento abierto en modal",
-            description: "Se abrió en modal como alternativa",
-          });
-        } else {
-          throw new Error(result.error || 'No se pudo abrir el documento');
-        }
+        throw new Error(result.error || 'No se pudo abrir el documento');
       }
     } catch (error) {
       console.error('Error viewing document:', error);
