@@ -3,8 +3,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.4";
 import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "https://ycbflvptfgrjclzzlxci.supabase.co",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 interface NotificationRequest {
@@ -21,6 +22,13 @@ const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // FASE 4: Validación de origen
+  const origin = req.headers.get('origin');
+  const allowedOrigins = ['https://ycbflvptfgrjclzzlxci.supabase.co', 'http://localhost:8080'];
+  if (origin && !allowedOrigins.includes(origin)) {
+    return new Response('Forbidden', { status: 403, headers: corsHeaders });
   }
 
   try {

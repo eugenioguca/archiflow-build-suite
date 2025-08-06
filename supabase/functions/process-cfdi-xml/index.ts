@@ -2,9 +2,44 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://ycbflvptfgrjclzzlxci.supabase.co',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
+
+// FASE 2: Constantes de seguridad para validación XML
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_XML_LENGTH = 2 * 1024 * 1024; // 2MB para contenido XML
+const ALLOWED_XML_ROOTS = ['cfdi:Comprobante', 'Comprobante'];
+
+// Función para validar XML de forma segura
+function validateXMLSafety(xmlContent: string): { isValid: boolean, error?: string } {
+  if (xmlContent.length > MAX_XML_LENGTH) {
+    return { isValid: false, error: 'XML content too large' };
+  }
+  
+  // Verificar patrones peligrosos de XXE
+  const dangerousPatterns = [
+    /<!ENTITY/i,
+    /<!DOCTYPE.*ENTITY/i,
+    /SYSTEM\s+["'][^"']*["']/i,
+    /PUBLIC\s+["'][^"']*["']/i
+  ];
+  
+  for (const pattern of dangerousPatterns) {
+    if (pattern.test(xmlContent)) {
+      return { isValid: false, error: 'Potentially unsafe XML content detected' };
+    }
+  }
+  
+  // Verificar que sea un CFDI válido
+  const hasValidRoot = ALLOWED_XML_ROOTS.some(root => xmlContent.includes(root));
+  if (!hasValidRoot) {
+    return { isValid: false, error: 'Invalid CFDI XML format' };
+  }
+  
+  return { isValid: true };
+}
 
 interface CFDIData {
   uuid: string;
@@ -64,6 +99,7 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
+    // Parse form data con validaciones de seguridad
     const formData = await req.formData();
     const xmlFile = formData.get('xmlFile') as File;
     const supplierIdFormData = formData.get('supplierId');
@@ -73,7 +109,34 @@ serve(async (req) => {
       throw new Error('No XML file provided');
     }
 
+    // FASE 2: Validación de archivo
+    if (xmlFile.size > MAX_FILE_SIZE) {
+      throw new Error('File size exceeds limit (5MB)');
+    }
+
+    if (!xmlFile.type.includes('xml') && !xmlFile.name.endsWith('.xml')) {
+      throw new Error('File must be XML format');
+    }
+
+    // Read XML content y validar seguridad
     const xmlContent = await xmlFile.text();
+    
+    // FASE 2: Validación de seguridad XML
+    const xmlValidation = validateXMLSafety(xmlContent);
+    if (!xmlValidation.isValid) {
+      // Log security event
+      const supabaseAdmin = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+      
+      await supabaseAdmin.rpc('log_security_event', {
+        p_event_type: 'xml_validation_failed',
+        p_event_data: { error: xmlValidation.error, file_size: xmlFile.size }
+      });
+      
+      throw new Error('Invalid XML file: ' + xmlValidation.error);
+    }
     console.log('Processing XML file:', xmlFile.name);
 
     // Parse XML content

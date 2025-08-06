@@ -6258,6 +6258,10 @@ export type Database = {
         Args: { p_event_type: string; p_event_data?: Json; p_user_id?: string }
         Returns: undefined
       }
+      mask_sensitive_data: {
+        Args: { data_value: string; data_type?: string }
+        Returns: string
+      }
       refresh_financial_summary: {
         Args: Record<PropertyKey, never>
         Returns: undefined
