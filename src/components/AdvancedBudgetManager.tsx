@@ -593,14 +593,14 @@ export function AdvancedBudgetManager({ projectId }: AdvancedBudgetManagerProps)
               />
               
               <Select
-                value={filters.category}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, category: value }))}
+                value={filters.category || 'all'}
+                onValueChange={(value) => setFilters(prev => ({ ...prev, category: value === 'all' ? '' : value }))}
               >
                 <SelectTrigger className="max-w-xs">
                   <SelectValue placeholder="Filtrar por categoría" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas las categorías</SelectItem>
+                  <SelectItem value="all">Todas las categorías</SelectItem>
                   <SelectItem value="General">General</SelectItem>
                   <SelectItem value="Estructural">Estructural</SelectItem>
                   <SelectItem value="Acabados">Acabados</SelectItem>
@@ -610,14 +610,14 @@ export function AdvancedBudgetManager({ projectId }: AdvancedBudgetManagerProps)
               </Select>
 
               <Select
-                value={filters.status}
-                onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
+                value={filters.status || 'all'}
+                onValueChange={(value) => setFilters(prev => ({ ...prev, status: value === 'all' ? '' : value }))}
               >
                 <SelectTrigger className="max-w-xs">
                   <SelectValue placeholder="Filtrar por estado" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos los estados</SelectItem>
+                  <SelectItem value="all">Todos los estados</SelectItem>
                   <SelectItem value="pending">Pendiente</SelectItem>
                   <SelectItem value="in_progress">En Progreso</SelectItem>
                   <SelectItem value="completed">Completado</SelectItem>
