@@ -34,6 +34,12 @@ interface ProjectBudget {
   items?: BudgetItem[];
 }
 
+interface MigrationResult {
+  items_migrated: number;
+  status: string;
+  message: string;
+}
+
 interface ProjectBudgetManagerProps {
   projectId: string;
   projectName?: string;
@@ -301,10 +307,10 @@ export function ProjectBudgetManager({ projectId, projectName, clientName, onBud
     try {
       setSaving(true);
       
-      // Update budget status to accepted and sync construction_budget
+      // Update budget status to approved (consistent with migration function)
       const { error: budgetError } = await supabase
         .from('project_budgets')
-        .update({ status: 'accepted' })
+        .update({ status: 'approved' })
         .eq('id', budget.id);
         
       if (budgetError) throw budgetError;
@@ -317,7 +323,24 @@ export function ProjectBudgetManager({ projectId, projectName, clientName, onBud
         
       if (projectError) throw projectError;
       
-      sonnerToast.success('Presupuesto aceptado. Ahora se puede crear el plan de pagos de construcción.');
+      // Call migration function directly to ensure it runs even if trigger fails
+      try {
+        const { data: migrationResult } = await supabase.rpc('migrate_design_budget_to_construction', {
+          p_project_id: projectId
+        }) as { data: MigrationResult };
+        
+        if (migrationResult?.status === 'success' && migrationResult?.items_migrated > 0) {
+          sonnerToast.success(`Presupuesto aprobado y ${migrationResult.items_migrated} partidas migradas a construcción.`);
+        } else if (migrationResult?.status === 'already_exists') {
+          sonnerToast.success('Presupuesto aprobado. Las partidas ya están disponibles en construcción.');
+        } else {
+          sonnerToast.success('Presupuesto aprobado. Ahora se puede crear el plan de pagos de construcción.');
+        }
+      } catch (migrationError) {
+        console.warn('Migration error (may have been handled by trigger):', migrationError);
+        sonnerToast.success('Presupuesto aprobado. Ahora se puede crear el plan de pagos de construcción.');
+      }
+      
       setShowAcceptBudgetDialog(false);
       
       // Refresh budget data
