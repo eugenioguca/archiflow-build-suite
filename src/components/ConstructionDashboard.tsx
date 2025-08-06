@@ -27,6 +27,7 @@ import { EquipmentForm } from "@/components/forms/EquipmentForm";
 import { ConstructionPhaseForm } from "@/components/forms/ConstructionPhaseForm";
 import { ConstructionMilestoneForm } from "@/components/forms/ConstructionMilestoneForm";
 import { ProgressPhotoForm } from "@/components/forms/ProgressPhotoForm";
+import { ProjectDatesManager } from "@/components/ProjectDatesManager";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -53,9 +54,14 @@ interface ConstructionStats {
 
 interface ConstructionDashboardProps {
   projectId: string;
+  projectData?: {
+    construction_start_date?: string | null;
+    estimated_completion_date?: string | null;
+    actual_completion_date?: string | null;
+  };
 }
 
-export function ConstructionDashboard({ projectId }: ConstructionDashboardProps) {
+export function ConstructionDashboard({ projectId, projectData }: ConstructionDashboardProps) {
   const isMobile = useIsMobile();
   const [stats, setStats] = useState<ConstructionStats>({
     totalPhases: 0,
@@ -378,6 +384,21 @@ function QuickActions({ projectId, onStatsRefresh }: QuickActionsProps) {
   const [newMilestoneDialog, setNewMilestoneDialog] = useState(false);
   const [newEquipmentDialog, setNewEquipmentDialog] = useState(false);
   const [uploadPhotoDialog, setUploadPhotoDialog] = useState(false);
+  const [projectData, setProjectData] = useState<{construction_start_date?: string | null; estimated_completion_date?: string | null; actual_completion_date?: string | null} | null>(null);
+
+  useEffect(() => {
+    const fetchProjectData = async () => {
+      const { data } = await supabase
+        .from("client_projects")
+        .select("construction_start_date, estimated_completion_date, actual_completion_date")
+        .eq("id", projectId)
+        .single();
+      
+      setProjectData(data);
+    };
+    
+    fetchProjectData();
+  }, [projectId]);
 
   return (
     <Card>
@@ -388,7 +409,20 @@ function QuickActions({ projectId, onStatsRefresh }: QuickActionsProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className={`grid grid-cols-2 ${isMobile ? 'gap-3' : 'md:grid-cols-4 gap-4'}`}>
+        <div className={`grid grid-cols-2 ${isMobile ? 'gap-3' : 'md:grid-cols-5 gap-4'}`}>
+          <ProjectDatesManager 
+            projectId={projectId}
+            constructionStartDate={projectData?.construction_start_date}
+            estimatedCompletionDate={projectData?.estimated_completion_date}
+            actualCompletionDate={projectData?.actual_completion_date}
+            onDatesUpdated={onStatsRefresh}
+            trigger={
+              <Button variant="outline" className={`${isMobile ? 'h-16 flex-col gap-1' : 'h-20 flex-col gap-2'}`}>
+                <Calendar className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'}`} />
+                <span className={`${isMobile ? 'text-xs' : 'text-sm'}`}>Configurar Fechas</span>
+              </Button>
+            }
+          />
           <Dialog open={newPhaseDialog} onOpenChange={setNewPhaseDialog}>
             <DialogTrigger asChild>
               <Button variant="outline" className={`${isMobile ? 'h-16 flex-col gap-1' : 'h-20 flex-col gap-2'}`}>

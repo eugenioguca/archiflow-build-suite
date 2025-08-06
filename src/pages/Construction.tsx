@@ -24,6 +24,7 @@ import { ConstructionTeamsManager } from "@/components/ConstructionTeamsManager"
 import { ConstructionReports } from "@/components/ConstructionReports";
 import { ConstructionAnalytics } from "@/components/ConstructionAnalytics";
 import { ConstructionTeamManager } from "@/components/ConstructionTeamManager";
+import { ProjectDatesManager } from "@/components/ProjectDatesManager";
 
 interface ConstructionProject {
   id: string;
@@ -301,38 +302,52 @@ export function Construction() {
                     </Badge>
                   </div>
                   
-                  <div className="grid grid-cols-4 gap-4 mt-3">
-                    <div className="text-center p-3 bg-muted/50 rounded">
-                      <div className="text-xl font-bold text-primary">
-                        {selectedProject.overall_progress_percentage || 0}%
-                      </div>
-                      <div className="text-xs text-muted-foreground">Progreso</div>
-                    </div>
-                    <div className="text-center p-3 bg-muted/50 rounded">
-                      <div className="text-lg font-bold text-green-600">
-                        ${(selectedProject.construction_budget || selectedProject.budget || 0).toLocaleString()}
-                      </div>
-                      <div className="text-xs text-muted-foreground">Presupuesto</div>
-                    </div>
-                    <div className="text-center p-3 bg-muted/50 rounded">
-                      <div className="text-sm font-bold text-blue-600">
-                        {selectedProject.construction_start_date 
-                          ? new Date(selectedProject.construction_start_date).toLocaleDateString()
-                          : "Sin iniciar"
-                        }
-                      </div>
-                      <div className="text-xs text-muted-foreground">Inicio</div>
-                    </div>
-                    <div className="text-center p-3 bg-muted/50 rounded">
-                      <div className="text-sm font-bold text-orange-600">
-                        {selectedProject.estimated_completion_date
-                          ? new Date(selectedProject.estimated_completion_date).toLocaleDateString()
-                          : "Sin fecha"
-                        }
-                      </div>
-                      <div className="text-xs text-muted-foreground">Estimado</div>
-                    </div>
-                  </div>
+                   <div className="grid grid-cols-5 gap-4 mt-3">
+                     <div className="text-center p-3 bg-muted/50 rounded">
+                       <div className="text-xl font-bold text-primary">
+                         {selectedProject.overall_progress_percentage || 0}%
+                       </div>
+                       <div className="text-xs text-muted-foreground">Progreso</div>
+                     </div>
+                     <div className="text-center p-3 bg-muted/50 rounded">
+                       <div className="text-lg font-bold text-green-600">
+                         ${(selectedProject.construction_budget || selectedProject.budget || 0).toLocaleString()}
+                       </div>
+                       <div className="text-xs text-muted-foreground">Presupuesto</div>
+                     </div>
+                     <div className="text-center p-3 bg-muted/50 rounded">
+                       <div className="text-sm font-bold text-blue-600">
+                         {selectedProject.construction_start_date 
+                           ? new Date(selectedProject.construction_start_date).toLocaleDateString()
+                           : "Sin iniciar"
+                         }
+                       </div>
+                       <div className="text-xs text-muted-foreground">Inicio</div>
+                     </div>
+                     <div className="text-center p-3 bg-muted/50 rounded">
+                       <div className="text-sm font-bold text-orange-600">
+                         {selectedProject.estimated_completion_date
+                           ? new Date(selectedProject.estimated_completion_date).toLocaleDateString()
+                           : "Sin fecha estimada"
+                         }
+                       </div>
+                       <div className="text-xs text-muted-foreground">Estimado</div>
+                     </div>
+                     <div className="text-center p-3 bg-muted/50 rounded">
+                       <ProjectDatesManager 
+                         projectId={selectedProject.id}
+                         constructionStartDate={selectedProject.construction_start_date}
+                         estimatedCompletionDate={selectedProject.estimated_completion_date}
+                         onDatesUpdated={fetchConstructionProjects}
+                         trigger={
+                           <Button variant="ghost" size="sm" className="h-auto p-1 text-xs">
+                             Editar fechas
+                           </Button>
+                         }
+                       />
+                       <div className="text-xs text-muted-foreground mt-1">Gestión</div>
+                     </div>
+                   </div>
                 </CardHeader>
               </Card>
             )}
