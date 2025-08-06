@@ -89,15 +89,17 @@ export const ClientProjectSelector: React.FC<ClientProjectSelectorProps> = ({
   };
 
   const handleClientChange = (clientId: string) => {
-    onClientChange(clientId);
+    const actualClientId = clientId === 'none' ? '' : clientId;
+    onClientChange(actualClientId);
     // Clear project when client changes
-    if (clientId !== selectedClientId) {
+    if (actualClientId !== selectedClientId) {
       onProjectChange('');
     }
   };
 
   const handleProjectChange = (projectId: string) => {
-    onProjectChange(projectId);
+    const actualProjectId = projectId === 'none' ? '' : projectId;
+    onProjectChange(actualProjectId);
   };
 
   const clearFilters = () => {
@@ -185,7 +187,7 @@ export const ClientProjectSelector: React.FC<ClientProjectSelectorProps> = ({
         {/* Client Selector */}
         <div className="space-y-2">
           <label className="text-sm font-medium">Cliente</label>
-          <Select value={selectedClientId} onValueChange={handleClientChange}>
+          <Select value={selectedClientId || 'none'} onValueChange={handleClientChange}>
             <SelectTrigger>
               <SelectValue placeholder="Seleccionar cliente..." />
             </SelectTrigger>
@@ -193,7 +195,7 @@ export const ClientProjectSelector: React.FC<ClientProjectSelectorProps> = ({
               {showAllOption && (
                 <SelectItem value="all">Todos los clientes</SelectItem>
               )}
-              <SelectItem value="">Sin filtro</SelectItem>
+              <SelectItem value="none">Sin filtro</SelectItem>
               {clients.map((client) => (
                 <SelectItem key={client.id} value={client.id}>
                   {client.full_name}
@@ -208,7 +210,7 @@ export const ClientProjectSelector: React.FC<ClientProjectSelectorProps> = ({
           <div className="space-y-2">
             <label className="text-sm font-medium">Proyecto</label>
             <Select 
-              value={selectedProjectId} 
+              value={selectedProjectId || 'none'}
               onValueChange={handleProjectChange}
               disabled={!selectedClientId && !showAllOption}
             >
@@ -216,7 +218,7 @@ export const ClientProjectSelector: React.FC<ClientProjectSelectorProps> = ({
                 <SelectValue placeholder="Seleccionar proyecto..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sin filtro</SelectItem>
+                <SelectItem value="none">Sin filtro</SelectItem>
                 {availableProjects.map((project) => (
                   <SelectItem key={project.id} value={project.id}>
                     {project.project_name}
