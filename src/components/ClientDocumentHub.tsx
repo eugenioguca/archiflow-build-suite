@@ -132,23 +132,6 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false, previe
 
     fetchDocuments();
 
-    // Real-time subscription for document updates
-    const channel = supabase
-      .channel('client-documents-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'client_documents',
-          filter: `client_id=eq.${clientId}`
-        },
-        () => {
-          fetchDocuments();
-        }
-      )
-      .subscribe();
-
     // Only set up real-time subscriptions if not in preview mode
     if (!previewDocuments) {
       const channel = supabase
@@ -285,20 +268,20 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false, previe
   const handleRefreshDocuments = async () => {
     setLoading(true);
     try {
-      // Use the same cumulative documents function to get all documents
-      const { data: cumulativeDocuments, error: docsError } = await supabase
+      // Usar solo la función SQL corregida para obtener todos los documentos
+      const { data: allDocuments, error } = await supabase
         .rpc('get_project_cumulative_documents', {
           project_id_param: projectId,
           user_department: 'all'
         });
 
-      if (docsError) {
-        console.error('Error fetching cumulative documents:', docsError);
-        throw docsError;
+      if (error) {
+        console.error('Error fetching documents:', error);
+        throw error;
       }
 
-      // Transform cumulative documents to the expected format
-      const allDocuments: ClientDocument[] = (cumulativeDocuments || []).map(doc => ({
+      // Transform to expected format
+      const transformedDocs = (allDocuments || []).map(doc => ({
         id: doc.id,
         document_name: doc.name,
         document_type: doc.department || 'general',
@@ -309,42 +292,7 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false, previe
         source: 'project'
       }));
 
-      // Also get project field documents (contract, fiscal documents)
-      const { data: projectData } = await supabase
-        .from('client_projects')
-        .select('contract_url, constancia_situacion_fiscal_url, created_at')
-        .eq('id', projectId)
-        .single();
-
-      if (projectData) {
-        if (projectData.contract_url) {
-          allDocuments.push({
-            id: `contract-${projectId}`,
-            document_name: 'Contrato Firmado',
-            document_type: 'contract',
-            file_path: projectData.contract_url,
-            file_type: 'application/pdf',
-            file_size: 0,
-            created_at: projectData.created_at,
-            source: 'project_field'
-          });
-        }
-        
-        if (projectData.constancia_situacion_fiscal_url) {
-          allDocuments.push({
-            id: `fiscal-${projectId}`,
-            document_name: 'Constancia de Situación Fiscal',
-            document_type: 'fiscal',
-            file_path: projectData.constancia_situacion_fiscal_url,
-            file_type: 'application/pdf',
-            file_size: 0,
-            created_at: projectData.created_at,
-            source: 'project_field'
-          });
-        }
-      }
-
-      setDocuments(allDocuments);
+      setDocuments(transformedDocs);
     } catch (error) {
       console.error('Error fetching documents:', error);
       toast({
@@ -488,6 +436,7 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false, previe
                   <ClientDocumentUploader 
                     clientId={clientId} 
                     projectId={projectId}
+                    onUploadComplete={handleRefreshDocuments}
                   />
                 </TabsContent>
 
@@ -512,6 +461,7 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false, previe
                 <ClientDocumentUploader 
                   clientId={clientId} 
                   projectId={projectId}
+                  onUploadComplete={handleRefreshDocuments}
                 />
               </TabsContent>
             )}
