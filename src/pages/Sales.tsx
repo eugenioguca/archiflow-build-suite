@@ -122,6 +122,17 @@ export default function Sales() {
     filterProjects();
   }, [clientProjects, searchTerm, statusFilter, advisorFilter]);
 
+  // Sincronizar selectedProject cuando clientProjects cambie
+  useEffect(() => {
+    if (selectedProject && clientProjects.length > 0) {
+      const updatedProject = clientProjects.find(p => p.id === selectedProject.id);
+      if (updatedProject && JSON.stringify(updatedProject) !== JSON.stringify(selectedProject)) {
+        console.log('Sincronizando selectedProject con datos actualizados');
+        setSelectedProject(updatedProject);
+      }
+    }
+  }, [clientProjects, selectedProject]);
+
   const fetchEmployees = async () => {
     try {
       const { data, error } = await supabase
@@ -223,6 +234,47 @@ export default function Sales() {
         variant: "destructive",
       });
     }
+  };
+
+  // Helper function to refresh selected project
+  const refreshSelectedProject = async () => {
+    if (!selectedProject) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('client_projects')
+        .select(`
+          *,
+          clients!client_projects_client_id_fkey (
+            id,
+            full_name,
+            email,
+            phone,
+            address
+          ),
+          assigned_advisor:profiles!client_projects_assigned_advisor_id_fkey (
+            id,
+            full_name
+          )
+        `)
+        .eq('id', selectedProject.id)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        console.log('selectedProject actualizado desde base de datos');
+        setSelectedProject(data);
+      }
+    } catch (error) {
+      console.error('Error refreshing selected project:', error);
+    }
+  };
+
+  // Enhanced document update callback
+  const handleDocumentUpdate = async () => {
+    console.log('Documento actualizado, refrescando datos...');
+    await fetchData(); // Actualizar lista completa
+    await refreshSelectedProject(); // Actualizar proyecto seleccionado específicamente
   };
 
   const assignAdvisor = async (projectId: string, advisorId: string | null) => {
@@ -850,7 +902,7 @@ export default function Sales() {
                 <RequiredDocumentsManager
                   clientProjectId={selectedProject.id}
                   clientProject={selectedProject}
-                  onDocumentUpdate={() => fetchData()}
+                  onDocumentUpdate={handleDocumentUpdate}
                 />
               </TabsContent>
 
@@ -869,7 +921,7 @@ export default function Sales() {
                     <PaymentPlanBuilder
                       clientProjectId={selectedProject.id}
                       clientName={selectedProject.clients?.full_name || ''}
-                      onPlanUpdate={() => fetchData()}
+                      onPlanUpdate={handleDocumentUpdate}
                     />
                     
                     {/* Vista unificada de estado de pagos */}
