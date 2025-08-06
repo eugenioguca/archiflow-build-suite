@@ -591,11 +591,6 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
       {/* Edit Material Dialog */}
       <ResponsiveDialog open={editMaterialDialog} onOpenChange={setEditMaterialDialog}>
         <ResponsiveDialogContent maxHeight="85vh">
-          <ResponsiveDialogHeader>
-            <ResponsiveDialogTitle>
-              {selectedMaterial ? "Editar Material" : "Nuevo Material"}
-            </ResponsiveDialogTitle>
-          </ResponsiveDialogHeader>
           <MaterialRequirementForm
             projectId={projectId}
             initialData={selectedMaterial}
