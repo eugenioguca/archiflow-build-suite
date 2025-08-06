@@ -247,6 +247,7 @@ const ClientPortalPreview = () => {
                     <ClientDocumentHub 
                       clientId={selectedClientId} 
                       projectId={selectedProjectId} 
+                      compact={true}
                     />
 
                     {/* Resumen de Características */}
@@ -299,7 +300,8 @@ const ClientPortalPreview = () => {
 
                     {/* Historial de Pagos Panel */}
                     <PaymentHistoryPanel 
-                      payments={payments} 
+                      payments={payments}
+                      compact={true}
                     />
 
                     {/* Panel de Documentos */}

@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { ClientDocumentUploader } from './ClientDocumentUploader';
 import { ClientPaymentProofUploader } from './ClientPaymentProofUploader';
 import { ClientInvoiceViewer } from './ClientInvoiceViewer';
+import { DocumentViewer } from './DocumentViewer';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { FileText, Upload, CreditCard, Receipt, Folder, Download, Eye } from 'lucide-react';
@@ -26,11 +28,14 @@ interface ClientDocument {
 interface ClientDocumentHubProps {
   clientId: string;
   projectId: string;
+  compact?: boolean;
 }
 
-export const ClientDocumentHub = ({ clientId, projectId }: ClientDocumentHubProps) => {
+export const ClientDocumentHub = ({ clientId, projectId, compact = false }: ClientDocumentHubProps) => {
   const [documents, setDocuments] = useState<ClientDocument[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<ClientDocument | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -193,6 +198,32 @@ export const ClientDocumentHub = ({ clientId, projectId }: ClientDocumentHubProp
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const handleView = async (document: ClientDocument) => {
+    try {
+      // Get public URL for document viewing
+      const { data } = supabase.storage
+        .from('client-documents')
+        .getPublicUrl(document.file_path);
+
+      if (data?.publicUrl) {
+        setSelectedDocument({
+          ...document,
+          file_path: data.publicUrl
+        });
+        setViewerOpen(true);
+      } else {
+        throw new Error('No se pudo obtener la URL del documento');
+      }
+    } catch (error) {
+      console.error('Error viewing document:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo abrir el documento para visualización",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleDownload = async (document: ClientDocument) => {
     try {
       const { data, error } = await supabase.storage
@@ -247,118 +278,180 @@ export const ClientDocumentHub = ({ clientId, projectId }: ClientDocumentHubProp
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Folder className="h-5 w-5" />
-          Centro de Documentos
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="documents" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
-            <TabsTrigger value="documents" className="flex items-center gap-1 text-xs md:text-sm">
-              <FileText className="h-3 w-3 md:h-4 md:w-4" />
-              <span className="hidden sm:inline">Documentos</span>
-              <span className="sm:hidden">Docs</span>
-            </TabsTrigger>
-            <TabsTrigger value="upload" className="flex items-center gap-1 text-xs md:text-sm">
-              <Upload className="h-3 w-3 md:h-4 md:w-4" />
-              Subir
-            </TabsTrigger>
-            <TabsTrigger value="payments" className="flex items-center gap-1 text-xs md:text-sm">
-              <CreditCard className="h-3 w-3 md:h-4 md:w-4" />
-              Pagos
-            </TabsTrigger>
-            <TabsTrigger value="invoices" className="flex items-center gap-1 text-xs md:text-sm">
-              <Receipt className="h-3 w-3 md:h-4 md:w-4" />
-              <span className="hidden sm:inline">Facturas</span>
-              <span className="sm:hidden">Fact</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="documents" className="mt-6">
-            {loading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                <p className="mt-2 text-sm text-muted-foreground">Cargando documentos...</p>
-              </div>
-            ) : documents.length === 0 ? (
-              <div className="text-center py-8">
-                <Folder className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No hay documentos disponibles.</p>
-                <p className="text-sm text-muted-foreground">Usa la pestaña "Subir" para agregar documentos.</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {documents.map((doc) => (
-                  <Card key={doc.id} className="border-l-4 border-l-primary">
-                    <CardContent className="p-3 md:p-4">
-                      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3">
-                        <div className="space-y-2 flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {getDocumentTypeIcon(doc.document_type)}
-                            <h4 className="font-semibold text-sm md:text-base truncate flex-1 min-w-0">
-                              {doc.document_name}
-                            </h4>
-                            <Badge variant="outline" className="text-xs flex-shrink-0">
-                              {getDocumentTypeName(doc.document_type)}
-                            </Badge>
-                            {doc.source && (
-                              <Badge variant="secondary" className="text-xs">
-                                {doc.source === 'sales' ? 'Ventas' : 'Proyecto'}
-                              </Badge>
-                            )}
-                          </div>
-                          
-                          <div className="text-xs md:text-sm text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
-                            <span>Tamaño: {formatFileSize(doc.file_size)}</span>
-                            <span>Fecha: {format(new Date(doc.created_at), 'dd/MM/yyyy', { locale: es })}</span>
-                            {doc.file_type && (
-                              <span>Tipo: {doc.file_type}</span>
-                            )}
-                          </div>
-                        </div>
-
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDownload(doc)}
-                          className="w-full md:w-auto flex-shrink-0"
-                        >
-                          <Download className="h-4 w-4 mr-2 md:mr-0" />
-                          <span className="md:hidden">Descargar</span>
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+    <>
+      <Card className={compact ? '' : ''}>
+        <CardHeader className={compact ? 'pb-3' : ''}>
+          <CardTitle className="flex items-center gap-2">
+            <Folder className={compact ? "h-4 w-4" : "h-5 w-5"} />
+            <span className={compact ? "text-sm" : ""}>Centro de Documentos</span>
+            {compact && documents.length > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                {documents.length}
+              </Badge>
             )}
-          </TabsContent>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className={compact ? 'pt-0' : ''}>
+          <Tabs defaultValue="documents" className="w-full">
+            <TabsList className={`grid w-full ${compact ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'}`}>
+              <TabsTrigger value="documents" className="flex items-center gap-1 text-xs md:text-sm">
+                <FileText className="h-3 w-3 md:h-4 md:w-4" />
+                <span className={compact ? 'text-xs' : 'hidden sm:inline'}>Documentos</span>
+                <span className={compact ? 'hidden' : 'sm:hidden'}>Docs</span>
+              </TabsTrigger>
+              {!compact && (
+                <>
+                  <TabsTrigger value="upload" className="flex items-center gap-1 text-xs md:text-sm">
+                    <Upload className="h-3 w-3 md:h-4 md:w-4" />
+                    Subir
+                  </TabsTrigger>
+                  <TabsTrigger value="payments" className="flex items-center gap-1 text-xs md:text-sm">
+                    <CreditCard className="h-3 w-3 md:h-4 md:w-4" />
+                    Pagos
+                  </TabsTrigger>
+                  <TabsTrigger value="invoices" className="flex items-center gap-1 text-xs md:text-sm">
+                    <Receipt className="h-3 w-3 md:h-4 md:w-4" />
+                    <span className="hidden sm:inline">Facturas</span>
+                    <span className="sm:hidden">Fact</span>
+                  </TabsTrigger>
+                </>
+              )}
+              {compact && (
+                <TabsTrigger value="upload" className="flex items-center gap-1 text-xs">
+                  <Upload className="h-3 w-3" />
+                  <span className="text-xs">Subir</span>
+                </TabsTrigger>
+              )}
+            </TabsList>
 
-          <TabsContent value="upload" className="mt-6">
-            <ClientDocumentUploader 
-              clientId={clientId} 
-              projectId={projectId}
-            />
-          </TabsContent>
+            <TabsContent value="documents" className={compact ? "mt-4" : "mt-6"}>
+              {loading ? (
+                <div className={`text-center ${compact ? 'py-4' : 'py-8'}`}>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                  <p className="mt-2 text-sm text-muted-foreground">Cargando documentos...</p>
+                </div>
+              ) : documents.length === 0 ? (
+                <div className={`text-center ${compact ? 'py-4' : 'py-8'}`}>
+                  <Folder className={`${compact ? 'h-8 w-8' : 'h-12 w-12'} text-muted-foreground mx-auto mb-4`} />
+                  <p className={`text-muted-foreground ${compact ? 'text-sm' : ''}`}>No hay documentos disponibles.</p>
+                  {!compact && <p className="text-sm text-muted-foreground">Usa la pestaña "Subir" para agregar documentos.</p>}
+                </div>
+              ) : (
+                <ScrollArea className={compact ? "h-[300px]" : "h-[400px]"}>
+                  <div className="space-y-2 pr-4">
+                    {documents.slice(0, compact ? 6 : documents.length).map((doc) => (
+                      <Card key={doc.id} className={`border-l-4 border-l-primary ${compact ? 'shadow-sm' : ''}`}>
+                        <CardContent className={compact ? "p-3" : "p-3 md:p-4"}>
+                          <div className="flex flex-col gap-3">
+                            <div className="space-y-1 flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {getDocumentTypeIcon(doc.document_type)}
+                                <h4 className={`font-semibold ${compact ? 'text-sm' : 'text-sm md:text-base'} truncate flex-1 min-w-0`}>
+                                  {doc.document_name}
+                                </h4>
+                                <Badge variant="outline" className="text-xs flex-shrink-0">
+                                  {getDocumentTypeName(doc.document_type)}
+                                </Badge>
+                                {doc.source && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    {doc.source === 'sales' ? 'Ventas' : 'Proyecto'}
+                                  </Badge>
+                                )}
+                              </div>
+                              
+                              <div className={`${compact ? 'text-xs' : 'text-xs md:text-sm'} text-muted-foreground flex flex-wrap gap-x-3 gap-y-1`}>
+                                <span>Tamaño: {formatFileSize(doc.file_size)}</span>
+                                <span>Fecha: {format(new Date(doc.created_at), 'dd/MM/yyyy', { locale: es })}</span>
+                                {doc.file_type && !compact && (
+                                  <span>Tipo: {doc.file_type}</span>
+                                )}
+                              </div>
+                            </div>
 
-          <TabsContent value="payments" className="mt-6">
-            <ClientPaymentProofUploader 
-              clientId={clientId} 
-              projectId={projectId}
-            />
-          </TabsContent>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleView(doc)}
+                                className="flex-1 flex items-center gap-1"
+                              >
+                                <Eye className="h-3 w-3" />
+                                <span className={compact ? 'text-xs' : 'text-sm'}>Ver</span>
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDownload(doc)}
+                                className="flex-1 flex items-center gap-1"
+                              >
+                                <Download className="h-3 w-3" />
+                                <span className={compact ? 'text-xs' : 'text-sm'}>Descargar</span>
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {compact && documents.length > 6 && (
+                      <div className="text-center text-xs text-muted-foreground pt-2">
+                        +{documents.length - 6} documentos más
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+              )}
+            </TabsContent>
 
-          <TabsContent value="invoices" className="mt-6">
-            <ClientInvoiceViewer 
-              clientId={clientId} 
-              projectId={projectId}
-            />
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+            {!compact && (
+              <>
+                <TabsContent value="upload" className="mt-6">
+                  <ClientDocumentUploader 
+                    clientId={clientId} 
+                    projectId={projectId}
+                  />
+                </TabsContent>
+
+                <TabsContent value="payments" className="mt-6">
+                  <ClientPaymentProofUploader 
+                    clientId={clientId} 
+                    projectId={projectId}
+                  />
+                </TabsContent>
+
+                <TabsContent value="invoices" className="mt-6">
+                  <ClientInvoiceViewer 
+                    clientId={clientId} 
+                    projectId={projectId}
+                  />
+                </TabsContent>
+              </>
+            )}
+
+            {compact && (
+              <TabsContent value="upload" className="mt-4">
+                <ClientDocumentUploader 
+                  clientId={clientId} 
+                  projectId={projectId}
+                />
+              </TabsContent>
+            )}
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      {/* Document Viewer Modal */}
+      {selectedDocument && (
+        <DocumentViewer
+          isOpen={viewerOpen}
+          onClose={() => {
+            setViewerOpen(false);
+            setSelectedDocument(null);
+          }}
+          documentUrl={selectedDocument.file_path}
+          documentName={selectedDocument.document_name}
+          fileType={selectedDocument.file_type || ''}
+        />
+      )}
+    </>
   );
 };

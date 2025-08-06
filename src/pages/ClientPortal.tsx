@@ -554,6 +554,7 @@ const ClientPortal: React.FC = () => {
             <ClientDocumentHub 
               clientId={project.client_id} 
               projectId={selectedProjectId}
+              compact={isMobile}
             />
             <SuperiorClientPortalChat
               clientId={project.client_id}
@@ -563,7 +564,7 @@ const ClientPortal: React.FC = () => {
           
           {/* Información adicional */}
           <div className={`${isMobile ? 'space-y-6' : 'grid grid-cols-1 lg:grid-cols-2 gap-6'}`}>
-            <PaymentHistoryPanel payments={payments} />
+            <PaymentHistoryPanel payments={payments} compact={isMobile} />
             <Card>
               <CardHeader className={isMobile ? 'p-4' : undefined}>
                 <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-base' : ''}`}>
@@ -615,7 +616,7 @@ const ClientPortal: React.FC = () => {
             projectId={selectedProjectId}
             clientId={project.client_id}
           />
-          <PaymentHistoryPanel payments={payments} />
+          <PaymentHistoryPanel payments={payments} compact={isMobile} />
         </TabsContent>
 
         <TabsContent value="documentos" className="space-y-6">
@@ -623,6 +624,7 @@ const ClientPortal: React.FC = () => {
           <ClientDocumentHub
             clientId={project.client_id}
             projectId={project.id}
+            compact={false}
           />
         </TabsContent>
 
