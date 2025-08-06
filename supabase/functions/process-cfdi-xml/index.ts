@@ -45,6 +45,13 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // FASE 4: Validación de origen
+  const origin = req.headers.get('origin');
+  const allowedOrigins = ['https://ycbflvptfgrjclzzlxci.supabase.co', 'http://localhost:8080'];
+  if (origin && !allowedOrigins.includes(origin)) {
+    return new Response('Forbidden', { status: 403, headers: corsHeaders });
+  }
+
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {

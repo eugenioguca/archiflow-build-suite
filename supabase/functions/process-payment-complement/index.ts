@@ -2,13 +2,25 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://ycbflvptfgrjclzzlxci.supabase.co',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
+
+// FASE 2: Constantes de seguridad
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_XML_LENGTH = 2 * 1024 * 1024; // 2MB
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // FASE 4: Validación de origen
+  const origin = req.headers.get('origin');
+  const allowedOrigins = ['https://ycbflvptfgrjclzzlxci.supabase.co', 'http://localhost:8080'];
+  if (origin && !allowedOrigins.includes(origin)) {
+    return new Response('Forbidden', { status: 403, headers: corsHeaders });
   }
 
   try {
