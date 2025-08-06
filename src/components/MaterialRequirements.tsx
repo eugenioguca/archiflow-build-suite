@@ -375,6 +375,7 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                         <thead className="bg-muted/50">
                           <tr>
                             <th className="text-left p-3 text-sm font-medium">Material</th>
+                            <th className="text-left p-3 text-sm font-medium">Cuenta Mayor</th>
                             <th className="text-left p-3 text-sm font-medium">Cantidad</th>
                             <th className="text-right p-3 text-sm font-medium">Costo Base</th>
                             <th className="text-right p-3 text-sm font-medium">Ajuste +</th>
@@ -395,7 +396,14 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                                   {material.material_code && (
                                     <p className="text-xs text-muted-foreground font-mono">{material.material_code}</p>
                                   )}
-                                  <p className="text-xs text-muted-foreground">{material.cuenta_mayor || material.material_type}</p>
+                                  {material.descripcion_producto && (
+                                    <p className="text-xs text-muted-foreground">{material.descripcion_producto}</p>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="p-3">
+                                <div className="text-sm font-medium">
+                                  {material.cuenta_mayor || '-'}
                                 </div>
                               </td>
                               <td className="p-3">
@@ -512,6 +520,10 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                           
                           <div className="grid grid-cols-2 gap-3 text-sm">
                             <div>
+                              <span className="text-muted-foreground">Cuenta Mayor:</span>
+                              <p className="font-medium">{material.cuenta_mayor || '-'}</p>
+                            </div>
+                            <div>
                               <span className="text-muted-foreground">Cantidad:</span>
                               <p className="font-medium">{material.quantity_required} {material.unit_of_measure}</p>
                             </div>
@@ -523,9 +535,9 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
                               <span className="text-muted-foreground">Costo Base:</span>
                               <p className="font-medium">${(material.unit_cost || 0).toLocaleString()}</p>
                             </div>
-                            <div>
+                            <div className="col-span-2">
                               <span className="text-muted-foreground">Ajustes:</span>
-                              <div className="flex gap-2 text-xs">
+                              <div className="flex gap-2 text-xs mt-1">
                                 <span className="text-green-600">+${(material.adjustment_additive || 0).toLocaleString()}</span>
                                 <span className="text-red-600">-${(material.adjustment_deductive || 0).toLocaleString()}</span>
                               </div>
