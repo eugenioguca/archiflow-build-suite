@@ -28,6 +28,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { uploadFileToStorage, downloadFile, getFileUrl } from '@/lib/fileUtils';
+import { openDocumentInNewTab } from '@/lib/documentUtils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -84,8 +85,6 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
   projectId,
   projectName,
 }) => {
-  console.log('🔥 SalesProjectFileManager NUEVO se está ejecutando!', { clientId, projectId, projectName });
-  
   const [documents, setDocuments] = useState<Document[]>([]);
   const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,7 +101,6 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
   }, [clientId, projectId]);
 
   const fetchDocuments = async () => {
-    console.log('🔥 fetchDocuments del NUEVO componente ejecutándose');
     try {
       setLoading(true);
       const documentsFromClientDocs = await fetchClientDocuments();
@@ -297,14 +295,15 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
 
   const handleViewDocument = async (document: Document) => {
     try {
-      const bucket = document.source === 'client_documents' ? 'client-documents' : 'project-documents';
-      const { url } = await getFileUrl(document.file_path, bucket, true);
-      window.open(url, '_blank');
+      const result = await openDocumentInNewTab(document.file_path, document.source);
+      if (!result.success) {
+        throw new Error(result.error || 'No se pudo abrir el documento');
+      }
     } catch (error) {
       console.error('Error opening document:', error);
       toast({
-        title: "Error",
-        description: "No se pudo abrir el documento",
+        title: "Error al abrir documento",
+        description: error instanceof Error ? error.message : "No se pudo abrir el documento",
         variant: "destructive",
       });
     }
@@ -378,9 +377,15 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
 
   return (
     <div className="h-full flex flex-col">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold">Expediente del Proyecto</h2>
-        <p className="text-muted-foreground">{projectName}</p>
+      <div className="mb-6 bg-gradient-to-r from-primary/5 to-primary/10 p-6 rounded-lg border">
+        <div className="flex items-center gap-3 mb-2">
+          <FolderOpen className="h-6 w-6 text-primary" />
+          <h2 className="text-2xl font-bold text-primary">Expediente del Proyecto</h2>
+        </div>
+        <p className="text-muted-foreground text-lg">{projectName}</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          Gestión completa de documentos, fotografías y archivos del proyecto
+        </p>
       </div>
 
       <Tabs defaultValue="documents" className="flex-1 flex flex-col">
@@ -400,12 +405,12 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Upload className="h-5 w-5" />
+                <Upload className="h-5 w-5 text-primary" />
                 Subir Documentos
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
                 <input
                   type="file"
                   multiple
@@ -426,7 +431,7 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
               {selectedFiles.length > 0 && (
                 <div className="space-y-3">
                   {selectedFiles.map((fileUpload) => (
-                    <div key={fileUpload.id} className="border rounded-lg p-4">
+                    <div key={fileUpload.id} className="border rounded-lg p-4 bg-muted/20">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-medium text-sm">{fileUpload.file.name}</span>
                         <Button
@@ -501,24 +506,30 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
           {/* Documents List */}
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <FolderOpen className="h-5 w-5" />
-                  Documentos del Proyecto
-                </CardTitle>
-                <Button variant="outline" size="sm" onClick={fetchDocuments}>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Actualizar
-                </Button>
-              </div>
-              <div className="flex items-center gap-2 mt-4">
-                <Search className="h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar documentos..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="max-w-sm"
-                />
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-semibold flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-primary" />
+                    Documentos del Proyecto
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Contratos, documentos fiscales y archivos complementarios
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Badge variant="outline" className="font-normal">
+                    {documents.length} documento{documents.length !== 1 ? 's' : ''}
+                  </Badge>
+                  <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar documentos..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -531,43 +542,66 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
                   ))}
                 </div>
               ) : filteredDocuments.length === 0 ? (
-                <div className="text-center py-8">
-                  <FolderOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-lg font-medium">No hay documentos disponibles</p>
-                  <p className="text-muted-foreground">
-                    {searchTerm ? 'Intenta ajustar tu búsqueda' : 'Sube el primer documento para comenzar'}
-                  </p>
-                </div>
+                <Card className="border-dashed">
+                  <CardContent className="p-8">
+                    <div className="text-center space-y-3">
+                      <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                        <FolderOpen className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-medium">No hay documentos</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Sube documentos para comenzar a organizar el expediente del proyecto.
+                          <br />
+                          Los contratos y documentos fiscales aparecerán automáticamente aquí.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               ) : (
                 <div className="space-y-3">
-                  {filteredDocuments.map((document) => (
-                    <div key={document.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50">
-                      <div className="flex items-center gap-3">
-                        {getDocumentIcon(document.document_type)}
-                        <div>
-                          <h4 className="font-medium">{document.document_name}</h4>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span>{DOCUMENT_CATEGORIES.find(c => c.value === document.document_type)?.label || document.document_type}</span>
-                            <span>{formatFileSize(document.file_size)}</span>
-                            <span>{format(new Date(document.created_at), 'dd/MM/yyyy', { locale: es })}</span>
-                            {document.source === 'inherited' && (
-                              <Badge variant="outline" className="text-xs">Heredado</Badge>
-                            )}
-                          </div>
+                  {filteredDocuments.map((doc) => (
+                    <div key={doc.id} className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/30 transition-all duration-200 group">
+                      <div className="flex-shrink-0">
+                        {getDocumentIcon(doc.document_type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate group-hover:text-primary transition-colors">
+                          {/* Mostrar nombre personalizado para documentos complementarios */}
+                          {doc.document_type === 'contract' ? 'Contrato Firmado' :
+                           doc.document_type === 'fiscal' ? 'Constancia de Situación Fiscal' :
+                           doc.document_name}
+                        </p>
+                        <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                          <span className="px-2 py-1 bg-muted rounded-md font-medium">
+                            {doc.document_type === 'contract' ? 'Contrato' :
+                             doc.document_type === 'fiscal' ? 'Documento Fiscal' :
+                             'Doc. Complementario'}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {format(new Date(doc.created_at), 'dd/MM/yyyy', { locale: es })}
+                          </span>
+                          <span>{formatFileSize(doc.file_size)}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
-                          onClick={() => handleViewDocument(document)}
+                          onClick={() => handleViewDocument(doc)}
+                          title="Visualizar documento en nueva ventana"
+                          className="hover:bg-primary/10 hover:text-primary"
                         >
-                          <ExternalLink className="h-4 w-4" />
+                          <Eye className="h-4 w-4" />
                         </Button>
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
-                          onClick={() => handleDownloadDocument(document)}
+                          onClick={() => handleDownloadDocument(doc)}
+                          title="Descargar documento"
+                          className="hover:bg-green-100 hover:text-green-700"
                         >
                           <Download className="h-4 w-4" />
                         </Button>
@@ -580,21 +614,24 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
           </Card>
         </TabsContent>
 
-        <TabsContent value="photos" className="flex-1 mt-6">
+        <TabsContent value="photos" className="flex-1 mt-6 space-y-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-xl font-semibold flex items-center gap-2">
+                <Camera className="h-5 w-5 text-primary" />
+                Fotografías de Progreso
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Registro visual del avance del proyecto
+              </p>
+            </div>
+            <Badge variant="outline" className="font-normal">
+              {photos.length} fotografía{photos.length !== 1 ? 's' : ''}
+            </Badge>
+          </div>
+
           <Card className="h-full">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Camera className="h-5 w-5" />
-                  Fotografías de Progreso
-                </CardTitle>
-                <Button variant="outline" size="sm" onClick={fetchPhotos}>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Actualizar
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               {photos.length === 0 ? (
                 <div className="text-center py-8">
                   <Camera className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />

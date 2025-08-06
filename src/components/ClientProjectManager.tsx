@@ -511,14 +511,7 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
                 </div>
                 
                 <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleOpenFileManager(project)}
-                    title="Ver expediente completo del proyecto"
-                  >
-                    <FolderOpen className="h-4 w-4" />
-                  </Button>
+                  {/* Botón de expediente removido - ahora se maneja desde el menú principal de ventas */}
                   
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
