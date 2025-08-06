@@ -16,6 +16,7 @@ import { SuperiorClientPortalChat } from '@/components/SuperiorClientPortalChat'
 import { RealtimeNotificationSystem } from '@/components/RealtimeNotificationSystem';
 import { ClientPortalFeaturesSummary } from '@/components/ClientPortalFeaturesSummary';
 import { useProjectProgress } from '@/hooks/useProjectProgress';
+import ClientPortalModern from '@/components/ClientPortalModern';
 
 interface PreviewProject {
   id: string;
@@ -195,158 +196,36 @@ const ClientPortalPreview = () => {
             <Card className="bg-gradient-to-r from-primary/10 to-primary/5">
               <CardContent className="p-8">
                 <div className="text-center space-y-4">
-                  <h2 className="text-2xl font-bold">Portal del Cliente</h2>
+                  <h2 className="text-2xl font-bold">Portal del Cliente - Vista Previa</h2>
                   <p className="text-muted-foreground">
-                    Vista previa de cómo el cliente ve su portal
+                    Vista exacta de cómo el cliente ve su portal moderno
                   </p>
-                  <div className="flex justify-center gap-4 mt-6">
-                    <Badge variant="secondary" className="gap-1">
-                      <FileText className="h-3 w-3" />
-                      Documentos
-                    </Badge>
-                    <Badge variant="secondary" className="gap-1">
-                      <CreditCard className="h-3 w-3" />
-                      Pagos
-                    </Badge>
-                    <Badge variant="secondary" className="gap-1">
-                      <Camera className="h-3 w-3" />
-                      Fotos de Avance
-                    </Badge>
-                    <Badge variant="secondary" className="gap-1">
-                      <MessageCircle className="h-3 w-3" />
-                      Chat del Proyecto
-                    </Badge>
-                  </div>
+                  <Badge variant="outline" className="gap-1">
+                    <Eye className="h-3 w-3" />
+                    Modo Preview Activo
+                  </Badge>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Contenido del Portal con datos reales */}
+            {/* Contenido Real del Portal */}
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             ) : projectData ? (
-              <div className="space-y-6">
-                {/* Project Progress Card */}
-                <ProjectProgressCard project={projectData} />
-                
-                <Separator />
-
-                {/* Componentes Reales del Portal Cliente */}
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                  {/* Columna izquierda - Funcionalidades principales */}
-                  <div className="space-y-6">
-                    {/* Sistema de Notificaciones en Tiempo Real */}
-                    <RealtimeNotificationSystem 
-                      clientId={selectedClientId} 
-                      projectId={selectedProjectId} 
-                    />
-
-                    {/* Hub de Documentos del Cliente */}
-                    <ClientDocumentHub 
-                      clientId={selectedClientId} 
-                      projectId={selectedProjectId} 
-                      compact={true}
-                    />
-
-                    {/* Resumen de Características */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Resumen del Portal</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Planes de pago:</span>
-                            <span className="text-sm font-medium">{paymentPlans.length}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Documentos:</span>
-                            <span className="text-sm font-medium">{documents.length}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Fotos de progreso:</span>
-                            <span className="text-sm font-medium">{progressPhotos.length}</span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-
-                  {/* Columna derecha - Chat y comunicación */}
-                  <div className="space-y-6">
-                    {/* Chat Superior con el Equipo */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <MessageSquare className="h-5 w-5" />
-                          Comunicación con Equipo
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-0">
-                        <SuperiorClientPortalChat 
-                          projectId={selectedProjectId} 
-                          clientId={selectedClientId} 
-                        />
-                      </CardContent>
-                    </Card>
-
-                    {/* Planes de Pago Interactivos */}
-                    <PaymentPlansViewer 
-                      projectId={selectedProjectId}
-                      clientId={selectedClientId}
-                    />
-
-                    {/* Historial de Pagos Panel */}
-                    <PaymentHistoryPanel 
-                      payments={payments}
-                      compact={true}
-                    />
-
-                    {/* Panel de Documentos */}
-                    <DocumentsPanel 
-                      documents={documents}
-                      onDocumentView={(doc) => {
-                        toast({
-                          title: "Vista previa",
-                          description: `Abriendo documento: ${doc.name}`
-                        });
-                      }}
-                      onDocumentDownload={(doc) => {
-                        toast({
-                          title: "Descarga simulada",
-                          description: `Descargando: ${doc.name}`
-                        });
-                      }}
-                    />
-                  </div>
+              <div className="border-2 border-dashed border-primary/20 rounded-lg p-4">
+                <div className="text-center mb-4">
+                  <Badge variant="secondary" className="gap-1">
+                    <Eye className="h-3 w-3" />
+                    Portal del Cliente - Vista Previa
+                  </Badge>
                 </div>
-
-                <Separator />
-
-                {/* Carrusel de Fotos de Progreso */}
-                {progressPhotos.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Camera className="h-5 w-5" />
-                        Progreso Visual del Proyecto
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ProgressPhotosCarousel 
-                        photos={progressPhotos}
-                        onPhotoDownload={(photo) => {
-                          toast({
-                            title: "Descarga simulada",
-                            description: `Descargando foto: ${photo.description}`
-                          });
-                        }}
-                      />
-                    </CardContent>
-                  </Card>
-                )}
+                
+                {/* Render the actual client portal component with simulation mode */}
+                <div className="bg-background rounded-lg border">
+                  <ClientPortalModern />
+                </div>
               </div>
             ) : (
               <Card>
@@ -359,83 +238,6 @@ const ClientPortalPreview = () => {
                 </CardContent>
               </Card>
             )}
-
-            {/* Secciones adicionales del portal */}
-            <div className="grid md:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Documentos
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground text-sm">
-                    {documents.length > 0 
-                      ? `${documents.length} documentos disponibles`
-                      : 'No hay documentos cargados'
-                    }
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="h-4 w-4" />
-                    Plan de Pagos
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground text-sm">
-                    {paymentPlans.length > 0 
-                      ? `${paymentPlans.length} planes de pago configurados`
-                      : 'No hay planes de pago configurados'
-                    }
-                    <span className="block text-xs mt-1 text-green-600">
-                      ✓ Datos reales conectados
-                    </span>
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Camera className="h-4 w-4" />
-                    Fotos de Avance
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground text-sm">
-                    {progressPhotos.length > 0 
-                      ? `${progressPhotos.length} fotos disponibles`
-                      : 'No hay fotos de avance'
-                    }
-                    <span className="block text-xs mt-1 text-green-600">
-                      ✓ Datos reales conectados
-                    </span>
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageCircle className="h-4 w-4" />
-                  Chat del Proyecto
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Chat en tiempo real para comunicación directa con el equipo
-                  <span className="block text-xs mt-1 text-green-600">
-                    ✓ Funcionalidad implementada
-                  </span>
-                </p>
-              </CardContent>
-            </Card>
           </div>
         </>
       )}

@@ -378,29 +378,19 @@ const ClientPortalModern = () => {
           </TabsContent>
 
           <TabsContent value="payments">
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle>Plan de Pagos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {selectedProject && (
-                  <PaymentPlansViewer clientId={selectedProject.client_id} projectId={selectedProject.id} />
-                )}
-              </CardContent>
-            </Card>
+            <div className="space-y-4">
+              {selectedProject && (
+                <PaymentPlansViewer clientId={selectedProject.client_id} projectId={selectedProject.id} />
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="documents">
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle>Documentos del Proyecto</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {selectedProject && (
-                  <ClientDocumentHub clientId={selectedProject.client_id} projectId={selectedProject.id} />
-                )}
-              </CardContent>
-            </Card>
+            <div className="space-y-4">
+              {selectedProject && (
+                <ClientDocumentHub clientId={selectedProject.client_id} projectId={selectedProject.id} />
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="photos">
@@ -409,27 +399,28 @@ const ClientPortalModern = () => {
                 <CardTitle>Fotos de Progreso</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center text-muted-foreground p-8">
-                  Fotos de progreso próximamente
-                </div>
+                {selectedProject && (
+                  <ProgressPhotosCarousel photos={[]} />
+                )}
+                {(!selectedProject || true) && (
+                  <div className="text-center text-muted-foreground p-8">
+                    <Camera className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Las fotos de progreso aparecerán aquí cuando el equipo las suba</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="chat">
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle>Comunicación</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {selectedProject && (
-                  <SuperiorClientPortalChat 
-                    clientId={selectedProject.client_id} 
-                    projectId={selectedProject.id} 
-                  />
-                )}
-              </CardContent>
-            </Card>
+            <div className="space-y-4">
+              {selectedProject && (
+                <SuperiorClientPortalChat 
+                  clientId={selectedProject.client_id} 
+                  projectId={selectedProject.id} 
+                />
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </div>
