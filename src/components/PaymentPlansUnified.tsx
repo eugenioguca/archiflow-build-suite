@@ -62,14 +62,16 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
   const fetchPaymentPlans = async () => {
     try {
       setLoading(true);
+      
+      // Use a more robust query for refresh scenarios
       let query = supabase
         .from('payment_plans')
         .select(`
           *,
-          client_projects!inner(
+          client_projects(
             project_name,
             client_id,
-            clients!inner(full_name)
+            clients(full_name)
           )
         `)
         .eq('status', 'active')
@@ -262,7 +264,7 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
     
     try {
       // Update payment installment status to paid
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from('payment_installments')
         .update({ 
           status: 'paid',
@@ -270,13 +272,49 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
         })
         .eq('id', installmentId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
-      // Refresh data
-      await fetchPaymentPlans();
+      // Show immediate success feedback
+      toast.success('Pago marcado como pagado exitosamente');
+
+      // Update local state optimistically
+      setInstallments(prevInstallments => 
+        prevInstallments.map(inst => 
+          inst.id === installmentId 
+            ? { ...inst, status: 'paid', paid_date: new Date().toISOString().split('T')[0] }
+            : inst
+        )
+      );
+
+      // Update allInstallments state
+      setAllInstallments(prevAll => {
+        const updated = { ...prevAll };
+        if (updated[planId]) {
+          updated[planId] = updated[planId].map(inst => 
+            inst.id === installmentId 
+              ? { ...inst, status: 'paid', paid_date: new Date().toISOString().split('T')[0] }
+              : inst
+          );
+        }
+        return updated;
+      });
+
+      // Trigger callback immediately
       onPaymentUpdate?.();
 
-      toast.success('Pago marcado como pagado exitosamente');
+      // Refresh data in background with retry logic
+      setTimeout(async () => {
+        try {
+          await fetchPaymentPlans();
+        } catch (refreshError) {
+          console.warn('Background refresh failed, retrying...', refreshError);
+          // Retry once after 2 seconds
+          setTimeout(() => {
+            fetchPaymentPlans().catch(console.error);
+          }, 2000);
+        }
+      }, 500);
+
     } catch (error) {
       console.error('Error marking payment as paid:', error);
       toast.error('Error al marcar el pago como pagado');
@@ -305,7 +343,7 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
       }
 
       // Update all unpaid installments to paid
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from('payment_installments')
         .update({ 
           status: 'paid',
@@ -314,14 +352,57 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
         .eq('payment_plan_id', planId)
         .neq('status', 'paid');
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
-      // Refresh data
-      await fetchPaymentPlans();
-      await fetchInstallments(planId);
+      // Show immediate success feedback
+      toast.success(`Plan completo marcado como pagado (${planInstallments.length} cuotas actualizadas)`);
+
+      // Update local state optimistically
+      const currentDate = new Date().toISOString().split('T')[0];
+      
+      setInstallments(prevInstallments => 
+        prevInstallments.map(inst => 
+          inst.status !== 'paid' 
+            ? { ...inst, status: 'paid', paid_date: currentDate }
+            : inst
+        )
+      );
+
+      // Update allInstallments state
+      setAllInstallments(prevAll => {
+        const updated = { ...prevAll };
+        if (updated[planId]) {
+          updated[planId] = updated[planId].map(inst => 
+            inst.status !== 'paid' 
+              ? { ...inst, status: 'paid', paid_date: currentDate }
+              : inst
+          );
+        }
+        return updated;
+      });
+
+      // Trigger callback immediately
       onPaymentUpdate?.();
 
-      toast.success(`Plan completo marcado como pagado (${planInstallments.length} cuotas actualizadas)`);
+      // Refresh data in background with retry logic
+      setTimeout(async () => {
+        try {
+          await fetchPaymentPlans();
+          if (selectedPlan) {
+            await fetchInstallments(planId);
+          }
+        } catch (refreshError) {
+          console.warn('Background refresh failed, retrying...', refreshError);
+          // Retry once after 2 seconds
+          setTimeout(() => {
+            fetchPaymentPlans().catch(console.error);
+            if (selectedPlan) {
+              fetchInstallments(planId).catch(console.error);
+            }
+          }, 2000);
+        }
+      }, 500);
+
     } catch (error) {
       console.error('Error marking plan as paid:', error);
       toast.error('Error al marcar el plan como pagado');
