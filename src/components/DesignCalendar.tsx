@@ -9,18 +9,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Calendar as CalendarIcon, Clock, Users, Plus, Edit, Trash2 } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Users, Plus, Edit, Trash2, UserPlus } from "lucide-react";
+import { AppointmentInvitationManager } from "./AppointmentInvitationManager";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+
+interface Attendee {
+  profile_id: string;
+  name: string;
+  email: string;
+  status: 'invited' | 'accepted' | 'declined';
+}
 
 interface DesignAppointment {
   id: string;
   project_id: string;
+  client_id?: string;
   appointment_date: string;
   title: string;
   description?: string;
   status: string;
-  attendees: string[];
+  attendees: Attendee[];
   created_by: string;
 }
 
@@ -43,12 +52,14 @@ export function DesignCalendar({ projectId, teamMembers }: DesignCalendarProps) 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<DesignAppointment | null>(null);
   const [loading, setLoading] = useState(true);
+  const [invitationDialogOpen, setInvitationDialogOpen] = useState(false);
+  const [selectedAppointmentForInvitation, setSelectedAppointmentForInvitation] = useState<DesignAppointment | null>(null);
 
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     appointment_date: new Date().toISOString().slice(0, 16),
-    attendees: [] as string[]
+    attendees: [] as Attendee[]
   });
 
   useEffect(() => {
@@ -74,7 +85,20 @@ export function DesignCalendar({ projectId, teamMembers }: DesignCalendarProps) 
         .order("appointment_date");
 
       if (error) throw error;
-      setAppointments(data || []);
+      
+      // Transform attendees from string[] to Attendee[] if needed
+      const processedData = (data || []).map(appointment => ({
+        ...appointment,
+        attendees: Array.isArray(appointment.attendees) 
+          ? appointment.attendees.map(attendee => 
+              typeof attendee === 'string' 
+                ? { profile_id: attendee, name: 'Usuario', email: '', status: 'invited' as const }
+                : attendee
+            )
+          : []
+      }));
+      
+      setAppointments(processedData);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -102,14 +126,26 @@ export function DesignCalendar({ projectId, teamMembers }: DesignCalendarProps) 
 
       if (!profile) throw new Error("Perfil no encontrado");
 
+      // Get client_id from project
+      const { data: projectData } = await supabase
+        .from('client_projects')
+        .select('client_id')
+        .eq('id', projectId)
+        .single();
+
+      // Convert Attendee objects to string array for database compatibility
+      const attendeesForDb = formData.attendees.map(a => a.profile_id);
+
       const appointmentData = {
         project_id: projectId,
+        client_id: projectData?.client_id,
         title: formData.title,
         description: formData.description,
         appointment_date: formData.appointment_date,
-        attendees: formData.attendees,
+        attendees: attendeesForDb,
         created_by: profile.id,
-        status: "scheduled"
+        status: "scheduled",
+        visible_to_sales: true
       };
 
       if (editingAppointment) {
@@ -198,12 +234,25 @@ export function DesignCalendar({ projectId, teamMembers }: DesignCalendarProps) 
     });
   };
 
+  const openInvitationManager = (appointment: DesignAppointment) => {
+    setSelectedAppointmentForInvitation(appointment);
+    setInvitationDialogOpen(true);
+  };
+
   const toggleAttendee = (memberId: string) => {
+    const member = teamMembers.find(m => m.id === memberId);
+    if (!member) return;
+    
     setFormData(prev => ({
       ...prev,
-      attendees: prev.attendees.includes(memberId)
-        ? prev.attendees.filter(id => id !== memberId)
-        : [...prev.attendees, memberId]
+      attendees: prev.attendees.some(a => a.profile_id === memberId)
+        ? prev.attendees.filter(a => a.profile_id !== memberId)
+        : [...prev.attendees, { 
+            profile_id: memberId, 
+            name: member.full_name, 
+            email: '',
+            status: 'invited' as const 
+          }]
     }));
   };
 
@@ -335,7 +384,7 @@ export function DesignCalendar({ projectId, teamMembers }: DesignCalendarProps) 
                         <div
                           key={member.id}
                           className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${
-                            formData.attendees.includes(member.id)
+                            formData.attendees.some(a => a.profile_id === member.id)
                               ? "bg-primary/10 border-primary"
                               : "bg-background border-border hover:bg-muted"
                           }`}
@@ -343,7 +392,7 @@ export function DesignCalendar({ projectId, teamMembers }: DesignCalendarProps) 
                         >
                           <input
                             type="checkbox"
-                            checked={formData.attendees.includes(member.id)}
+                            checked={formData.attendees.some(a => a.profile_id === member.id)}
                             onChange={() => {}} // Handled by onClick
                             className="rounded"
                           />
@@ -385,6 +434,14 @@ export function DesignCalendar({ projectId, teamMembers }: DesignCalendarProps) 
                       <Button
                         size="sm"
                         variant="ghost"
+                        onClick={() => openInvitationManager(appointment)}
+                        title="Gestionar Invitados"
+                      >
+                        <UserPlus className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
                         onClick={() => handleEdit(appointment)}
                       >
                         <Edit className="h-4 w-4" />
@@ -423,6 +480,26 @@ export function DesignCalendar({ projectId, teamMembers }: DesignCalendarProps) 
           </div>
         </CardContent>
       </Card>
+
+      {/* Invitation Management Dialog */}
+      {selectedAppointmentForInvitation && invitationDialogOpen && (
+        <Dialog open={invitationDialogOpen} onOpenChange={setInvitationDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Gestionar Invitados</DialogTitle>
+            </DialogHeader>
+            <AppointmentInvitationManager
+              appointmentId={selectedAppointmentForInvitation.id}
+              clientId={selectedAppointmentForInvitation.client_id || ''}
+              attendees={selectedAppointmentForInvitation.attendees}
+              onAttendeesUpdate={(updatedAttendees) => {
+                setSelectedAppointmentForInvitation(prev => prev ? { ...prev, attendees: updatedAttendees } : null);
+                fetchAppointments();
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

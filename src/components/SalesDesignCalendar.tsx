@@ -5,9 +5,18 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Calendar, Clock, Users, Eye, Bell } from "lucide-react";
+import { Calendar, Clock, Users, Eye, Bell, Plus, UserPlus } from "lucide-react";
+import { AppointmentInvitationManager } from "./AppointmentInvitationManager";
+import { SalesAppointmentScheduler } from "./SalesAppointmentScheduler";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth } from "date-fns";
 import { es } from "date-fns/locale";
+
+interface Attendee {
+  profile_id: string;
+  name: string;
+  email: string;
+  status: 'invited' | 'accepted' | 'declined';
+}
 
 interface DesignAppointment {
   id: string;
@@ -15,8 +24,9 @@ interface DesignAppointment {
   appointment_date: string;
   description?: string;
   status: string;
-  attendees: string[];
+  attendees: Attendee[];
   client_id?: string;
+  project_id?: string;
   visible_to_sales: boolean;
   client?: {
     full_name: string;
@@ -44,6 +54,12 @@ interface SalesDesignCalendarProps {
   showNotifications?: boolean;
 }
 
+interface ClientProject {
+  id: string;
+  project_name: string;
+  client_id: string;
+}
+
 export function SalesDesignCalendar({ clientId, showNotifications = true }: SalesDesignCalendarProps) {
   const { toast } = useToast();
   const [appointments, setAppointments] = useState<DesignAppointment[]>([]);
@@ -51,13 +67,36 @@ export function SalesDesignCalendar({ clientId, showNotifications = true }: Sale
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedAppointment, setSelectedAppointment] = useState<DesignAppointment | null>(null);
   const [loading, setLoading] = useState(true);
+  const [invitationDialogOpen, setInvitationDialogOpen] = useState(false);
+  const [clientProject, setClientProject] = useState<ClientProject | null>(null);
 
   useEffect(() => {
     fetchDesignAppointments();
     if (showNotifications) {
       fetchNotifications();
     }
+    if (clientId) {
+      fetchClientProject();
+    }
   }, [clientId, currentDate]);
+
+  const fetchClientProject = async () => {
+    if (!clientId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('client_projects')
+        .select('id, project_name, client_id')
+        .eq('client_id', clientId)
+        .limit(1)
+        .single();
+
+      if (error) throw error;
+      setClientProject(data);
+    } catch (error) {
+      console.error('Error fetching client project:', error);
+    }
+  };
 
   const fetchDesignAppointments = async () => {
     try {
@@ -68,8 +107,7 @@ export function SalesDesignCalendar({ clientId, showNotifications = true }: Sale
         .from('design_appointments')
         .select(`
           *,
-          client:clients(full_name),
-          project:projects(name)
+          client:clients(full_name)
         `)
         .eq('visible_to_sales', true)
         .gte('appointment_date', startDate.toISOString())
@@ -84,7 +122,20 @@ export function SalesDesignCalendar({ clientId, showNotifications = true }: Sale
 
       if (error) throw error;
 
-      setAppointments(data || []);
+      // Transform attendees from string[] to Attendee[] if needed
+      const processedData = (data || []).map(appointment => ({
+        ...appointment,
+        attendees: Array.isArray(appointment.attendees) 
+          ? appointment.attendees.map(attendee => 
+              typeof attendee === 'string' 
+                ? { profile_id: attendee, name: 'Usuario', email: '', status: 'invited' as const }
+                : attendee
+            )
+          : [],
+        project: { name: appointment.project_id || '' }
+      }));
+      
+      setAppointments(processedData);
     } catch (error) {
       console.error('Error fetching design appointments:', error);
       toast({
@@ -246,6 +297,9 @@ export function SalesDesignCalendar({ clientId, showNotifications = true }: Sale
               <Button variant="outline" size="sm" onClick={nextMonth}>
                 →
               </Button>
+              {clientProject && (
+                <SalesAppointmentScheduler clientProject={clientProject} />
+              )}
             </div>
           </div>
         </CardHeader>
@@ -375,6 +429,14 @@ export function SalesDesignCalendar({ clientId, showNotifications = true }: Sale
               )}
 
               <div className="flex gap-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setInvitationDialogOpen(true)}
+                  className="flex items-center gap-2"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Gestionar Invitados
+                </Button>
                 <Button onClick={() => setSelectedAppointment(null)} className="flex-1">
                   Cerrar
                 </Button>
@@ -383,6 +445,26 @@ export function SalesDesignCalendar({ clientId, showNotifications = true }: Sale
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Invitation Management Dialog */}
+      {selectedAppointment && invitationDialogOpen && (
+        <Dialog open={invitationDialogOpen} onOpenChange={setInvitationDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Gestionar Invitados</DialogTitle>
+            </DialogHeader>
+            <AppointmentInvitationManager
+              appointmentId={selectedAppointment.id}
+              clientId={selectedAppointment.client_id || ''}
+              attendees={selectedAppointment.attendees}
+              onAttendeesUpdate={(updatedAttendees) => {
+                setSelectedAppointment(prev => prev ? { ...prev, attendees: updatedAttendees } : null);
+                fetchDesignAppointments();
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

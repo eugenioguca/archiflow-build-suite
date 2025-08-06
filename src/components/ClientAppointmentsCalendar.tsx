@@ -4,21 +4,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Clock, MapPin, Users, Phone, Video } from "lucide-react";
+import { MapPin, Clock, Users, CheckCircle, XCircle, UserCheck, UserX, Phone, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format, isSameDay, startOfMonth, endOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
 
+interface Attendee {
+  profile_id: string;
+  name: string;
+  email: string;
+  status: 'invited' | 'accepted' | 'declined';
+}
+
 interface DesignAppointment {
   id: string;
   title: string;
-  description: string;
+  description?: string;
   appointment_date: string;
   status: string;
-  attendees: any[];
-  client_id: string;
+  attendees: Attendee[];
+  client_id?: string;
   project_id?: string;
+  location?: string;
 }
 
 interface ClientAppointmentsCalendarProps {
@@ -67,7 +75,20 @@ export const ClientAppointmentsCalendar: React.FC<ClientAppointmentsCalendarProp
       const { data, error } = await query.order('appointment_date');
 
       if (error) throw error;
-      setAppointments(data || []);
+      
+      // Transform attendees from string[] to Attendee[] if needed
+      const processedData = (data || []).map(appointment => ({
+        ...appointment,
+        attendees: Array.isArray(appointment.attendees) 
+          ? appointment.attendees.map(attendee => 
+              typeof attendee === 'string' 
+                ? { profile_id: attendee, name: 'Usuario', email: '', status: 'invited' as const }
+                : attendee
+            )
+          : []
+      }));
+      
+      setAppointments(processedData);
     } catch (error) {
       console.error('Error fetching appointments:', error);
       toast({
