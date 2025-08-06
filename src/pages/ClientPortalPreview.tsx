@@ -31,6 +31,7 @@ interface PreviewProject {
   estimated_completion_date: string | null;
   actual_completion_date: string | null;
   construction_area: number;
+  land_square_meters: number;
   service_type: string;
 }
 
@@ -73,6 +74,7 @@ const ClientPortalPreview = () => {
         budget: project.budget || 0,
         construction_budget: project.construction_budget || 0,
         construction_area: project.construction_area || 0,
+        land_square_meters: project.land_square_meters || 0,
         project_description: project.project_description || '',
         service_type: project.service_type || 'Residencial'
       });

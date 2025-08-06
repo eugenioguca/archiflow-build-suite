@@ -30,7 +30,9 @@ import {
   AlertCircle,
   CalendarDays,
   Timer,
-  Construction
+  Construction,
+  Calculator,
+  Hammer
 } from 'lucide-react';
 import { format, differenceInDays, isAfter, isBefore } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -54,6 +56,7 @@ interface ClientProject {
   actual_completion_date: string | null;
   project_description: string;
   construction_area: number;
+  land_square_meters: number;
   service_type: string;
 }
 
@@ -76,6 +79,7 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
   const [selectedProject, setSelectedProject] = useState<ClientProject | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [paidAmount, setPaidAmount] = useState(0);
 
   useEffect(() => {
     if (isPreview && previewData) {
@@ -83,6 +87,10 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
       setClientProjects([previewData.project]);
       setSelectedProject(previewData.project);
       setLoading(false);
+      // Fetch paid amount for preview
+      if (previewData.project.id) {
+        fetchPaidAmount(previewData.project.id);
+      }
     } else if (user && !isPreview) {
       fetchClientProjects();
     }
@@ -121,6 +129,8 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
       if (projects && projects.length > 0) {
         setClientProjects(projects);
         setSelectedProject(projects[0]);
+        // Fetch paid amount for the first project
+        fetchPaidAmount(projects[0].id);
       }
     } catch (error) {
       console.error('Error fetching projects:', error);
@@ -146,6 +156,37 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
     
     const config = statusConfig[status as keyof typeof statusConfig] || { label: status, variant: 'secondary' as const };
     return <Badge variant={config.variant}>{config.label}</Badge>;
+  };
+
+  const fetchPaidAmount = async (projectId: string) => {
+    try {
+      // First get payment plan IDs for this project
+      const { data: paymentPlans } = await supabase
+        .from('payment_plans')
+        .select('id')
+        .eq('client_project_id', projectId)
+        .eq('status', 'active');
+
+      if (!paymentPlans || paymentPlans.length === 0) {
+        setPaidAmount(0);
+        return;
+      }
+
+      const planIds = paymentPlans.map(plan => plan.id);
+
+      // Then get paid installments for those plans
+      const { data: installments } = await supabase
+        .from('payment_installments')
+        .select('amount')
+        .eq('status', 'paid')
+        .in('payment_plan_id', planIds);
+
+      const total = installments?.reduce((sum, inst) => sum + (inst.amount || 0), 0) || 0;
+      setPaidAmount(total);
+    } catch (error) {
+      console.error('Error fetching paid amount:', error);
+      setPaidAmount(0);
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -320,17 +361,17 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
           </CardContent>
         </Card>
 
-        {/* Quick Stats */}
+        {/* Financial Dashboard */}
         <div className="grid grid-cols-2 gap-4">
           <Card className="glass-card">
             <CardContent className="p-4">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <DollarSign className="h-5 w-5 text-primary" />
+                <div className="p-2 bg-success/10 rounded-lg">
+                  <DollarSign className="h-5 w-5 text-success" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Inversión</p>
-                  <p className="font-bold">{formatCurrency(selectedProject?.budget || 0)}</p>
+                  <p className="text-sm text-muted-foreground">Pagos Realizados</p>
+                  <p className="font-bold">{formatCurrency(paidAmount)}</p>
                 </div>
               </div>
             </CardContent>
@@ -343,8 +384,39 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
                   <Home className="h-5 w-5 text-secondary" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Área</p>
-                  <p className="font-bold">{selectedProject?.construction_area || 0} m²</p>
+                  <p className="text-sm text-muted-foreground">Área del Terreno</p>
+                  <p className="font-bold">{selectedProject?.land_square_meters || 0} m²</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Budget Overview */}
+        <div className="grid grid-cols-2 gap-4">
+          <Card className="glass-card">
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Calculator className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Presupuesto Apertura</p>
+                  <p className="font-bold">{formatCurrency(selectedProject?.budget || 0)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-card">
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-orange-500/10 rounded-lg">
+                  <Hammer className="h-5 w-5 text-orange-500" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Presupuesto Obra</p>
+                  <p className="font-bold">{formatCurrency(selectedProject?.construction_budget || 0)}</p>
                 </div>
               </div>
             </CardContent>
