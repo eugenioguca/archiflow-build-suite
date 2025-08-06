@@ -217,17 +217,19 @@ export function ProgressPhotoForm({ projectId, onSuccess, onCancel }: ProgressPh
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div>
-            <Label>Seleccionar Fotos</Label>
-            <DragDropUploader
-              onFilesSelected={handleFilesSelected}
-              accept={{
-                'image/*': ['.jpg', '.jpeg', '.png', '.webp']
-              }}
-              maxSize={10 * 1024 * 1024} // 10MB
-              multiple={true}
-            />
+            <Label className="text-base font-medium">Seleccionar Fotos</Label>
+            <div className="mt-2">
+              <DragDropUploader
+                onFilesSelected={handleFilesSelected}
+                accept={{
+                  'image/*': ['.jpg', '.jpeg', '.png', '.webp']
+                }}
+                maxSize={10 * 1024 * 1024} // 10MB
+                multiple={true}
+              />
+            </div>
             {selectedFiles.length > 0 && (
               <p className="text-sm text-muted-foreground mt-2">
                 {selectedFiles.length} archivo(s) seleccionado(s)
@@ -235,123 +237,130 @@ export function ProgressPhotoForm({ projectId, onSuccess, onCancel }: ProgressPh
             )}
           </div>
 
-          <FormField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Título</FormLabel>
-                <FormControl>
-                  <Input placeholder="Ej: Avance de cimentación sector A" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Título</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ej: Avance de cimentación sector A" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Descripción</FormLabel>
-                <FormControl>
-                  <Textarea 
-                    placeholder="Descripción detallada del progreso mostrado en las fotos..." 
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Categoría</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar categoría" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {categories.map(category => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <FormField
-            control={form.control}
-            name="category"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Categoría</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar categoría" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {categories.map(category => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+              <FormField
+                control={form.control}
+                name="photographer_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tomada por</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nombre del fotógrafo"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-          <FormField
-            control={form.control}
-            name="photographer_name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tomada por</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="Nombre del fotógrafo"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descripción</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Descripción detallada del progreso mostrado en las fotos..." 
+                        className="min-h-[120px]"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="is_before_photo"
-              render={({ field }) => (
-                <FormItem className="flex items-center space-x-2">
-                  <FormControl>
-                    <input
-                      type="checkbox"
-                      checked={field.value}
-                      onChange={field.onChange}
-                      className="rounded"
-                    />
-                  </FormControl>
-                  <FormLabel className="text-sm font-normal">
-                    Foto "Antes"
-                  </FormLabel>
-                </FormItem>
-              )}
-            />
+              <div className="space-y-3">
+                <FormField
+                  control={form.control}
+                  name="is_before_photo"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center space-x-2">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={field.onChange}
+                          className="rounded"
+                        />
+                      </FormControl>
+                      <FormLabel className="text-sm font-normal">
+                        Foto "Antes"
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
 
-            <FormField
-              control={form.control}
-              name="is_after_photo"
-              render={({ field }) => (
-                <FormItem className="flex items-center space-x-2">
-                  <FormControl>
-                    <input
-                      type="checkbox"
-                      checked={field.value}
-                      onChange={field.onChange}
-                      className="rounded"
-                    />
-                  </FormControl>
-                  <FormLabel className="text-sm font-normal">
-                    Foto "Después"
-                  </FormLabel>
-                </FormItem>
-              )}
-            />
+                <FormField
+                  control={form.control}
+                  name="is_after_photo"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center space-x-2">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={field.onChange}
+                          className="rounded"
+                        />
+                      </FormControl>
+                      <FormLabel className="text-sm font-normal">
+                        Foto "Después"
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-3 pt-6 border-t">
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancelar
           </Button>

@@ -251,18 +251,22 @@ export function ProgressPhotosManager({ projectId }: ProgressPhotosManagerProps)
                     Subir Fotos
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-lg">
-                  <DialogHeader>
-                    <DialogTitle>Subir Fotos de Progreso</DialogTitle>
-                  </DialogHeader>
-                  <ProgressPhotoForm
-                    projectId={projectId}
-                    onSuccess={() => {
-                      setNewPhotoDialog(false);
-                      fetchPhotos();
-                    }}
-                    onCancel={() => setNewPhotoDialog(false)}
-                  />
+                <DialogContent className="max-w-4xl max-h-[85vh]">
+                  <div className="flex flex-col h-full">
+                    <DialogHeader className="flex-shrink-0 pb-4">
+                      <DialogTitle>Subir Fotos de Progreso</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex-1 overflow-y-auto">
+                      <ProgressPhotoForm
+                        projectId={projectId}
+                        onSuccess={() => {
+                          setNewPhotoDialog(false);
+                          fetchPhotos();
+                        }}
+                        onCancel={() => setNewPhotoDialog(false)}
+                      />
+                    </div>
+                  </div>
                 </DialogContent>
               </Dialog>
             </div>

@@ -439,21 +439,25 @@ function QuickActions({ projectId, onStatsRefresh }: QuickActionsProps) {
                 <span className={`${isMobile ? 'text-xs' : 'text-sm'}`}>Subir Foto</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Subir Foto de Progreso</DialogTitle>
-                <DialogDescription>
-                  Agregar fotos del avance de la construcción
-                </DialogDescription>
-              </DialogHeader>
-              <ProgressPhotoForm
-                projectId={projectId}
-                onSuccess={() => {
-                  setUploadPhotoDialog(false);
-                  onStatsRefresh();
-                }}
-                onCancel={() => setUploadPhotoDialog(false)}
-              />
+            <DialogContent className="max-w-4xl max-h-[85vh]">
+              <div className="flex flex-col h-full">
+                <DialogHeader className="flex-shrink-0 pb-4">
+                  <DialogTitle>Subir Foto de Progreso</DialogTitle>
+                  <DialogDescription>
+                    Agregar fotos del avance de la construcción
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="flex-1 overflow-y-auto">
+                  <ProgressPhotoForm
+                    projectId={projectId}
+                    onSuccess={() => {
+                      setUploadPhotoDialog(false);
+                      onStatsRefresh();
+                    }}
+                    onCancel={() => setUploadPhotoDialog(false)}
+                  />
+                </div>
+              </div>
             </DialogContent>
           </Dialog>
         </div>
