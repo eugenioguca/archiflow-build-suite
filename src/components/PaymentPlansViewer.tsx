@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -237,21 +238,23 @@ export const PaymentPlansViewer: React.FC<PaymentPlansViewerProps> = ({
     );
   }
 
+  const isMobile = useIsMobile();
+  
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className={isMobile ? 'p-4' : undefined}>
+          <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-base' : ''}`}>
             <CreditCard className="h-5 w-5" />
-            Planes de Pago ({paymentPlans.length})
+            <span className={isMobile ? 'text-sm' : ''}>Planes de Pago ({paymentPlans.length})</span>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
-            Haz clic en cualquier plan para ver el desglose de parcialidades
+        <CardContent className={isMobile ? 'p-4 pt-0' : undefined}>
+          <p className={`text-sm text-muted-foreground mb-4 ${isMobile ? 'text-xs' : ''}`}>
+            Toca cualquier plan para ver el desglose de parcialidades
           </p>
           
-          <div className="space-y-4">
+          <div className={`space-y-4 ${isMobile ? 'space-y-3' : ''}`}>
             {paymentPlans.map((plan) => (
               <Collapsible 
                 key={plan.id} 
@@ -261,34 +264,36 @@ export const PaymentPlansViewer: React.FC<PaymentPlansViewerProps> = ({
                 <CollapsibleTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-full justify-between p-4 h-auto cursor-pointer hover:bg-muted/50"
+                    className={`w-full justify-between ${isMobile ? 'p-3 h-auto' : 'p-4 h-auto'} cursor-pointer hover:bg-muted/50`}
                   >
-                    <div className="flex items-center justify-between w-full">
-                      <div className="text-left">
-                        <div className="font-medium text-base">{plan.plan_name}</div>
-                        <div className="text-sm text-muted-foreground">
+                    <div className={`${isMobile ? 'flex flex-col space-y-2 w-full text-left' : 'flex items-center justify-between w-full'}`}>
+                      <div className={`${isMobile ? 'w-full' : 'text-left'}`}>
+                        <div className={`font-medium ${isMobile ? 'text-sm' : 'text-base'} truncate`}>
+                          {plan.plan_name}
+                        </div>
+                        <div className={`text-sm text-muted-foreground ${isMobile ? 'text-xs' : ''}`}>
                           {getPlanTypeLabel(plan.plan_type)}
                         </div>
-                        <div className="text-lg font-bold text-primary mt-1">
+                        <div className={`${isMobile ? 'text-base' : 'text-lg'} font-bold text-primary mt-1`}>
                           {formatCurrency(plan.total_amount)}
                         </div>
                         {plan.installments && (
                           <div className="mt-2">
                             <Progress 
                               value={calculatePlanProgress(plan)} 
-                              className="h-2 w-48" 
+                              className={`h-2 ${isMobile ? 'w-full' : 'w-48'}`}
                             />
-                            <div className="text-xs text-muted-foreground mt-1">
+                            <div className={`text-xs text-muted-foreground mt-1 ${isMobile ? 'text-xs' : ''}`}>
                               {Math.round(calculatePlanProgress(plan))}% completado
                             </div>
                           </div>
                         )}
                       </div>
                       
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <div className={`flex items-center gap-2 ${isMobile ? 'justify-between w-full' : ''}`}>
+                        <div className={`flex items-center gap-1 text-sm text-muted-foreground ${isMobile ? 'text-xs' : ''}`}>
                           <Eye className="h-4 w-4" />
-                          Ver detalles
+                          <span className={isMobile ? 'hidden' : ''}>Ver detalles</span>
                         </div>
                         {expandedPlan === plan.id ? (
                           <ChevronUp className="h-4 w-4" />
@@ -303,57 +308,78 @@ export const PaymentPlansViewer: React.FC<PaymentPlansViewerProps> = ({
                 <CollapsibleContent className="mt-4">
                   {plan.installments ? (
                     <Card className="border-l-4 border-l-primary">
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-lg">
+                      <CardHeader className={isMobile ? 'p-3' : undefined}>
+                        <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-base' : 'text-lg'}`}>
                           <TrendingUp className="h-5 w-5" />
-                          Cronograma de Parcialidades
+                          <span className={isMobile ? 'text-sm' : ''}>Cronograma de Parcialidades</span>
                         </CardTitle>
                       </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
+                      <CardContent className={isMobile ? 'p-3 pt-0' : undefined}>
+                        <div className={`space-y-4 ${isMobile ? 'space-y-3' : ''}`}>
                           {plan.installments.map((installment, index) => (
                             <div key={installment.id}>
-                              <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
-                                <div className="flex items-center gap-3">
-                                  <div className="p-2 bg-primary/10 rounded-lg">
-                                    {getStatusIcon(installment.status)}
-                                  </div>
-                                  <div>
-                                    <div className="font-medium">
-                                      Parcialidad #{installment.installment_number}
+                              <div className={`${isMobile ? 'flex flex-col space-y-3 p-3' : 'flex items-center justify-between p-4'} border rounded-lg bg-muted/30`}>
+                                <div className={`${isMobile ? 'flex items-center justify-between w-full' : 'flex items-center gap-3'}`}>
+                                  <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
+                                      {getStatusIcon(installment.status)}
                                     </div>
-                                    <div className="text-sm text-muted-foreground flex items-center gap-2">
-                                      <Calendar className="h-3 w-3" />
-                                      Vence: {formatDate(installment.due_date)}
-                                      {installment.paid_date && (
-                                        <>
-                                          <span>•</span>
-                                          <span>Pagado: {formatDate(installment.paid_date)}</span>
-                                        </>
+                                    <div className="min-w-0">
+                                      <div className={`font-medium ${isMobile ? 'text-sm' : ''}`}>
+                                        Parcialidad #{installment.installment_number}
+                                      </div>
+                                      <div className={`text-sm text-muted-foreground flex items-center gap-2 ${isMobile ? 'text-xs flex-wrap' : ''}`}>
+                                        <Calendar className="h-3 w-3" />
+                                        <span>Vence: {formatDate(installment.due_date)}</span>
+                                        {installment.paid_date && !isMobile && (
+                                          <>
+                                            <span>•</span>
+                                            <span>Pagado: {formatDate(installment.paid_date)}</span>
+                                          </>
+                                        )}
+                                      </div>
+                                      {isMobile && installment.paid_date && (
+                                        <div className="text-xs text-muted-foreground mt-1">
+                                          Pagado: {formatDate(installment.paid_date)}
+                                        </div>
                                       )}
                                     </div>
-                                    {installment.description && (
-                                      <div className="text-sm text-muted-foreground mt-1">
-                                        {installment.description}
-                                      </div>
-                                    )}
-                                    {installment.reference_number && (
-                                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                                        <Receipt className="h-3 w-3" />
-                                        Ref: {installment.reference_number}
-                                      </div>
-                                    )}
                                   </div>
+                                  {isMobile && (
+                                    <div className="text-right flex-shrink-0">
+                                      <div className={`font-semibold ${isMobile ? 'text-sm' : 'text-lg'}`}>
+                                        {formatCurrency(installment.amount)}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
-                                <div className="text-right">
-                                  <div className="font-semibold text-lg">
-                                    {formatCurrency(installment.amount)}
+                                
+                                {installment.description && (
+                                  <div className={`text-sm text-muted-foreground ${isMobile ? 'text-xs' : ''} ${!isMobile ? 'mt-1' : ''}`}>
+                                    {installment.description}
                                   </div>
-                                  {getStatusBadge(installment.status)}
+                                )}
+                                
+                                <div className={`${isMobile ? 'flex items-center justify-between w-full' : 'text-right'}`}>
+                                  {installment.reference_number && (
+                                    <div className={`flex items-center gap-1 text-xs text-muted-foreground ${isMobile ? '' : 'justify-center'}`}>
+                                      <Receipt className="h-3 w-3" />
+                                      <span>Ref: {installment.reference_number}</span>
+                                    </div>
+                                  )}
+                                  
+                                  <div className={`${isMobile ? 'flex-shrink-0' : ''}`}>
+                                    {!isMobile && (
+                                      <div className="font-semibold text-lg mb-2">
+                                        {formatCurrency(installment.amount)}
+                                      </div>
+                                    )}
+                                    {getStatusBadge(installment.status)}
+                                  </div>
                                 </div>
                               </div>
                               {index < plan.installments.length - 1 && (
-                                <Separator className="my-2" />
+                                <Separator className={`my-2 ${isMobile ? 'my-1' : ''}`} />
                               )}
                             </div>
                           ))}
@@ -361,9 +387,9 @@ export const PaymentPlansViewer: React.FC<PaymentPlansViewerProps> = ({
                       </CardContent>
                     </Card>
                   ) : (
-                    <div className="text-center py-4">
+                    <div className={`text-center py-4 ${isMobile ? 'py-3' : ''}`}>
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
-                      <p className="text-sm text-muted-foreground mt-2">Cargando parcialidades...</p>
+                      <p className={`text-sm text-muted-foreground mt-2 ${isMobile ? 'text-xs' : ''}`}>Cargando parcialidades...</p>
                     </div>
                   )}
                 </CollapsibleContent>

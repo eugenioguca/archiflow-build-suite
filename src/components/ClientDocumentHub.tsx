@@ -20,6 +20,7 @@ interface ClientDocument {
   file_type: string;
   file_size: number;
   created_at: string;
+  source?: string;
 }
 
 interface ClientDocumentHubProps {
@@ -35,15 +36,50 @@ export const ClientDocumentHub = ({ clientId, projectId }: ClientDocumentHubProp
   useEffect(() => {
     const fetchDocuments = async () => {
       try {
-        const { data, error } = await supabase
-          .from('client_documents')
-          .select('*')
-          .eq('client_id', clientId)
-          .eq('project_id', projectId)
-          .order('created_at', { ascending: false });
+        // Fetch from multiple document sources to get all relevant documents
+        const promises = [
+          // Client documents from sales module
+          supabase
+            .from('client_documents')
+            .select('*')
+            .eq('client_id', clientId)
+            .order('created_at', { ascending: false }),
+          
+          // Project documents from design/construction modules
+          supabase
+            .from('documents')
+            .select('*')
+            .eq('project_id', projectId)
+            .order('created_at', { ascending: false }),
+        ];
 
-        if (error) throw error;
-        setDocuments(data || []);
+        const [clientDocsResult, projectDocsResult] = await Promise.all(promises);
+
+        // Combine and standardize documents
+        const allDocuments = [
+          ...(clientDocsResult.data || []).map(doc => ({
+            id: doc.id,
+            document_name: doc.document_name,
+            document_type: doc.document_type,
+            file_path: doc.file_path,
+            file_type: doc.file_type,
+            file_size: doc.file_size,
+            created_at: doc.created_at,
+            source: 'sales'
+          })),
+          ...(projectDocsResult.data || []).map(doc => ({
+            id: doc.id,
+            document_name: doc.name,
+            document_type: doc.department || 'project',
+            file_path: doc.file_path,
+            file_type: doc.file_type,
+            file_size: doc.file_size,
+            created_at: doc.created_at,
+            source: 'project'
+          }))
+        ];
+
+        setDocuments(allDocuments);
       } catch (error) {
         console.error('Error fetching documents:', error);
         toast({
@@ -175,22 +211,24 @@ export const ClientDocumentHub = ({ clientId, projectId }: ClientDocumentHubProp
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="documents" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="documents" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Documentos
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+            <TabsTrigger value="documents" className="flex items-center gap-1 text-xs md:text-sm">
+              <FileText className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Documentos</span>
+              <span className="sm:hidden">Docs</span>
             </TabsTrigger>
-            <TabsTrigger value="upload" className="flex items-center gap-2">
-              <Upload className="h-4 w-4" />
+            <TabsTrigger value="upload" className="flex items-center gap-1 text-xs md:text-sm">
+              <Upload className="h-3 w-3 md:h-4 md:w-4" />
               Subir
             </TabsTrigger>
-            <TabsTrigger value="payments" className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4" />
+            <TabsTrigger value="payments" className="flex items-center gap-1 text-xs md:text-sm">
+              <CreditCard className="h-3 w-3 md:h-4 md:w-4" />
               Pagos
             </TabsTrigger>
-            <TabsTrigger value="invoices" className="flex items-center gap-2">
-              <Receipt className="h-4 w-4" />
-              Facturas
+            <TabsTrigger value="invoices" className="flex items-center gap-1 text-xs md:text-sm">
+              <Receipt className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Facturas</span>
+              <span className="sm:hidden">Fact</span>
             </TabsTrigger>
           </TabsList>
 
@@ -207,36 +245,45 @@ export const ClientDocumentHub = ({ clientId, projectId }: ClientDocumentHubProp
                 <p className="text-sm text-muted-foreground">Usa la pestaña "Subir" para agregar documentos.</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {documents.map((doc) => (
                   <Card key={doc.id} className="border-l-4 border-l-primary">
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start">
-                        <div className="space-y-2 flex-1">
-                          <div className="flex items-center gap-2">
+                    <CardContent className="p-3 md:p-4">
+                      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3">
+                        <div className="space-y-2 flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
                             {getDocumentTypeIcon(doc.document_type)}
-                            <h4 className="font-semibold">{doc.document_name}</h4>
-                            <Badge variant="outline">
+                            <h4 className="font-semibold text-sm md:text-base truncate flex-1 min-w-0">
+                              {doc.document_name}
+                            </h4>
+                            <Badge variant="outline" className="text-xs flex-shrink-0">
                               {getDocumentTypeName(doc.document_type)}
                             </Badge>
+                            {doc.source && (
+                              <Badge variant="secondary" className="text-xs">
+                                {doc.source === 'sales' ? 'Ventas' : 'Proyecto'}
+                              </Badge>
+                            )}
                           </div>
                           
-                          <div className="text-sm text-muted-foreground space-y-1">
-                            <p>Tamaño: {formatFileSize(doc.file_size)}</p>
-                            <p>Fecha: {format(new Date(doc.created_at), 'dd/MM/yyyy HH:mm', { locale: es })}</p>
-                            <p>Tipo: {doc.file_type}</p>
+                          <div className="text-xs md:text-sm text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
+                            <span>Tamaño: {formatFileSize(doc.file_size)}</span>
+                            <span>Fecha: {format(new Date(doc.created_at), 'dd/MM/yyyy', { locale: es })}</span>
+                            {doc.file_type && (
+                              <span>Tipo: {doc.file_type}</span>
+                            )}
                           </div>
                         </div>
 
-                        <div className="flex gap-2 ml-4">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDownload(doc)}
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDownload(doc)}
+                          className="w-full md:w-auto flex-shrink-0"
+                        >
+                          <Download className="h-4 w-4 mr-2 md:mr-0" />
+                          <span className="md:hidden">Descargar</span>
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>

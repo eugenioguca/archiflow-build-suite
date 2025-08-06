@@ -15,6 +15,7 @@ import { ClientDocumentHub } from '@/components/ClientDocumentHub';
 import { SuperiorClientPortalChat } from '@/components/SuperiorClientPortalChat';
 import { RealtimeNotificationSystem } from '@/components/RealtimeNotificationSystem';
 import { ClientPortalFeaturesSummary } from '@/components/ClientPortalFeaturesSummary';
+import { useProjectProgress } from '@/hooks/useProjectProgress';
 
 interface PreviewProject {
   id: string;
@@ -41,6 +42,9 @@ const ClientPortalPreview = () => {
   const [paymentPlans, setPaymentPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Use real progress calculation
+  const { progress } = useProjectProgress(selectedProjectId, selectedClientId);
+
   useEffect(() => {
     if (selectedProjectId && selectedClientId) {
       fetchProjectData();
@@ -58,7 +62,12 @@ const ClientPortalPreview = () => {
         .single();
 
       if (projectError) throw projectError;
-      setProjectData(project);
+      
+      // Update project with real progress
+      setProjectData({
+        ...project,
+        overall_progress_percentage: progress.overallProgress
+      });
 
       // Fetch payment plans count (datos reales del plan de pagos)
       const { data: paymentPlansData } = await supabase
@@ -81,18 +90,47 @@ const ClientPortalPreview = () => {
         status: 'paid'
       })) || []);
 
-      // Fetch documents
-      const { data: documentsData } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('project_id', selectedProjectId)
-        .limit(5);
+      // Fetch documents from multiple sources for complete view
+      const [clientDocsResult, projectDocsResult] = await Promise.all([
+        supabase
+          .from('client_documents')
+          .select('*')
+          .eq('client_id', selectedClientId)
+          .limit(10),
+        supabase
+          .from('documents')
+          .select('*')
+          .eq('project_id', selectedProjectId)
+          .limit(10)
+      ]);
 
-      setDocuments(documentsData?.map(doc => ({
-        ...doc,
-        uploader_name: 'Sistema',
-        category: 'general'
-      })) || []);
+      // Combine and standardize documents
+      const allDocuments = [
+        ...(clientDocsResult.data || []).map(doc => ({
+          id: doc.id,
+          name: doc.document_name,
+          file_path: doc.file_path,
+          file_type: doc.file_type,
+          file_size: doc.file_size,
+          created_at: doc.created_at,
+          uploader_name: 'Ventas',
+          category: doc.document_type,
+          description: `Documento de ${doc.document_type}`
+        })),
+        ...(projectDocsResult.data || []).map(doc => ({
+          id: doc.id,
+          name: doc.name,
+          file_path: doc.file_path,
+          file_type: doc.file_type,
+          file_size: doc.file_size,
+          created_at: doc.created_at,
+          uploader_name: 'Proyecto',
+          category: doc.department || 'general',
+          description: doc.description
+        }))
+      ];
+
+      setDocuments(allDocuments);
 
       // Fetch progress photos
       const { data: progressPhotosData } = await supabase
