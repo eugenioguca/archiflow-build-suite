@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle } from "@/components/ui/responsive-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
@@ -589,13 +589,13 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
       </Tabs>
 
       {/* Edit Material Dialog */}
-      <Dialog open={editMaterialDialog} onOpenChange={setEditMaterialDialog}>
-        <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
+      <ResponsiveDialog open={editMaterialDialog} onOpenChange={setEditMaterialDialog}>
+        <ResponsiveDialogContent maxHeight="90vh">
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle>
               {selectedMaterial ? "Editar Material" : "Nuevo Material"}
-            </DialogTitle>
-          </DialogHeader>
+            </ResponsiveDialogTitle>
+          </ResponsiveDialogHeader>
           <MaterialRequirementForm
             projectId={projectId}
             initialData={selectedMaterial}
@@ -609,8 +609,8 @@ export function MaterialRequirements({ projectId }: MaterialRequirementsProps) {
               setSelectedMaterial(null);
             }}
           />
-        </DialogContent>
-      </Dialog>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
     </div>
   );
 }
