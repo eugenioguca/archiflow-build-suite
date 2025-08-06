@@ -62,29 +62,17 @@ export function SalesAppointmentScheduler({ clientProject, triggerButton }: Sale
 
   const fetchProjectData = async () => {
     try {
-      // Find the corresponding project from the projects table using client_id
-      const { data, error } = await supabase
-        .from("projects")
-        .select("*")
-        .eq("client_id", clientProject.client_id)
-        .single();
-
-      if (error) {
-        console.error("Error fetching project:", error);
-        toast({
-          title: "Error",
-          description: "No se encontró el proyecto asociado. El cliente debe tener un proyecto en la fase de diseño.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      setProject(data);
+      // Use the clientProject directly since it comes from client_projects table
+      setProject({
+        id: clientProject.id, // Use client_project.id as project_id
+        client_id: clientProject.client_id,
+        name: clientProject.project_name
+      });
     } catch (error: any) {
       console.error("Error:", error);
       toast({
         title: "Error",
-        description: "Error al buscar el proyecto asociado",
+        description: "Error al preparar los datos del proyecto",
         variant: "destructive"
       });
     }
@@ -143,14 +131,14 @@ export function SalesAppointmentScheduler({ clientProject, triggerButton }: Sale
 
       if (!profile) throw new Error("Perfil no encontrado");
 
-      // Create the appointment with the correct project_id from projects table
+      // Create the appointment with the correct project_id (client_projects.id)
       const appointmentData = {
-        project_id: project.id, // Use the project.id from projects table, not client_project.id
+        project_id: clientProject.id, // Use client_project.id directly
         client_id: clientProject.client_id,
         title: formData.title,
         description: formData.description,
         appointment_date: formData.appointment_date,
-        attendees: formData.attendees,
+        attendees: formData.attendees, // Database trigger will normalize to objects
         created_by: profile.id,
         status: "scheduled",
         visible_to_sales: true // Critical: Make it visible to sales

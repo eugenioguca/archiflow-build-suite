@@ -156,20 +156,16 @@ export const ClientAppointmentsCalendar: React.FC<ClientAppointmentsCalendarProp
 
       if (!profile) return;
 
-      // Update attendee status - handle both string array and object array
-      const updatedAttendees = Array.isArray(appointment.attendees) 
-        ? appointment.attendees.map((attendee: any) => 
-            typeof attendee === 'string' 
-              ? attendee
-              : attendee.profile_id === profile.id 
-                ? { ...attendee, status: 'accepted' as const }
-                : attendee
-          )
-        : appointment.attendees;
+      // Update attendee status in normalized format
+      const updatedAttendees = appointment.attendees.map((attendee: Attendee) => 
+        attendee.profile_id === profile.id 
+          ? { ...attendee, status: 'accepted' as const }
+          : attendee
+      );
 
       const { error } = await supabase
         .from('design_appointments')
-        .update({ attendees: updatedAttendees })
+        .update({ attendees: updatedAttendees as any })
         .eq('id', appointmentId);
 
       if (error) throw error;
@@ -184,6 +180,52 @@ export const ClientAppointmentsCalendar: React.FC<ClientAppointmentsCalendarProp
       toast({
         title: "Error",
         description: "No se pudo aceptar la invitación",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeclineInvitation = async (appointmentId: string) => {
+    try {
+      const appointment = appointments.find(a => a.id === appointmentId);
+      if (!appointment) return;
+
+      // Get current user profile
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile) return;
+
+      // Update attendee status in normalized format
+      const updatedAttendees = appointment.attendees.map((attendee: Attendee) => 
+        attendee.profile_id === profile.id 
+          ? { ...attendee, status: 'declined' as const }
+          : attendee
+      );
+
+      const { error } = await supabase
+        .from('design_appointments')
+        .update({ attendees: updatedAttendees as any })
+        .eq('id', appointmentId);
+
+      if (error) throw error;
+
+      await fetchAppointments();
+      toast({
+        title: "Invitación declinada",
+        description: "Has declinado la invitación a la cita",
+      });
+    } catch (error) {
+      console.error('Error declining invitation:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo declinar la invitación",
         variant: "destructive",
       });
     }
@@ -344,14 +386,23 @@ export const ClientAppointmentsCalendar: React.FC<ClientAppointmentsCalendarProp
                                 {attendee.status === 'invited' ? 'Invitado' :
                                  attendee.status === 'accepted' ? 'Confirmado' : 'Declinado'}
                               </Badge>
-                              {attendee.status === 'invited' && (
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleAcceptInvitation(selectedAppointment.id)}
-                                >
-                                  Aceptar
-                                </Button>
-                              )}
+                               {attendee.status === 'invited' && (
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleAcceptInvitation(selectedAppointment.id)}
+                                  >
+                                    Aceptar
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleDeclineInvitation(selectedAppointment.id)}
+                                  >
+                                    Declinar
+                                  </Button>
+                                </div>
+                               )}
                             </>
                           )}
                         </div>
