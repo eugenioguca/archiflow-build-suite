@@ -6,9 +6,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogTrigger } from "@/components/ui/responsive-dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Plus, Filter, Download, Link, AlertTriangle, BarChart3, Zap } from "lucide-react";
+import { Calendar, Plus, Filter, Download, Link, AlertTriangle, BarChart3, Zap, Edit, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { TimelineActivityForm } from "@/components/forms/TimelineActivityForm";
+import { TimelineActivityEditDialog } from "@/components/TimelineActivityEditDialog";
+import { ProgressUpdateModal } from "@/components/ProgressUpdateModal";
+import { ActivityStatusBadge } from "@/components/ActivityStatusBadge";
 import { toast } from "sonner";
 
 interface TimelineActivity {
@@ -50,6 +53,10 @@ export function ConstructionGanttAdvanced({ projectId }: ConstructionGanttAdvanc
   const [showCriticalPath, setShowCriticalPath] = useState(true);
   const [selectedActivity, setSelectedActivity] = useState<TimelineActivity | null>(null);
   const [draggedActivity, setDraggedActivity] = useState<string | null>(null);
+  const [editingActivity, setEditingActivity] = useState<TimelineActivity | null>(null);
+  const [progressActivity, setProgressActivity] = useState<TimelineActivity | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showProgressModal, setShowProgressModal] = useState(false);
   const ganttRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -442,23 +449,43 @@ export function ConstructionGanttAdvanced({ projectId }: ConstructionGanttAdvanc
                               Float: {activity.total_float_days}d
                             </div>
                           </div>
-                          <div className="text-xs">
+                          <div className="text-xs space-y-1">
                             <div className={`font-medium ${getPriorityColor(activity.priority)}`}>
                               {activity.priority === 'high' ? 'Alta' : 
                                activity.priority === 'medium' ? 'Media' : 'Baja'}
                             </div>
-                            <Badge 
-                              variant={
-                                activity.status === 'completed' ? 'default' :
-                                activity.status === 'in_progress' ? 'secondary' :
-                                'outline'
-                              }
-                              className="text-xs"
-                            >
-                              {activity.status === 'completed' ? 'Completada' :
-                               activity.status === 'in_progress' ? 'En Progreso' :
-                               activity.status === 'on_hold' ? 'En Pausa' : 'Pendiente'}
-                            </Badge>
+                            <ActivityStatusBadge
+                              activityId={activity.id}
+                              currentStatus={activity.status}
+                              onStatusChange={fetchData}
+                              interactive={true}
+                            />
+                            <div className="flex gap-1 mt-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 w-6 p-0"
+                                onClick={() => {
+                                  setEditingActivity(activity);
+                                  setShowEditDialog(true);
+                                }}
+                                title="Editar actividad"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 w-6 p-0"
+                                onClick={() => {
+                                  setProgressActivity(activity);
+                                  setShowProgressModal(true);
+                                }}
+                                title="Actualizar progreso"
+                              >
+                                <TrendingUp className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -471,10 +498,10 @@ export function ConstructionGanttAdvanced({ projectId }: ConstructionGanttAdvanc
                           />
                         ))}
                         
-                        {/* Activity bar */}
+                        {/* Interactive Activity bar */}
                         {position.width > 0 && (
                           <div
-                            className={`absolute h-8 rounded flex items-center justify-center text-white text-xs font-medium cursor-pointer transition-all hover:h-10 ${
+                            className={`absolute h-8 rounded flex items-center justify-between text-white text-xs font-medium cursor-pointer transition-all hover:h-10 hover:shadow-lg group ${
                               isCritical ? 'ring-2 ring-red-400 ring-offset-1' : ''
                             }`}
                             style={{
@@ -488,18 +515,40 @@ export function ConstructionGanttAdvanced({ projectId }: ConstructionGanttAdvanc
                                 ? '#2563eb'
                                 : '#6b7280'
                             }}
-                            onClick={() => setSelectedActivity(activity)}
+                            onClick={() => {
+                              setProgressActivity(activity);
+                              setShowProgressModal(true);
+                            }}
                           >
                             {/* Progress overlay */}
                             {activity.progress_percentage > 0 && (
                               <div
-                                className="absolute left-0 top-0 h-full bg-white/30 rounded"
+                                className="absolute left-0 top-0 h-full bg-white/30 rounded transition-all"
                                 style={{ width: `${activity.progress_percentage}%` }}
                               />
                             )}
-                            <span className="relative z-10 px-2 truncate">
+                            
+                            {/* Content */}
+                            <span className="relative z-10 px-2 truncate flex-1">
                               {activity.estimated_duration_days}d ({activity.progress_percentage}%)
                             </span>
+                            
+                            {/* Quick action buttons - only show on hover */}
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 mr-2 relative z-20">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-5 w-5 p-0 text-white hover:bg-white/20"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingActivity(activity);
+                                  setShowEditDialog(true);
+                                }}
+                                title="Editar"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -561,13 +610,67 @@ export function ConstructionGanttAdvanced({ projectId }: ConstructionGanttAdvanc
         </CardContent>
       </Card>
 
+      {/* Edit Activity Dialog */}
+      {editingActivity && (
+        <TimelineActivityEditDialog
+          open={showEditDialog}
+          onOpenChange={setShowEditDialog}
+          activity={editingActivity}
+          onUpdate={() => {
+            fetchData();
+            setEditingActivity(null);
+          }}
+        />
+      )}
+
+      {/* Progress Update Modal */}
+      {progressActivity && (
+        <ProgressUpdateModal
+          open={showProgressModal}
+          onOpenChange={setShowProgressModal}
+          activity={progressActivity}
+          onUpdate={() => {
+            fetchData();
+            setProgressActivity(null);
+          }}
+        />
+      )}
+
       {/* Activity Details Dialog */}
       {selectedActivity && (
         <Dialog open={!!selectedActivity} onOpenChange={() => setSelectedActivity(null)}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>{selectedActivity.activity_name}</DialogTitle>
-              <DialogDescription>Detalles de la actividad</DialogDescription>
+              <DialogTitle className="flex items-center justify-between">
+                {selectedActivity.activity_name}
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setEditingActivity(selectedActivity);
+                      setShowEditDialog(true);
+                      setSelectedActivity(null);
+                    }}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setProgressActivity(selectedActivity);
+                      setShowProgressModal(true);
+                      setSelectedActivity(null);
+                    }}
+                  >
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    Progreso
+                  </Button>
+                </div>
+              </DialogTitle>
+              <DialogDescription>Detalles completos de la actividad</DialogDescription>
             </DialogHeader>
             
             <div className="space-y-4">
@@ -582,7 +685,31 @@ export function ConstructionGanttAdvanced({ projectId }: ConstructionGanttAdvanc
                   <strong>Duración estimada:</strong> {selectedActivity.estimated_duration_days} días
                 </div>
                 <div>
-                  <strong>Progreso:</strong> {selectedActivity.progress_percentage}%
+                  <strong>Duración real:</strong> {selectedActivity.actual_duration_days || 0} días
+                </div>
+                <div>
+                  <strong>Progreso:</strong> 
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="flex-1 bg-muted rounded-full h-2">
+                      <div 
+                        className="bg-primary h-2 rounded-full transition-all"
+                        style={{ width: `${selectedActivity.progress_percentage}%` }}
+                      />
+                    </div>
+                    <span className="text-sm">{selectedActivity.progress_percentage}%</span>
+                  </div>
+                </div>
+                <div>
+                  <strong>Estado:</strong> 
+                  <ActivityStatusBadge
+                    activityId={selectedActivity.id}
+                    currentStatus={selectedActivity.status}
+                    onStatusChange={() => {
+                      fetchData();
+                      setSelectedActivity(null);
+                    }}
+                    interactive={true}
+                  />
                 </div>
                 <div>
                   <strong>Equipo asignado:</strong> {getTeamName(selectedActivity.assigned_team_id)}
@@ -590,12 +717,18 @@ export function ConstructionGanttAdvanced({ projectId }: ConstructionGanttAdvanc
                 <div>
                   <strong>Float total:</strong> {selectedActivity.total_float_days} días
                 </div>
+                <div>
+                  <strong>Costo presupuestado:</strong> ${selectedActivity.cost_budget?.toLocaleString() || '0'}
+                </div>
+                <div>
+                  <strong>Costo real:</strong> ${selectedActivity.cost_actual?.toLocaleString() || '0'}
+                </div>
               </div>
               
               {selectedActivity.notes && (
                 <div>
                   <strong>Notas:</strong>
-                  <p className="text-sm text-muted-foreground mt-1">{selectedActivity.notes}</p>
+                  <p className="text-sm text-muted-foreground mt-1 p-2 bg-muted rounded">{selectedActivity.notes}</p>
                 </div>
               )}
               
