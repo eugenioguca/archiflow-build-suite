@@ -115,11 +115,12 @@ export function ConstructionTeamManager({ projectId }: ConstructionTeamManagerPr
         .select(`
           assigned_advisor_id,
           project_manager_id,
+          construction_supervisor_id,
           profiles_advisor:assigned_advisor_id (
-            id, full_name, position, department, avatar_url
+            id, user_id, full_name, position, department, avatar_url
           ),
           profiles_manager:project_manager_id (
-            id, full_name, position, department, avatar_url
+            id, user_id, full_name, position, department, avatar_url
           )
         `)
         .eq("id", projectId)
@@ -130,18 +131,21 @@ export function ConstructionTeamManager({ projectId }: ConstructionTeamManagerPr
       setSalesAdvisor(projectData.profiles_advisor);
       setArchitect(projectData.profiles_manager);
 
-      // Get internal team members
-      const { data: internalData, error: internalError } = await supabase
+      // Get ALL team members from project_team_members including existing ones
+      const { data: allTeamData, error: teamError } = await supabase
         .from("project_team_members")
         .select(`
           *,
           profiles:user_id (
-            id, full_name, position, department, avatar_url, skills
+            id, user_id, full_name, position, department, avatar_url, skills
           )
         `)
         .eq("project_id", projectId);
 
-      if (internalError) throw internalError;
+      if (teamError) {
+        console.error("Error fetching team members:", teamError);
+        throw teamError;
+      }
 
       // Get external team members
       const { data: externalData, error: externalError } = await supabase
@@ -150,25 +154,43 @@ export function ConstructionTeamManager({ projectId }: ConstructionTeamManagerPr
         .eq("project_id", projectId)
         .eq("is_active", true);
 
-      if (externalError) throw externalError;
+      if (externalError) {
+        console.error("Error fetching external members:", externalError);
+        throw externalError;
+      }
 
-      // Combine and format team members
-      const internal: InternalTeamMember[] = (internalData || []).map(member => ({
-        ...member,
-        type: 'internal' as const,
-        profile: member.profiles
-      }));
+      // Format internal team members - Filter out null profiles
+      const internal: InternalTeamMember[] = (allTeamData || [])
+        .filter(member => member.profiles) // Only include members with valid profiles
+        .map(member => ({
+          ...member,
+          type: 'internal' as const,
+          profile: member.profiles
+        }));
 
+      // Format external team members
       const external: ExternalTeamMember[] = (externalData || []).map(member => ({
         ...member,
         type: 'external' as const
       }));
 
-      setTeamMembers([...internal, ...external]);
+      // Combine all team members
+      const allMembers = [...internal, ...external];
+
+      setTeamMembers(allMembers);
+      
+      console.log("Team members loaded:", {
+        internal: internal.length,
+        external: external.length,
+        total: allMembers.length,
+        salesAdvisor: !!projectData.profiles_advisor,
+        architect: !!projectData.profiles_manager
+      });
     } catch (error: any) {
+      console.error("Error loading team data:", error);
       toast({
         title: "Error",
-        description: "No se pudieron cargar los datos del equipo",
+        description: "No se pudieron cargar los datos del equipo: " + error.message,
         variant: "destructive"
       });
     }
