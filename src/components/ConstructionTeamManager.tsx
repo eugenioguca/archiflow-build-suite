@@ -109,29 +109,46 @@ export function ConstructionTeamManager({ projectId }: ConstructionTeamManagerPr
 
   const fetchTeamData = async () => {
     try {
-      // Get project basic info (sales advisor, architect)
+      // Get project basic info first (without JOINs that might fail)
       const { data: projectData, error: projectError } = await supabase
         .from("client_projects")
         .select(`
+          id,
           assigned_advisor_id,
           project_manager_id,
-          construction_supervisor_id,
-          profiles_advisor:assigned_advisor_id (
-            id, user_id, full_name, position, department, avatar_url
-          ),
-          profiles_manager:project_manager_id (
-            id, user_id, full_name, position, department, avatar_url
-          )
+          construction_supervisor_id
         `)
         .eq("id", projectId)
         .single();
 
       if (projectError) throw projectError;
 
-      setSalesAdvisor(projectData.profiles_advisor);
-      setArchitect(projectData.profiles_manager);
+      // Now get the profile data separately to avoid JOIN issues
+      let salesAdvisorData = null;
+      let architectData = null;
 
-      // Get ALL team members from project_team_members including existing ones
+      if (projectData.assigned_advisor_id) {
+        const { data: advisorProfile } = await supabase
+          .from("profiles")
+          .select("id, user_id, full_name, position, department, avatar_url")
+          .eq("id", projectData.assigned_advisor_id)
+          .maybeSingle();
+        salesAdvisorData = advisorProfile;
+      }
+
+      if (projectData.project_manager_id) {
+        const { data: managerProfile } = await supabase
+          .from("profiles")
+          .select("id, user_id, full_name, position, department, avatar_url")
+          .eq("id", projectData.project_manager_id)
+          .maybeSingle();
+        architectData = managerProfile;
+      }
+
+      setSalesAdvisor(salesAdvisorData);
+      setArchitect(architectData);
+
+      // Get ALL team members from project_team_members
       const { data: allTeamData, error: teamError } = await supabase
         .from("project_team_members")
         .select(`
@@ -144,7 +161,7 @@ export function ConstructionTeamManager({ projectId }: ConstructionTeamManagerPr
 
       if (teamError) {
         console.error("Error fetching team members:", teamError);
-        throw teamError;
+        // Don't throw here, just log and continue with empty array
       }
 
       // Get external team members
@@ -156,7 +173,7 @@ export function ConstructionTeamManager({ projectId }: ConstructionTeamManagerPr
 
       if (externalError) {
         console.error("Error fetching external members:", externalError);
-        throw externalError;
+        // Don't throw here, just log and continue with empty array
       }
 
       // Format internal team members - Filter out null profiles
@@ -179,12 +196,17 @@ export function ConstructionTeamManager({ projectId }: ConstructionTeamManagerPr
 
       setTeamMembers(allMembers);
       
-      console.log("Team members loaded:", {
+      console.log("Team members loaded successfully:", {
         internal: internal.length,
         external: external.length,
         total: allMembers.length,
-        salesAdvisor: !!projectData.profiles_advisor,
-        architect: !!projectData.profiles_manager
+        salesAdvisor: !!salesAdvisorData,
+        architect: !!architectData,
+        projectData: {
+          assigned_advisor_id: projectData.assigned_advisor_id,
+          project_manager_id: projectData.project_manager_id,
+          construction_supervisor_id: projectData.construction_supervisor_id
+        }
       });
     } catch (error: any) {
       console.error("Error loading team data:", error);
