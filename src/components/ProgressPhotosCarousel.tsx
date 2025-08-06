@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   Camera, 
@@ -12,7 +13,8 @@ import {
   User,
   ZoomIn,
   Grid3X3,
-  Image as ImageIcon
+  Image as ImageIcon,
+  X
 } from 'lucide-react';
 import {
   Carousel,
@@ -48,6 +50,8 @@ export const ProgressPhotosCarousel: React.FC<ProgressPhotosCarouselProps> = ({
   const [count, setCount] = useState(0);
   const [selectedPhase, setSelectedPhase] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'carousel' | 'grid'>(isMobile ? 'grid' : 'carousel');
+  const [selectedPhoto, setSelectedPhoto] = useState<ProgressPhoto | null>(null);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
 
   useEffect(() => {
     if (!api) return;
@@ -75,6 +79,24 @@ export const ProgressPhotosCarousel: React.FC<ProgressPhotosCarouselProps> = ({
   const filteredPhotos = selectedPhase === 'all' 
     ? photos 
     : photos.filter(photo => photo.phase_name === selectedPhase);
+
+  const openPhotoModal = (photo: ProgressPhoto, index: number) => {
+    setSelectedPhoto(photo);
+    setSelectedPhotoIndex(index);
+  };
+
+  const closePhotoModal = () => {
+    setSelectedPhoto(null);
+  };
+
+  const navigatePhoto = (direction: 'prev' | 'next') => {
+    const newIndex = direction === 'prev' 
+      ? Math.max(0, selectedPhotoIndex - 1)
+      : Math.min(filteredPhotos.length - 1, selectedPhotoIndex + 1);
+    
+    setSelectedPhotoIndex(newIndex);
+    setSelectedPhoto(filteredPhotos[newIndex]);
+  };
 
   // Agrupar fotos por fase para vista de grid
   const groupedPhotos = photos.reduce((groups, photo) => {
@@ -176,17 +198,33 @@ export const ProgressPhotosCarousel: React.FC<ProgressPhotosCarouselProps> = ({
                 {filteredPhotos.map((photo) => (
                   <CarouselItem key={photo.id}>
                     <div className="space-y-4">
-                      <div className="relative aspect-video bg-muted rounded-lg overflow-hidden group">
+                      <div className="relative aspect-video bg-muted rounded-lg overflow-hidden group cursor-pointer">
                         <img
                           src={photo.photo_url}
                           alt={photo.description || 'Foto de avance'}
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          onClick={() => openPhotoModal(photo, filteredPhotos.indexOf(photo))}
                         />
-                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
                           <Button
                             variant="secondary"
                             size="sm"
-                            onClick={() => onPhotoDownload?.(photo)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openPhotoModal(photo, filteredPhotos.indexOf(photo));
+                            }}
+                            className="gap-2"
+                          >
+                            <ZoomIn className="h-4 w-4" />
+                            Ver
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onPhotoDownload?.(photo);
+                            }}
                             className="gap-2"
                           >
                             <Download className="h-4 w-4" />
@@ -244,17 +282,34 @@ export const ProgressPhotosCarousel: React.FC<ProgressPhotosCarouselProps> = ({
                 <div className={`grid ${isMobile ? 'grid-cols-2 gap-3' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'}`}>
                   {phasePhotos.map((photo) => (
                     <div key={photo.id} className="space-y-2">
-                      <div className="relative aspect-square bg-muted rounded-lg overflow-hidden group cursor-pointer">
+                      <div 
+                        className="relative aspect-square bg-muted rounded-lg overflow-hidden group cursor-pointer"
+                        onClick={() => openPhotoModal(photo, phasePhotos.indexOf(photo))}
+                      >
                         <img
                           src={photo.photo_url}
                           alt={photo.description || 'Foto de avance'}
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
-                        <div className={`absolute inset-0 bg-black/20 ${isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-300 flex items-center justify-center`}>
+                        <div className={`absolute inset-0 bg-black/20 ${isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-300 flex items-center justify-center gap-2`}>
                           <Button
                             variant="secondary"
                             size="sm"
-                            onClick={() => onPhotoDownload?.(photo)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openPhotoModal(photo, phasePhotos.indexOf(photo));
+                            }}
+                            className={`${isMobile ? 'h-9 w-9' : 'h-8 w-8'} p-0`}
+                          >
+                            <ZoomIn className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onPhotoDownload?.(photo);
+                            }}
                             className={`${isMobile ? 'h-9 w-9' : 'h-8 w-8'} p-0`}
                           >
                             <Download className="h-4 w-4" />
@@ -277,6 +332,92 @@ export const ProgressPhotosCarousel: React.FC<ProgressPhotosCarouselProps> = ({
             ))}
           </div>
         )}
+
+        {/* Photo Modal */}
+        <Dialog open={!!selectedPhoto} onOpenChange={closePhotoModal}>
+          <DialogContent className="max-w-5xl w-full p-0 overflow-hidden">
+            {selectedPhoto && (
+              <div className="relative">
+                <div className="absolute top-4 right-4 z-10 flex gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => onPhotoDownload?.(selectedPhoto)}
+                    className="gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    {!isMobile && "Descargar"}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={closePhotoModal}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="relative">
+                  <img
+                    src={selectedPhoto.photo_url}
+                    alt={selectedPhoto.description || 'Foto de avance'}
+                    className="w-full max-h-[80vh] object-contain"
+                  />
+                  
+                  {filteredPhotos.length > 1 && (
+                    <>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="absolute left-4 top-1/2 transform -translate-y-1/2"
+                        onClick={() => navigatePhoto('prev')}
+                        disabled={selectedPhotoIndex === 0}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2"
+                        onClick={() => navigatePhoto('next')}
+                        disabled={selectedPhotoIndex === filteredPhotos.length - 1}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                <div className="p-4 bg-background">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold">{selectedPhoto.description || 'Foto de avance'}</h3>
+                    {selectedPhoto.phase_name && (
+                      <Badge variant="outline">{selectedPhoto.phase_name}</Badge>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {formatDate(selectedPhoto.created_at)}
+                    </div>
+                    {selectedPhoto.photographer_name && (
+                      <div className="flex items-center gap-1">
+                        <User className="h-3 w-3" />
+                        {selectedPhoto.photographer_name}
+                      </div>
+                    )}
+                    {filteredPhotos.length > 1 && (
+                      <span className="ml-auto">
+                        {selectedPhotoIndex + 1} de {filteredPhotos.length}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

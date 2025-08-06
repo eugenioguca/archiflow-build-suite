@@ -38,6 +38,7 @@ import { format, differenceInDays, isAfter, isBefore } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { ClientDocumentHub } from './ClientDocumentHub';
+import { downloadDocument } from '@/lib/documentUtils';
 import { PaymentPlansViewer } from './PaymentPlansViewer';
 import { PaymentHistoryPanel } from './PaymentHistoryPanel';
 import { ProgressPhotosCarousel } from './ProgressPhotosCarousel';
@@ -194,6 +195,22 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
       style: 'currency',
       currency: 'MXN'
     }).format(amount);
+  };
+
+  const handlePhotoDownload = async (photo: any) => {
+    try {
+      const fileName = `foto_progreso_${photo.id}.jpg`;
+      const result = await downloadDocument(photo.photo_url, fileName, 'project');
+      
+      if (result.success) {
+        toast.success('Foto descargada exitosamente');
+      } else {
+        toast.error(result.error || 'Error al descargar la foto');
+      }
+    } catch (error) {
+      console.error('Error downloading photo:', error);
+      toast.error('Error al descargar la foto');
+    }
   };
 
   const getProjectTimeline = () => {
@@ -496,7 +513,10 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
               <CardContent>
                 {isPreview && previewData?.progressPhotos ? (
                   previewData.progressPhotos.length > 0 ? (
-                    <ProgressPhotosCarousel photos={previewData.progressPhotos} />
+                    <ProgressPhotosCarousel 
+                      photos={previewData.progressPhotos} 
+                      onPhotoDownload={handlePhotoDownload}
+                    />
                   ) : (
                     <div className="text-center text-muted-foreground p-8">
                       <Camera className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -504,7 +524,10 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
                     </div>
                   )
                 ) : selectedProject ? (
-                  <ProgressPhotosCarousel photos={[]} />
+                  <ProgressPhotosCarousel 
+                    photos={[]} 
+                    onPhotoDownload={handlePhotoDownload}
+                  />
                 ) : (
                   <div className="text-center text-muted-foreground p-8">
                     <Camera className="h-12 w-12 mx-auto mb-4 opacity-50" />
