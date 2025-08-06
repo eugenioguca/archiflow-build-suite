@@ -33,6 +33,8 @@ interface ClientDocumentHubProps {
 }
 
 export const ClientDocumentHub = ({ clientId, projectId, compact = false, previewDocuments }: ClientDocumentHubProps) => {
+  console.log('❌ ClientDocumentHub VIEJO se está ejecutando!', { clientId, projectId, compact });
+  
   const [documents, setDocuments] = useState<ClientDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewerOpen, setViewerOpen] = useState(false);

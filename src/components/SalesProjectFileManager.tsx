@@ -28,7 +28,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { uploadFileToStorage, downloadFile, getFileUrl } from '@/lib/fileUtils';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -84,6 +84,8 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
   projectId,
   projectName,
 }) => {
+  console.log('🔥 SalesProjectFileManager NUEVO se está ejecutando!', { clientId, projectId, projectName });
+  
   const [documents, setDocuments] = useState<Document[]>([]);
   const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,6 +102,7 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
   }, [clientId, projectId]);
 
   const fetchDocuments = async () => {
+    console.log('🔥 fetchDocuments del NUEVO componente ejecutándose');
     try {
       setLoading(true);
       const documentsFromClientDocs = await fetchClientDocuments();
@@ -653,6 +656,10 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
       {selectedPhoto && (
         <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
           <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+            <DialogHeader className="sr-only">
+              <DialogTitle>Visualizador de Fotografías</DialogTitle>
+              <DialogDescription>Carrusel para ver fotografías de progreso del proyecto</DialogDescription>
+            </DialogHeader>
             <div className="relative h-full">
               {/* Header */}
               <div className="absolute top-0 left-0 right-0 z-10 bg-black/80 text-white p-4 flex items-center justify-between">

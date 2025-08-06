@@ -742,7 +742,7 @@ export default function Sales() {
                   disabled={selectedProject.sales_pipeline_stage === 'nuevo_lead'}
                   className={selectedProject.sales_pipeline_stage === 'nuevo_lead' ? 'opacity-50' : ''}
                 >
-                  Documentos Requeridos
+                  Expediente NUEVO
                 </TabsTrigger>
                 <TabsTrigger 
                   value="payments"
