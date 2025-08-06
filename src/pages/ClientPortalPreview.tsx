@@ -100,45 +100,58 @@ const ClientPortalPreview = () => {
         status: 'paid'
       })) || []);
 
-      // Fetch documents from multiple sources for complete view
-      const [clientDocsResult, projectDocsResult] = await Promise.all([
-        supabase
-          .from('client_documents')
-          .select('*')
-          .eq('client_id', selectedClientId)
-          .limit(10),
-        supabase
-          .from('documents')
-          .select('*')
-          .eq('project_id', selectedProjectId)
-          .limit(10)
-      ]);
+      // Use the cumulative documents function to get all inherited project documents
+      const { data: cumulativeDocuments, error: docsError } = await supabase
+        .rpc('get_project_cumulative_documents', {
+          project_id_param: selectedProjectId,
+          user_department: 'all'
+        });
 
-      // Combine and standardize documents
-      const allDocuments = [
-        ...(clientDocsResult.data || []).map(doc => ({
-          id: doc.id,
-          name: doc.document_name,
-          file_path: doc.file_path,
-          file_type: doc.file_type,
-          file_size: doc.file_size,
-          created_at: doc.created_at,
+      if (docsError) {
+        console.error('Error fetching cumulative documents:', docsError);
+      }
+
+      // Transform cumulative documents to the expected format
+      const allDocuments = (cumulativeDocuments || []).map(doc => ({
+        id: doc.id,
+        name: doc.name,
+        file_path: doc.file_path,
+        file_type: doc.file_type,
+        file_size: doc.file_size,
+        created_at: doc.created_at,
+        uploader_name: doc.uploader_name || 'Sistema',
+        category: doc.department || 'general',
+        description: doc.description || `Documento de ${doc.department || 'proyecto'}`
+      }));
+
+      // Also include project field documents (contract, fiscal documents)
+      if (project.contract_url) {
+        allDocuments.push({
+          id: `contract-${selectedProjectId}`,
+          name: 'Contrato Firmado',
+          file_path: project.contract_url,
+          file_type: 'application/pdf',
+          file_size: 0,
+          created_at: project.created_at,
           uploader_name: 'Ventas',
-          category: doc.document_type,
-          description: `Documento de ${doc.document_type}`
-        })),
-        ...(projectDocsResult.data || []).map(doc => ({
-          id: doc.id,
-          name: doc.name,
-          file_path: doc.file_path,
-          file_type: doc.file_type,
-          file_size: doc.file_size,
-          created_at: doc.created_at,
-          uploader_name: 'Proyecto',
-          category: doc.department || 'general',
-          description: doc.description
-        }))
-      ];
+          category: 'contract',
+          description: 'Contrato firmado del proyecto'
+        });
+      }
+
+      if (project.constancia_situacion_fiscal_url) {
+        allDocuments.push({
+          id: `fiscal-${selectedProjectId}`,
+          name: 'Constancia de Situación Fiscal',
+          file_path: project.constancia_situacion_fiscal_url,
+          file_type: 'application/pdf',
+          file_size: 0,
+          created_at: project.created_at,
+          uploader_name: 'Ventas',
+          category: 'fiscal',
+          description: 'Constancia de situación fiscal del cliente'
+        });
+      }
 
       setDocuments(allDocuments);
 

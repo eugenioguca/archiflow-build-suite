@@ -477,36 +477,14 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
 
           <TabsContent value="documents">
             <div className="space-y-4">
-              {selectedProject && isPreview && previewData?.documents ? (
-                <Card className="glass-card">
-                  <CardHeader>
-                    <CardTitle>Documentos del Proyecto</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {previewData.documents.length > 0 ? (
-                        previewData.documents.map((doc) => (
-                          <div key={doc.id} className="flex items-center space-x-3 p-3 bg-muted/30 rounded-lg">
-                            <FileText className="h-5 w-5 text-primary" />
-                            <div className="flex-1">
-                              <p className="font-medium">{doc.name}</p>
-                              <p className="text-sm text-muted-foreground">{doc.category}</p>
-                            </div>
-                            <Badge variant="outline">{doc.file_type}</Badge>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-center text-muted-foreground p-8">
-                          <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                          <p>No hay documentos disponibles</p>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : selectedProject ? (
-                <ClientDocumentHub clientId={selectedProject.client_id} projectId={selectedProject.id} />
-              ) : null}
+              {selectedProject && (
+                <ClientDocumentHub 
+                  clientId={selectedProject.client_id} 
+                  projectId={selectedProject.id} 
+                  compact 
+                  previewDocuments={isPreview ? previewData?.documents : undefined}
+                />
+              )}
             </div>
           </TabsContent>
 

@@ -29,9 +29,10 @@ interface ClientDocumentHubProps {
   clientId: string;
   projectId: string;
   compact?: boolean;
+  previewDocuments?: any[];
 }
 
-export const ClientDocumentHub = ({ clientId, projectId, compact = false }: ClientDocumentHubProps) => {
+export const ClientDocumentHub = ({ clientId, projectId, compact = false, previewDocuments }: ClientDocumentHubProps) => {
   const [documents, setDocuments] = useState<ClientDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -41,67 +42,54 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false }: Clie
   useEffect(() => {
     const fetchDocuments = async () => {
       try {
-        // Fetch from multiple document sources
-        const promises = [
-          // Client documents from sales module
-          supabase
-            .from('client_documents')
-            .select('*')
-            .eq('client_id', clientId)
-            .order('created_at', { ascending: false }),
-          
-          // Project documents from design/construction modules
-          supabase
-            .from('documents')
-            .select('*')
-            .eq('project_id', projectId)
-            .order('created_at', { ascending: false }),
-          
-          // Project fields with document URLs
-          supabase
-            .from('client_projects')
-            .select('contract_url, constancia_situacion_fiscal_url, created_at')
-            .eq('id', projectId)
-            .single()
-        ];
-
-        const [clientDocsResult, projectDocsResult, projectFieldsResult] = await Promise.all(promises);
-
-        // Start with empty array
-        const allDocuments: ClientDocument[] = [];
-
-        // Add client documents
-        if (clientDocsResult.data && Array.isArray(clientDocsResult.data)) {
-          allDocuments.push(...clientDocsResult.data.map(doc => ({
-            id: doc.id,
-            document_name: doc.document_name,
-            document_type: doc.document_type,
-            file_path: doc.file_path,
-            file_type: doc.file_type || 'application/pdf',
-            file_size: doc.file_size || 0,
-            created_at: doc.created_at,
-            source: 'sales'
-          })));
-        }
-
-        // Add project documents
-        if (projectDocsResult.data && Array.isArray(projectDocsResult.data)) {
-          allDocuments.push(...projectDocsResult.data.map(doc => ({
+        // If we have preview documents, use them directly
+        if (previewDocuments) {
+          const transformedDocs = previewDocuments.map(doc => ({
             id: doc.id,
             document_name: doc.name,
-            document_type: doc.department || 'project',
+            document_type: doc.category || 'general',
             file_path: doc.file_path,
             file_type: doc.file_type || 'application/pdf',
             file_size: doc.file_size || 0,
             created_at: doc.created_at,
-            source: 'project'
-          })));
+            source: doc.category === 'contract' || doc.category === 'fiscal' ? 'project_field' : 'project'
+          }));
+          setDocuments(transformedDocs);
+          setLoading(false);
+          return;
         }
 
-        // Add project field documents if they exist
-        if (projectFieldsResult.data) {
-          const projectData = projectFieldsResult.data as any;
-          
+        // Use the cumulative documents function for complete document view
+        const { data: cumulativeDocuments, error: docsError } = await supabase
+          .rpc('get_project_cumulative_documents', {
+            project_id_param: projectId,
+            user_department: 'all'
+          });
+
+        if (docsError) {
+          console.error('Error fetching cumulative documents:', docsError);
+        }
+
+        // Transform cumulative documents to the expected format
+        const allDocuments: ClientDocument[] = (cumulativeDocuments || []).map(doc => ({
+          id: doc.id,
+          document_name: doc.name,
+          document_type: doc.department || 'general',
+          file_path: doc.file_path,
+          file_type: doc.file_type || 'application/pdf',
+          file_size: doc.file_size || 0,
+          created_at: doc.created_at,
+          source: 'project'
+        }));
+
+        // Also get project field documents (contract, fiscal documents)
+        const { data: projectData } = await supabase
+          .from('client_projects')
+          .select('contract_url, constancia_situacion_fiscal_url, created_at')
+          .eq('id', projectId)
+          .single();
+
+        if (projectData) {
           if (projectData.contract_url) {
             allDocuments.push({
               id: `contract-${projectId}`,
@@ -161,10 +149,29 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false }: Clie
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [clientId, projectId, toast]);
+    // Only set up real-time subscriptions if not in preview mode
+    if (!previewDocuments) {
+      const channel = supabase
+        .channel('client-documents-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'client_documents',
+            filter: `client_id=eq.${clientId}`
+          },
+          () => {
+            fetchDocuments();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [clientId, projectId, toast, previewDocuments]);
 
   const getDocumentTypeIcon = (type: string) => {
     switch (type) {
