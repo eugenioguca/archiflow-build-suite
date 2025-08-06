@@ -10,6 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Eye, Edit, FolderOpen, Users, Calendar, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ProjectFileManager } from "./ProjectFileManager";
 
 interface ClientProject {
   id: string;
@@ -63,6 +64,8 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
   const [projects, setProjects] = useState<ClientProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
+  const [showFileManagerDialog, setShowFileManagerDialog] = useState(false);
+  const [selectedProjectForFiles, setSelectedProjectForFiles] = useState<ClientProject | null>(null);
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
   const [newProject, setNewProject] = useState({
     project_name: '',
@@ -359,6 +362,11 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
     setNewProject({...newProject, budget: numericValue});
   };
 
+  const handleOpenFileManager = (project: ClientProject) => {
+    setSelectedProjectForFiles(project);
+    setShowFileManagerDialog(true);
+  };
+
   if (loading) {
     return (
       <Card>
@@ -506,7 +514,8 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => onProjectSelected?.(project.id)}
+                    onClick={() => handleOpenFileManager(project)}
+                    title="Ver expediente completo del proyecto"
                   >
                     <FolderOpen className="h-4 w-4" />
                   </Button>
@@ -589,6 +598,21 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
           </Card>
         )}
       </div>
+
+      {/* File Manager Dialog */}
+      <Dialog open={showFileManagerDialog} onOpenChange={setShowFileManagerDialog}>
+        <DialogContent className="max-w-7xl max-h-[90vh] h-[90vh] p-0">
+          <div className="p-6 h-full">
+            {selectedProjectForFiles && (
+              <ProjectFileManager
+                clientId={clientId}
+                projectId={selectedProjectForFiles.id}
+                projectName={selectedProjectForFiles.project_name}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
