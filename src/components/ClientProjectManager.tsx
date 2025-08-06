@@ -602,6 +602,9 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
       {/* File Manager Dialog */}
       <Dialog open={showFileManagerDialog} onOpenChange={setShowFileManagerDialog}>
         <DialogContent className="max-w-7xl max-h-[90vh] h-[90vh] p-0 overflow-hidden">
+          <DialogTitle className="sr-only">
+            Expediente del Proyecto - {selectedProjectForFiles?.project_name || ''}
+          </DialogTitle>
           <div className="p-6 h-full overflow-y-auto">
             {selectedProjectForFiles && (
               <ProjectFileManager
