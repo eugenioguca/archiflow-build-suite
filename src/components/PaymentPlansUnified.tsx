@@ -264,30 +264,16 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
 
       if (!profile) throw new Error('Profile not found');
 
-      // Get payment plan details to get client and project IDs
-      const { data: planData } = await supabase
-        .from('payment_plans')
-        .select('client_project_id')
-        .eq('id', paymentDialog.installment.payment_plan_id)
-        .single();
-
-      if (!planData) throw new Error('Payment plan not found');
-
-      // Get project details to get client_id
-      const { data: projectData } = await supabase
-        .from('client_projects')
-        .select('client_id')
-        .eq('id', planData.client_project_id)
-        .single();
-
-      if (!projectData) throw new Error('Project not found');
+      // Get plan data from our existing payment plans instead of multiple queries
+      const plan = paymentPlans.find(p => p.id === paymentDialog.installment.payment_plan_id);
+      if (!plan) throw new Error('Payment plan not found');
 
       // Create automatic income entry when installment is marked as paid
       const { error: incomeError } = await supabase
         .from('incomes')
         .insert([{
-          client_id: projectData.client_id,
-          project_id: planData.client_project_id,
+          client_id: plan.client_id || '',
+          project_id: plan.client_project_id,
           category: 'construction_service',
           amount: paymentDialog.installment.amount,
           description: `Pago de cuota ${paymentDialog.installment.installment_number} - Plan: ${paymentDialog.planName}`,
