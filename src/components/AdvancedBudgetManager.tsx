@@ -398,13 +398,10 @@ export function AdvancedBudgetManager({ projectId }: AdvancedBudgetManagerProps)
                     Nueva Partida
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Nueva Partida del Presupuesto</DialogTitle>
-                    <DialogDescription>
-                      Agregar una nueva partida al presupuesto de construcción
-                    </DialogDescription>
-                  </DialogHeader>
+                <ResponsiveDialogContent maxHeight="90vh">
+                  <ResponsiveDialogHeader>
+                    <ResponsiveDialogTitle>Nueva Partida del Presupuesto</ResponsiveDialogTitle>
+                  </ResponsiveDialogHeader>
                   <BudgetItemForm
                     projectId={projectId}
                     budgetVersion={currentBudgetVersion}
@@ -414,18 +411,15 @@ export function AdvancedBudgetManager({ projectId }: AdvancedBudgetManagerProps)
                     }}
                     onCancel={() => setNewItemDialog(false)}
                   />
-                </DialogContent>
+                </ResponsiveDialogContent>
               </Dialog>
 
               {/* Edit Item Dialog */}
-              <Dialog open={editItemDialog} onOpenChange={setEditItemDialog}>
-                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Editar Partida del Presupuesto</DialogTitle>
-                    <DialogDescription>
-                      Modificar los detalles de la partida seleccionada
-                    </DialogDescription>
-                  </DialogHeader>
+              <ResponsiveDialog open={editItemDialog} onOpenChange={setEditItemDialog}>
+                <ResponsiveDialogContent maxHeight="90vh">
+                  <ResponsiveDialogHeader>
+                    <ResponsiveDialogTitle>Editar Partida del Presupuesto</ResponsiveDialogTitle>
+                  </ResponsiveDialogHeader>
                   {selectedItem && (
                     <BudgetItemForm
                       projectId={projectId}
@@ -442,8 +436,8 @@ export function AdvancedBudgetManager({ projectId }: AdvancedBudgetManagerProps)
                       }}
                     />
                   )}
-                </DialogContent>
-              </Dialog>
+                </ResponsiveDialogContent>
+              </ResponsiveDialog>
             </div>
           </div>
         </CardHeader>

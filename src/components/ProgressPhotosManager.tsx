@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogTrigger } from "@/components/ui/responsive-dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { 
   Camera, 
@@ -244,20 +245,17 @@ export function ProgressPhotosManager({ projectId }: ProgressPhotosManagerProps)
                 </Button>
               </div>
               
-              <Dialog open={newPhotoDialog} onOpenChange={setNewPhotoDialog}>
-                <DialogTrigger asChild>
+              <ResponsiveDialog open={newPhotoDialog} onOpenChange={setNewPhotoDialog}>
+                <ResponsiveDialogTrigger asChild>
                   <Button>
                     <Plus className="h-4 w-4 mr-2" />
                     Subir Fotos
                   </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Subir Fotos de Progreso</DialogTitle>
-                    <DialogDescription>
-                      Agregar nuevas fotos del avance de la construcción
-                    </DialogDescription>
-                  </DialogHeader>
+                </ResponsiveDialogTrigger>
+                <ResponsiveDialogContent maxHeight="90vh">
+                  <ResponsiveDialogHeader>
+                    <ResponsiveDialogTitle>Subir Fotos de Progreso</ResponsiveDialogTitle>
+                  </ResponsiveDialogHeader>
                   <ProgressPhotoForm
                     projectId={projectId}
                     onSuccess={() => {
@@ -266,8 +264,8 @@ export function ProgressPhotosManager({ projectId }: ProgressPhotosManagerProps)
                     }}
                     onCancel={() => setNewPhotoDialog(false)}
                   />
-                </DialogContent>
-              </Dialog>
+                </ResponsiveDialogContent>
+              </ResponsiveDialog>
             </div>
           </div>
         </CardHeader>

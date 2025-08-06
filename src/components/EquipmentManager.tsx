@@ -248,20 +248,17 @@ export function EquipmentManager({ projectId }: EquipmentManagerProps) {
               </CardDescription>
             </div>
             
-            <Dialog open={newEquipmentDialog} onOpenChange={setNewEquipmentDialog}>
+            <ResponsiveDialog open={newEquipmentDialog} onOpenChange={setNewEquipmentDialog}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
                   Agregar Equipo
                 </Button>
               </DialogTrigger>
-                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Nuevo Equipo</DialogTitle>
-                    <DialogDescription>
-                      Agregar un nuevo equipo al inventario del proyecto
-                    </DialogDescription>
-                  </DialogHeader>
+                <ResponsiveDialogContent maxHeight="90vh">
+                  <ResponsiveDialogHeader>
+                    <ResponsiveDialogTitle>Nuevo Equipo</ResponsiveDialogTitle>
+                  </ResponsiveDialogHeader>
                   <EquipmentForm
                     projectId={projectId}
                     onSuccess={() => {
@@ -270,18 +267,15 @@ export function EquipmentManager({ projectId }: EquipmentManagerProps) {
                     }}
                     onCancel={() => setNewEquipmentDialog(false)}
                   />
-                 </DialogContent>
-            </Dialog>
+                 </ResponsiveDialogContent>
+            </ResponsiveDialog>
 
             {/* Edit Equipment Dialog */}
-            <Dialog open={editEquipmentDialog} onOpenChange={setEditEquipmentDialog}>
-              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Editar Equipo</DialogTitle>
-                  <DialogDescription>
-                    Modificar los detalles del equipo seleccionado
-                  </DialogDescription>
-                </DialogHeader>
+            <ResponsiveDialog open={editEquipmentDialog} onOpenChange={setEditEquipmentDialog}>
+              <ResponsiveDialogContent maxHeight="90vh">
+                <ResponsiveDialogHeader>
+                  <ResponsiveDialogTitle>Editar Equipo</ResponsiveDialogTitle>
+                </ResponsiveDialogHeader>
                 {selectedEquipment && (
                   <EquipmentForm
                     projectId={projectId}
@@ -297,8 +291,8 @@ export function EquipmentManager({ projectId }: EquipmentManagerProps) {
                     }}
                   />
                 )}
-              </DialogContent>
-            </Dialog>
+              </ResponsiveDialogContent>
+            </ResponsiveDialog>
           </div>
         </CardHeader>
         

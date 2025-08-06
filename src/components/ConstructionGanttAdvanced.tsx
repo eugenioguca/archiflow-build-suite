@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogTrigger } from "@/components/ui/responsive-dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, Plus, Filter, Download, Link, AlertTriangle, BarChart3, Zap } from "lucide-react";
@@ -297,20 +298,17 @@ export function ConstructionGanttAdvanced({ projectId }: ConstructionGanttAdvanc
                 Filtrar
               </Button>
               
-              <Dialog>
-                <DialogTrigger asChild>
+              <ResponsiveDialog>
+                <ResponsiveDialogTrigger asChild>
                   <Button variant="outline" size="sm">
                     <Plus className="h-4 w-4 mr-2" />
                     Nueva Actividad
                   </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Nueva Actividad</DialogTitle>
-                    <DialogDescription>
-                      Agregar una nueva actividad al cronograma avanzado
-                    </DialogDescription>
-                  </DialogHeader>
+                </ResponsiveDialogTrigger>
+                <ResponsiveDialogContent maxHeight="90vh">
+                  <ResponsiveDialogHeader>
+                    <ResponsiveDialogTitle>Nueva Actividad</ResponsiveDialogTitle>
+                  </ResponsiveDialogHeader>
                   <TimelineActivityForm
                     projectId={projectId}
                     onSuccess={() => {
@@ -318,8 +316,8 @@ export function ConstructionGanttAdvanced({ projectId }: ConstructionGanttAdvanc
                     }}
                     onCancel={() => {}}
                   />
-                </DialogContent>
-              </Dialog>
+                </ResponsiveDialogContent>
+              </ResponsiveDialog>
               
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />
