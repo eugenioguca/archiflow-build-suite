@@ -588,8 +588,12 @@ export default function Sales() {
                           </div>
                           <div>
                             <p className="text-sm text-muted-foreground">Contacto</p>
-                            <p className="font-medium">{project.clients?.email}</p>
-                            <p className="text-sm">{project.clients?.phone}</p>
+                            <div className="space-y-1">
+                              <p className="text-sm font-medium">{project.clients?.phone}</p>
+                              <p className="text-xs text-muted-foreground break-all leading-tight">
+                                {project.clients?.email}
+                              </p>
+                            </div>
                           </div>
                           <div>
                             <p className="text-sm text-muted-foreground">Asesor</p>
