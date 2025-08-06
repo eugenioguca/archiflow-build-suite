@@ -243,6 +243,10 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
     if (!paymentDialog) return;
 
     try {
+      console.log('Starting payment marking process...');
+      console.log('Payment dialog:', paymentDialog);
+      console.log('Payment form:', paymentForm);
+
       // Update payment installment status
       const { error: updateError } = await supabase
         .from('payment_installments')
@@ -253,7 +257,12 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
         })
         .eq('id', paymentDialog.installment.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Error updating installment:', updateError);
+        throw updateError;
+      }
+
+      console.log('Installment updated successfully');
 
       // Get current user profile for created_by
       const { data: profile } = await supabase
@@ -264,25 +273,47 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
 
       if (!profile) throw new Error('Profile not found');
 
-      // Get plan data from our existing payment plans instead of multiple queries
+      console.log('Profile found:', profile);
+
+      // Get plan data from our existing payment plans
       const plan = paymentPlans.find(p => p.id === paymentDialog.installment.payment_plan_id);
       if (!plan) throw new Error('Payment plan not found');
 
+      console.log('Plan found:', plan);
+
+      // Get client_id directly from payment_plans_with_sales view data
+      const clientId = plan.client_id || plan.client_projects?.client_id;
+      if (!clientId) {
+        console.error('Client ID not found in plan data:', plan);
+        throw new Error('Client ID not found');
+      }
+
+      console.log('Using client_id:', clientId);
+
       // Create automatic income entry when installment is marked as paid
+      const incomeData = {
+        client_id: clientId,
+        project_id: plan.client_project_id,
+        category: 'construction_service' as const,
+        amount: paymentDialog.installment.amount,
+        description: `Pago de cuota ${paymentDialog.installment.installment_number} - Plan: ${paymentDialog.planName}`,
+        expense_date: paymentForm.paid_date,
+        reference_number: paymentForm.reference_number,
+        created_by: profile.id
+      };
+
+      console.log('Creating income with data:', incomeData);
+
       const { error: incomeError } = await supabase
         .from('incomes')
-        .insert([{
-          client_id: plan.client_id || '',
-          project_id: plan.client_project_id,
-          category: 'construction_service',
-          amount: paymentDialog.installment.amount,
-          description: `Pago de cuota ${paymentDialog.installment.installment_number} - Plan: ${paymentDialog.planName}`,
-          expense_date: paymentForm.paid_date,
-          reference_number: paymentForm.reference_number,
-          created_by: profile.id
-        }]);
+        .insert([incomeData]);
 
-      if (incomeError) throw incomeError;
+      if (incomeError) {
+        console.error('Error creating income:', incomeError);
+        throw incomeError;
+      }
+
+      console.log('Income created successfully');
 
       toast.success("Cuota marcada como pagada e ingreso registrado correctamente");
 
@@ -304,7 +335,7 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
 
     } catch (error) {
       console.error('Error marking payment:', error);
-      toast.error("Error al marcar el pago como pagado");
+      toast.error("Error al marcar el pago como pagado: " + (error as any).message);
     }
   };
 
@@ -368,7 +399,7 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
           .insert([{
             client_id: plan.client_id || '',
             project_id: plan.client_project_id,
-            category: 'construction_service',
+            category: 'construction_service' as const,
             amount: installment.amount,
             description: `Pago de cuota ${installment.installment_number} - Plan: ${plan.plan_name}`,
             expense_date: new Date().toISOString().split('T')[0],
