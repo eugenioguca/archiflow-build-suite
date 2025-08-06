@@ -56,6 +56,7 @@ export const PaymentPlansViewer: React.FC<PaymentPlansViewerProps> = ({
   projectId, 
   clientId 
 }) => {
+  const isMobile = useIsMobile();
   const { toast } = useToast();
   const [paymentPlans, setPaymentPlans] = useState<PaymentPlan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -238,7 +239,6 @@ export const PaymentPlansViewer: React.FC<PaymentPlansViewerProps> = ({
     );
   }
 
-  const isMobile = useIsMobile();
   
   return (
     <div className="space-y-4">
