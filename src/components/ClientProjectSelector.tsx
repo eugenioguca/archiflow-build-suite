@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Building2, X, Filter } from 'lucide-react';
+import { DollarSign, MapPin, Calendar, X } from 'lucide-react';
 
 interface Client {
   id: string;
@@ -17,18 +17,18 @@ interface Project {
   project_name: string;
   status: string;
   sales_pipeline_stage: string;
-  client_id: string;
   budget?: number;
+  project_location?: string;
+  client_id: string;
 }
 
 interface ClientProjectSelectorProps {
-  selectedClientId?: string;
-  selectedProjectId?: string;
-  onClientChange: (clientId: string | undefined) => void;
-  onProjectChange: (projectId: string | undefined) => void;
+  selectedClientId: string;
+  selectedProjectId: string;
+  onClientChange: (clientId: string) => void;
+  onProjectChange: (projectId: string) => void;
   showAllOption?: boolean;
   showProjectFilter?: boolean;
-  className?: string;
 }
 
 export const ClientProjectSelector: React.FC<ClientProjectSelectorProps> = ({
@@ -37,8 +37,7 @@ export const ClientProjectSelector: React.FC<ClientProjectSelectorProps> = ({
   onClientChange,
   onProjectChange,
   showAllOption = true,
-  showProjectFilter = true,
-  className = ""
+  showProjectFilter = true
 }) => {
   const [clients, setClients] = useState<Client[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -50,14 +49,14 @@ export const ClientProjectSelector: React.FC<ClientProjectSelectorProps> = ({
   }, []);
 
   useEffect(() => {
-    // Filtrar proyectos basado en cliente seleccionado
-    if (selectedClientId) {
+    // Filter projects based on selected client
+    if (selectedClientId && selectedClientId !== 'all') {
       const clientProjects = projects.filter(p => p.client_id === selectedClientId);
       setAvailableProjects(clientProjects);
       
-      // Si el proyecto seleccionado no pertenece al cliente, limpiar selección
+      // Clear project selection if current project doesn't belong to selected client
       if (selectedProjectId && !clientProjects.find(p => p.id === selectedProjectId)) {
-        onProjectChange(undefined);
+        onProjectChange('');
       }
     } else {
       setAvailableProjects(projects);
@@ -66,8 +65,6 @@ export const ClientProjectSelector: React.FC<ClientProjectSelectorProps> = ({
 
   const fetchData = async () => {
     try {
-      setLoading(true);
-      
       const [clientsResult, projectsResult] = await Promise.all([
         supabase
           .from('clients')
@@ -75,119 +72,120 @@ export const ClientProjectSelector: React.FC<ClientProjectSelectorProps> = ({
           .order('full_name'),
         supabase
           .from('client_projects')
-          .select('id, project_name, status, sales_pipeline_stage, client_id, budget')
+          .select('id, project_name, status, sales_pipeline_stage, budget, project_location, client_id')
           .order('project_name')
       ]);
 
-      if (clientsResult.data) {
-        setClients(clientsResult.data);
-      }
-      
-      if (projectsResult.data) {
-        setProjects(projectsResult.data);
-        setAvailableProjects(projectsResult.data);
-      }
+      if (clientsResult.error) throw clientsResult.error;
+      if (projectsResult.error) throw projectsResult.error;
+
+      setClients(clientsResult.data || []);
+      setProjects(projectsResult.data || []);
     } catch (error) {
-      console.error('Error fetching clients and projects:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleClientChange = (value: string) => {
-    if (value === 'all') {
-      onClientChange(undefined);
-      onProjectChange(undefined);
-    } else {
-      onClientChange(value);
-      onProjectChange(undefined); // Reset project when client changes
+  const handleClientChange = (clientId: string) => {
+    onClientChange(clientId);
+    // Clear project when client changes
+    if (clientId !== selectedClientId) {
+      onProjectChange('');
     }
   };
 
-  const handleProjectChange = (value: string) => {
-    if (value === 'all') {
-      onProjectChange(undefined);
-    } else {
-      onProjectChange(value);
-    }
+  const handleProjectChange = (projectId: string) => {
+    onProjectChange(projectId);
   };
 
   const clearFilters = () => {
-    onClientChange(undefined);
-    onProjectChange(undefined);
+    onClientChange('');
+    onProjectChange('');
   };
 
   const getStatusBadge = (status: string) => {
-    const statusColors: Record<string, string> = {
-      'potential': 'bg-gray-500',
-      'design': 'bg-blue-500',
-      'construction': 'bg-orange-500',
-      'completed': 'bg-green-500',
-      'cancelled': 'bg-red-500'
+    const statusConfig = {
+      potential: { label: 'Potencial', color: 'bg-gray-500' },
+      design: { label: 'Diseño', color: 'bg-blue-500' },
+      construction: { label: 'Construcción', color: 'bg-orange-500' },
+      completed: { label: 'Completado', color: 'bg-green-500' }
     };
     
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.potential;
     return (
-      <Badge variant="secondary" className={statusColors[status] || 'bg-gray-500'}>
-        {status}
+      <Badge variant="secondary" className={`${config.color} text-white text-xs`}>
+        {config.label}
       </Badge>
     );
   };
 
   const getStageBadge = (stage: string) => {
-    const stageColors: Record<string, string> = {
-      'nuevo_lead': 'bg-yellow-500',
-      'en_contacto': 'bg-blue-500',
-      'propuesta_enviada': 'bg-purple-500',
-      'negociacion': 'bg-orange-500',
-      'cliente_cerrado': 'bg-green-500',
-      'perdido': 'bg-red-500'
+    const stageConfig = {
+      nuevo_lead: { label: 'Lead', color: 'bg-purple-500' },
+      en_contacto: { label: 'Contacto', color: 'bg-blue-500' },
+      propuesta_enviada: { label: 'Propuesta', color: 'bg-yellow-500' },
+      cliente_cerrado: { label: 'Cerrado', color: 'bg-green-500' }
     };
     
+    const config = stageConfig[stage as keyof typeof stageConfig] || stageConfig.nuevo_lead;
     return (
-      <Badge variant="outline" className={stageColors[stage] || 'bg-gray-500'}>
-        {stage.replace('_', ' ')}
+      <Badge variant="outline" className={`${config.color} text-white text-xs border-0`}>
+        {config.label}
       </Badge>
     );
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount?: number) => {
+    if (!amount) return 'Sin presupuesto';
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
-      currency: 'MXN'
+      currency: 'MXN',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(amount);
   };
 
   const selectedClient = clients.find(c => c.id === selectedClientId);
   const selectedProject = availableProjects.find(p => p.id === selectedProjectId);
 
-  return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filtros Cliente-Proyecto
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-4">
+          <div className="animate-pulse space-y-3">
+            <div className="h-10 bg-muted rounded"></div>
+            <div className="h-10 bg-muted rounded"></div>
           </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg">Filtros</CardTitle>
           {(selectedClientId || selectedProjectId) && (
-            <Button variant="outline" size="sm" onClick={clearFilters}>
-              <X className="h-4 w-4 mr-2" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="h-8 px-2"
+            >
+              <X className="h-4 w-4" />
               Limpiar
             </Button>
           )}
-        </CardTitle>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Cliente Selector */}
+        {/* Client Selector */}
         <div className="space-y-2">
-          <label className="text-sm font-medium flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Cliente
-          </label>
-          <Select
-            value={selectedClientId || 'all'}
-            onValueChange={handleClientChange}
-            disabled={loading}
-          >
+          <label className="text-sm font-medium">Cliente</label>
+          <Select value={selectedClientId} onValueChange={handleClientChange}>
             <SelectTrigger>
               <SelectValue placeholder="Seleccionar cliente..." />
             </SelectTrigger>
@@ -195,6 +193,7 @@ export const ClientProjectSelector: React.FC<ClientProjectSelectorProps> = ({
               {showAllOption && (
                 <SelectItem value="all">Todos los clientes</SelectItem>
               )}
+              <SelectItem value="">Sin filtro</SelectItem>
               {clients.map((client) => (
                 <SelectItem key={client.id} value={client.id}>
                   {client.full_name}
@@ -204,36 +203,23 @@ export const ClientProjectSelector: React.FC<ClientProjectSelectorProps> = ({
           </Select>
         </div>
 
-        {/* Proyecto Selector */}
+        {/* Project Selector */}
         {showProjectFilter && (
           <div className="space-y-2">
-            <label className="text-sm font-medium flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              Proyecto
-            </label>
-            <Select
-              value={selectedProjectId || 'all'}
+            <label className="text-sm font-medium">Proyecto</label>
+            <Select 
+              value={selectedProjectId} 
               onValueChange={handleProjectChange}
-              disabled={loading || availableProjects.length === 0}
+              disabled={!selectedClientId && !showAllOption}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar proyecto..." />
               </SelectTrigger>
               <SelectContent>
-                {showAllOption && (
-                  <SelectItem value="all">
-                    {selectedClientId ? 'Todos los proyectos del cliente' : 'Todos los proyectos'}
-                  </SelectItem>
-                )}
+                <SelectItem value="">Sin filtro</SelectItem>
                 {availableProjects.map((project) => (
                   <SelectItem key={project.id} value={project.id}>
-                    <div className="flex items-center justify-between w-full">
-                      <span>{project.project_name}</span>
-                      <div className="flex gap-1 ml-2">
-                        {getStatusBadge(project.status)}
-                        {getStageBadge(project.sales_pipeline_stage)}
-                      </div>
-                    </div>
+                    {project.project_name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -241,41 +227,39 @@ export const ClientProjectSelector: React.FC<ClientProjectSelectorProps> = ({
           </div>
         )}
 
-        {/* Información de selección actual */}
-        {(selectedClient || selectedProject) && (
-          <div className="space-y-3 pt-3 border-t">
-            <h4 className="text-sm font-medium text-muted-foreground">Selección Actual:</h4>
-            
-            {selectedClient && (
-              <div className="space-y-1">
-                <p className="text-sm font-medium">Cliente: {selectedClient.full_name}</p>
-                <p className="text-xs text-muted-foreground">
-                  Proyectos disponibles: {availableProjects.length}
-                </p>
-              </div>
-            )}
-            
-            {selectedProject && (
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Proyecto: {selectedProject.project_name}</p>
-                <div className="flex gap-2">
-                  {getStatusBadge(selectedProject.status)}
-                  {getStageBadge(selectedProject.sales_pipeline_stage)}
-                </div>
-                {selectedProject.budget && (
-                  <p className="text-xs text-muted-foreground">
-                    Presupuesto: {formatCurrency(selectedProject.budget)}
-                  </p>
-                )}
-              </div>
-            )}
+        {/* Selected Client Info */}
+        {selectedClient && (
+          <div className="p-3 bg-muted rounded-lg space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-sm">{selectedClient.full_name}</span>
+            </div>
           </div>
         )}
 
-        {loading && (
-          <div className="text-center py-4">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
-            <p className="text-sm text-muted-foreground mt-2">Cargando...</p>
+        {/* Selected Project Info */}
+        {selectedProject && (
+          <div className="p-3 bg-muted rounded-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-sm">{selectedProject.project_name}</span>
+              <div className="flex gap-1">
+                {getStatusBadge(selectedProject.status)}
+                {getStageBadge(selectedProject.sales_pipeline_stage)}
+              </div>
+            </div>
+            
+            <div className="space-y-2 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-3 w-3" />
+                <span>{formatCurrency(selectedProject.budget)}</span>
+              </div>
+              
+              {selectedProject.project_location && (
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-3 w-3" />
+                  <span className="truncate">{selectedProject.project_location}</span>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </CardContent>

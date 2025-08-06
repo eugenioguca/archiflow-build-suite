@@ -22,6 +22,7 @@ import { ContractTemplateManager } from "@/components/ContractTemplateManager";
 import { SalesAppointmentScheduler } from "@/components/SalesAppointmentScheduler";
 import { TeamClientChat } from "@/components/TeamClientChat";
 import { ModuleNotifications } from "@/components/ModuleNotifications";
+import { SalesChatProjectSelector } from "@/components/SalesChatProjectSelector";
 import {
   Users, 
   TrendingUp, 
@@ -106,6 +107,7 @@ export default function Sales() {
   const [advisorFilter, setAdvisorFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<ClientProject | null>(null);
+  const [selectedChatProject, setSelectedChatProject] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("list");
   const { toast } = useToast();
   const { user } = useAuth();
@@ -690,24 +692,33 @@ export default function Sales() {
 
         {/* Chat Cliente */}
         <TabsContent value="chat">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-primary" />
-                Chat con Clientes por Proyecto
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Selecciona un proyecto específico en la vista detallada para acceder al chat con el cliente.
-              </p>
-            </CardHeader>
-            <CardContent className="p-8 text-center">
-              <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-              <h3 className="text-lg font-medium">Chat específico por proyecto</h3>
-              <p className="text-muted-foreground">
-                Haz clic en "Ver CRM" de cualquier proyecto para acceder al chat del cliente de ese proyecto específico.
-              </p>
-            </CardContent>
-          </Card>
+          {selectedChatProject ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg font-semibold">Chat con Cliente</h2>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedChatProject(null)}
+                >
+                  Cambiar Proyecto
+                </Button>
+              </div>
+              <TeamClientChat
+                projectId={selectedChatProject}
+                module="sales"
+                className="h-[600px]"
+              />
+            </div>
+          ) : (
+            <SalesChatProjectSelector
+              onProjectSelect={setSelectedChatProject}
+              selectedProjectId={selectedChatProject}
+            />
+          )}
         </TabsContent>
       </Tabs>
 
