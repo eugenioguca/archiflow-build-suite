@@ -66,10 +66,10 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
         .from('payment_plans')
         .select(`
           *,
-          client_projects(
+          client_projects!inner(
             project_name,
             client_id,
-            clients(full_name)
+            clients!inner(full_name)
           )
         `)
         .eq('status', 'active')
