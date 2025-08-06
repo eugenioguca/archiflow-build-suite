@@ -21,6 +21,7 @@ import { SalesExecutiveDashboard } from "@/components/SalesExecutiveDashboard";
 import { ContractTemplateManager } from "@/components/ContractTemplateManager";
 import { SalesAppointmentScheduler } from "@/components/SalesAppointmentScheduler";
 import { TeamClientChat } from "@/components/TeamClientChat";
+import { ModuleNotifications } from "@/components/ModuleNotifications";
 import {
   Users, 
   TrendingUp, 
@@ -282,6 +283,7 @@ export default function Sales() {
           <p className="text-muted-foreground">Gestión completa del pipeline con 4 fases estratégicas</p>
         </div>
         <div className="flex items-center gap-2">
+          <ModuleNotifications module="sales" />
           <Badge variant="outline" className="text-sm">
             {clientProjects.length} Proyectos Activos
           </Badge>
@@ -681,6 +683,28 @@ export default function Sales() {
         <TabsContent value="contracts">
           <ContractTemplateManager />
         </TabsContent>
+
+        {/* Chat Cliente */}
+        <TabsContent value="chat">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                Chat con Clientes por Proyecto
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Selecciona un proyecto específico en la vista detallada para acceder al chat con el cliente.
+              </p>
+            </CardHeader>
+            <CardContent className="p-8 text-center">
+              <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+              <h3 className="text-lg font-medium">Chat específico por proyecto</h3>
+              <p className="text-muted-foreground">
+                Haz clic en "Ver CRM" de cualquier proyecto para acceder al chat del cliente de ese proyecto específico.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Dialog CRM completo */}
@@ -695,7 +719,7 @@ export default function Sales() {
           
           {selectedProject && (
             <Tabs defaultValue="crm" className="w-full flex flex-col flex-1 overflow-hidden">
-              <TabsList className="grid grid-cols-4 w-full flex-shrink-0 mx-6">
+              <TabsList className="grid grid-cols-5 w-full flex-shrink-0 mx-6">
                 <TabsTrigger value="crm">CRM & Información</TabsTrigger>
                 <TabsTrigger 
                   value="documents" 
@@ -712,6 +736,7 @@ export default function Sales() {
                   Plan de Pagos
                 </TabsTrigger>
                 <TabsTrigger value="projects">Gestión de Proyectos</TabsTrigger>
+                <TabsTrigger value="chat">Chat Cliente</TabsTrigger>
               </TabsList>
 
               <TabsContent value="crm" className="space-y-6 px-6 pb-6 overflow-y-auto flex-1">
@@ -891,6 +916,14 @@ export default function Sales() {
                   onProjectSelected={(projectId) => {
                     
                   }}
+                />
+              </TabsContent>
+
+              <TabsContent value="chat" className="px-6 pb-6 overflow-y-auto flex-1">
+                <TeamClientChat
+                  projectId={selectedProject.id}
+                  module="sales"
+                  className="h-[600px]"
                 />
               </TabsContent>
             </Tabs>

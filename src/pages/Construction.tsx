@@ -25,6 +25,8 @@ import { ConstructionReports } from "@/components/ConstructionReports";
 import { ConstructionAnalytics } from "@/components/ConstructionAnalytics";
 import { ConstructionTeamManager } from "@/components/ConstructionTeamManager";
 import { ProjectDatesManager } from "@/components/ProjectDatesManager";
+import { ModuleNotifications } from "@/components/ModuleNotifications";
+import { TeamClientChat } from "@/components/TeamClientChat";
 
 interface ConstructionProject {
   id: string;
@@ -49,7 +51,7 @@ export function Construction() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<"principal" | "gestion" | "documentacion">("principal");
+  const [activeCategory, setActiveCategory] = useState<"principal" | "gestion" | "documentacion" | "chat">("principal");
 
   useEffect(() => {
     if (user) {
@@ -62,12 +64,13 @@ export function Construction() {
     const navigationCategories = {
       principal: ["dashboard", "budget", "timeline"],
       gestion: ["equipment", "materials", "team", "teams", "quality"],
-      documentacion: ["photos", "reports", "analytics"]
+      documentacion: ["photos", "reports", "analytics"],
+      chat: ["chat"]
     };
     
     const categoryKey = Object.keys(navigationCategories).find(key => 
       navigationCategories[key as keyof typeof navigationCategories].includes(activeTab)
-    ) as "principal" | "gestion" | "documentacion";
+    ) as "principal" | "gestion" | "documentacion" | "chat";
     
     if (categoryKey) {
       setActiveCategory(categoryKey);
@@ -219,6 +222,12 @@ export function Construction() {
         { value: "reports", label: "Reportes", icon: FileText },
         { value: "analytics", label: "Análisis", icon: BarChart3 },
       ]
+    },
+    chat: {
+      label: "Chat",
+      tabs: [
+        { value: "chat", label: "Chat Cliente", icon: Users },
+      ]
     }
   };
 
@@ -235,9 +244,12 @@ export function Construction() {
             <p className="text-sm text-muted-foreground">Gestión de proyectos</p>
           </div>
         </div>
-        <Badge variant="secondary" className="text-xs">
-          {projects.length} proyectos
-        </Badge>
+        <div className="flex items-center gap-2">
+          <ModuleNotifications module="construction" />
+          <Badge variant="secondary" className="text-xs">
+            {projects.length} proyectos
+          </Badge>
+        </div>
       </div>
 
       {/* Project Selection - Top for all devices */}
@@ -492,6 +504,14 @@ export function Construction() {
 
                 <TabsContent value="analytics" className="mt-6">
                   <ConstructionAnalytics projectId={selectedProject.id} />
+                </TabsContent>
+
+                <TabsContent value="chat" className="mt-6">
+                  <TeamClientChat 
+                    projectId={selectedProject.id} 
+                    module="construction"
+                    className="h-[600px]"
+                  />
                 </TabsContent>
               </Tabs>
             </div>

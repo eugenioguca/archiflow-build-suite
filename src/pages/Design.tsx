@@ -19,6 +19,7 @@ import { CompletedDesignsTab } from "@/components/CompletedDesignsTab";
 import { DesignDocumentManager } from "@/components/DesignDocumentManager";
 import { PaymentPlansUnified } from "@/components/PaymentPlansUnified";
 import { TeamClientChat } from "@/components/TeamClientChat";
+import { ModuleNotifications } from "@/components/ModuleNotifications";
 import { 
   Clock, 
   User, 
@@ -502,14 +503,17 @@ export default function Design() {
   if (!projectId) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <Palette className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold">Diseño</h1>
-            <p className="text-muted-foreground">
-              Gestión completa de proyectos de diseño arquitectónico
-            </p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Palette className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-3xl font-bold">Diseño</h1>
+              <p className="text-muted-foreground">
+                Gestión completa de proyectos de diseño arquitectónico
+              </p>
+            </div>
           </div>
+          <ModuleNotifications module="design" />
         </div>
 
         <Tabs defaultValue="activos" className="space-y-4">
