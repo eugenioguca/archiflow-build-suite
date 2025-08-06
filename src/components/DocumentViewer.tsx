@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, X, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { Download, X, ZoomIn, ZoomOut, RotateCcw, RefreshCw } from "lucide-react";
 
 interface DocumentViewerProps {
   isOpen: boolean;
@@ -14,6 +14,8 @@ interface DocumentViewerProps {
 export function DocumentViewer({ isOpen, onClose, documentUrl, documentName, fileType }: DocumentViewerProps) {
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleDownload = async () => {
     try {
@@ -51,6 +53,13 @@ export function DocumentViewer({ isOpen, onClose, documentUrl, documentName, fil
   const handleZoomIn = () => setZoom(zoom * 1.2);
   const handleZoomOut = () => setZoom(zoom / 1.2);
   const handleRotate = () => setRotation((rotation + 90) % 360);
+  
+  const handleRefresh = () => {
+    setError(null);
+    setLoading(true);
+    // Force reload of the iframe or image
+    setTimeout(() => setLoading(false), 1000);
+  };
 
   const getFileTypeFromUrl = (url: string) => {
     const extension = url.split('.').pop()?.toLowerCase() || '';
@@ -91,6 +100,12 @@ export function DocumentViewer({ isOpen, onClose, documentUrl, documentName, fil
                   </Button>
                 </>
               )}
+              {error && (
+                <Button size="sm" variant="outline" onClick={handleRefresh}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Recargar
+                </Button>
+              )}
               <Button size="sm" variant="outline" onClick={handleDownload}>
                 <Download className="h-4 w-4 mr-2" />
                 Descargar
@@ -103,7 +118,28 @@ export function DocumentViewer({ isOpen, onClose, documentUrl, documentName, fil
         </DialogHeader>
         
         <div className="flex-1 overflow-auto bg-gray-50 p-4">
-          {isPDF ? (
+          {loading ? (
+            <div className="flex flex-col items-center justify-center h-60 bg-white rounded-lg shadow-sm">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <p className="mt-4 text-sm text-muted-foreground">Cargando documento...</p>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center h-60 bg-white rounded-lg shadow-sm">
+              <div className="text-6xl mb-4">⚠️</div>
+              <h3 className="text-lg font-medium mb-2">Error al cargar documento</h3>
+              <p className="text-muted-foreground text-center mb-4">{error}</p>
+              <div className="flex gap-2">
+                <Button onClick={handleRefresh} variant="outline">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Intentar de nuevo
+                </Button>
+                <Button onClick={handleDownload}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Descargar
+                </Button>
+              </div>
+            </div>
+          ) : isPDF ? (
             <div className="w-full h-[70vh] bg-white rounded-lg shadow-sm">
               <iframe
                 src={`${documentUrl}#toolbar=1&navpanes=1&scrollbar=1&page=1&view=FitH`}
@@ -111,8 +147,10 @@ export function DocumentViewer({ isOpen, onClose, documentUrl, documentName, fil
                 height="100%"
                 className="rounded-lg border"
                 title={documentName}
+                onLoad={() => setError(null)}
                 onError={() => {
                   console.error('Error loading PDF in iframe');
+                  setError('No se pudo cargar el PDF. El archivo podría estar dañado o no ser accesible.');
                 }}
               />
             </div>
@@ -126,10 +164,12 @@ export function DocumentViewer({ isOpen, onClose, documentUrl, documentName, fil
                   transform: `scale(${zoom}) rotate(${rotation}deg)`,
                   transformOrigin: 'center'
                 }}
+                onLoad={() => setError(null)}
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.src = '/placeholder.svg';
                   console.error('Error loading image:', documentUrl);
+                  setError('No se pudo cargar la imagen. Verifique que el archivo sea accesible.');
                 }}
               />
             </div>
@@ -141,8 +181,10 @@ export function DocumentViewer({ isOpen, onClose, documentUrl, documentName, fil
                 height="500px"
                 className="border rounded"
                 title={documentName}
+                onLoad={() => setError(null)}
                 onError={() => {
                   console.error('Error loading text file in iframe');
+                  setError('No se pudo cargar el archivo de texto.');
                 }}
               />
             </div>

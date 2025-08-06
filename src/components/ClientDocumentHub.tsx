@@ -200,15 +200,20 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false }: Clie
 
   const handleView = async (document: ClientDocument) => {
     try {
-      // Get public URL for document viewing
-      const { data } = supabase.storage
-        .from('client-documents')
-        .getPublicUrl(document.file_path);
-
-      if (data?.publicUrl) {
+      // Import the document utilities
+      const { getCachedDocumentUrl } = await import('@/lib/documentUtils');
+      
+      // Get the correct URL for the document
+      const result = await getCachedDocumentUrl(document.file_path, document.source);
+      
+      if (result.error) {
+        console.warn('Document URL warning:', result.error);
+      }
+      
+      if (result.url) {
         setSelectedDocument({
           ...document,
-          file_path: data.publicUrl
+          file_path: result.url
         });
         setViewerOpen(true);
       } else {
@@ -226,25 +231,24 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false }: Clie
 
   const handleDownload = async (document: ClientDocument) => {
     try {
-      const { data, error } = await supabase.storage
-        .from('client-documents')
-        .download(document.file_path);
+      // Import the document utilities
+      const { downloadDocument } = await import('@/lib/documentUtils');
+      
+      // Download using the smart document downloader
+      const result = await downloadDocument(
+        document.file_path, 
+        document.document_name,
+        document.source
+      );
 
-      if (error) throw error;
-
-      const url = URL.createObjectURL(data);
-      const a = window.document.createElement('a');
-      a.href = url;
-      a.download = document.document_name;
-      window.document.body.appendChild(a);
-      a.click();
-      URL.revokeObjectURL(url);
-      window.document.body.removeChild(a);
-
-      toast({
-        title: "Descarga exitosa",
-        description: `Se ha descargado ${document.document_name}`
-      });
+      if (result.success) {
+        toast({
+          title: "Descarga exitosa",
+          description: `Se ha descargado ${document.document_name}`
+        });
+      } else {
+        throw new Error(result.error || 'Error desconocido al descargar');
+      }
     } catch (error) {
       console.error('Error downloading document:', error);
       toast({
