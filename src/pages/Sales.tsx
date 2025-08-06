@@ -735,8 +735,15 @@ export default function Sales() {
           
           {selectedProject && (
             <Tabs defaultValue="crm" className="w-full flex flex-col flex-1 overflow-hidden">
-              <TabsList className="grid grid-cols-5 w-full flex-shrink-0 mx-6">
+              <TabsList className="grid grid-cols-6 w-full flex-shrink-0 mx-6">
                 <TabsTrigger value="crm">CRM & Información</TabsTrigger>
+                <TabsTrigger 
+                  value="required-docs"
+                  disabled={selectedProject.sales_pipeline_stage === 'nuevo_lead'}
+                  className={selectedProject.sales_pipeline_stage === 'nuevo_lead' ? 'opacity-50' : ''}
+                >
+                  Documentos Obligatorios
+                </TabsTrigger>
                 <TabsTrigger 
                   value="documents" 
                   disabled={selectedProject.sales_pipeline_stage === 'nuevo_lead'}
@@ -837,6 +844,14 @@ export default function Sales() {
                     }}
                   />
                 </div>
+              </TabsContent>
+
+              <TabsContent value="required-docs" className="px-6 pb-6 overflow-y-auto flex-1">
+                <RequiredDocumentsManager
+                  clientProjectId={selectedProject.id}
+                  clientProject={selectedProject}
+                  onDocumentUpdate={() => fetchData()}
+                />
               </TabsContent>
 
               <TabsContent value="documents" className="px-6 pb-6 overflow-y-auto flex-1">
