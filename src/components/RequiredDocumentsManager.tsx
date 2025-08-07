@@ -104,28 +104,39 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
 
   const currentStage = clientProject?.sales_pipeline_stage || 'nuevo_lead';
 
-  const [planPagosUploaded, setPlanPagosUploaded] = useState(false);
+  const [planPagosCompleted, setPlanPagosCompleted] = useState(false);
 
   useEffect(() => {
-    const checkPlanPagosDocument = async () => {
+    const checkPlanPagosStatus = async () => {
       if (currentStage === 'cliente_cerrado') {
         try {
+          // Verificar si existe un plan de pagos con la primera parcialidad pagada
           const { data, error } = await supabase
-            .from('client_documents')
-            .select('id')
-            .eq('project_id', clientProjectId)
-            .eq('document_type', 'plan_pagos')
+            .from('payment_plans')
+            .select(`
+              id,
+              payment_installments!inner(
+                id,
+                installment_number,
+                status
+              )
+            `)
+            .eq('client_project_id', clientProjectId)
+            .eq('plan_type', 'design_payment')
+            .eq('is_current_plan', true)
+            .eq('payment_installments.installment_number', 1)
+            .eq('payment_installments.status', 'paid')
             .limit(1);
 
           if (error) throw error;
-          setPlanPagosUploaded(data && data.length > 0);
+          setPlanPagosCompleted(data && data.length > 0);
         } catch (error) {
-          console.error('Error checking plan_pagos document:', error);
+          console.error('Error checking plan_pagos status:', error);
         }
       }
     };
 
-    checkPlanPagosDocument();
+    checkPlanPagosStatus();
   }, [clientProjectId, currentStage]);
 
   const getDocumentStatus = (doc: RequiredDocument) => {
@@ -148,7 +159,7 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
         }
         break;
       case 'plan_pagos':
-        if (planPagosUploaded) {
+        if (planPagosCompleted) {
           return { uploaded: true, status: 'completed', required: isRequired };
         }
         break;
@@ -186,60 +197,31 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
 
       if (uploadError) throw uploadError;
 
-      // For plan_pagos, save to client_documents table
-      if (docType === 'plan_pagos') {
-        // Get current user's profile
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-          .single();
-
-        if (!profileData) throw new Error('Profile not found');
-
-        // Save to client_documents table
-        const { error: dbError } = await supabase
-          .from('client_documents')
-          .insert({
-            client_id: clientProject.client_id,
-            project_id: clientProjectId,
-            document_name: file.name,
-            document_type: 'plan_pagos',
-            file_path: filePath,
-            file_type: file.type,
-            file_size: file.size,
-            uploaded_by: profileData.id
-          });
-
-        if (dbError) throw dbError;
-        setPlanPagosUploaded(true);
-      } else {
-        // Update client_projects record for other document types
-        const updates: any = {};
-        
-        switch (docType) {
-          case 'curp':
-            // For CURP, we might want to extract the text content
-            // For now, just mark as uploaded
-            updates.curp_uploaded = true;
-            break;
-          case 'fiscal_certificate':
-            updates.constancia_situacion_fiscal_url = filePath;
-            updates.constancia_situacion_fiscal_uploaded = true;
-            break;
-          case 'contract':
-            updates.contract_url = filePath;
-            updates.contract_uploaded = true;
-            break;
-        }
-
-        const { error: updateError } = await supabase
-          .from('client_projects')
-          .update(updates)
-          .eq('id', clientProjectId);
-
-        if (updateError) throw updateError;
+      // Update client_projects record
+      const updates: any = {};
+      
+      switch (docType) {
+        case 'curp':
+          // For CURP, we might want to extract the text content
+          // For now, just mark as uploaded
+          updates.curp_uploaded = true;
+          break;
+        case 'fiscal_certificate':
+          updates.constancia_situacion_fiscal_url = filePath;
+          updates.constancia_situacion_fiscal_uploaded = true;
+          break;
+        case 'contract':
+          updates.contract_url = filePath;
+          updates.contract_uploaded = true;
+          break;
       }
+
+      const { error: updateError } = await supabase
+        .from('client_projects')
+        .update(updates)
+        .eq('id', clientProjectId);
+
+      if (updateError) throw updateError;
 
       toast({
         title: "Documento subido exitosamente",
@@ -390,7 +372,7 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    {!status.uploaded && (
+                    {!status.uploaded && doc.type !== 'plan_pagos' && (
                       <Dialog open={showUploadDialog && selectedDocType === doc.id} 
                              onOpenChange={(open) => {
                                setShowUploadDialog(open);
@@ -426,6 +408,11 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
                           </div>
                         </DialogContent>
                       </Dialog>
+                      )}
+                    {doc.type === 'plan_pagos' && !status.uploaded && (
+                      <div className="text-sm text-muted-foreground italic">
+                        Se completará automáticamente al pagar la primera parcialidad
+                      </div>
                     )}
                   </div>
                 </div>
