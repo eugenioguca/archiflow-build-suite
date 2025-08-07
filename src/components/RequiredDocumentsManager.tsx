@@ -71,7 +71,7 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
       id: 'curp',
       name: 'CURP',
       type: 'curp',
-      required_for_stages: ['nuevo_lead', 'en_contacto'],
+      required_for_stages: ['en_contacto', 'cliente_cerrado'],
       description: 'Clave Única de Registro de Población del cliente',
       icon: User,
       validation_pattern: '^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[0-9A-Z][0-9]$'
@@ -80,7 +80,7 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
       id: 'fiscal_certificate',
       name: 'Constancia de Situación Fiscal',
       type: 'fiscal_certificate',
-      required_for_stages: ['en_contacto', 'documentos_recibidos'],
+      required_for_stages: ['en_contacto', 'cliente_cerrado'],
       description: 'Constancia de situación fiscal vigente',
       icon: Shield
     },
@@ -88,15 +88,15 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
       id: 'contract',
       name: 'Contrato',
       type: 'contract',
-      required_for_stages: ['documentos_recibidos', 'contrato_firmado'],
-      description: 'Contrato de servicios firmado',
+      required_for_stages: ['en_contacto', 'cliente_cerrado'],
+      description: 'Contrato de servicios firmado por el cliente',
       icon: FileText
     },
     {
       id: 'plan_pagos',
       name: 'Plan de Pagos',
       type: 'plan_pagos',
-      required_for_stages: ['cliente_cerrado'],
+      required_for_stages: ['en_contacto', 'cliente_cerrado'],
       description: 'Plan de pagos autorizado para transición a diseño',
       icon: Building
     }
