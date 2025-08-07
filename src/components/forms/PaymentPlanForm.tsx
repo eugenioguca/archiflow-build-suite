@@ -5,9 +5,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CurrencyInput } from '@/components/CurrencyInput';
+import { DatePicker } from '@/components/DatePicker';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
-import { Calculator, Plus, X, Edit3 } from 'lucide-react';
+import { Calculator, Plus, X, Edit3, Calendar, Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { addDays } from 'date-fns';
 
 interface PaymentPlanFormProps {
   onSubmit: (data: PaymentPlanFormData & { installments?: InstallmentSuggestion[] }) => void;
@@ -29,7 +32,7 @@ interface InstallmentSuggestion {
   description: string;
   percentage: number;
   amount: number;
-  due_days: number;
+  due_date: Date;
 }
 
 export const PaymentPlanForm: React.FC<PaymentPlanFormProps> = ({
@@ -51,7 +54,7 @@ export const PaymentPlanForm: React.FC<PaymentPlanFormProps> = ({
   const [selectedSuggestion, setSelectedSuggestion] = useState<InstallmentSuggestion[] | null>(null);
   const [customMode, setCustomMode] = useState(false);
   const [customInstallments, setCustomInstallments] = useState<InstallmentSuggestion[]>([
-    { installment_number: 1, description: "Anticipo inicial", percentage: 50, amount: 0, due_days: 0 }
+    { installment_number: 1, description: "Anticipo inicial", percentage: 50, amount: 0, due_date: new Date() }
   ]);
 
   // Sugerencias de planes de pago (reducido a 3)
@@ -59,23 +62,23 @@ export const PaymentPlanForm: React.FC<PaymentPlanFormProps> = ({
     {
       name: "50% - 50%",
       installments: [
-        { installment_number: 1, description: "Anticipo inicial", percentage: 50, amount: 0, due_days: 0 },
-        { installment_number: 2, description: "Pago final", percentage: 50, amount: 0, due_days: 30 }
+        { installment_number: 1, description: "Anticipo inicial", percentage: 50, amount: 0, due_date: new Date() },
+        { installment_number: 2, description: "Pago final", percentage: 50, amount: 0, due_date: addDays(new Date(), formData.plan_type === 'design_payment' ? 45 : 30) }
       ]
     },
     {
       name: "30% - 40% - 30%",
       installments: [
-        { installment_number: 1, description: "Anticipo inicial", percentage: 30, amount: 0, due_days: 0 },
-        { installment_number: 2, description: "Pago intermedio", percentage: 40, amount: 0, due_days: 15 },
-        { installment_number: 3, description: "Pago final", percentage: 30, amount: 0, due_days: 30 }
+        { installment_number: 1, description: "Anticipo inicial", percentage: 30, amount: 0, due_date: new Date() },
+        { installment_number: 2, description: "Pago intermedio", percentage: 40, amount: 0, due_date: addDays(new Date(), formData.plan_type === 'design_payment' ? 22 : 15) },
+        { installment_number: 3, description: "Pago final", percentage: 30, amount: 0, due_date: addDays(new Date(), formData.plan_type === 'design_payment' ? 45 : 30) }
       ]
     },
     {
       name: "25% - 75%",
       installments: [
-        { installment_number: 1, description: "Anticipo inicial", percentage: 25, amount: 0, due_days: 0 },
-        { installment_number: 2, description: "Pago final", percentage: 75, amount: 0, due_days: 30 }
+        { installment_number: 1, description: "Anticipo inicial", percentage: 25, amount: 0, due_date: new Date() },
+        { installment_number: 2, description: "Pago final", percentage: 75, amount: 0, due_date: addDays(new Date(), formData.plan_type === 'design_payment' ? 45 : 30) }
       ]
     }
   ];
@@ -139,12 +142,16 @@ export const PaymentPlanForm: React.FC<PaymentPlanFormProps> = ({
   };
 
   const addCustomInstallment = () => {
+    const lastDate = customInstallments.length > 0 
+      ? customInstallments[customInstallments.length - 1].due_date 
+      : new Date();
+    
     const newInstallment: InstallmentSuggestion = {
       installment_number: customInstallments.length + 1,
       description: `Parcialidad ${customInstallments.length + 1}`,
       percentage: 0,
       amount: 0,
-      due_days: 30
+      due_date: addDays(lastDate, 15)
     };
     setCustomInstallments([...customInstallments, newInstallment]);
   };
@@ -306,100 +313,151 @@ export const PaymentPlanForm: React.FC<PaymentPlanFormProps> = ({
             
             {/* Editor de Plan Customizable */}
             {customMode && (
-              <div className="space-y-3 border-t pt-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-muted-foreground">Plan Customizable</p>
-                  <span className={`text-xs font-medium ${
-                    Math.abs(getTotalPercentage() - 100) < 0.1 ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    Total: {getTotalPercentage().toFixed(1)}%
-                  </span>
-                </div>
-                
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {customInstallments.map((installment, index) => (
-                    <div key={index} className="grid grid-cols-12 gap-2 items-center p-2 border rounded-lg">
-                      <div className="col-span-4">
-                        <Input
-                          placeholder="Descripción"
-                          value={installment.description}
-                          onChange={(e) => updateCustomInstallment(index, 'description', e.target.value)}
-                          className="text-xs"
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <Input
-                          type="number"
-                          placeholder="%"
-                          value={installment.percentage}
-                          onChange={(e) => updateCustomInstallment(index, 'percentage', Number(e.target.value))}
-                          className="text-xs"
-                          min="0"
-                          max="100"
-                          step="0.1"
-                        />
-                      </div>
-                      <div className="col-span-3">
-                        <div className="text-xs font-medium text-muted-foreground">
-                          ${installment.amount.toLocaleString('es-MX')}
+              <TooltipProvider>
+                <div className="space-y-4 border-t pt-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Edit3 className="h-4 w-4 text-primary" />
+                      <p className="text-sm font-medium">Plan Customizable</p>
+                    </div>
+                    <span className={`text-sm font-medium px-2 py-1 rounded-md ${
+                      Math.abs(getTotalPercentage() - 100) < 0.1 
+                        ? 'text-green-700 bg-green-100' 
+                        : 'text-red-700 bg-red-100'
+                    }`}>
+                      Total: {getTotalPercentage().toFixed(1)}%
+                    </span>
+                  </div>
+                  
+                  {/* Headers */}
+                  <div className="grid grid-cols-12 gap-3 px-2 py-1 bg-muted/50 rounded-md text-xs font-medium text-muted-foreground">
+                    <div className="col-span-4 flex items-center gap-1">
+                      Descripción
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="h-3 w-3" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Ej: Anticipo inicial, Pago intermedio</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <div className="col-span-2 flex items-center gap-1">
+                      Porcentaje
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="h-3 w-3" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>% del total que representa esta parcialidad</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <div className="col-span-3">Monto Calculado</div>
+                    <div className="col-span-2 flex items-center gap-1">
+                      Fecha de Vencimiento
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="h-3 w-3" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Para planes de diseño se sugieren 45 días máximo</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <div className="col-span-1">Acciones</div>
+                  </div>
+                  
+                  <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
+                    {customInstallments.map((installment, index) => (
+                      <div key={index} className="grid grid-cols-12 gap-3 items-center p-3 border rounded-lg bg-background hover:bg-muted/20 transition-colors">
+                        <div className="col-span-4">
+                          <Input
+                            placeholder="Ej: Anticipo inicial"
+                            value={installment.description}
+                            onChange={(e) => updateCustomInstallment(index, 'description', e.target.value)}
+                            className="text-sm"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              placeholder="0"
+                              value={installment.percentage}
+                              onChange={(e) => updateCustomInstallment(index, 'percentage', Number(e.target.value))}
+                              className="text-sm pr-6"
+                              min="0"
+                              max="100"
+                              step="0.1"
+                            />
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        <div className="col-span-3">
+                          <div className="text-sm font-medium text-primary bg-primary/5 px-2 py-1 rounded">
+                            ${installment.amount.toLocaleString('es-MX')}
+                          </div>
+                        </div>
+                        <div className="col-span-2">
+                          <DatePicker
+                            date={installment.due_date}
+                            onDateChange={(date) => updateCustomInstallment(index, 'due_date', date || new Date())}
+                            placeholder="Fecha"
+                            className="w-full text-sm"
+                          />
+                        </div>
+                        <div className="col-span-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeCustomInstallment(index)}
+                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Eliminar parcialidad</p>
+                            </TooltipContent>
+                          </Tooltip>
                         </div>
                       </div>
-                      <div className="col-span-2">
-                        <Input
-                          type="number"
-                          placeholder="Días"
-                          value={installment.due_days}
-                          onChange={(e) => updateCustomInstallment(index, 'due_days', Number(e.target.value))}
-                          className="text-xs"
-                          min="0"
-                        />
-                      </div>
-                      <div className="col-span-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeCustomInstallment(index)}
-                          className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
                 
-                <div className="flex gap-2">
+                <div className="flex gap-2 pt-2">
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
                     onClick={addCustomInstallment}
-                    className="flex items-center gap-1"
+                    className="flex items-center gap-2"
                   >
-                    <Plus className="h-3 w-3" />
+                    <Plus className="h-4 w-4" />
                     Agregar Parcialidad
                   </Button>
                   <Button
                     type="button"
                     variant="default"
-                    size="sm"
                     onClick={applyCustomPlan}
                     disabled={Math.abs(getTotalPercentage() - 100) > 0.1}
                     className="flex-1"
                   >
-                    Aplicar Plan Custom
+                    {Math.abs(getTotalPercentage() - 100) < 0.1 ? 'Aplicar Plan Customizable' : `Falta ${(100 - getTotalPercentage()).toFixed(1)}%`}
                   </Button>
                   <Button
                     type="button"
                     variant="ghost"
-                    size="sm"
                     onClick={() => setCustomMode(false)}
                   >
                     Cancelar
                   </Button>
                 </div>
-              </div>
+              </TooltipProvider>
             )}
 
             {selectedSuggestion && !customMode && (
