@@ -16,6 +16,7 @@ import { Progress } from '@/components/ui/progress';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { XMLUploader } from '@/components/XMLUploader';
 import { DocumentViewer } from '@/components/DocumentViewer';
+import { PaymentPlansUnified } from '@/components/PaymentPlansUnified';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -741,10 +742,11 @@ export default function Finances() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Resumen</TabsTrigger>
           <TabsTrigger value="expenses">Gastos</TabsTrigger>
           <TabsTrigger value="incomes">Ingresos</TabsTrigger>
+          <TabsTrigger value="payment-plans">Planes de Pago</TabsTrigger>
           <TabsTrigger value="accounts">Cuentas</TabsTrigger>
           <TabsTrigger value="cfdi">CFDI</TabsTrigger>
         </TabsList>
@@ -999,6 +1001,21 @@ export default function Finances() {
                   No se encontraron ingresos
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="payment-plans">
+          <Card>
+            <CardHeader>
+              <CardTitle>Planes de Pago</CardTitle>
+              <CardDescription>Gestión de planes de pago y cuotas</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PaymentPlansUnified 
+                mode="finance"
+                planType="all"
+              />
             </CardContent>
           </Card>
         </TabsContent>
