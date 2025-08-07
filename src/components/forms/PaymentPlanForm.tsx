@@ -182,7 +182,10 @@ export const PaymentPlanForm: React.FC<PaymentPlanFormProps> = ({
     
     // Si se actualiza el porcentaje, recalcular el monto
     if (field === 'percentage') {
-      updated[index].amount = Math.round((formData.total_amount * value) / 100);
+      // Normalizar el valor: convertir NaN y valores vacíos a 0
+      const normalizedValue = isNaN(value) || value === '' ? 0 : Number(value);
+      updated[index].percentage = normalizedValue;
+      updated[index].amount = Math.round((formData.total_amount * normalizedValue) / 100);
     }
     
     setCustomInstallments(updated);
@@ -389,7 +392,12 @@ export const PaymentPlanForm: React.FC<PaymentPlanFormProps> = ({
                                     type="number"
                                     placeholder="%"
                                     value={installment.percentage === 0 ? '' : installment.percentage}
-                                    onChange={(e) => updateCustomInstallment(index, 'percentage', Number(e.target.value))}
+                                    onChange={(e) => {
+                                      const inputValue = e.target.value;
+                                      // Normalizar entrada vacía a 0, mantener el valor numérico para otros casos
+                                      const normalizedValue = inputValue === '' ? 0 : Number(inputValue);
+                                      updateCustomInstallment(index, 'percentage', normalizedValue);
+                                    }}
                                     className="text-sm pr-6"
                                     min="0"
                                     max="100"
