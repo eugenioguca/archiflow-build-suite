@@ -163,31 +163,6 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
       setDeletingProjectId(projectId);
       console.log(`Iniciando eliminación del proyecto: ${projectName} (${projectId})`);
 
-      // Eliminar payment_plans relacionados
-      const { error: paymentPlansError } = await supabase
-        .from('payment_plans')
-        .delete()
-        .eq('client_project_id', projectId);
-
-      if (paymentPlansError) {
-        console.warn('Error eliminando planes de pago:', paymentPlansError);
-      }
-
-      // Eliminar payment_installments relacionados (aunque deberían eliminarse en cascada)
-      const { error: installmentsError } = await supabase
-        .from('payment_installments')
-        .delete()
-        .in('payment_plan_id', 
-          await supabase
-            .from('payment_plans')
-            .select('id')
-            .eq('client_project_id', projectId)
-            .then(res => res.data?.map(p => p.id) || [])
-        );
-
-      if (installmentsError) {
-        console.warn('Error eliminando cuotas de pago:', installmentsError);
-      }
 
       // Eliminar client_portal_chat del proyecto
       const { error: portalChatError } = await supabase
@@ -229,15 +204,6 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
         console.warn('Error eliminando gastos:', expensesError);
       }
 
-      // Eliminar incomes del proyecto
-      const { error: incomesError } = await supabase
-        .from('incomes')
-        .delete()
-        .eq('project_id', projectId);
-
-      if (incomesError) {
-        console.warn('Error eliminando ingresos:', incomesError);
-      }
 
       // Eliminar design_phases del proyecto
       const { error: designPhasesError } = await supabase

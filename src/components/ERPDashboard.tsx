@@ -117,11 +117,7 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
     const startOfCurrentMonth = startOfMonth(currentDate);
     const endOfCurrentMonth = endOfMonth(currentDate);
 
-    // Build queries with client-project filters
-    let incomeQuery = supabase.from('incomes').select('amount')
-      .gte('created_at', startOfCurrentMonth.toISOString())
-      .lte('created_at', endOfCurrentMonth.toISOString());
-    
+    // Build queries with client-project filters (simplified without incomes/payment_plans)
     let expenseQuery = supabase.from('expenses').select('amount')
       .gte('created_at', startOfCurrentMonth.toISOString())
       .lte('created_at', endOfCurrentMonth.toISOString());
@@ -129,20 +125,17 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
     let projectQuery = supabase.from('client_projects').select('id')
       .neq('status', 'completed');
 
-    // Get active payment plans instead of project budgets for real pipeline value
-    let pipelineQuery = supabase.from('payment_plans')
+    // Use project budgets for pipeline value
+    let pipelineQuery = supabase.from('project_budgets')
       .select('total_amount')
-      .eq('status', 'active');
+      .eq('status', 'approved');
 
     if (selectedClientId) {
-      incomeQuery = incomeQuery.eq('client_id', selectedClientId);
       expenseQuery = expenseQuery.eq('client_id', selectedClientId);
       projectQuery = projectQuery.eq('client_id', selectedClientId);
-      pipelineQuery = pipelineQuery.eq('client_project_id', selectedProjectId || null);
     }
 
     if (selectedProjectId) {
-      incomeQuery = incomeQuery.eq('project_id', selectedProjectId);
       expenseQuery = expenseQuery.eq('project_id', selectedProjectId);
       projectQuery = projectQuery.eq('id', selectedProjectId);
       pipelineQuery = pipelineQuery.eq('client_project_id', selectedProjectId);

@@ -35,9 +35,6 @@ import { es } from 'date-fns/locale';
 
 // Import our new professional components
 import { ProjectProgressCard } from '@/components/ProjectProgressCard';
-import { PaymentHistoryPanel } from '@/components/PaymentHistoryPanel';
-import { PaymentPlanViewer } from '@/components/PaymentPlanViewer';
-import { PaymentPlansViewer } from '@/components/PaymentPlansViewer';
 import { DocumentsPanel } from '@/components/DocumentsPanel';
 import { ProgressPhotosCarousel } from '@/components/ProgressPhotosCarousel';
 import { ClientPortalChat } from '@/components/ClientPortalChat';
@@ -51,7 +48,7 @@ import { ClientNotificationsPanel } from '@/components/ClientNotificationsPanel'
 import { ClientProgressPhotosViewer } from '@/components/ClientProgressPhotosViewer';
 import { ClientDocumentHub } from '@/components/ClientDocumentHub';
 import { ClientInvoiceViewer } from '@/components/ClientInvoiceViewer';
-import { ClientPaymentProofUploader } from '@/components/ClientPaymentProofUploader';
+
 import ClientLayout from '@/components/ClientLayout';
 import ClientPortalModern from '@/components/ClientPortalModern';
 

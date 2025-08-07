@@ -13,9 +13,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { SmartCRM } from "@/components/SmartCRM";
 import { ClientProjectManager } from "@/components/ClientProjectManager";
 import { RequiredDocumentsManager } from "@/components/RequiredDocumentsManager";
-import { PaymentPlanBuilder } from "@/components/PaymentPlanBuilder";
-import { PaymentPlanManager } from "@/components/PaymentPlanManager";
-import { PaymentStatusIndicator } from "@/components/PaymentStatusIndicator";
 import { SalesDesignCalendar } from "@/components/SalesDesignCalendar";
 import { SalesExecutiveDashboard } from "@/components/SalesExecutiveDashboard";
 import { ContractTemplateManager } from "@/components/ContractTemplateManager";
@@ -419,10 +416,10 @@ export default function Sales() {
 
       {/* Tabs principales */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-7 w-full">
+        <TabsList className="grid grid-cols-6 w-full">
           <TabsTrigger value="list">Smart View</TabsTrigger>
           <TabsTrigger value="pipeline">Pipeline Kanban</TabsTrigger>
-          <TabsTrigger value="payment-status">Estado Pagos</TabsTrigger>
+          
           <TabsTrigger value="calendar">Calendario</TabsTrigger>
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="contracts">Contratos</TabsTrigger>
@@ -495,29 +492,6 @@ export default function Sales() {
                                   )}
                                 </div>
                               </div>
-                              {['en_contacto', 'cliente_cerrado'].includes(project.sales_pipeline_stage) && (
-                                <div className="flex items-center justify-between text-xs">
-                                  <span className="text-muted-foreground flex items-center gap-1">
-                                    <DollarSign className="h-3 w-3" />
-                                    Plan
-                                  </span>
-                                  <PaymentStatusIndicator 
-                                    clientProjectId={project.id}
-                                    size="sm"
-                                  />
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          
-                          {/* Indicador de estado de pagos */}
-                          {['en_contacto', 'cliente_cerrado'].includes(project.sales_pipeline_stage) && (
-                            <div className="space-y-1">
-                              <div className="text-xs text-muted-foreground mb-1">Estado de Pagos</div>
-                              <PaymentStatusIndicator 
-                                clientProjectId={project.id}
-                                size="sm"
-                              />
                             </div>
                           )}
                           
@@ -707,23 +681,6 @@ export default function Sales() {
           </div>
         </TabsContent>
 
-        {/* Estado de Pagos - Nueva pestaña */}
-        <TabsContent value="payment-status">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-primary" />
-                Estado de Planes de Pago
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Vista unificada del estado de pagos por cliente/proyecto (solo lectura para ventas)
-              </p>
-            </CardHeader>
-            <CardContent>
-              <PaymentPlanManager />
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         {/* Calendario de Diseño */}
         <TabsContent value="calendar">
@@ -784,7 +741,7 @@ export default function Sales() {
           
           {selectedProject && (
             <Tabs defaultValue="crm" className="w-full flex flex-col flex-1 overflow-hidden">
-              <TabsList className="grid grid-cols-6 w-full flex-shrink-0 mx-6">
+              <TabsList className="grid grid-cols-5 w-full flex-shrink-0 mx-6">
                 <TabsTrigger value="crm">CRM & Información</TabsTrigger>
                 <TabsTrigger 
                   value="required-docs"
@@ -799,13 +756,6 @@ export default function Sales() {
                   className={selectedProject.sales_pipeline_stage === 'nuevo_lead' ? 'opacity-50' : ''}
                 >
                   Expediente del Proyecto
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="payments"
-                  disabled={!['en_contacto', 'cliente_cerrado'].includes(selectedProject.sales_pipeline_stage)}
-                  className={!['en_contacto', 'cliente_cerrado'].includes(selectedProject.sales_pipeline_stage) ? 'opacity-50' : ''}
-                >
-                  Plan de Pagos
                 </TabsTrigger>
                 <TabsTrigger value="projects">Gestión de Proyectos</TabsTrigger>
                 <TabsTrigger value="chat">Chat Cliente</TabsTrigger>
@@ -911,41 +861,6 @@ export default function Sales() {
                 />
               </TabsContent>
 
-              <TabsContent value="payments" className="px-6 pb-6 overflow-y-auto flex-1">
-                {['en_contacto', 'cliente_cerrado'].includes(selectedProject.sales_pipeline_stage) ? (
-                  <div className="space-y-6">
-                    {/* Plan Builder para crear/gestionar planes */}
-                    <PaymentPlanBuilder
-                      clientProjectId={selectedProject.id}
-                      clientName={selectedProject.clients?.full_name || ''}
-                      onPlanUpdate={handleDocumentUpdate}
-                    />
-                    
-                    {/* Vista unificada de estado de pagos */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <CheckCircle className="h-5 w-5 text-green-600" />
-                          Estado Actual de Pagos
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <PaymentPlanManager />
-                      </CardContent>
-                    </Card>
-                  </div>
-                ) : (
-                  <Card>
-                    <CardContent className="p-8 text-center">
-                      <DollarSign className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                      <h3 className="text-lg font-medium">Plan de pagos no disponible</h3>
-                      <p className="text-muted-foreground">
-                        El plan de pagos se activa cuando el cliente está en fase "En Contacto" o "Cliente Cerrado"
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
 
               <TabsContent value="projects" className="px-6 pb-6 overflow-y-auto flex-1">
                 <ClientProjectManager

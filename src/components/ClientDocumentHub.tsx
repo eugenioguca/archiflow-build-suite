@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ClientDocumentUploader } from './ClientDocumentUploader';
-import { ClientPaymentProofUploader } from './ClientPaymentProofUploader';
+
 import { ClientInvoiceViewer } from './ClientInvoiceViewer';
 import { DocumentViewer } from './DocumentViewer';
 import { supabase } from '@/integrations/supabase/client';
@@ -323,7 +323,7 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false, previe
         </CardHeader>
         <CardContent className={compact ? 'pt-0' : ''}>
           <Tabs defaultValue="documents" className="w-full">
-            <TabsList className={`grid w-full ${compact ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'}`}>
+            <TabsList className={`grid w-full ${compact ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3'}`}>
               <TabsTrigger value="documents" className="flex items-center gap-1 text-xs md:text-sm">
                 <FileText className="h-3 w-3 md:h-4 md:w-4" />
                 <span className={compact ? 'text-xs' : 'hidden sm:inline'}>Documentos</span>
@@ -334,10 +334,6 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false, previe
                   <TabsTrigger value="upload" className="flex items-center gap-1 text-xs md:text-sm">
                     <Upload className="h-3 w-3 md:h-4 md:w-4" />
                     Subir
-                  </TabsTrigger>
-                  <TabsTrigger value="payments" className="flex items-center gap-1 text-xs md:text-sm">
-                    <CreditCard className="h-3 w-3 md:h-4 md:w-4" />
-                    Pagos
                   </TabsTrigger>
                   <TabsTrigger value="invoices" className="flex items-center gap-1 text-xs md:text-sm">
                     <Receipt className="h-3 w-3 md:h-4 md:w-4" />
@@ -442,12 +438,6 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false, previe
                   />
                 </TabsContent>
 
-                <TabsContent value="payments" className="mt-6">
-                  <ClientPaymentProofUploader 
-                    clientId={clientId} 
-                    projectId={projectId}
-                  />
-                </TabsContent>
 
                 <TabsContent value="invoices" className="mt-6">
                   <ClientInvoiceViewer 

@@ -39,8 +39,6 @@ import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { ClientDocumentHub } from './ClientDocumentHub';
 import { downloadDocument } from '@/lib/documentUtils';
-import { PaymentPlansViewer } from './PaymentPlansViewer';
-import { PaymentHistoryPanel } from './PaymentHistoryPanel';
 import { ProgressPhotosCarousel } from './ProgressPhotosCarousel';
 import { SuperiorClientPortalChat } from './SuperiorClientPortalChat';
 import { ClientAppointmentsCalendar } from './ClientAppointmentsCalendar';
@@ -162,28 +160,30 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
 
   const fetchPaidAmount = async (projectId: string) => {
     try {
-      // First get payment plan IDs for this project
-      const { data: paymentPlans } = await supabase
-        .from('payment_plans')
+      // Since payment plans were removed, get payments from client_payments table
+      const { data: profile } = await supabase
+        .from('profiles')
         .select('id')
-        .eq('client_project_id', projectId)
-        .eq('status', 'active');
+        .eq('user_id', user?.id)
+        .single();
 
-      if (!paymentPlans || paymentPlans.length === 0) {
-        setPaidAmount(0);
-        return;
-      }
+      if (!profile) return;
 
-      const planIds = paymentPlans.map(plan => plan.id);
+      const { data: client } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('profile_id', profile.id)
+        .single();
 
-      // Then get paid installments for those plans
-      const { data: installments } = await supabase
-        .from('payment_installments')
-        .select('amount')
-        .eq('status', 'paid')
-        .in('payment_plan_id', planIds);
+      if (!client) return;
 
-      const total = installments?.reduce((sum, inst) => sum + (inst.amount || 0), 0) || 0;
+      // Get paid amount from client_payments
+      const { data: payments } = await supabase
+        .from('client_payments')
+        .select('amount_paid')
+        .eq('client_id', client.id);
+
+      const total = payments?.reduce((sum, payment) => sum + (payment.amount_paid || 0), 0) || 0;
       setPaidAmount(total);
     } catch (error) {
       console.error('Error fetching paid amount:', error);
@@ -443,14 +443,10 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
 
         {/* Navigation Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6 mb-6">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
             <TabsTrigger value="overview" className="text-xs">
               <TrendingUp className="h-4 w-4 mb-1" />
               Resumen
-            </TabsTrigger>
-            <TabsTrigger value="payments" className="text-xs">
-              <DollarSign className="h-4 w-4 mb-1" />
-              Pagos
             </TabsTrigger>
             <TabsTrigger value="documents" className="text-xs">
               <FileText className="h-4 w-4 mb-1" />
@@ -489,13 +485,6 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
             </Card>
           </TabsContent>
 
-          <TabsContent value="payments">
-            <div className="space-y-4">
-              {selectedProject && (
-                <PaymentPlansViewer clientId={selectedProject.client_id} projectId={selectedProject.id} />
-              )}
-            </div>
-          </TabsContent>
 
           <TabsContent value="documents">
             <div className="space-y-4">

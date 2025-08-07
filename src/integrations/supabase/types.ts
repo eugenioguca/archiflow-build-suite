@@ -257,13 +257,6 @@ export type Database = {
             referencedRelation: "client_projects"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "fk_budget_change_log_project"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
-          },
         ]
       }
       budget_items: {
@@ -393,13 +386,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_cash_project_id"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
-          },
-          {
             foreignKeyName: "fk_cash_responsible_user"
             columns: ["responsible_user_id"]
             isOneToOne: false
@@ -518,13 +504,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "cfdi_documents_income_id_fkey"
-            columns: ["income_id"]
-            isOneToOne: false
-            referencedRelation: "incomes"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "cfdi_documents_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
@@ -589,13 +568,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "client_documents_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
-          },
-          {
             foreignKeyName: "client_documents_uploaded_by_fkey"
             columns: ["uploaded_by"]
             isOneToOne: false
@@ -657,13 +629,6 @@ export type Database = {
           upload_date?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "client_payment_proofs_payment_installment_id_fkey"
-            columns: ["payment_installment_id"]
-            isOneToOne: false
-            referencedRelation: "payment_installments"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "client_payment_proofs_reviewed_by_fkey"
             columns: ["reviewed_by"]
@@ -774,13 +739,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "client_portal_chat_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
-          },
-          {
             foreignKeyName: "client_portal_chat_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
@@ -840,13 +798,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "client_projects"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "client_portal_notifications_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
           },
         ]
       }
@@ -1411,13 +1362,6 @@ export type Database = {
             referencedRelation: "client_projects"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "construction_budget_items_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
-          },
         ]
       }
       construction_equipment: {
@@ -1567,13 +1511,6 @@ export type Database = {
             referencedRelation: "client_projects"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "construction_equipment_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
-          },
         ]
       }
       construction_milestones: {
@@ -1655,13 +1592,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "client_projects"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "construction_milestones_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
           },
           {
             foreignKeyName: "construction_milestones_responsible_person_id_fkey"
@@ -1775,13 +1705,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "client_projects"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "construction_phases_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
           },
         ]
       }
@@ -1900,13 +1823,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "client_projects"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "construction_teams_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
           },
           {
             foreignKeyName: "construction_teams_team_leader_id_fkey"
@@ -2093,13 +2009,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "client_projects"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "construction_timeline_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
           },
         ]
       }
@@ -2600,13 +2509,6 @@ export type Database = {
             referencedRelation: "client_projects"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "design_phases_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
-          },
         ]
       }
       documents: {
@@ -2684,13 +2586,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "client_projects"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "documents_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
           },
           {
             foreignKeyName: "documents_uploaded_by_fkey"
@@ -2984,13 +2879,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "expenses_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
-          },
-          {
             foreignKeyName: "expenses_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
@@ -3059,13 +2947,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "client_projects"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "external_team_members_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
           },
         ]
       }
@@ -3149,116 +3030,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      incomes: {
-        Row: {
-          amount: number
-          category: Database["public"]["Enums"]["income_category"]
-          cfdi_document_id: string | null
-          client_id: string | null
-          complement_sent: boolean | null
-          created_at: string
-          created_by: string
-          description: string
-          forma_pago: string | null
-          id: string
-          invoice_date: string | null
-          invoice_number: string | null
-          payment_date: string | null
-          payment_status:
-            | Database["public"]["Enums"]["income_payment_status"]
-            | null
-          project_id: string | null
-          requires_complement: boolean | null
-          rfc_receptor: string | null
-          status_cfdi: string | null
-          tax_amount: number | null
-          updated_at: string
-          uso_cfdi: string | null
-          uuid_fiscal: string | null
-        }
-        Insert: {
-          amount: number
-          category: Database["public"]["Enums"]["income_category"]
-          cfdi_document_id?: string | null
-          client_id?: string | null
-          complement_sent?: boolean | null
-          created_at?: string
-          created_by: string
-          description: string
-          forma_pago?: string | null
-          id?: string
-          invoice_date?: string | null
-          invoice_number?: string | null
-          payment_date?: string | null
-          payment_status?:
-            | Database["public"]["Enums"]["income_payment_status"]
-            | null
-          project_id?: string | null
-          requires_complement?: boolean | null
-          rfc_receptor?: string | null
-          status_cfdi?: string | null
-          tax_amount?: number | null
-          updated_at?: string
-          uso_cfdi?: string | null
-          uuid_fiscal?: string | null
-        }
-        Update: {
-          amount?: number
-          category?: Database["public"]["Enums"]["income_category"]
-          cfdi_document_id?: string | null
-          client_id?: string | null
-          complement_sent?: boolean | null
-          created_at?: string
-          created_by?: string
-          description?: string
-          forma_pago?: string | null
-          id?: string
-          invoice_date?: string | null
-          invoice_number?: string | null
-          payment_date?: string | null
-          payment_status?:
-            | Database["public"]["Enums"]["income_payment_status"]
-            | null
-          project_id?: string | null
-          requires_complement?: boolean | null
-          rfc_receptor?: string | null
-          status_cfdi?: string | null
-          tax_amount?: number | null
-          updated_at?: string
-          uso_cfdi?: string | null
-          uuid_fiscal?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "incomes_cfdi_document_id_fkey"
-            columns: ["cfdi_document_id"]
-            isOneToOne: false
-            referencedRelation: "cfdi_documents"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "incomes_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "incomes_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "client_projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "incomes_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
-          },
-        ]
       }
       invoice_cancellations: {
         Row: {
@@ -3697,13 +3468,6 @@ export type Database = {
             referencedRelation: "client_projects"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "material_requirements_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
-          },
         ]
       }
       mexican_states: {
@@ -3998,13 +3762,6 @@ export type Database = {
             referencedRelation: "client_projects"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "payment_complements_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
-          },
         ]
       }
       payment_complements_tracking: {
@@ -4100,129 +3857,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "client_payments"
             referencedColumns: ["id"]
-          },
-        ]
-      }
-      payment_installments: {
-        Row: {
-          amount: number
-          created_at: string
-          description: string | null
-          due_date: string
-          id: string
-          installment_number: number
-          paid_date: string | null
-          payment_plan_id: string
-          reference_number: string | null
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          amount: number
-          created_at?: string
-          description?: string | null
-          due_date: string
-          id?: string
-          installment_number: number
-          paid_date?: string | null
-          payment_plan_id: string
-          reference_number?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          description?: string | null
-          due_date?: string
-          id?: string
-          installment_number?: number
-          paid_date?: string | null
-          payment_plan_id?: string
-          reference_number?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "payment_installments_payment_plan_id_fkey"
-            columns: ["payment_plan_id"]
-            isOneToOne: false
-            referencedRelation: "payment_plans"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payment_installments_payment_plan_id_fkey"
-            columns: ["payment_plan_id"]
-            isOneToOne: false
-            referencedRelation: "payment_plans_with_sales"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      payment_plans: {
-        Row: {
-          client_project_id: string
-          created_at: string
-          created_by: string
-          currency: string
-          end_date: string | null
-          id: string
-          notes: string | null
-          payment_frequency: string
-          plan_name: string
-          plan_type: Database["public"]["Enums"]["plan_type"] | null
-          start_date: string
-          status: string
-          total_amount: number
-          updated_at: string
-        }
-        Insert: {
-          client_project_id: string
-          created_at?: string
-          created_by: string
-          currency?: string
-          end_date?: string | null
-          id?: string
-          notes?: string | null
-          payment_frequency?: string
-          plan_name: string
-          plan_type?: Database["public"]["Enums"]["plan_type"] | null
-          start_date: string
-          status?: string
-          total_amount?: number
-          updated_at?: string
-        }
-        Update: {
-          client_project_id?: string
-          created_at?: string
-          created_by?: string
-          currency?: string
-          end_date?: string | null
-          id?: string
-          notes?: string | null
-          payment_frequency?: string
-          plan_name?: string
-          plan_type?: Database["public"]["Enums"]["plan_type"] | null
-          start_date?: string
-          status?: string
-          total_amount?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "payment_plans_client_project_id_fkey"
-            columns: ["client_project_id"]
-            isOneToOne: false
-            referencedRelation: "client_projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payment_plans_client_project_id_fkey"
-            columns: ["client_project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
           },
         ]
       }
@@ -4646,13 +4280,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "progress_photos_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
-          },
-          {
             foreignKeyName: "progress_photos_taken_by_fkey"
             columns: ["taken_by"]
             isOneToOne: false
@@ -4726,13 +4353,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "client_projects"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_budgets_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
           },
         ]
       }
@@ -4859,13 +4479,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "client_projects"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_team_members_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
           },
           {
             foreignKeyName: "project_team_members_user_id_fkey"
@@ -5195,13 +4808,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "client_projects"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quality_inspections_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
           },
         ]
       }
@@ -5813,13 +5419,6 @@ export type Database = {
             referencedRelation: "client_projects"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "treasury_payment_references_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
-          },
         ]
       }
       treasury_transactions: {
@@ -5950,13 +5549,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "client_projects"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_treasury_project_id"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
           },
           {
             foreignKeyName: "fk_treasury_supplier_id"
@@ -6174,93 +5766,11 @@ export type Database = {
             referencedRelation: "client_projects"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "work_reports_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
-          },
         ]
       }
     }
     Views: {
-      financial_summary_by_client_project: {
-        Row: {
-          client_id: string | null
-          client_name: string | null
-          construction_budget: number | null
-          estimated_budget: number | null
-          net_profit: number | null
-          profit_margin: number | null
-          project_id: string | null
-          project_name: string | null
-          project_status: Database["public"]["Enums"]["client_status"] | null
-          sales_pipeline_stage:
-            | Database["public"]["Enums"]["sales_pipeline_stage"]
-            | null
-          total_expenses: number | null
-          total_income: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "client_projects_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      payment_plans_with_sales: {
-        Row: {
-          client_email: string | null
-          client_id: string | null
-          client_name: string | null
-          client_phone: string | null
-          client_project_id: string | null
-          created_at: string | null
-          created_by: string | null
-          currency: string | null
-          end_date: string | null
-          id: string | null
-          notes: string | null
-          payment_frequency: string | null
-          plan_name: string | null
-          project_name: string | null
-          project_status: Database["public"]["Enums"]["client_status"] | null
-          sales_pipeline_stage:
-            | Database["public"]["Enums"]["sales_pipeline_stage"]
-            | null
-          start_date: string | null
-          status: string | null
-          total_amount: number | null
-          updated_at: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "client_projects_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payment_plans_client_project_id_fkey"
-            columns: ["client_project_id"]
-            isOneToOne: false
-            referencedRelation: "client_projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payment_plans_client_project_id_fkey"
-            columns: ["client_project_id"]
-            isOneToOne: false
-            referencedRelation: "financial_summary_by_client_project"
-            referencedColumns: ["project_id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       calculate_complement_due_date: {
@@ -6270,16 +5780,6 @@ export type Database = {
       create_default_design_phases: {
         Args: { project_id_param: string }
         Returns: undefined
-      }
-      create_payment_plan_from_sales: {
-        Args: {
-          p_client_project_id: string
-          p_plan_name: string
-          p_total_amount: number
-          p_currency?: string
-          p_installments_data?: Json
-        }
-        Returns: string
       }
       delete_client_cascade: {
         Args: { client_id_param: string }
@@ -6362,17 +5862,6 @@ export type Database = {
           file_size: number
           description: string
           uploader_name: string
-        }[]
-      }
-      get_project_payment_status: {
-        Args: { p_project_id: string }
-        Returns: {
-          total_amount: number
-          paid_amount: number
-          pending_amount: number
-          overdue_amount: number
-          payment_percentage: number
-          status: string
         }[]
       }
       get_user_branch_offices: {

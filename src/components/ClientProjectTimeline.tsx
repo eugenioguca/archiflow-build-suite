@@ -78,15 +78,8 @@ export const ClientProjectTimeline: React.FC<ClientProjectTimelineProps> = ({
           .eq('project_id', projectId)
           .order('phase_order'),
 
-        // Obtener pagos del proyecto
-        supabase
-          .from('payment_installments')
-          .select(`
-            id, installment_number, amount, due_date, status, description,
-            payment_plans!inner(client_project_id)
-          `)
-          .eq('payment_plans.client_project_id', projectId)
-          .order('installment_number'),
+        // Skip payment installments (payment plans removed)
+        Promise.resolve({ data: [], error: null }),
 
         // Obtener fotos de progreso (temporalmente deshabilitado)
         Promise.resolve({ data: [], error: null })

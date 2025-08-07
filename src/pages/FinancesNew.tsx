@@ -6,7 +6,7 @@ import PPDMonitoringDashboard from '@/components/PPDMonitoringDashboard';
 import { PaymentComplementsDashboard } from '@/components/PaymentComplementsDashboard';
 import ProfitabilityAnalysis from '@/components/ProfitabilityAnalysis';
 import { ElectronicInvoicingDashboard } from '@/components/ElectronicInvoicingDashboard';
-import { FinancePaymentManager } from '@/components/FinancePaymentManager';
+
 import { supabase } from '@/integrations/supabase/client';
 import { 
   LayoutDashboard, 
@@ -40,7 +40,7 @@ const FinancesNew: React.FC = () => {
 
       <Tabs defaultValue="dashboard" className="space-y-3">
         {/* MENÚ LIMPIO - Solo 6 funcionalidades esenciales */}
-        <TabsList className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 w-full h-auto gap-1 p-1 bg-muted">
+        <TabsList className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-5 w-full h-auto gap-1 p-1 bg-muted">
           <TabsTrigger value="dashboard" className="flex items-center gap-2 py-2 px-3 text-sm">
             <LayoutDashboard className="h-4 w-4" />
             <span>Dashboard</span>
@@ -52,10 +52,6 @@ const FinancesNew: React.FC = () => {
           <TabsTrigger value="materials" className="flex items-center gap-2 py-2 px-3 text-sm">
             <Package className="h-4 w-4" />
             <span>Materiales</span>
-          </TabsTrigger>
-          <TabsTrigger value="payment-plans" className="flex items-center gap-2 py-2 px-3 text-sm">
-            <CreditCard className="h-4 w-4" />
-            <span>Planes Pago</span>
           </TabsTrigger>
           <TabsTrigger value="ppd" className="flex items-center gap-2 py-2 px-3 text-sm">
             <AlertTriangle className="h-4 w-4" />
@@ -102,18 +98,6 @@ const FinancesNew: React.FC = () => {
           />
         </TabsContent>
 
-        <TabsContent value="payment-plans" className="space-y-4">
-          <FinancePaymentManager 
-            selectedClientId={selectedClientId}
-            selectedProjectId={selectedProjectId}
-            onClientChange={setSelectedClientId}
-            onProjectChange={setSelectedProjectId}
-            onClearFilters={() => {
-              setSelectedClientId(undefined);
-              setSelectedProjectId(undefined);
-            }}
-          />
-        </TabsContent>
 
         <TabsContent value="ppd" className="space-y-4">
           <GlobalFilters
