@@ -6185,18 +6185,20 @@ export type Database = {
         }[]
       }
       get_project_cumulative_documents: {
-        Args: { project_id_param: string; user_department?: string }
+        Args:
+          | { p_project_id: string }
+          | { project_id_param: string; user_department?: string }
         Returns: {
           id: string
           name: string
           file_path: string
-          department: string
-          uploaded_by: string
-          created_at: string
           file_type: string
           file_size: number
-          description: string
+          created_at: string
+          document_type: string
+          department: string
           uploader_name: string
+          source: string
         }[]
       }
       get_user_branch_offices: {

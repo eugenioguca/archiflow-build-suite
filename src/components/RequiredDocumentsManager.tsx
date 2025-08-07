@@ -186,22 +186,46 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
     setUploadingDoc(docType);
     
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${clientProjectId}_${docType}_${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      // Validate user first
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error('Usuario no autenticado');
+      }
 
-      // Upload file to Supabase storage (correct bucket)
+      // Check user profile exists and has proper role
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError || !profile) {
+        throw new Error('Perfil de usuario no encontrado');
+      }
+
+      if (!['admin', 'employee'].includes(profile.role)) {
+        throw new Error('No tiene permisos para subir documentos');
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${clientProject.client_id}/${clientProjectId}_${docType}_${Date.now()}.${fileExt}`;
+
+      // Upload file to Supabase storage using correct folder structure
       const { error: uploadError } = await supabase.storage
         .from('client-documents')
-        .upload(filePath, file);
+        .upload(fileName, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw new Error(`Error al subir archivo: ${uploadError.message}`);
+      }
 
       // Map document types to match ClientDocumentHub expectations
       const documentTypeMapping: Record<string, string> = {
         'curp': 'curp',
         'fiscal_certificate': 'constancia_situacion_fiscal', 
-        'contract': 'contract'
+        'contract': 'contract',
+        'plan_pagos': 'plan_pagos'
       };
 
       // Insert into client_documents table for hub integration
@@ -212,13 +236,16 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
           project_id: clientProjectId,
           document_name: file.name,
           document_type: documentTypeMapping[docType] || docType,
-          file_path: filePath,
+          file_path: fileName,
           file_type: file.type,
           file_size: file.size,
-          uploaded_by: (await supabase.auth.getUser()).data.user?.id
+          uploaded_by: user.id
         });
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Insert error:', insertError);
+        throw new Error(`Error al guardar documento: ${insertError.message}`);
+      }
 
       // Update client_projects record for backwards compatibility
       const updates: any = {};
@@ -228,12 +255,15 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
           updates.curp = 'uploaded'; // Set a value to indicate it's uploaded
           break;
         case 'fiscal_certificate':
-          updates.constancia_situacion_fiscal_url = filePath;
+          updates.constancia_situacion_fiscal_url = fileName;
           updates.constancia_situacion_fiscal_uploaded = true;
           break;
         case 'contract':
-          updates.contract_url = filePath;
+          updates.contract_url = fileName;
           updates.contract_uploaded = true;
+          break;
+        case 'plan_pagos':
+          updates.plan_pagos_url = fileName;
           break;
       }
 
