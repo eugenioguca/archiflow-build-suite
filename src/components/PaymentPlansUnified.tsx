@@ -243,9 +243,9 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
     if (!paymentDialog) return;
 
     try {
-      console.log('Starting simplified payment marking...');
+      console.log('Starting definitive payment marking process...');
 
-      // Step 1: Update payment installment status only
+      // Step 1: Update payment installment status
       const { error: updateError } = await supabase
         .from('payment_installments')
         .update({
@@ -260,10 +260,71 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
         throw updateError;
       }
 
-      console.log('Payment installment updated successfully');
-      toast.success("Cuota marcada como pagada correctamente");
+      console.log('Installment updated successfully');
 
-      // Refresh data immediately
+      // Step 2: Get current user profile for created_by
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (profileError || !profile) {
+        console.error('Error getting profile:', profileError);
+        throw new Error('Profile not found');
+      }
+
+      console.log('Profile found:', profile.id);
+
+      // Step 3: Get plan data using existing paymentPlans (from payment_plans_with_sales view)
+      const plan = paymentPlans.find(p => p.id === paymentDialog.installment.payment_plan_id);
+      if (!plan) {
+        throw new Error('Payment plan not found in existing data');
+      }
+
+      console.log('Plan data:', {
+        client_id: plan.client_id,
+        client_project_id: plan.client_project_id,
+        plan_name: plan.plan_name
+      });
+
+      // Step 4: Validate required data from view
+      if (!plan.client_id) {
+        throw new Error('Client ID not available in payment plan data');
+      }
+
+      if (!plan.client_project_id) {
+        throw new Error('Project ID not available in payment plan data');
+      }
+
+      // Step 5: Create automatic income entry
+      const incomeData = {
+        client_id: plan.client_id,
+        project_id: plan.client_project_id,
+        category: 'construction_service' as const,
+        amount: paymentDialog.installment.amount,
+        description: `Pago de cuota ${paymentDialog.installment.installment_number} - Plan: ${plan.plan_name}`,
+        expense_date: paymentForm.paid_date,
+        reference_number: paymentForm.reference_number,
+        created_by: profile.id
+      };
+
+      console.log('Creating income with data:', incomeData);
+
+      const { error: incomeError } = await supabase
+        .from('incomes')
+        .insert([incomeData]);
+
+      if (incomeError) {
+        console.error('Error creating income:', incomeError);
+        throw incomeError;
+      }
+
+      console.log('Income created successfully');
+
+      toast.success("Cuota marcada como pagada e ingreso registrado correctamente");
+
+      // Step 6: Refresh data
       if (selectedPlan) {
         await fetchInstallments(selectedPlan.id);
       }
