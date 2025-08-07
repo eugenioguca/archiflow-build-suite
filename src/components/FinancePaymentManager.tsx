@@ -2,13 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Calendar, DollarSign, Clock, CheckCircle, AlertTriangle, Search, Filter, CreditCard, Eye, TrendingUp, Users, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,12 +40,6 @@ interface PaymentInstallment {
   notes?: string;
 }
 
-interface PaymentDialogData {
-  installment: PaymentInstallment;
-  planName: string;
-  clientName: string;
-}
-
 interface FinancePaymentManagerProps {
   selectedClientId?: string;
   selectedProjectId?: string;
@@ -73,14 +62,7 @@ export const FinancePaymentManager: React.FC<FinancePaymentManagerProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [planTypeFilter, setPlanTypeFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
-  
-  // Dialog states
-  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
-  const [paymentDialogData, setPaymentDialogData] = useState<PaymentDialogData | null>(null);
-  const [paymentForm, setPaymentForm] = useState({
-    payment_date: new Date().toISOString().split('T')[0]
-  });
+  const [expandedPlans, setExpandedPlans] = useState<Set<string>>(new Set());
 
   // Fetch payment plans with direct queries
   const fetchPaymentPlans = async () => {
@@ -183,19 +165,15 @@ export const FinancePaymentManager: React.FC<FinancePaymentManagerProps> = ({
     }
   };
 
-  // Mark installment as paid
-  const handleMarkAsPaid = async () => {
-    if (!paymentDialogData) return;
-
+  // Mark installment as paid directly (no dialog)
+  const handleMarkAsPaid = async (installment: PaymentInstallment) => {
     try {
-      const installment = paymentDialogData.installment;
-      
       // Update installment status - copying exact working logic from PaymentPlanBuilder
       const { error: updateError } = await supabase
         .from('payment_installments')
         .update({
           status: 'paid',
-          paid_date: paymentForm.payment_date || new Date().toISOString().split('T')[0]
+          paid_date: new Date().toISOString().split('T')[0]
         })
         .eq('id', installment.id);
 
@@ -218,7 +196,7 @@ export const FinancePaymentManager: React.FC<FinancePaymentManagerProps> = ({
         .insert({
           description: `Pago parcialidad ${installment.installment_number} - ${plan.plan_name}`,
           amount: installment.amount,
-          expense_date: paymentForm.payment_date || new Date().toISOString().split('T')[0],
+          expense_date: new Date().toISOString().split('T')[0],
           category: 'other',
           created_by: (await supabase.auth.getUser()).data.user?.id
         });
@@ -230,35 +208,24 @@ export const FinancePaymentManager: React.FC<FinancePaymentManagerProps> = ({
       }
 
       toast.success('Pago registrado exitosamente');
-      setIsPaymentDialogOpen(false);
-      setPaymentDialogData(null);
-      setPaymentForm({
-        payment_date: new Date().toISOString().split('T')[0]
-      });
-      
-      // Refresh data
-      fetchPaymentPlans();
+      await fetchAllInstallments(paymentPlans.map(p => p.id));
     } catch (error) {
       console.error('Error in handleMarkAsPaid:', error);
       toast.error('Error al procesar pago');
     }
   };
 
-  // Open payment dialog
-  const openPaymentDialog = (installment: PaymentInstallment) => {
-    const plan = paymentPlans.find(p => p.id === installment.payment_plan_id);
-    if (!plan) return;
-
-    setPaymentDialogData({
-      installment,
-      planName: plan.plan_name,
-      clientName: plan.client_name
-    });
-    setPaymentForm({
-      payment_date: new Date().toISOString().split('T')[0]
-    });
-    setIsPaymentDialogOpen(true);
+  // Toggle plan expansion
+  const togglePlanExpansion = (planId: string) => {
+    const newExpanded = new Set(expandedPlans);
+    if (newExpanded.has(planId)) {
+      newExpanded.delete(planId);
+    } else {
+      newExpanded.add(planId);
+    }
+    setExpandedPlans(newExpanded);
   };
+
 
   // Filter plans based on search and filters
   const filteredPlans = paymentPlans.filter(plan => {
@@ -393,24 +360,6 @@ export const FinancePaymentManager: React.FC<FinancePaymentManagerProps> = ({
               Administra los pagos de parcialidades de planes de pago
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant={viewMode === 'table' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('table')}
-            >
-              <FileText className="h-4 w-4 mr-1" />
-              Tabla
-            </Button>
-            <Button
-              variant={viewMode === 'cards' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('cards')}
-            >
-              <Users className="h-4 w-4 mr-1" />
-              Tarjetas
-            </Button>
-          </div>
         </div>
       </div>
 
@@ -511,199 +460,128 @@ export const FinancePaymentManager: React.FC<FinancePaymentManagerProps> = ({
         </div>
       </Card>
 
-      {/* Plans Content */}
-      {viewMode === 'table' ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Planes de Pago</CardTitle>
-            <CardDescription>
-              Vista en tabla de todos los planes de pago y sus parcialidades
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {filteredPlans.map((plan) => {
-                const summary = calculatePlanSummary(plan.id);
-                const planInstallments = installments[plan.id] || [];
-                
-                return (
-                  <div key={plan.id} className="border rounded-lg overflow-hidden">
-                    {/* Plan Header */}
-                    <div className="bg-muted/50 p-4 border-b">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-3">
-                            <h3 className="text-lg font-semibold">{plan.plan_name}</h3>
-                            <Badge variant="outline">
-                              {plan.plan_type === 'sales_to_design' ? 'Ventas a Diseño' : 'Diseño a Construcción'}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Users className="h-3 w-3" />
-                              {plan.client_name}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <FileText className="h-3 w-3" />
-                              {plan.project_name}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="text-right space-y-1">
-                          <div className="text-lg font-bold">{formatCurrency(summary.totalAmount)}</div>
-                          <div className="flex items-center gap-2">
-                            <Progress value={summary.progress} className="w-20 h-2" />
-                            <span className="text-xs text-muted-foreground">{Math.round(summary.progress)}%</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Installments Table */}
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-16">#</TableHead>
-                            <TableHead>Monto</TableHead>
-                            <TableHead>Fecha Vencimiento</TableHead>
-                            <TableHead>Estado</TableHead>
-                            <TableHead>Fecha Pago</TableHead>
-                            <TableHead>Método</TableHead>
-                            <TableHead>Referencia</TableHead>
-                            <TableHead className="w-32">Acciones</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {planInstallments.map((installment) => (
-                            <TableRow key={installment.id} className="hover:bg-muted/50">
-                              <TableCell className="font-medium">
-                                #{installment.installment_number}
-                              </TableCell>
-                              <TableCell className="font-semibold">
-                                {formatCurrency(installment.amount)}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <Calendar className="h-3 w-3 text-muted-foreground" />
-                                  {format(new Date(installment.due_date), 'dd MMM yyyy', { locale: es })}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                {getStatusBadge(installment.status)}
-                              </TableCell>
-                              <TableCell>
-                                {installment.paid_date ? 
-                                  format(new Date(installment.paid_date), 'dd MMM yyyy', { locale: es }) 
-                                  : '-'
-                                }
-                              </TableCell>
-                              <TableCell>
-                                {installment.payment_method || '-'}
-                              </TableCell>
-                              <TableCell>
-                                {installment.reference_number || '-'}
-                              </TableCell>
-                              <TableCell>
-                                {installment.status === 'pending' && (
-                                  <Button
-                                    size="sm"
-                                    onClick={() => openPaymentDialog(installment)}
-                                    className="h-8 px-3"
-                                  >
-                                    <DollarSign className="h-3 w-3 mr-1" />
-                                    Pagar
-                                  </Button>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        /* Cards View */
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredPlans.map((plan) => {
-            const summary = calculatePlanSummary(plan.id);
-            const planInstallments = installments[plan.id] || [];
-            
-            return (
-              <Card key={plan.id} className="hover:shadow-lg transition-all duration-300 hover-scale">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <CardTitle className="text-lg">{plan.plan_name}</CardTitle>
-                      <CardDescription>
-                        <div className="flex items-center gap-1 text-sm">
-                          <Users className="h-3 w-3" />
-                          {plan.client_name}
-                        </div>
-                        <div className="flex items-center gap-1 text-xs mt-1">
-                          <FileText className="h-3 w-3" />
-                          {plan.project_name}
-                        </div>
-                      </CardDescription>
-                    </div>
-                    <Badge variant="outline" className="ml-2">
-                      {plan.plan_type === 'sales_to_design' ? 'Ventas' : 'Construcción'}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
+      {/* Plans Content - Simplified View */}
+      <div className="space-y-4">
+        {filteredPlans.map((plan) => {
+          const summary = calculatePlanSummary(plan.id);
+          const planInstallments = installments[plan.id] || [];
+          const isExpanded = expandedPlans.has(plan.id);
+          const nextPendingInstallment = planInstallments.find(i => i.status === 'pending');
+          
+          return (
+            <Card key={plan.id} className="hover:shadow-lg transition-all duration-300">
+              <CardContent className="p-6">
+                {/* Plan Summary */}
+                <div className="flex items-center justify-between mb-4">
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center text-sm">
-                      <span>Progreso de pagos</span>
-                      <span className="font-medium">{Math.round(summary.progress)}%</span>
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-xl font-semibold">{plan.plan_name}</h3>
+                      <Badge variant="outline">
+                        {plan.plan_type === 'sales_to_design' ? 'Ventas a Diseño' : 'Diseño a Construcción'}
+                      </Badge>
                     </div>
-                    <Progress value={summary.progress} className="h-2" />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>{summary.paidInstallments} de {summary.totalInstallments} pagadas</span>
-                      <span>{formatCurrency(summary.totalPaid)} de {formatCurrency(summary.totalAmount)}</span>
+                    <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        {plan.client_name}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <FileText className="h-4 w-4" />
+                        {plan.project_name}
+                      </span>
                     </div>
                   </div>
+                  <div className="text-right space-y-2">
+                    <div className="text-2xl font-bold text-primary">{formatCurrency(summary.totalAmount)}</div>
+                    <div className="flex items-center gap-2">
+                      <Progress value={summary.progress} className="w-32 h-3" />
+                      <span className="text-sm font-medium">{Math.round(summary.progress)}%</span>
+                    </div>
+                  </div>
+                </div>
 
-                  {summary.overdueInstallments > 0 && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                      <div className="flex items-center gap-2 text-red-700">
-                        <AlertTriangle className="h-4 w-4" />
-                        <span className="text-sm font-medium">
-                          {summary.overdueInstallments} parcialidad{summary.overdueInstallments > 1 ? 'es' : ''} vencida{summary.overdueInstallments > 1 ? 's' : ''}
-                        </span>
+                {/* Quick Stats */}
+                <div className="grid grid-cols-4 gap-4 mb-4">
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-emerald-600">{summary.paidInstallments}</div>
+                    <div className="text-xs text-muted-foreground">Pagadas</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-blue-600">{summary.totalInstallments - summary.paidInstallments}</div>
+                    <div className="text-xs text-muted-foreground">Pendientes</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-emerald-600">{formatCurrency(summary.totalPaid)}</div>
+                    <div className="text-xs text-muted-foreground">Cobrado</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-red-600">{summary.overdueInstallments}</div>
+                    <div className="text-xs text-muted-foreground">Vencidas</div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-between">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => togglePlanExpansion(plan.id)}
+                    className="flex items-center gap-2"
+                  >
+                    <Eye className="h-4 w-4" />
+                    {isExpanded ? 'Ocultar detalles' : 'Ver detalles'}
+                  </Button>
+                  
+                  {nextPendingInstallment && (
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div className="text-sm text-muted-foreground">Próximo pago</div>
+                        <div className="font-semibold">{formatCurrency(nextPendingInstallment.amount)}</div>
                       </div>
+                      <Button
+                        onClick={() => handleMarkAsPaid(nextPendingInstallment)}
+                        className="bg-emerald-600 hover:bg-emerald-700"
+                      >
+                        <DollarSign className="h-4 w-4 mr-2" />
+                        Marcar como Pagado
+                      </Button>
                     </div>
                   )}
+                </div>
 
-                  {/* Installments list */}
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium">Parcialidades</h4>
-                    <div className="max-h-40 overflow-y-auto space-y-1">
+                {/* Expanded Details */}
+                {isExpanded && (
+                  <div className="mt-6 border-t pt-6">
+                    <h4 className="text-lg font-semibold mb-4">Detalle de Parcialidades</h4>
+                    <div className="space-y-3">
                       {planInstallments.map((installment) => (
-                        <div key={installment.id} className="flex items-center justify-between p-2 rounded-md border text-sm hover:bg-muted/50 transition-colors">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">#{installment.installment_number}</span>
-                            <span>{formatCurrency(installment.amount)}</span>
-                            {getStatusBadge(installment.status)}
+                        <div key={installment.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center gap-4">
+                            <div className="text-center">
+                              <div className="font-bold text-lg">#{installment.installment_number}</div>
+                            </div>
+                            <div>
+                              <div className="font-semibold text-lg">{formatCurrency(installment.amount)}</div>
+                              <div className="text-sm text-muted-foreground">
+                                Vence: {format(new Date(installment.due_date), 'dd MMM yyyy', { locale: es })}
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">
-                              {format(new Date(installment.due_date), 'dd/MM/yy')}
-                            </span>
+                          
+                          <div className="flex items-center gap-4">
+                            {getStatusBadge(installment.status)}
+                            {installment.paid_date && (
+                              <div className="text-sm text-muted-foreground">
+                                Pagado: {format(new Date(installment.paid_date), 'dd MMM yyyy', { locale: es })}
+                              </div>
+                            )}
                             {installment.status === 'pending' && (
                               <Button
                                 size="sm"
-                                variant="outline"
-                                onClick={() => openPaymentDialog(installment)}
-                                className="h-6 px-2 text-xs hover-scale"
+                                onClick={() => handleMarkAsPaid(installment)}
+                                className="bg-emerald-600 hover:bg-emerald-700"
                               >
-                                <DollarSign className="h-3 w-3 mr-1" />
+                                <DollarSign className="h-4 w-4 mr-1" />
                                 Pagar
                               </Button>
                             )}
@@ -712,12 +590,12 @@ export const FinancePaymentManager: React.FC<FinancePaymentManagerProps> = ({
                       ))}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
 
       {filteredPlans.length === 0 && (
         <Card className="animate-fade-in">
@@ -732,64 +610,6 @@ export const FinancePaymentManager: React.FC<FinancePaymentManagerProps> = ({
         </Card>
       )}
 
-      {/* Payment Dialog */}
-      <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
-        <DialogContent className="sm:max-w-lg animate-scale-in">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-primary" />
-              Marcar parcialidad como pagada
-            </DialogTitle>
-            <DialogDescription>
-              {paymentDialogData && (
-                <div className="space-y-2 mt-2">
-                  <div className="bg-muted/50 rounded-lg p-3 space-y-1">
-                    <div><strong>Plan:</strong> {paymentDialogData.planName}</div>
-                    <div><strong>Cliente:</strong> {paymentDialogData.clientName}</div>
-                    <div className="flex items-center gap-2">
-                      <strong>Parcialidad #{paymentDialogData.installment.installment_number}:</strong>
-                      <span className="text-lg font-bold text-primary">
-                        {formatCurrency(paymentDialogData.installment.amount)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="payment_date">Fecha de pago</Label>
-              <Input
-                id="payment_date"
-                type="date"
-                value={paymentForm.payment_date}
-                onChange={(e) => setPaymentForm({...paymentForm, payment_date: e.target.value})}
-              />
-              <p className="text-sm text-muted-foreground">
-                Si no se especifica, se usará la fecha actual
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex justify-end gap-3 mt-6">
-            <Button
-              variant="outline"
-              onClick={() => setIsPaymentDialogOpen(false)}
-            >
-              Cancelar
-            </Button>
-            <Button 
-              onClick={handleMarkAsPaid}
-              className="bg-primary hover:bg-primary/90"
-            >
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Confirmar pago
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
