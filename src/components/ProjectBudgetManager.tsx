@@ -540,27 +540,27 @@ export function ProjectBudgetManager({ projectId, projectName, clientName, onBud
       )}
       
       <Dialog open={showAcceptBudgetDialog} onOpenChange={setShowAcceptBudgetDialog}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Crear Plan de Pagos de Construcción</DialogTitle>
+            <DialogTitle>Presupuesto Aceptado</DialogTitle>
             <DialogDescription>
               El cliente ha aceptado el presupuesto de obra por {formatCurrency(budget?.total_amount || 0)}. 
-              Ahora puedes crear el plan de pagos para la construcción.
+              El sistema ya no requiere crear planes de pago.
             </DialogDescription>
           </DialogHeader>
           
-          {budget && (
-            <PaymentPlanBuilder
-              clientProjectId={projectId}
-              totalAmount={budget.total_amount}
-              planType="design_to_construction"
-              onSuccess={() => {
-                setShowAcceptBudgetDialog(false);
-                sonnerToast.success('Plan de pagos de construcción creado exitosamente');
-              }}
-              onCancel={() => setShowAcceptBudgetDialog(false)}
-            />
-          )}
+          <div className="text-center p-8">
+            <p className="text-muted-foreground">
+              Payment plan functionality has been removed from the system.
+              The project can now proceed to construction phase.
+            </p>
+            <Button 
+              onClick={() => setShowAcceptBudgetDialog(false)}
+              className="mt-4"
+            >
+              Continuar
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </Card>

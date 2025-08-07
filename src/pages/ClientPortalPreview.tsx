@@ -7,8 +7,7 @@ import { Eye, FileText, CreditCard, Camera, MessageCircle, Building2, DollarSign
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ProjectProgressCard } from '@/components/ProjectProgressCard';
-import { PaymentHistoryPanel } from '@/components/PaymentHistoryPanel';
-import { PaymentPlansViewer } from '@/components/PaymentPlansViewer';
+// Payment components removed
 import { DocumentsPanel } from '@/components/DocumentsPanel';
 import { ProgressPhotosCarousel } from '@/components/ProgressPhotosCarousel';
 import { ClientDocumentHub } from '@/components/ClientDocumentHub';
@@ -79,14 +78,8 @@ const ClientPortalPreview = () => {
         service_type: project.service_type || 'Residencial'
       });
 
-      // Fetch payment plans count (datos reales del plan de pagos)
-      const { data: paymentPlansData } = await supabase
-        .from('payment_plans')
-        .select('id, plan_name, total_amount, status')
-        .eq('client_project_id', selectedProjectId)
-        .eq('status', 'active');
-
-      setPaymentPlans(paymentPlansData || []);
+      // Payment plans removed - set empty array
+      setPaymentPlans([]);
 
       // Fetch client payments for history
       const { data: paymentsData } = await supabase

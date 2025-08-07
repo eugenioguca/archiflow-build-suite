@@ -38,7 +38,7 @@ interface ClientProject {
 interface RequiredDocument {
   id: string;
   name: string;
-  type: 'curp' | 'fiscal_certificate' | 'contract' | 'payment_plan' | 'id_document' | 'other';
+  type: 'curp' | 'fiscal_certificate' | 'contract' | 'id_document' | 'other';
   required_for_stages: string[];
   description: string;
   icon: any;
@@ -49,553 +49,365 @@ interface RequiredDocumentsManagerProps {
   clientProjectId: string;
   clientProject: ClientProject;
   onDocumentUpdate?: () => void;
+  showStageTransitions?: boolean;
 }
 
-const REQUIRED_DOCUMENTS: RequiredDocument[] = [
-  {
-    id: 'curp',
-    name: 'CURP',
-    type: 'curp',
-    required_for_stages: ['en_contacto', 'cliente_cerrado'],
-    description: 'Clave Única de Registro de Población del cliente',
-    icon: User,
-    validation_pattern: '^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[0-9]{2}$'
-  },
-  {
-    id: 'fiscal_certificate',
-    name: 'Constancia de Situación Fiscal',
-    type: 'fiscal_certificate',
-    required_for_stages: ['en_contacto', 'cliente_cerrado'],
-    description: 'Documento fiscal actualizado del SAT',
-    icon: Building
-  },
-  {
-    id: 'contract',
-    name: 'Contrato Firmado',
-    type: 'contract',
-    required_for_stages: ['en_contacto', 'cliente_cerrado'],
-    description: 'Contrato de servicios firmado por el cliente',
-    icon: FileText
-  },
-  {
-    id: 'payment_plan',
-    name: 'Plan de Pagos',
-    type: 'payment_plan',
-    required_for_stages: ['cliente_cerrado'],
-    description: 'Plan de pagos acordado y autorizado',
-    icon: Shield
-  }
-];
-
-export const RequiredDocumentsManager = ({ 
-  clientProjectId, 
-  clientProject, 
-  onDocumentUpdate 
-}: RequiredDocumentsManagerProps) => {
-  const [uploading, setUploading] = useState(false);
-  const [curpValue, setCurpValue] = useState(clientProject.curp || '');
-  const [showCurpDialog, setShowCurpDialog] = useState(false);
-  const [paymentPlanData, setPaymentPlanData] = useState<any>(null);
-  const [paymentPlanCompleted, setPaymentPlanCompleted] = useState(false);
+const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
+  clientProjectId,
+  clientProject,
+  onDocumentUpdate,
+  showStageTransitions = true
+}) => {
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [selectedDocType, setSelectedDocType] = useState<string>('');
   const { toast } = useToast();
 
-  // Cargar datos del plan de pagos al montar el componente y cuando se actualiza
-  const fetchPaymentPlan = async () => {
-    try {
-      // Ya no necesitamos cargar desde el JSONB - se verifica directamente en checkPaymentPlanCompleted
-      setPaymentPlanData(true); // Solo para mantener compatibilidad
-    } catch (error) {
-      console.error('Error fetching payment plan:', error);
+  // Define required documents (removed payment_plan type)
+  const requiredDocuments: RequiredDocument[] = [
+    {
+      id: 'curp',
+      name: 'CURP',
+      type: 'curp',
+      required_for_stages: ['nuevo_lead', 'en_contacto'],
+      description: 'Clave Única de Registro de Población del cliente',
+      icon: User,
+      validation_pattern: '^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[0-9A-Z][0-9]$'
+    },
+    {
+      id: 'fiscal_certificate',
+      name: 'Constancia de Situación Fiscal',
+      type: 'fiscal_certificate',
+      required_for_stages: ['en_contacto', 'documentos_recibidos'],
+      description: 'Constancia de situación fiscal vigente',
+      icon: Shield
+    },
+    {
+      id: 'contract',
+      name: 'Contrato',
+      type: 'contract',
+      required_for_stages: ['documentos_recibidos', 'contrato_firmado'],
+      description: 'Contrato de servicios firmado',
+      icon: FileText
     }
-  };
+  ];
 
-  useEffect(() => {
-    fetchPaymentPlan();
-    // Verificar el estado del plan de pagos
-    checkPaymentPlanCompleted().then(setPaymentPlanCompleted);
-  }, [clientProjectId]);
-
-  // Refetch cuando onDocumentUpdate es llamado (cuando hay cambios externos)
-  useEffect(() => {
-    if (onDocumentUpdate) {
-      fetchPaymentPlan();
-      checkPaymentPlanCompleted().then(setPaymentPlanCompleted);
-    }
-  }, [onDocumentUpdate]);
-
-  const checkPaymentPlanCompleted = async () => {
-    try {
-      console.log('Checking payment plan for project:', clientProjectId);
-      
-      // Primero obtener los IDs de los planes de pago para este proyecto
-      const { data: plans, error: plansError } = await supabase
-        .from('payment_plans')
-        .select('id, plan_name')
-        .eq('client_project_id', clientProjectId)
-        .eq('status', 'active');
-
-      console.log('Payment plans found:', plans);
-
-      if (plansError || !plans || plans.length === 0) {
-        console.log('No active payment plans found');
-        return false;
-      }
-
-      const planIds = plans.map(p => p.id);
-
-      // Verificar si existe al menos un installment pagado
-      const { data: paidInstallments, error } = await supabase
-        .from('payment_installments')
-        .select('id, status, amount')
-        .in('payment_plan_id', planIds)
-        .eq('status', 'paid')
-        .limit(1);
-
-      console.log('Paid installments found:', paidInstallments);
-
-      if (error) {
-        console.error('Error checking payment plan:', error);
-        return false;
-      }
-
-      const hasPayment = paidInstallments && paidInstallments.length > 0;
-      console.log('Payment plan completed:', hasPayment);
-      
-      return hasPayment;
-    } catch (error) {
-      console.error('Error checking payment plan:', error);
-      return false;
-    }
-  };
-
-  const getCurrentStageRequiredDocs = () => {
-    const filteredDocs = REQUIRED_DOCUMENTS.filter(doc => 
-      doc.required_for_stages.includes(clientProject.sales_pipeline_stage)
-    );
-    
-    console.log('Current stage:', clientProject.sales_pipeline_stage);
-    console.log('Required docs for stage:', filteredDocs.map(d => d.name));
-    
-    return filteredDocs;
-  };
+  const currentStage = clientProject?.sales_pipeline_stage || 'nuevo_lead';
 
   const getDocumentStatus = (doc: RequiredDocument) => {
+    const isRequired = doc.required_for_stages.includes(currentStage);
+    
     switch (doc.type) {
       case 'curp':
-        return {
-          completed: !!clientProject.curp && validateCURP(clientProject.curp),
-          value: clientProject.curp,
-          canEdit: true
-        };
+        if (clientProject?.curp) {
+          return { uploaded: true, status: 'completed', required: isRequired };
+        }
+        break;
       case 'fiscal_certificate':
-        return {
-          completed: !!clientProject.constancia_situacion_fiscal_uploaded && !!clientProject.constancia_situacion_fiscal_url,
-          value: clientProject.constancia_situacion_fiscal_url,
-          canEdit: true
-        };
+        if (clientProject?.constancia_situacion_fiscal_uploaded) {
+          return { uploaded: true, status: 'completed', required: isRequired };
+        }
+        break;
       case 'contract':
-        return {
-          completed: !!clientProject.contract_uploaded && !!clientProject.contract_url,
-          value: clientProject.contract_url,
-          canEdit: true
-        };
-      case 'payment_plan':
-        return {
-          completed: paymentPlanCompleted,
-          value: paymentPlanCompleted ? 'Plan de pagos con primer pago realizado' : null,
-          canEdit: true
-        };
-      default:
-        return {
-          completed: false,
-          value: null,
-          canEdit: false
-        };
+        if (clientProject?.contract_uploaded) {
+          return { uploaded: true, status: 'completed', required: isRequired };
+        }
+        break;
+    }
+    
+    return { uploaded: false, status: 'pending', required: isRequired };
+  };
+
+  const calculateProgress = () => {
+    const requiredDocs = requiredDocuments.filter(doc => 
+      doc.required_for_stages.includes(currentStage)
+    );
+    
+    if (requiredDocs.length === 0) return 100;
+    
+    const completedDocs = requiredDocs.filter(doc => 
+      getDocumentStatus(doc).uploaded
+    );
+    
+    return Math.round((completedDocs.length / requiredDocs.length) * 100);
+  };
+
+  const handleFileUpload = async (file: File, docType: string) => {
+    setUploadingDoc(docType);
+    
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${clientProjectId}_${docType}_${Date.now()}.${fileExt}`;
+      const filePath = `client-documents/${fileName}`;
+
+      // Upload file to Supabase storage
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Update client_projects record
+      const updates: any = {};
+      
+      switch (docType) {
+        case 'curp':
+          // For CURP, we might want to extract the text content
+          // For now, just mark as uploaded
+          updates.curp_uploaded = true;
+          break;
+        case 'fiscal_certificate':
+          updates.constancia_situacion_fiscal_url = filePath;
+          updates.constancia_situacion_fiscal_uploaded = true;
+          break;
+        case 'contract':
+          updates.contract_url = filePath;
+          updates.contract_uploaded = true;
+          break;
+      }
+
+      const { error: updateError } = await supabase
+        .from('client_projects')
+        .update(updates)
+        .eq('id', clientProjectId);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: "Documento subido exitosamente",
+        description: `${requiredDocuments.find(d => d.id === docType)?.name} se ha guardado correctamente.`
+      });
+
+      setShowUploadDialog(false);
+      setUploadFile(null);
+      
+      if (onDocumentUpdate) {
+        onDocumentUpdate();
+      }
+
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      toast({
+        title: "Error al subir documento",
+        description: "Hubo un problema al guardar el archivo. Por favor intenta de nuevo.",
+        variant: "destructive"
+      });
+    } finally {
+      setUploadingDoc(null);
     }
   };
 
-  const validateCURP = (curp: string): boolean => {
-    const pattern = /^[A-Z]{4}[0-9]{6}[HM][A-Z]{5}[0-9]{2}$/;
-    return pattern.test(curp);
+  const canAdvanceToStage = (targetStage: string): boolean => {
+    const requiredDocs = requiredDocuments.filter(doc => 
+      doc.required_for_stages.includes(currentStage)
+    );
+    
+    const allCompleted = requiredDocs.every(doc => 
+      getDocumentStatus(doc).uploaded
+    );
+    
+    return allCompleted;
   };
 
-  const updateCURP = async () => {
+  const advanceStage = async (targetStage: string) => {
     try {
-      if (!validateCURP(curpValue)) {
-        toast({
-          title: "Error",
-          description: "El formato del CURP no es válido",
-          variant: "destructive",
-        });
-        return;
-      }
-
       const { error } = await supabase
         .from('client_projects')
-        .update({ curp: curpValue })
+        .update({ sales_pipeline_stage: targetStage as any })
         .eq('id', clientProjectId);
 
       if (error) throw error;
 
       toast({
-        title: "Éxito",
-        description: "CURP actualizado correctamente",
+        title: "Etapa actualizada",
+        description: `El proyecto ha avanzado a: ${targetStage}`
       });
 
-      setShowCurpDialog(false);
-      onDocumentUpdate?.();
+      if (onDocumentUpdate) {
+        onDocumentUpdate();
+      }
+
     } catch (error) {
-      console.error('Error updating CURP:', error);
+      console.error('Error advancing stage:', error);
       toast({
         title: "Error",
-        description: "No se pudo actualizar el CURP",
-        variant: "destructive",
+        description: "No se pudo actualizar la etapa del proyecto.",
+        variant: "destructive"
       });
     }
   };
 
-  const uploadFiscalCertificate = async (file: File) => {
-    try {
-      setUploading(true);
-
-      // Subir archivo a Supabase Storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${clientProjectId}_fiscal_certificate_${Date.now()}.${fileExt}`;
-      const filePath = `client-documents/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('client-documents')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      // Actualizar registro en la base de datos con la ruta del archivo
-      const { error: updateError } = await supabase
-        .from('client_projects')
-        .update({
-          constancia_situacion_fiscal_url: filePath, // Guardar la ruta, no la URL
-          constancia_situacion_fiscal_uploaded: true
-        })
-        .eq('id', clientProjectId);
-
-      if (updateError) throw updateError;
-
-      toast({
-        title: "Éxito",
-        description: "Constancia de situación fiscal subida correctamente",
-      });
-
-      onDocumentUpdate?.();
-    } catch (error) {
-      console.error('Error uploading fiscal certificate:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo subir la constancia fiscal",
-        variant: "destructive",
-      });
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const uploadContract = async (file: File) => {
-    try {
-      setUploading(true);
-
-      // Subir archivo a Supabase Storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${clientProjectId}_contract_${Date.now()}.${fileExt}`;
-      const filePath = `client-documents/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('client-documents')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      // Actualizar registro en la base de datos con la ruta del archivo
-      const { error: updateError } = await supabase
-        .from('client_projects')
-        .update({
-          contract_url: filePath,
-          contract_uploaded: true
-        })
-        .eq('id', clientProjectId);
-
-      if (updateError) throw updateError;
-
-      toast({
-        title: "Éxito",
-        description: "Contrato subido correctamente",
-      });
-
-      onDocumentUpdate?.();
-    } catch (error) {
-      console.error('Error uploading contract:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo subir el contrato",
-        variant: "destructive",
-      });
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const getCompletionPercentage = () => {
-    const requiredDocs = getCurrentStageRequiredDocs();
-    if (requiredDocs.length === 0) return 100;
-
-    const completedDocs = requiredDocs.filter(doc => getDocumentStatus(doc).completed);
-    return Math.round((completedDocs.length / requiredDocs.length) * 100);
-  };
-
-  const requiredDocs = getCurrentStageRequiredDocs();
-  const completionPercentage = getCompletionPercentage();
+  const progress = calculateProgress();
+  const requiredDocsForStage = requiredDocuments.filter(doc => 
+    doc.required_for_stages.includes(currentStage)
+  );
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      {/* Progress Overview */}
+      <Card>
+        <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
-            Documentos Obligatorios
+            <FileText className="h-5 w-5" />
+            Documentos Requeridos - {currentStage}
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Completado:</span>
-            <Badge variant={completionPercentage === 100 ? "default" : "secondary"}>
-              {completionPercentage}%
-            </Badge>
-          </div>
-        </div>
-        <Progress value={completionPercentage} className="w-full" />
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {requiredDocs.length === 0 ? (
-          <div className="text-center py-6">
-            <Shield className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-medium">No hay documentos requeridos</h3>
-            <p className="text-muted-foreground">
-              Para la fase actual "{clientProject.sales_pipeline_stage}" no se requieren documentos específicos.
-            </p>
-          </div>
-        ) : (
+        </CardHeader>
+        <CardContent>
           <div className="space-y-4">
-            <div className="text-sm text-muted-foreground mb-4">
-              Cliente: <span className="font-medium">{clientProject.clients?.full_name}</span> • 
-              Fase: <span className="font-medium capitalize">{clientProject.sales_pipeline_stage.replace('_', ' ')}</span>
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium">Progreso de Documentación</span>
+                <span className="text-sm text-muted-foreground">{progress}%</span>
+              </div>
+              <Progress value={progress} className="h-2" />
             </div>
+            
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <div className="text-2xl font-bold">{requiredDocsForStage.length}</div>
+                <p className="text-xs text-muted-foreground">Documentos Requeridos</p>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-green-600">
+                  {requiredDocsForStage.filter(doc => getDocumentStatus(doc).uploaded).length}
+                </div>
+                <p className="text-xs text-muted-foreground">Completados</p>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-orange-600">
+                  {requiredDocsForStage.filter(doc => !getDocumentStatus(doc).uploaded).length}
+                </div>
+                <p className="text-xs text-muted-foreground">Pendientes</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-            {requiredDocs.map((doc) => {
+      {/* Documents List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Lista de Documentos</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {requiredDocuments.map((doc) => {
               const status = getDocumentStatus(doc);
-              const Icon = doc.icon;
-
+              const IconComponent = doc.icon;
+              
               return (
-                <div
-                  key={doc.id}
-                  className="flex items-start justify-between p-4 border rounded-lg"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-lg ${status.completed ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'}`}>
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-medium">{doc.name}</h4>
-                        {status.completed ? (
-                          <Badge variant="default" className="bg-green-100 text-green-700">
+                <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <IconComponent className="h-8 w-8 text-muted-foreground" />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium">{doc.name}</h3>
+                        {status.required && (
+                          <Badge variant="secondary" className="text-xs">Requerido</Badge>
+                        )}
+                        {status.uploaded ? (
+                          <Badge variant="default" className="text-xs bg-green-100 text-green-800">
                             <CheckCircle className="h-3 w-3 mr-1" />
                             Completado
                           </Badge>
-                        ) : (
-                          <Badge variant="secondary">
+                        ) : status.required ? (
+                          <Badge variant="destructive" className="text-xs">
                             <AlertTriangle className="h-3 w-3 mr-1" />
                             Pendiente
                           </Badge>
-                        )}
+                        ) : null}
                       </div>
                       <p className="text-sm text-muted-foreground">{doc.description}</p>
-                      {status.value && (
-                        <p className="text-xs text-blue-600 mt-1">
-                          {doc.type === 'curp' ? `CURP: ${status.value}` : 'Archivo subido'}
-                        </p>
-                      )}
                     </div>
                   </div>
-
+                  
                   <div className="flex items-center gap-2">
-                    {/* Acciones específicas por tipo de documento */}
-                    {doc.type === 'curp' && (
-                      <Dialog open={showCurpDialog} onOpenChange={setShowCurpDialog}>
+                    {!status.uploaded && (
+                      <Dialog open={showUploadDialog && selectedDocType === doc.id} 
+                             onOpenChange={(open) => {
+                               setShowUploadDialog(open);
+                               if (open) setSelectedDocType(doc.id);
+                             }}>
                         <DialogTrigger asChild>
-                          <Button variant="outline" size="sm">
-                            {status.completed ? <Eye className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                          <Button size="sm" variant="outline">
+                            <Upload className="h-4 w-4 mr-1" />
+                            Subir
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-md">
+                        <DialogContent>
                           <DialogHeader>
-                            <DialogTitle>CURP del Cliente</DialogTitle>
+                            <DialogTitle>Subir {doc.name}</DialogTitle>
                           </DialogHeader>
                           <div className="space-y-4">
-                            <div>
-                              <label className="text-sm font-medium">
-                                Clave Única de Registro de Población
-                              </label>
-                              <Input
-                                value={curpValue}
-                                onChange={(e) => setCurpValue(e.target.value.toUpperCase())}
-                                placeholder="AAAA000000HAAAA00"
-                                maxLength={18}
-                                className="font-mono"
-                              />
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Formato: 4 letras + 6 números + H/M + 5 letras + 2 números
-                              </p>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button onClick={updateCURP} className="flex-1">
-                                Guardar
+                            <Input
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                            />
+                            <div className="flex justify-end gap-2">
+                              <Button variant="outline" onClick={() => setShowUploadDialog(false)}>
+                                Cancelar
                               </Button>
                               <Button 
-                                variant="outline" 
-                                onClick={() => setShowCurpDialog(false)}
-                                className="flex-1"
+                                onClick={() => uploadFile && handleFileUpload(uploadFile, doc.id)}
+                                disabled={!uploadFile || uploadingDoc === doc.id}
                               >
-                                Cancelar
+                                {uploadingDoc === doc.id ? 'Subiendo...' : 'Subir'}
                               </Button>
                             </div>
                           </div>
                         </DialogContent>
                       </Dialog>
                     )}
-
-                    {doc.type === 'fiscal_certificate' && (
-                      <div className="flex gap-2">
-                         {status.completed && status.value && (
-                           <Button
-                             variant="outline"
-                             size="sm"
-                             onClick={async () => {
-                               try {
-                                 // Generar URL firmada para ver el archivo
-                                 const { data: signedUrlData, error } = await supabase.storage
-                                   .from('client-documents')
-                                   .createSignedUrl(status.value as string, 3600);
-                                 
-                                 if (error) throw error;
-                                 
-                                 window.open(signedUrlData.signedUrl, '_blank');
-                               } catch (error) {
-                                 console.error('Error getting signed URL:', error);
-                                 toast({
-                                   title: "Error",
-                                   description: "No se pudo acceder al documento",
-                                   variant: "destructive",
-                                 });
-                               }
-                             }}
-                           >
-                             <Eye className="h-4 w-4" />
-                           </Button>
-                         )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={uploading}
-                          onClick={() => {
-                            const input = document.createElement('input');
-                            input.type = 'file';
-                            input.accept = '.pdf,.jpg,.jpeg,.png';
-                            input.onchange = (e) => {
-                              const file = (e.target as HTMLInputElement).files?.[0];
-                              if (file) uploadFiscalCertificate(file);
-                            };
-                            input.click();
-                          }}
-                        >
-                          <Upload className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-
-                     {doc.type === 'contract' && (
-                       <div className="flex gap-2">
-                          {status.completed && status.value && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={async () => {
-                                try {
-                                  // Generar URL firmada para ver el archivo
-                                  const { data: signedUrlData, error } = await supabase.storage
-                                    .from('client-documents')
-                                    .createSignedUrl(status.value as string, 3600);
-                                  
-                                  if (error) throw error;
-                                  
-                                  window.open(signedUrlData.signedUrl, '_blank');
-                                } catch (error) {
-                                  console.error('Error getting signed URL:', error);
-                                  toast({
-                                    title: "Error",
-                                    description: "No se pudo acceder al contrato",
-                                    variant: "destructive",
-                                  });
-                                }
-                              }}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          )}
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           disabled={uploading}
-                           onClick={() => {
-                             const input = document.createElement('input');
-                             input.type = 'file';
-                             input.accept = '.pdf,.jpg,.jpeg,.png';
-                             input.onchange = (e) => {
-                               const file = (e.target as HTMLInputElement).files?.[0];
-                               if (file) uploadContract(file);
-                             };
-                             input.click();
-                           }}
-                         >
-                           <Upload className="h-4 w-4" />
-                         </Button>
-                       </div>
-                     )}
-
-                    {doc.type === 'payment_plan' && (
-                      <Button variant="outline" size="sm" disabled>
-                        <Shield className="h-4 w-4" />
-                      </Button>
-                    )}
                   </div>
                 </div>
               );
             })}
-
-            {/* Validación para avanzar de fase */}
-            {completionPercentage < 100 && (
-              <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 rounded-lg">
-                <div className="flex items-start gap-2">
-                  <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-amber-800 dark:text-amber-200">
-                      Documentos pendientes
-                    </h4>
-                    <p className="text-sm text-amber-700 dark:text-amber-300">
-                      Para avanzar a la siguiente fase del pipeline, es necesario completar todos los documentos obligatorios.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      {/* Stage Transition */}
+      {showStageTransitions && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Avance de Etapa</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Etapa actual: <Badge variant="outline">{currentStage}</Badge>
+              </p>
+              
+              {progress === 100 ? (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-green-800">
+                    <CheckCircle className="h-5 w-5" />
+                    <span className="font-medium">Documentos completos</span>
+                  </div>
+                  <p className="text-sm text-green-700 mt-1">
+                    Todos los documentos requeridos han sido completados para esta etapa.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-orange-800">
+                    <AlertTriangle className="h-5 w-5" />
+                    <span className="font-medium">Documentos pendientes</span>
+                  </div>
+                  <p className="text-sm text-orange-700 mt-1">
+                    Completa todos los documentos requeridos para avanzar a la siguiente etapa.
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 };
+
+export default RequiredDocumentsManager;
+export { RequiredDocumentsManager };

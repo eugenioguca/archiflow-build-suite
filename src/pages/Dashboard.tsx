@@ -103,8 +103,7 @@ export default function Dashboard() {
         .order('created_at', { ascending: false })
         .limit(3);
 
-      // Fetch real income data  
-      const { data: incomes } = await supabase.from('incomes').select('amount, description, created_at');
+      // Income tracking removed
 
       // Calculate real pipeline value from potential client projects
       const realPipelineValue = clientProjects?.filter(c => c.status === 'potential').reduce((sum, c) => sum + (Number(c.budget) || 0), 0) || 0;
@@ -165,18 +164,7 @@ export default function Dashboard() {
         });
       }
 
-      // Add real incomes if available
-      if (incomes && incomes.length > 0) {
-        incomes.slice(0, 2).forEach((income, index) => {
-          activity.push({
-            id: `income-${index}`,
-            type: 'expense', // Using same icon for financial activity
-            description: `Ingreso: ${income.description}`,
-            date: income.created_at,
-            amount: Number(income.amount),
-          });
-        });
-      }
+      // Income tracking removed - no longer available
 
       // Sort by date and take latest 6
       activity.sort((a, b) => {

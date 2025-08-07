@@ -247,49 +247,10 @@ export default function Accounting() {
 
   const fetchIncomes = async () => {
     try {
-      let query = supabase
-        .from('incomes')
-        .select(`
-          *,
-          project:client_projects(project_name),
-          client:clients(full_name),
-          cfdi_document:cfdi_documents!incomes_cfdi_document_id_fkey(*)
-        `)
-        .order('created_at', { ascending: false });
-
-      // Apply period filter
-      if (selectedPeriod !== 'all') {
-        const startDate = `${selectedPeriod}-01-01`;
-        const endDate = `${selectedPeriod}-12-31`;
-        query = query.gte('created_at', startDate).lte('created_at', endDate);
-      }
-
-      // Apply month filter
-      if (selectedMonth !== 'all') {
-        const monthStart = `${selectedPeriod}-${selectedMonth.padStart(2, '0')}-01`;
-        const monthEnd = `${selectedPeriod}-${selectedMonth.padStart(2, '0')}-31`;
-        query = query.gte('created_at', monthStart).lte('created_at', monthEnd);
-      }
-
-      // Apply client-project filters
-      if (selectedClientId) {
-        query = query.eq('client_id', selectedClientId);
-      }
-      if (selectedProjectId) {
-        query = query.eq('project_id', selectedProjectId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      // Transform project_name to name for compatibility  
-      const transformedData = (data || []).map(income => ({
-        ...income,
-        project: income.project ? { name: income.project.project_name } : undefined
-      }));
-      setIncomes(transformedData);
+      // Incomes table no longer exists - set empty array
+      setIncomes([]);
     } catch (error) {
-      console.error('Error fetching incomes:', error);
+      console.error('Error: Income tracking has been removed from the system:', error);
     }
   };
 
