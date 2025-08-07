@@ -247,8 +247,8 @@ export const PaymentPlanManager: React.FC<PaymentPlanManagerProps> = ({
                   Nuevo Plan
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-                <DialogHeader className="flex-shrink-0">
+              <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
+                <DialogHeader className="flex-shrink-0 pb-4">
                   <DialogTitle>Crear Plan de Pago</DialogTitle>
                 </DialogHeader>
                 <div className="flex-1 overflow-hidden">
@@ -257,12 +257,14 @@ export const PaymentPlanManager: React.FC<PaymentPlanManagerProps> = ({
                       projectId={clientProjectId}
                       planType={planType || 'design_payment'}
                     />
-                    <PaymentPlanForm
-                      onSubmit={handleCreate}
-                      onCancel={() => setIsCreateDialogOpen(false)}
-                      planType={planType}
-                      isSubmitting={createPaymentPlan.isPending}
-                    />
+                    <div className="pb-4">
+                      <PaymentPlanForm
+                        onSubmit={handleCreate}
+                        onCancel={() => setIsCreateDialogOpen(false)}
+                        planType={planType}
+                        isSubmitting={createPaymentPlan.isPending}
+                      />
+                    </div>
                   </div>
                 </div>
               </DialogContent>
@@ -339,24 +341,26 @@ export const PaymentPlanManager: React.FC<PaymentPlanManagerProps> = ({
 
         {/* Edit Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-            <DialogHeader className="flex-shrink-0">
+          <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
+            <DialogHeader className="flex-shrink-0 pb-4">
               <DialogTitle>Editar Plan de Pago</DialogTitle>
             </DialogHeader>
             <div className="flex-1 overflow-hidden">
               <div className="h-full overflow-y-auto pr-2">
-                <PaymentPlanForm
-                  onSubmit={handleEdit}
-                  onCancel={() => setIsEditDialogOpen(false)}
-                  initialData={selectedPlan ? {
-                    plan_name: selectedPlan.plan_name,
-                    plan_type: selectedPlan.plan_type,
-                    total_amount: selectedPlan.total_amount,
-                    notes: selectedPlan.notes || ''
-                  } : undefined}
-                  planType={planType}
-                  isSubmitting={updatePaymentPlan.isPending}
-                />
+                <div className="pb-4">
+                  <PaymentPlanForm
+                    onSubmit={handleEdit}
+                    onCancel={() => setIsEditDialogOpen(false)}
+                    initialData={selectedPlan ? {
+                      plan_name: selectedPlan.plan_name,
+                      plan_type: selectedPlan.plan_type,
+                      total_amount: selectedPlan.total_amount,
+                      notes: selectedPlan.notes || ''
+                    } : undefined}
+                    planType={planType}
+                    isSubmitting={updatePaymentPlan.isPending}
+                  />
+                </div>
               </div>
             </div>
           </DialogContent>

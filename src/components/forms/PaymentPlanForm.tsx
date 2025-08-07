@@ -498,11 +498,11 @@ export const PaymentPlanForm: React.FC<PaymentPlanFormProps> = ({
         />
       </div>
 
-      <div className="flex justify-end gap-2 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
+      <div className="flex justify-end gap-3 pt-6 border-t bg-background sticky bottom-0">
+        <Button type="button" variant="outline" onClick={onCancel} className="min-w-[100px]">
           Cancelar
         </Button>
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting} className="min-w-[120px]">
           {isSubmitting ? 'Guardando...' : 'Guardar Plan'}
         </Button>
       </div>
