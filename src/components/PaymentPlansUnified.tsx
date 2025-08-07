@@ -22,17 +22,10 @@ interface PaymentPlan {
   status: string;
   created_at: string;
   client_project_id: string;
-  project_name?: string;
-  client_name?: string;
-  client_id?: string;
+  project_name: string;
+  client_name: string;
+  client_id: string;
   plan_type?: 'sales_to_design' | 'design_to_construction';
-  client_projects?: {
-    project_name: string;
-    client_id: string;
-    clients?: {
-      full_name: string;
-    }
-  } | null;
 }
 
 interface PaymentInstallment {
@@ -106,7 +99,7 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
       const { data: plansData, error: plansError } = await query.order('created_at', { ascending: false });
       if (plansError) throw plansError;
 
-      // Transform the data to match expected structure
+      // Use data directly from view (no artificial nesting)
       const transformedData = (plansData || []).map(plan => ({
         id: plan.id,
         client_project_id: plan.client_project_id,
@@ -115,16 +108,10 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
         currency: plan.currency,
         status: plan.status,
         created_at: plan.created_at,
-        project_name: plan.project_name,
-        client_name: plan.client_name,
-        client_id: plan.client_id,
-        client_projects: {
-          project_name: plan.project_name,
-          client_id: plan.client_id,
-          clients: {
-            full_name: plan.client_name
-          }
-        }
+        project_name: plan.project_name || 'Proyecto no encontrado',
+        client_name: plan.client_name || 'Cliente no encontrado',
+        client_id: plan.client_id || '',
+        plan_type: undefined // plan_type not available in view
       }));
 
       setPaymentPlans(transformedData);
@@ -353,7 +340,7 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
       setPaymentDialog({
         installment,
         planName: plan.plan_name,
-        clientName: plan.client_projects?.clients?.full_name || 'Cliente no encontrado'
+        clientName: plan.client_name
       });
       setPaymentForm({
         paid_date: new Date().toISOString().split('T')[0],
@@ -455,12 +442,12 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
                   <CardTitle className="text-lg">{plan.plan_name}</CardTitle>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">
-                      {plan.client_projects?.clients?.full_name || 'Cliente no encontrado'}
+                      {plan.client_name}
                     </span>
                     {getPlanCategoryBadge(plan)}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    Proyecto: {plan.client_projects?.project_name || 'Proyecto no encontrado'}
+                    Proyecto: {plan.project_name}
                   </div>
                 </div>
                 <div className="text-right">
@@ -563,10 +550,10 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <strong>Cliente:</strong> {selectedPlan.client_projects?.clients?.full_name}
+                  <strong>Cliente:</strong> {selectedPlan.client_name}
                 </div>
                 <div>
-                  <strong>Proyecto:</strong> {selectedPlan.client_projects?.project_name}
+                  <strong>Proyecto:</strong> {selectedPlan.project_name}
                 </div>
                 <div>
                   <strong>Total:</strong> {formatCurrency(selectedPlan.total_amount, selectedPlan.currency)}
