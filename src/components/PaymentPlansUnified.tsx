@@ -304,8 +304,9 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
         category: 'construction_service' as const,
         amount: paymentDialog.installment.amount,
         description: `Pago de cuota ${paymentDialog.installment.installment_number} - Plan: ${plan.plan_name}`,
-        expense_date: paymentForm.paid_date,
-        reference_number: paymentForm.reference_number,
+        invoice_date: paymentForm.paid_date,
+        payment_date: paymentForm.paid_date,
+        payment_status: 'paid' as const,
         created_by: profile.id
       };
 
@@ -409,7 +410,9 @@ export const PaymentPlansUnified: React.FC<PaymentPlansUnifiedProps> = ({
             category: 'construction_service' as const,
             amount: installment.amount,
             description: `Pago de cuota ${installment.installment_number} - Plan: ${plan.plan_name}`,
-            expense_date: new Date().toISOString().split('T')[0],
+            invoice_date: new Date().toISOString().split('T')[0],
+            payment_date: new Date().toISOString().split('T')[0],
+            payment_status: 'paid' as const,
             created_by: profile.id
           }]);
 
