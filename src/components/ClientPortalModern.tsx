@@ -42,6 +42,7 @@ import { downloadDocument } from '@/lib/documentUtils';
 import { ProgressPhotosCarousel } from './ProgressPhotosCarousel';
 import { SuperiorClientPortalChat } from './SuperiorClientPortalChat';
 import { ClientAppointmentsCalendar } from './ClientAppointmentsCalendar';
+import { PaymentPlanManager } from './PaymentPlanManager';
 
 interface ClientProject {
   id: string;
@@ -443,7 +444,7 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
 
         {/* Navigation Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-6">
+          <TabsList className="grid w-full grid-cols-6 mb-6">
             <TabsTrigger value="overview" className="text-xs">
               <TrendingUp className="h-4 w-4 mb-1" />
               Resumen
@@ -455,6 +456,10 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
             <TabsTrigger value="photos" className="text-xs">
               <Camera className="h-4 w-4 mb-1" />
               Fotos
+            </TabsTrigger>
+            <TabsTrigger value="payments" className="text-xs">
+              <DollarSign className="h-4 w-4 mb-1" />
+              Pagos
             </TabsTrigger>
             <TabsTrigger value="appointments" className="text-xs">
               <Calendar className="h-4 w-4 mb-1" />
@@ -530,6 +535,18 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="payments">
+            <div className="space-y-4">
+              {selectedProject && (
+                <PaymentPlanManager
+                  clientProjectId={selectedProject.id}
+                  readOnly={true}
+                  compact={true}
+                />
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="appointments">

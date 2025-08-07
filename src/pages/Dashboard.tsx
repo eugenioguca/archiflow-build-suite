@@ -5,6 +5,7 @@ import { Users, Building2, DollarSign, Camera, TrendingUp, AlertCircle, Calendar
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
+import { PaymentNotifications } from '@/components/PaymentNotifications';
 
 interface DashboardStats {
   totalClients: number;
@@ -325,7 +326,7 @@ export default function Dashboard() {
       </div>
 
       {/* Secciones de información detallada */}
-      <div className="grid gap-4 sm:gap-6 lg:gap-8 grid-cols-1 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 lg:gap-8 grid-cols-1 lg:grid-cols-3">
         <Card className="card-hover border-0 shadow-lg glassmorphic-bg enhanced-hover">
           <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-t-lg">
             <CardTitle className="flex items-center gap-3 text-xl">
@@ -441,6 +442,8 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
+
+        <PaymentNotifications compact />
       </div>
     </div>
   );
