@@ -198,15 +198,14 @@ export const FinancePaymentManager: React.FC<FinancePaymentManagerProps> = ({
     try {
       const installment = paymentDialogData.installment;
       
-      // Update installment status
+      // Update installment status - using only existing columns
       const { error: updateError } = await supabase
         .from('payment_installments')
         .update({
           status: 'paid',
           paid_date: paymentForm.payment_date,
-          payment_method: paymentForm.payment_method,
           reference_number: paymentForm.reference_number,
-          notes: paymentForm.notes
+          description: paymentForm.notes ? `${installment.description || ''} - Método: ${paymentForm.payment_method}. Notas: ${paymentForm.notes}` : `${installment.description || ''} - Método: ${paymentForm.payment_method}`
         })
         .eq('id', installment.id);
 
