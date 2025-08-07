@@ -188,23 +188,44 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${clientProjectId}_${docType}_${Date.now()}.${fileExt}`;
-      const filePath = `client-documents/${fileName}`;
+      const filePath = `${fileName}`;
 
-      // Upload file to Supabase storage
+      // Upload file to Supabase storage (correct bucket)
       const { error: uploadError } = await supabase.storage
-        .from('documents')
+        .from('client-documents')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      // Update client_projects record
+      // Map document types to match ClientDocumentHub expectations
+      const documentTypeMapping: Record<string, string> = {
+        'curp': 'curp',
+        'fiscal_certificate': 'constancia_situacion_fiscal', 
+        'contract': 'contract'
+      };
+
+      // Insert into client_documents table for hub integration
+      const { error: insertError } = await supabase
+        .from('client_documents')
+        .insert({
+          client_id: clientProject.client_id,
+          project_id: clientProjectId,
+          document_name: file.name,
+          document_type: documentTypeMapping[docType] || docType,
+          file_path: filePath,
+          file_type: file.type,
+          file_size: file.size,
+          uploaded_by: (await supabase.auth.getUser()).data.user?.id
+        });
+
+      if (insertError) throw insertError;
+
+      // Update client_projects record for backwards compatibility
       const updates: any = {};
       
       switch (docType) {
         case 'curp':
-          // For CURP, we might want to extract the text content
-          // For now, just mark as uploaded
-          updates.curp_uploaded = true;
+          updates.curp = 'uploaded'; // Set a value to indicate it's uploaded
           break;
         case 'fiscal_certificate':
           updates.constancia_situacion_fiscal_url = filePath;
