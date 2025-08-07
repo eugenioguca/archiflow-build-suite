@@ -78,8 +78,18 @@ const ClientPortalPreview = () => {
         service_type: project.service_type || 'Residencial'
       });
 
-      // Payment plans removed - set empty array
-      setPaymentPlans([]);
+      // Fetch payment plans
+      const { data: paymentPlansData } = await supabase
+        .from('payment_plans')
+        .select(`
+          *,
+          creator:profiles!created_by(full_name),
+          approver:profiles!approved_by(full_name)
+        `)
+        .eq('client_project_id', selectedProjectId)
+        .order('created_at', { ascending: false });
+
+      setPaymentPlans(paymentPlansData || []);
 
       // Fetch client payments for history
       const { data: paymentsData } = await supabase

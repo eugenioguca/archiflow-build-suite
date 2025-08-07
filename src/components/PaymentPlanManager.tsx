@@ -14,6 +14,9 @@ import { usePaymentPlans, PaymentPlan } from '@/hooks/usePaymentPlans';
 import { useAuth } from '@/hooks/useAuth';
 import { PaymentInstallmentsTable } from './PaymentInstallmentsTable';
 import { CurrencyInput } from './CurrencyInput';
+import { PaymentPlanForm } from './forms/PaymentPlanForm';
+import { PaymentPlanValidations } from './PaymentPlanValidations';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PaymentPlanManagerProps {
   clientProjectId: string;
@@ -61,22 +64,50 @@ export const PaymentPlanManager: React.FC<PaymentPlanManagerProps> = ({
     });
   };
 
-  const handleCreate = async () => {
-    if (!formData.plan_name || formData.total_amount <= 0) {
-      toast({
-        title: "Error",
-        description: "Por favor completa todos los campos requeridos.",
-        variant: "destructive"
-      });
-      return;
+  const handleCreate = async (data: any) => {
+    // Validate construction payment plan requirements
+    if (data.plan_type === 'construction_payment') {
+      try {
+        const { data: project } = await supabase
+          .from('client_projects')
+          .select('construction_budget, status')
+          .eq('id', clientProjectId)
+          .single();
+
+        if (!project || project.construction_budget <= 0) {
+          toast({
+            title: "Error",
+            description: "Debe existir un presupuesto de construcción aprobado antes de crear un plan de pago de construcción.",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        if (project.status !== 'design' && project.status !== 'construction') {
+          toast({
+            title: "Error", 
+            description: "Los planes de construcción solo pueden crearse en proyectos de diseño completado.",
+            variant: "destructive"
+          });
+          return;
+        }
+      } catch (error) {
+        console.error('Error validating construction requirements:', error);
+        toast({
+          title: "Error",
+          description: "Error al validar los requisitos del proyecto.",
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
     createPaymentPlan.mutate({
       client_project_id: clientProjectId,
-      plan_type: formData.plan_type as 'design_payment' | 'construction_payment',
-      plan_name: formData.plan_name,
-      total_amount: formData.total_amount,
-      notes: formData.notes,
+      plan_type: data.plan_type as 'design_payment' | 'construction_payment',
+      plan_name: data.plan_name,
+      total_amount: data.total_amount,
+      notes: data.notes,
       status: 'pending',
       created_by: '' // Will be set by backend
     }, {
@@ -87,15 +118,15 @@ export const PaymentPlanManager: React.FC<PaymentPlanManagerProps> = ({
     });
   };
 
-  const handleEdit = async () => {
+  const handleEdit = async (data: any) => {
     if (!selectedPlan) return;
 
     updatePaymentPlan.mutate({
       id: selectedPlan.id,
       data: {
-        plan_name: formData.plan_name,
-        total_amount: formData.total_amount,
-        notes: formData.notes
+        plan_name: data.plan_name,
+        total_amount: data.total_amount,
+        notes: data.notes
       }
     }, {
       onSuccess: () => {
@@ -183,62 +214,21 @@ export const PaymentPlanManager: React.FC<PaymentPlanManagerProps> = ({
                   Nuevo Plan
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Crear Plan de Pago</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="plan_name">Nombre del Plan</Label>
-                    <Input
-                      id="plan_name"
-                      value={formData.plan_name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, plan_name: e.target.value }))}
-                      placeholder="Ej: Plan de Pago Diseño - Cliente"
-                    />
-                  </div>
-                  {!planType && (
-                    <div>
-                      <Label htmlFor="plan_type">Tipo de Plan</Label>
-                      <Select 
-                        value={formData.plan_type} 
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, plan_type: value as 'design_payment' | 'construction_payment' }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona el tipo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="design_payment">Pago de Diseño</SelectItem>
-                          <SelectItem value="construction_payment">Pago de Construcción</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-                  <div>
-                    <Label htmlFor="total_amount">Monto Total</Label>
-                    <CurrencyInput
-                      value={formData.total_amount}
-                      onChange={(value) => setFormData(prev => ({ ...prev, total_amount: value }))}
-                      placeholder="0.00"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="notes">Notas (Opcional)</Label>
-                    <Textarea
-                      id="notes"
-                      value={formData.notes}
-                      onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                      placeholder="Notas adicionales sobre el plan de pago..."
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                      Cancelar
-                    </Button>
-                    <Button onClick={handleCreate} disabled={createPaymentPlan.isPending}>
-                      {createPaymentPlan.isPending ? 'Creando...' : 'Crear Plan'}
-                    </Button>
-                  </div>
+                  <PaymentPlanValidations 
+                    projectId={clientProjectId}
+                    planType={planType || 'design_payment'}
+                  />
+                  <PaymentPlanForm
+                    onSubmit={handleCreate}
+                    onCancel={() => setIsCreateDialogOpen(false)}
+                    planType={planType}
+                    isSubmitting={createPaymentPlan.isPending}
+                  />
                 </div>
               </DialogContent>
             </Dialog>
@@ -318,39 +308,18 @@ export const PaymentPlanManager: React.FC<PaymentPlanManagerProps> = ({
             <DialogHeader>
               <DialogTitle>Editar Plan de Pago</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="edit_plan_name">Nombre del Plan</Label>
-                <Input
-                  id="edit_plan_name"
-                  value={formData.plan_name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, plan_name: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit_total_amount">Monto Total</Label>
-                <CurrencyInput
-                  value={formData.total_amount}
-                  onChange={(value) => setFormData(prev => ({ ...prev, total_amount: value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit_notes">Notas</Label>
-                <Textarea
-                  id="edit_notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleEdit} disabled={updatePaymentPlan.isPending}>
-                  {updatePaymentPlan.isPending ? 'Actualizando...' : 'Actualizar'}
-                </Button>
-              </div>
-            </div>
+            <PaymentPlanForm
+              onSubmit={handleEdit}
+              onCancel={() => setIsEditDialogOpen(false)}
+              initialData={selectedPlan ? {
+                plan_name: selectedPlan.plan_name,
+                plan_type: selectedPlan.plan_type,
+                total_amount: selectedPlan.total_amount,
+                notes: selectedPlan.notes || ''
+              } : undefined}
+              planType={planType}
+              isSubmitting={updatePaymentPlan.isPending}
+            />
           </DialogContent>
         </Dialog>
 

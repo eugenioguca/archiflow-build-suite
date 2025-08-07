@@ -15,6 +15,7 @@ import { usePaymentInstallments, PaymentInstallment } from '@/hooks/usePaymentIn
 import { useAuth } from '@/hooks/useAuth';
 import { CurrencyInput } from './CurrencyInput';
 import { DatePicker } from './DatePicker';
+import { PaymentInstallmentForm } from './forms/PaymentInstallmentForm';
 
 interface PaymentInstallmentsTableProps {
   paymentPlanId: string;
