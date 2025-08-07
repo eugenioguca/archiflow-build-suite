@@ -63,6 +63,8 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [selectedDocType, setSelectedDocType] = useState<string>('');
+  const [documentStatuses, setDocumentStatuses] = useState<Record<string, any>>({});
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   // Define required documents including plan_pagos for cliente_cerrado stage
@@ -106,6 +108,19 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
 
   const [planPagosCompleted, setPlanPagosCompleted] = useState(false);
 
+  // Verificar estado de todos los documentos
+  const checkAllDocumentStatuses = async () => {
+    setLoading(true);
+    const statuses: Record<string, any> = {};
+    
+    for (const doc of requiredDocuments) {
+      statuses[doc.id] = await getDocumentStatus(doc);
+    }
+    
+    setDocumentStatuses(statuses);
+    setLoading(false);
+  };
+
   useEffect(() => {
     const checkPlanPagosStatus = async () => {
       if (currentStage === 'cliente_cerrado') {
@@ -137,27 +152,85 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
     };
 
     checkPlanPagosStatus();
+    checkAllDocumentStatuses();
   }, [clientProjectId, currentStage]);
 
-  const getDocumentStatus = (doc: RequiredDocument) => {
+  const getDocumentStatus = async (doc: RequiredDocument) => {
     const isRequired = doc.required_for_stages.includes(currentStage);
     
+    // Verificar en el expediente real del proyecto si los documentos existen
     switch (doc.type) {
       case 'curp':
-        if (clientProject?.curp) {
-          return { uploaded: true, status: 'completed', required: isRequired };
+        try {
+          const { data, error } = await supabase
+            .from('documents')
+            .select('id')
+            .eq('project_id', clientProjectId)
+            .eq('category', 'curp')
+            .eq('document_status', 'active')
+            .limit(1);
+          
+          if (error) throw error;
+          return { uploaded: data && data.length > 0, status: data && data.length > 0 ? 'completed' : 'pending', required: isRequired };
+        } catch (error) {
+          console.error('Error checking CURP:', error);
+          return { uploaded: false, status: 'pending', required: isRequired };
         }
-        break;
+        
       case 'fiscal_certificate':
-        if (clientProject?.constancia_situacion_fiscal_uploaded) {
-          return { uploaded: true, status: 'completed', required: isRequired };
+        try {
+          // Verificar tanto en documents como en client_projects (documentos heredados)
+          const [documentsResult, projectResult] = await Promise.all([
+            supabase
+              .from('documents')
+              .select('id')
+              .eq('project_id', clientProjectId)
+              .eq('category', 'constancia_situacion_fiscal')
+              .eq('document_status', 'active')
+              .limit(1),
+            supabase
+              .from('client_projects')
+              .select('constancia_situacion_fiscal_url')
+              .eq('id', clientProjectId)
+              .single()
+          ]);
+          
+          const hasUnifiedDoc = documentsResult.data && documentsResult.data.length > 0;
+          const hasInheritedDoc = projectResult.data?.constancia_situacion_fiscal_url;
+          
+          return { uploaded: hasUnifiedDoc || hasInheritedDoc, status: (hasUnifiedDoc || hasInheritedDoc) ? 'completed' : 'pending', required: isRequired };
+        } catch (error) {
+          console.error('Error checking fiscal certificate:', error);
+          return { uploaded: false, status: 'pending', required: isRequired };
         }
-        break;
+        
       case 'contract':
-        if (clientProject?.contract_uploaded) {
-          return { uploaded: true, status: 'completed', required: isRequired };
+        try {
+          // Verificar tanto en documents como en client_projects (documentos heredados)
+          const [documentsResult, projectResult] = await Promise.all([
+            supabase
+              .from('documents')
+              .select('id')
+              .eq('project_id', clientProjectId)
+              .eq('category', 'contract')
+              .eq('document_status', 'active')
+              .limit(1),
+            supabase
+              .from('client_projects')
+              .select('contract_url')
+              .eq('id', clientProjectId)
+              .single()
+          ]);
+          
+          const hasUnifiedDoc = documentsResult.data && documentsResult.data.length > 0;
+          const hasInheritedDoc = projectResult.data?.contract_url;
+          
+          return { uploaded: hasUnifiedDoc || hasInheritedDoc, status: (hasUnifiedDoc || hasInheritedDoc) ? 'completed' : 'pending', required: isRequired };
+        } catch (error) {
+          console.error('Error checking contract:', error);
+          return { uploaded: false, status: 'pending', required: isRequired };
         }
-        break;
+        
       case 'plan_pagos':
         if (planPagosCompleted) {
           return { uploaded: true, status: 'completed', required: isRequired };
@@ -176,7 +249,7 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
     if (requiredDocs.length === 0) return 100;
     
     const completedDocs = requiredDocs.filter(doc => 
-      getDocumentStatus(doc).uploaded
+      documentStatuses[doc.id]?.uploaded
     );
     
     return Math.round((completedDocs.length / requiredDocs.length) * 100);
@@ -296,6 +369,9 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
         onDocumentUpdate();
       }
 
+      // Refrescar estados de documentos
+      await checkAllDocumentStatuses();
+
     } catch (error) {
       console.error('Error uploading document:', error);
       toast({
@@ -314,7 +390,7 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
     );
     
     const allCompleted = requiredDocs.every(doc => 
-      getDocumentStatus(doc).uploaded
+      documentStatuses[doc.id]?.uploaded
     );
     
     return allCompleted;
@@ -380,13 +456,13 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
               </div>
               <div>
                 <div className="text-2xl font-bold text-green-600">
-                  {requiredDocsForStage.filter(doc => getDocumentStatus(doc).uploaded).length}
+                  {requiredDocsForStage.filter(doc => documentStatuses[doc.id]?.uploaded).length}
                 </div>
                 <p className="text-xs text-muted-foreground">Completados</p>
               </div>
               <div>
                 <div className="text-2xl font-bold text-orange-600">
-                  {requiredDocsForStage.filter(doc => !getDocumentStatus(doc).uploaded).length}
+                  {requiredDocsForStage.filter(doc => !documentStatuses[doc.id]?.uploaded).length}
                 </div>
                 <p className="text-xs text-muted-foreground">Pendientes</p>
               </div>
@@ -402,83 +478,93 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {requiredDocuments.map((doc) => {
-              const status = getDocumentStatus(doc);
-              const IconComponent = doc.icon;
-              
-              return (
-                <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <IconComponent className="h-8 w-8 text-muted-foreground" />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-medium">{doc.name}</h3>
-                        {status.required && (
-                          <Badge variant="secondary" className="text-xs">Requerido</Badge>
-                        )}
-                        {status.uploaded ? (
-                          <Badge variant="default" className="text-xs bg-green-100 text-green-800">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Completado
-                          </Badge>
-                        ) : status.required ? (
-                          <Badge variant="destructive" className="text-xs">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            Pendiente
-                          </Badge>
-                        ) : null}
+            {loading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="animate-pulse">
+                    <div className="h-16 bg-muted rounded"></div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              requiredDocuments.map((doc) => {
+                const status = documentStatuses[doc.id] || { uploaded: false, status: 'pending', required: false };
+                const IconComponent = doc.icon;
+                
+                return (
+                  <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <IconComponent className="h-8 w-8 text-muted-foreground" />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium">{doc.name}</h3>
+                          {status.required && (
+                            <Badge variant="secondary" className="text-xs">Requerido</Badge>
+                          )}
+                          {status.uploaded ? (
+                            <Badge variant="default" className="text-xs bg-green-100 text-green-800">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Completado
+                            </Badge>
+                          ) : status.required ? (
+                            <Badge variant="destructive" className="text-xs">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              Pendiente
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <p className="text-sm text-muted-foreground">{doc.description}</p>
                       </div>
-                      <p className="text-sm text-muted-foreground">{doc.description}</p>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      {!status.uploaded && doc.type !== 'plan_pagos' && (
+                        <Dialog open={showUploadDialog && selectedDocType === doc.id} 
+                               onOpenChange={(open) => {
+                                 setShowUploadDialog(open);
+                                 if (open) setSelectedDocType(doc.id);
+                               }}>
+                          <DialogTrigger asChild>
+                            <Button size="sm" variant="outline">
+                              <Upload className="h-4 w-4 mr-1" />
+                              Subir
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Subir {doc.name}</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <Input
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                              />
+                              <div className="flex justify-end gap-2">
+                                <Button variant="outline" onClick={() => setShowUploadDialog(false)}>
+                                  Cancelar
+                                </Button>
+                                <Button 
+                                  onClick={() => uploadFile && handleFileUpload(uploadFile, doc.id)}
+                                  disabled={!uploadFile || uploadingDoc === doc.id}
+                                >
+                                  {uploadingDoc === doc.id ? 'Subiendo...' : 'Subir'}
+                                </Button>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      )}
+                      {doc.type === 'plan_pagos' && !status.uploaded && (
+                        <div className="text-sm text-muted-foreground italic">
+                          Se completará automáticamente al pagar la primera parcialidad
+                        </div>
+                      )}
                     </div>
                   </div>
-                  
-                  <div className="flex items-center gap-2">
-                    {!status.uploaded && doc.type !== 'plan_pagos' && (
-                      <Dialog open={showUploadDialog && selectedDocType === doc.id} 
-                             onOpenChange={(open) => {
-                               setShowUploadDialog(open);
-                               if (open) setSelectedDocType(doc.id);
-                             }}>
-                        <DialogTrigger asChild>
-                          <Button size="sm" variant="outline">
-                            <Upload className="h-4 w-4 mr-1" />
-                            Subir
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Subir {doc.name}</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <Input
-                              type="file"
-                              accept=".pdf,.jpg,.jpeg,.png"
-                              onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                            />
-                            <div className="flex justify-end gap-2">
-                              <Button variant="outline" onClick={() => setShowUploadDialog(false)}>
-                                Cancelar
-                              </Button>
-                              <Button 
-                                onClick={() => uploadFile && handleFileUpload(uploadFile, doc.id)}
-                                disabled={!uploadFile || uploadingDoc === doc.id}
-                              >
-                                {uploadingDoc === doc.id ? 'Subiendo...' : 'Subir'}
-                              </Button>
-                            </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                      )}
-                    {doc.type === 'plan_pagos' && !status.uploaded && (
-                      <div className="text-sm text-muted-foreground italic">
-                        Se completará automáticamente al pagar la primera parcialidad
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                 );
+               })
+            )}
           </div>
         </CardContent>
       </Card>
