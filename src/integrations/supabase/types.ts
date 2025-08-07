@@ -526,7 +526,7 @@ export type Database = {
           },
         ]
       }
-      client_documents: {
+      client_documents_deprecated_backup: {
         Row: {
           client_id: string
           created_at: string
@@ -6112,6 +6112,10 @@ export type Database = {
         Args: { payment_date: string }
         Returns: string
       }
+      cleanup_deprecated_client_documents: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       create_default_design_phases: {
         Args: { project_id_param: string }
         Returns: undefined
@@ -6164,6 +6168,14 @@ export type Database = {
           sales_pipeline_stage: string
           estimated_budget: number
           construction_budget: number
+        }[]
+      }
+      get_migration_statistics: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          metric: string
+          count: number
+          details: string
         }[]
       }
       get_profitability_analysis: {
