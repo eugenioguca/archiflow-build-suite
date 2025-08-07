@@ -79,10 +79,7 @@ export const FinancePaymentManager: React.FC<FinancePaymentManagerProps> = ({
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [paymentDialogData, setPaymentDialogData] = useState<PaymentDialogData | null>(null);
   const [paymentForm, setPaymentForm] = useState({
-    payment_date: new Date().toISOString().split('T')[0],
-    payment_method: '',
-    reference_number: '',
-    notes: ''
+    payment_date: new Date().toISOString().split('T')[0]
   });
 
   // Fetch payment plans with direct queries
@@ -221,10 +218,8 @@ export const FinancePaymentManager: React.FC<FinancePaymentManagerProps> = ({
         .insert({
           description: `Pago parcialidad ${installment.installment_number} - ${plan.plan_name}`,
           amount: installment.amount,
-          expense_date: paymentForm.payment_date,
+          expense_date: paymentForm.payment_date || new Date().toISOString().split('T')[0],
           category: 'other',
-          payment_method: paymentForm.payment_method,
-          reference_number: paymentForm.reference_number,
           created_by: (await supabase.auth.getUser()).data.user?.id
         });
 
@@ -238,10 +233,7 @@ export const FinancePaymentManager: React.FC<FinancePaymentManagerProps> = ({
       setIsPaymentDialogOpen(false);
       setPaymentDialogData(null);
       setPaymentForm({
-        payment_date: new Date().toISOString().split('T')[0],
-        payment_method: '',
-        reference_number: '',
-        notes: ''
+        payment_date: new Date().toISOString().split('T')[0]
       });
       
       // Refresh data
@@ -263,10 +255,7 @@ export const FinancePaymentManager: React.FC<FinancePaymentManagerProps> = ({
       clientName: plan.client_name
     });
     setPaymentForm({
-      payment_date: new Date().toISOString().split('T')[0],
-      payment_method: '',
-      reference_number: '',
-      notes: ''
+      payment_date: new Date().toISOString().split('T')[0]
     });
     setIsPaymentDialogOpen(true);
   };
@@ -770,77 +759,17 @@ export const FinancePaymentManager: React.FC<FinancePaymentManagerProps> = ({
           </DialogHeader>
           
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="payment_date">Fecha de pago *</Label>
-                <Input
-                  id="payment_date"
-                  type="date"
-                  value={paymentForm.payment_date}
-                  onChange={(e) => setPaymentForm({...paymentForm, payment_date: e.target.value})}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="payment_method">Método de pago *</Label>
-                <Select 
-                  value={paymentForm.payment_method} 
-                  onValueChange={(value) => setPaymentForm({...paymentForm, payment_method: value})}
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar método" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="transferencia">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        Transferencia Bancaria
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="efectivo">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        Efectivo
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="cheque">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                        Cheque
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="tarjeta">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                        Tarjeta de Crédito/Débito
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
             <div className="space-y-2">
-              <Label htmlFor="reference_number">Número de referencia</Label>
+              <Label htmlFor="payment_date">Fecha de pago</Label>
               <Input
-                id="reference_number"
-                placeholder="Ej: REF-12345, Transferencia #123456"
-                value={paymentForm.reference_number}
-                onChange={(e) => setPaymentForm({...paymentForm, reference_number: e.target.value})}
+                id="payment_date"
+                type="date"
+                value={paymentForm.payment_date}
+                onChange={(e) => setPaymentForm({...paymentForm, payment_date: e.target.value})}
               />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notas adicionales</Label>
-              <Textarea
-                id="notes"
-                placeholder="Notas sobre el pago, observaciones, etc..."
-                value={paymentForm.notes}
-                onChange={(e) => setPaymentForm({...paymentForm, notes: e.target.value})}
-                rows={3}
-              />
+              <p className="text-sm text-muted-foreground">
+                Si no se especifica, se usará la fecha actual
+              </p>
             </div>
           </div>
           
@@ -853,7 +782,6 @@ export const FinancePaymentManager: React.FC<FinancePaymentManagerProps> = ({
             </Button>
             <Button 
               onClick={handleMarkAsPaid}
-              disabled={!paymentForm.payment_method}
               className="bg-primary hover:bg-primary/90"
             >
               <CheckCircle className="h-4 w-4 mr-2" />
