@@ -252,7 +252,8 @@ export const PaymentPlanManager: React.FC<PaymentPlanManagerProps> = ({
                   <DialogTitle>Crear Plan de Pago</DialogTitle>
                 </DialogHeader>
                 <div className="flex-1 min-h-0 overflow-hidden">
-                  <div className="mb-4">
+                  {/* Validaciones ocultas pero funcionales */}
+                  <div className="hidden">
                     <PaymentPlanValidations 
                       projectId={clientProjectId}
                       planType={planType || 'design_payment'}

@@ -533,7 +533,7 @@ export const PaymentPlanForm: React.FC<PaymentPlanFormProps> = ({
         </div>
 
         {/* Footer con botones fijos */}
-        <div className="flex gap-3 pt-4 mt-4 border-t bg-background flex-shrink-0 sticky bottom-0">
+        <div className="flex gap-3 px-6 py-4 border-t bg-background/95 backdrop-blur-sm flex-shrink-0 sticky bottom-0 rounded-b-lg">
           <Button
             type="button"
             variant="outline"
