@@ -107,19 +107,28 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
       const documentsFromClientDocs = await fetchClientDocuments();
       const documentsFromProjectFields = await fetchProjectFieldDocuments();
       
-      // Evitar duplicaciones: solo incluir documentos de project fields si NO existen en la tabla documents
+      // Evitar duplicaciones de forma más específica
       const unifiedDocuments = documentsFromClientDocs;
-      const existingTypes = new Set(unifiedDocuments.map(doc => doc.document_type));
+      const existingPaths = new Set(unifiedDocuments.map(doc => doc.file_path));
+      const existingNames = new Set(unifiedDocuments.map(doc => doc.document_name.toLowerCase()));
       
-      // Solo agregar documentos de project fields si no existen en documents
+      // Solo agregar documentos de project fields si NO existen duplicados
       const filteredProjectFieldDocs = documentsFromProjectFields.filter(doc => 
-        !existingTypes.has(doc.document_type)
+        !existingPaths.has(doc.file_path) && 
+        !existingNames.has(doc.document_name.toLowerCase())
       );
       
       const allDocuments = [
         ...unifiedDocuments,
         ...filteredProjectFieldDocs
       ];
+      
+      console.log('Documents loaded:', {
+        unified: unifiedDocuments.length,
+        inherited: filteredProjectFieldDocs.length,
+        total: allDocuments.length,
+        documents: allDocuments.map(d => ({ name: d.document_name, type: d.document_type, source: d.source }))
+      });
       
       setDocuments(allDocuments);
     } catch (error) {
@@ -326,6 +335,55 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
       toast({
         title: "Error al abrir documento",
         description: error instanceof Error ? error.message : "No se pudo abrir el documento",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteDocument = async (document: Document) => {
+    if (!confirm(`¿Estás seguro de que quieres eliminar "${document.document_name}"?`)) {
+      return;
+    }
+
+    try {
+      if (document.source === 'unified_documents') {
+        // Delete from documents table
+        const { error } = await supabase
+          .from('documents')
+          .update({ document_status: 'deleted' })
+          .eq('id', document.id);
+
+        if (error) throw error;
+      } else if (document.source === 'inherited') {
+        // Clear the URL from client_projects table
+        const updateData: any = {};
+        if (document.document_type === 'contract') {
+          updateData.contract_url = null;
+          updateData.contract_uploaded = false;
+        } else if (document.document_type === 'fiscal') {
+          updateData.constancia_situacion_fiscal_url = null;
+          updateData.constancia_situacion_fiscal_uploaded = false;
+        }
+
+        const { error } = await supabase
+          .from('client_projects')
+          .update(updateData)
+          .eq('id', projectId);
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Documento eliminado",
+        description: `Se eliminó "${document.document_name}" exitosamente`,
+      });
+
+      await fetchDocuments();
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el documento",
         variant: "destructive",
       });
     }
@@ -610,26 +668,35 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
                           <span>{formatFileSize(doc.file_size)}</span>
                         </div>
                       </div>
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleViewDocument(doc)}
-                          title="Visualizar documento en nueva ventana"
-                          className="hover:bg-primary/10 hover:text-primary"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDownloadDocument(doc)}
-                          title="Descargar documento"
-                          className="hover:bg-green-100 hover:text-green-700"
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </div>
+                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                         <Button
+                           variant="ghost"
+                           size="sm"
+                           onClick={() => handleViewDocument(doc)}
+                           title="Visualizar documento en nueva ventana"
+                           className="hover:bg-primary/10 hover:text-primary"
+                         >
+                           <Eye className="h-4 w-4" />
+                         </Button>
+                         <Button
+                           variant="ghost"
+                           size="sm"
+                           onClick={() => handleDownloadDocument(doc)}
+                           title="Descargar documento"
+                           className="hover:bg-green-100 hover:text-green-700"
+                         >
+                           <Download className="h-4 w-4" />
+                         </Button>
+                         <Button
+                           variant="ghost"
+                           size="sm"
+                           onClick={() => handleDeleteDocument(doc)}
+                           title="Eliminar documento"
+                           className="hover:bg-destructive/10 hover:text-destructive"
+                         >
+                           <Trash2 className="h-4 w-4" />
+                         </Button>
+                       </div>
                     </div>
                   ))}
                 </div>
