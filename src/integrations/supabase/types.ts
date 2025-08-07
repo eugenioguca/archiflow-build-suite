@@ -3860,6 +3860,142 @@ export type Database = {
           },
         ]
       }
+      payment_installments: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          due_date: string
+          id: string
+          installment_number: number
+          notes: string | null
+          paid_by: string | null
+          paid_date: string | null
+          payment_plan_id: string
+          payment_reference: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description: string
+          due_date: string
+          id?: string
+          installment_number: number
+          notes?: string | null
+          paid_by?: string | null
+          paid_date?: string | null
+          payment_plan_id: string
+          payment_reference?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          due_date?: string
+          id?: string
+          installment_number?: number
+          notes?: string | null
+          paid_by?: string | null
+          paid_date?: string | null
+          payment_plan_id?: string
+          payment_reference?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_installments_paid_by_fkey"
+            columns: ["paid_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_installments_payment_plan_id_fkey"
+            columns: ["payment_plan_id"]
+            isOneToOne: false
+            referencedRelation: "payment_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_plans: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          client_project_id: string
+          created_at: string
+          created_by: string
+          id: string
+          is_current_plan: boolean
+          notes: string | null
+          plan_name: string
+          plan_sequence: number
+          plan_type: string
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          client_project_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          is_current_plan?: boolean
+          notes?: string | null
+          plan_name: string
+          plan_sequence?: number
+          plan_type: string
+          status?: string
+          total_amount: number
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          client_project_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_current_plan?: boolean
+          notes?: string | null
+          plan_name?: string
+          plan_sequence?: number
+          plan_type?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_plans_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_plans_client_project_id_fkey"
+            columns: ["client_project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_plans_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_settings: {
         Row: {
           created_at: string
