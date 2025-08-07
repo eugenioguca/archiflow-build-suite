@@ -235,7 +235,9 @@ export const PaymentPlanForm: React.FC<PaymentPlanFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="flex flex-col h-full">
+      <form onSubmit={handleSubmit} className="flex flex-col h-full">
+        <div className="flex-1 overflow-y-auto space-y-4 pr-2 max-h-[calc(85vh-200px)]">
       <div>
         <Label htmlFor="plan_name">Nombre del Plan *</Label>
         <Input
@@ -498,14 +500,18 @@ export const PaymentPlanForm: React.FC<PaymentPlanFormProps> = ({
         />
       </div>
 
-      <div className="flex justify-end gap-3 pt-6 border-t bg-background sticky bottom-0">
-        <Button type="button" variant="outline" onClick={onCancel} className="min-w-[100px]">
-          Cancelar
-        </Button>
-        <Button type="submit" disabled={isSubmitting} className="min-w-[120px]">
-          {isSubmitting ? 'Guardando...' : 'Guardar Plan'}
-        </Button>
-      </div>
-    </form>
+        </div>
+        
+        {/* Fixed footer with buttons */}
+        <div className="flex justify-end gap-3 pt-6 border-t bg-background flex-shrink-0 mt-4">
+          <Button type="button" variant="outline" onClick={onCancel} className="min-w-[100px]">
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={isSubmitting} className="min-w-[120px]">
+            {isSubmitting ? 'Guardando...' : 'Guardar Plan'}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 };
