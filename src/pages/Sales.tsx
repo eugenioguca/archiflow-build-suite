@@ -742,7 +742,7 @@ export default function Sales() {
           
           {selectedProject && (
             <Tabs defaultValue="crm" className="w-full flex flex-col flex-1 overflow-hidden">
-              <TabsList className="grid grid-cols-5 w-full flex-shrink-0 mx-6">
+              <TabsList className="grid grid-cols-6 w-full flex-shrink-0 mx-6">
                 <TabsTrigger value="crm">CRM & Información</TabsTrigger>
                 <TabsTrigger 
                   value="required-docs"
@@ -757,6 +757,13 @@ export default function Sales() {
                   className={selectedProject.sales_pipeline_stage === 'nuevo_lead' ? 'opacity-50' : ''}
                 >
                   Expediente del Proyecto
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="payments"
+                  disabled={selectedProject.sales_pipeline_stage === 'nuevo_lead'}
+                  className={selectedProject.sales_pipeline_stage === 'nuevo_lead' ? 'opacity-50' : ''}
+                >
+                  Planes de Pago
                 </TabsTrigger>
                 <TabsTrigger value="projects">Gestión de Proyectos</TabsTrigger>
                 <TabsTrigger value="chat">Chat Cliente</TabsTrigger>
@@ -862,6 +869,23 @@ export default function Sales() {
                 />
               </TabsContent>
 
+              <TabsContent value="payments" className="px-6 pb-6 overflow-y-auto flex-1">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-primary" />
+                    <h3 className="text-lg font-semibold">Planes de Pago de Diseño</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Gestiona los planes de pago para el diseño de este proyecto. Solo se pueden crear planes de diseño desde el módulo de ventas.
+                  </p>
+                  <PaymentPlanManager 
+                    clientProjectId={selectedProject.id}
+                    planType="design_payment"
+                    readOnly={false}
+                    compact={false}
+                  />
+                </div>
+              </TabsContent>
 
               <TabsContent value="projects" className="px-6 pb-6 overflow-y-auto flex-1">
                 <ClientProjectManager

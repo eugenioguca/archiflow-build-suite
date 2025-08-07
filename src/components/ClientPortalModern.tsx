@@ -32,7 +32,8 @@ import {
   Timer,
   Construction,
   Calculator,
-  Hammer
+  Hammer,
+  Palette
 } from 'lucide-react';
 import { format, differenceInDays, isAfter, isBefore } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -538,13 +539,48 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
           </TabsContent>
 
           <TabsContent value="payments">
-            <div className="space-y-4">
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 mb-4">
+                <DollarSign className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold">Planes de Pago</h3>
+              </div>
+              
               {selectedProject && (
-                <PaymentPlanManager
-                  clientProjectId={selectedProject.id}
-                  readOnly={true}
-                  compact={true}
-                />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Palette className="h-4 w-4 text-blue-500" />
+                        Plan de Pago - Diseño
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <PaymentPlanManager 
+                        clientProjectId={selectedProject.id}
+                        planType="design_payment"
+                        readOnly={true}
+                        compact={true}
+                      />
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-orange-500" />
+                        Plan de Pago - Construcción
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <PaymentPlanManager 
+                        clientProjectId={selectedProject.id}
+                        planType="construction_payment"
+                        readOnly={true}
+                        compact={true}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
               )}
             </div>
           </TabsContent>
