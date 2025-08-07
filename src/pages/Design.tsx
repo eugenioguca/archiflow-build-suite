@@ -20,6 +20,7 @@ import { DesignDocumentManager } from "@/components/DesignDocumentManager";
 
 import { TeamClientChat } from "@/components/TeamClientChat";
 import { ModuleNotifications } from "@/components/ModuleNotifications";
+import { PaymentPlanManager } from "@/components/PaymentPlanManager";
 import { 
   Clock, 
   User, 
@@ -771,11 +772,10 @@ export default function Design() {
 
         <TabsContent value="payments">
           <div className="bg-card rounded-lg p-4 border">
-            <div className="text-center p-8">
-              <p className="text-muted-foreground">
-                Los pagos se gestionan desde el módulo de finanzas una vez que se crean los planes de pago.
-              </p>
-            </div>
+            <PaymentPlanManager 
+              clientProjectId={projectId}
+              compact={true}
+            />
           </div>
         </TabsContent>
 

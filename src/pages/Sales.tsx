@@ -21,6 +21,7 @@ import { TeamClientChat } from "@/components/TeamClientChat";
 import { ModuleNotifications } from "@/components/ModuleNotifications";
 import { SalesChatProjectSelector } from "@/components/SalesChatProjectSelector";
 import { SalesProjectFileManager } from "@/components/SalesProjectFileManager";
+import { PaymentPlanManager } from "@/components/PaymentPlanManager";
 import {
   Users, 
   TrendingUp, 

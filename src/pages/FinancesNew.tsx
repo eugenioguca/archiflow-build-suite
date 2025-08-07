@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { MaterialFinanceRequests } from '@/components/MaterialFinanceRequests';
 import { GlobalFilters } from '@/components/GlobalFilters';
+import { PaymentPlanManager } from '@/components/PaymentPlanManager';
 
 const FinancesNew: React.FC = () => {
   // Estado para filtros cliente-proyecto
@@ -40,7 +41,7 @@ const FinancesNew: React.FC = () => {
 
       <Tabs defaultValue="dashboard" className="space-y-3">
         {/* MENÚ LIMPIO - Solo 6 funcionalidades esenciales */}
-        <TabsList className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-5 w-full h-auto gap-1 p-1 bg-muted">
+        <TabsList className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 w-full h-auto gap-1 p-1 bg-muted">
           <TabsTrigger value="dashboard" className="flex items-center gap-2 py-2 px-3 text-sm">
             <LayoutDashboard className="h-4 w-4" />
             <span>Dashboard</span>
@@ -60,6 +61,10 @@ const FinancesNew: React.FC = () => {
           <TabsTrigger value="invoicing" className="flex items-center gap-2 py-2 px-3 text-sm">
             <FileText className="h-4 w-4" />
             <span>Facturación</span>
+          </TabsTrigger>
+          <TabsTrigger value="payment-plans" className="flex items-center gap-2 py-2 px-3 text-sm">
+            <CreditCard className="h-4 w-4" />
+            <span>Planes de Pago</span>
           </TabsTrigger>
           <TabsTrigger value="profitability" className="flex items-center gap-2 py-2 px-3 text-sm">
             <Calculator className="h-4 w-4" />
@@ -118,6 +123,24 @@ const FinancesNew: React.FC = () => {
 
         <TabsContent value="invoicing" className="space-y-4">
           <ElectronicInvoicingDashboard />
+        </TabsContent>
+
+        <TabsContent value="payment-plans" className="space-y-4">
+          <GlobalFilters
+            selectedClientId={selectedClientId}
+            selectedProjectId={selectedProjectId}
+            onClientChange={setSelectedClientId}
+            onProjectChange={setSelectedProjectId}
+            onClearFilters={() => {
+              setSelectedClientId(undefined);
+              setSelectedProjectId(undefined);
+            }}
+          />
+          <PaymentPlanManager 
+            clientProjectId={selectedProjectId || ""}
+            readOnly={false}
+            compact={false}
+          />
         </TabsContent>
 
         <TabsContent value="profitability" className="space-y-4">
