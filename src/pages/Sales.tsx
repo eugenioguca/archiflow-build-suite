@@ -878,12 +878,12 @@ export default function Sales() {
                   <p className="text-sm text-muted-foreground">
                     Gestiona los planes de pago para el diseño de este proyecto. Solo se pueden crear planes de diseño desde el módulo de ventas.
                   </p>
-                  <PaymentPlanManager 
-                    clientProjectId={selectedProject.id}
-                    planType="design_payment"
-                    readOnly={false}
-                    compact={false}
-                  />
+                   <PaymentPlanManager 
+                     clientProjectId={selectedProject.id}
+                     planType="design_payment"
+                     readOnly={false}
+                     compact={true}
+                   />
                 </div>
               </TabsContent>
 
