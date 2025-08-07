@@ -27,14 +27,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Check for existing session first
     const initializeAuth = async () => {
+      console.log('DEBUG: Initializing auth...');
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        console.log('DEBUG: Session obtained:', !!session, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
         // Only check approval for authenticated users
         if (session?.user) {
-          console.log('Checking approval for user:', session.user.id);
+          console.log('DEBUG: Checking approval for user:', session.user.id);
           try {
             const { data: profile, error: profileError } = await supabase
               .from('profiles')
@@ -42,13 +44,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               .eq('user_id', session.user.id)
               .single();
             
-            console.log('User profile:', profile);
-            console.log('Profile error:', profileError);
+            console.log('DEBUG: User profile:', profile);
+            console.log('DEBUG: Profile error:', profileError);
             
             // Admins are automatically approved
             const isAdmin = profile?.role === 'admin';
             const isApprovedUser = profile?.approval_status === 'approved';
             const shouldBeApproved = isAdmin || isApprovedUser;
+            
+            console.log('DEBUG: Approval status:', { isAdmin, isApprovedUser, shouldBeApproved });
             
             // Check if profile is complete based on role
             const isClient = profile?.role === 'client';
@@ -58,21 +62,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 : (profile?.full_name && profile?.position_enum && profile?.department_enum && profile?.phone) // Para empleados todos los campos
               );
             
+            console.log('DEBUG: Profile completion:', { isClient, profileComplete });
             
             setProfile(profile);
             setIsApproved(shouldBeApproved);
             setNeedsOnboarding(!profileComplete && shouldBeApproved);
+            
+            console.log('DEBUG: Final auth state:', { 
+              approved: shouldBeApproved, 
+              needsOnboarding: !profileComplete && shouldBeApproved 
+            });
           } catch (error) {
-            console.error('Error checking approval status:', error);
+            console.error('ERROR: Error checking approval status:', error);
             setIsApproved(false);
           }
         } else {
+          console.log('DEBUG: No authenticated user');
           setIsApproved(false);
           setNeedsOnboarding(false);
         }
       } catch (error) {
-        console.error('Error initializing auth:', error);
+        console.error('ERROR: Error initializing auth:', error);
       } finally {
+        console.log('DEBUG: Auth initialization completed');
         setLoading(false);
       }
     };

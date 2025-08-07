@@ -99,11 +99,16 @@ export default function Clients() {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
 
   useEffect(() => {
+    console.log('DEBUG: Clients page mounted, fetching clients...');
     fetchClients();
   }, []);
 
   const fetchClients = async () => {
+    console.log('DEBUG: Starting fetchClients...');
+    setLoading(true);
+    
     try {
+      console.log('DEBUG: Executing supabase query for clients...');
       const { data, error } = await supabase
         .from('clients')
         .select(`
@@ -143,18 +148,28 @@ export default function Clients() {
         `)
         .order('created_at', { ascending: false });
 
+      console.log('DEBUG: Fetch clients result:', { data, error });
+      console.log('DEBUG: Number of clients found:', data?.length || 0);
+
       if (error) throw error;
       
       // Type assertion to match our interface
       setClients((data as unknown as Client[]) || []);
     } catch (error: any) {
-      console.error('Error fetching clients:', error);
+      console.error('ERROR: Failed to fetch clients:', error);
+      console.error('ERROR: Error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
       toast({
         title: "Error",
-        description: "No se pudieron cargar los clientes",
+        description: `No se pudieron cargar los clientes: ${error.message}`,
         variant: "destructive",
       });
     } finally {
+      console.log('DEBUG: fetchClients completed');
       setLoading(false);
     }
   };

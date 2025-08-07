@@ -64,6 +64,8 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
+      console.log('DEBUG: Starting dashboard data fetch...');
+      
       // Solo mostrar loading en la primera carga inicial (cuando no hay datos y realmente estamos cargando)
       const hasData = stats.totalClients > 0 || stats.totalProjects > 0 || stats.totalExpenses > 0 || recentActivity.length > 0;
       if (!hasData && !loading) {
@@ -71,7 +73,10 @@ export default function Dashboard() {
       }
       
       // Fetch client projects data for pipeline calculation
-      const { data: clientProjects } = await supabase.from('client_projects').select('status, budget');
+      console.log('DEBUG: Fetching client_projects...');
+      const { data: clientProjects, error: clientProjectsError } = await supabase.from('client_projects').select('status, budget');
+      console.log('DEBUG: Client projects result:', { data: clientProjects, error: clientProjectsError, count: clientProjects?.length });
+      
       const totalClients = clientProjects?.length || 0;
       const activeClients = clientProjects?.filter(c => c.status === 'active').length || 0;
       const potentialClients = clientProjects?.filter(c => c.status === 'potential').length || 0;

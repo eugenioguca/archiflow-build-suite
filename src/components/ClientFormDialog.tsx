@@ -147,6 +147,9 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('DEBUG: Starting client save process...');
+    console.log('DEBUG: Form data:', formData);
+    console.log('DEBUG: Is editing?', !!client);
     setLoading(true);
 
     try {
@@ -158,12 +161,17 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
         notes: formData.notes || null
       };
 
+      console.log('DEBUG: Client data to save:', clientData);
+
       if (client) {
-        const { error } = await supabase
+        console.log('DEBUG: Updating existing client with ID:', client.id);
+        const { data, error } = await supabase
           .from('clients')
           .update(clientData)
-          .eq('id', client.id);
+          .eq('id', client.id)
+          .select();
         
+        console.log('DEBUG: Update result:', { data, error });
         if (error) throw error;
         
         toast({
@@ -171,10 +179,13 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
           description: "Los datos del cliente se actualizaron correctamente",
         });
       } else {
-        const { error } = await supabase
+        console.log('DEBUG: Creating new client...');
+        const { data, error } = await supabase
           .from('clients')
-          .insert(clientData as any);
+          .insert(clientData)
+          .select();
         
+        console.log('DEBUG: Insert result:', { data, error });
         if (error) throw error;
         
         toast({
@@ -183,10 +194,17 @@ export function ClientFormDialog({ open, onClose, client, onSave }: ClientFormDi
         });
       }
       
+      console.log('DEBUG: Client save completed successfully');
       onSave();
       onClose();
     } catch (error: any) {
-      console.error('Error saving client:', error);
+      console.error('ERROR: Client save failed:', error);
+      console.error('ERROR: Error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
       toast({
         title: "Error",
         description: "No se pudo guardar el cliente: " + error.message,
