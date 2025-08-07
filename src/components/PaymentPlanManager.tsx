@@ -16,6 +16,7 @@ import { PaymentInstallmentsTable } from './PaymentInstallmentsTable';
 import { CurrencyInput } from './CurrencyInput';
 import { PaymentPlanForm } from './forms/PaymentPlanForm';
 import { PaymentPlanValidations } from './PaymentPlanValidations';
+import { usePaymentInstallments } from '@/hooks/usePaymentInstallments';
 import { supabase } from '@/integrations/supabase/client';
 
 interface PaymentPlanManagerProps {
@@ -222,6 +223,51 @@ export const PaymentPlanManager: React.FC<PaymentPlanManagerProps> = ({
     );
   };
 
+  // Componente para mostrar el resumen de pagos
+  const PaymentSummary: React.FC<{ planId: string }> = ({ planId }) => {
+    const { getPaymentSummary } = usePaymentInstallments(planId);
+    const summary = getPaymentSummary();
+
+    return (
+      <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+        <div className="grid grid-cols-3 gap-4 text-sm">
+          <div>
+            <p className="text-muted-foreground">Pagado</p>
+            <p className="font-semibold text-green-600">
+              ${summary.paidAmount.toLocaleString('es-MX')}
+            </p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Pendiente</p>
+            <p className="font-semibold text-blue-600">
+              ${summary.pendingAmount.toLocaleString('es-MX')}
+            </p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Vencido</p>
+            <p className="font-semibold text-red-600">
+              ${summary.overdueAmount.toLocaleString('es-MX')}
+            </p>
+          </div>
+        </div>
+        {summary.totalAmount > 0 && (
+          <div className="mt-2">
+            <div className="flex justify-between text-xs text-muted-foreground mb-1">
+              <span>Progreso</span>
+              <span>{summary.completionPercentage.toFixed(1)}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-green-600 h-2 rounded-full transition-all duration-300" 
+                style={{ width: `${summary.completionPercentage}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <Card>
@@ -338,6 +384,9 @@ export const PaymentPlanManager: React.FC<PaymentPlanManagerProps> = ({
                     )}
                   </div>
                 </div>
+                
+                {/* Resumen de pagos */}
+                <PaymentSummary planId={plan.id} />
               </CardContent>
             </Card>
           ))}
