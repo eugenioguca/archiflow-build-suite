@@ -6201,6 +6201,26 @@ export type Database = {
           source: string
         }[]
       }
+      get_unified_project_documents: {
+        Args: { project_id_param: string }
+        Returns: {
+          id: string
+          project_id: string
+          client_id: string
+          file_name: string
+          file_path: string
+          file_type: string
+          file_size: number
+          department: string
+          document_type: string
+          description: string
+          uploaded_by: string
+          uploader_name: string
+          created_at: string
+          category_name: string
+          phase_name: string
+        }[]
+      }
       get_user_branch_offices: {
         Args: { _user_id: string }
         Returns: string[]
