@@ -21,6 +21,8 @@ import {
 import { UserDetailsModal } from './UserDetailsModal';
 import { UserDeleteDialog } from './UserDeleteDialog';
 import { UserProfile, UserManagementTableProps } from '@/types/user';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export function UserManagementTable({ 
   users, 

@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://ycbflvptfgrjclzzlxci.supabase.co',
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'DELETE, OPTIONS',
 }
@@ -13,10 +13,11 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  // FASE 4: Validación de origen
+  // Get allowed origins from environment (more secure than hardcoding)
+  const allowedOrigins = (Deno.env.get('ALLOWED_ORIGINS') || 'http://localhost:8080').split(',');
   const origin = req.headers.get('origin');
-  const allowedOrigins = ['https://ycbflvptfgrjclzzlxci.supabase.co', 'http://localhost:8080'];
   if (origin && !allowedOrigins.includes(origin)) {
+    console.log(`Blocked origin: ${origin}`);
     return new Response('Forbidden', { status: 403, headers: corsHeaders });
   }
 
@@ -66,6 +67,13 @@ serve(async (req) => {
       .single()
 
     if (profileError || !profile || profile.role !== 'admin') {
+      // Log security event
+      await supabaseAdmin.rpc('log_security_event', {
+        p_event_type: 'unauthorized_user_deletion_attempt',
+        p_event_data: { attempted_by: user.id, timestamp: new Date().toISOString() },
+        p_user_id: user.id
+      });
+      
       return new Response(
         JSON.stringify({ error: 'Insufficient permissions. Only admins can delete users.' }),
         { 
@@ -97,6 +105,17 @@ serve(async (req) => {
         }
       )
     }
+
+    // Log security event before deletion
+    await supabaseAdmin.rpc('log_security_event', {
+      p_event_type: 'user_deleted',
+      p_event_data: { 
+        deleted_user_id: userId, 
+        deleted_by: user.id,
+        timestamp: new Date().toISOString()
+      },
+      p_user_id: user.id
+    });
 
     // Delete user from auth (this will cascade delete the profile due to foreign key)
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)

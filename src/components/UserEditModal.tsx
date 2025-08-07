@@ -137,20 +137,35 @@ export function UserEditModal({ isOpen, onOpenChange, user, onUserUpdated }: Use
 
     setIsLoading(true);
     try {
-      // Update profile
+      // Update basic profile fields
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
           full_name: formData.full_name,
           phone: formData.phone,
-          role: formData.role,
-          approval_status: formData.approval_status,
           department_enum: formData.department_enum ? formData.department_enum as any : null,
           position_enum: formData.position_enum ? formData.position_enum as any : null
         })
         .eq('id', user.id);
 
       if (profileError) throw profileError;
+
+      // Use secure functions for role and approval status updates (admin only)
+      if (formData.role !== user.role) {
+        const { error: roleError } = await supabase.rpc('update_user_role_secure', {
+          _user_id: user.user_id,
+          _new_role: formData.role
+        });
+        if (roleError) throw roleError;
+      }
+
+      if (formData.approval_status !== user.approval_status) {
+        const { error: approvalError } = await supabase.rpc('update_user_approval_secure', {
+          _user_id: user.user_id,
+          _approval_status: formData.approval_status
+        });
+        if (approvalError) throw approvalError;
+      }
 
       // Update branch assignments only for employees
       if (formData.role === 'employee') {
