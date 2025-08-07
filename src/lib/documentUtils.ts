@@ -47,16 +47,13 @@ const normalizePath = (filePath: string, targetBucket: string): string => {
     return normalizedPath;
   }
   
-  // Detectar si el path ya incluye un bucket diferente
-  const hasClientBucket = normalizedPath.startsWith('client-documents/');
+  // Detectar si el path ya incluye el bucket correcto (project-documents)
   const hasProjectBucket = normalizedPath.startsWith('project-documents/');
   
-  console.log('normalizePath - Bucket detection:', { hasClientBucket, hasProjectBucket });
+  console.log('normalizePath - Bucket detection:', { hasProjectBucket });
   
-  // Si el path ya incluye algún bucket, remover el prefijo para usar el correcto
-  if (hasClientBucket) {
-    normalizedPath = normalizedPath.substring('client-documents/'.length);
-  } else if (hasProjectBucket) {
+  // Si el path ya incluye el bucket, remover el prefijo para evitar duplicación
+  if (hasProjectBucket) {
     normalizedPath = normalizedPath.substring('project-documents/'.length);
   }
   
@@ -106,8 +103,8 @@ export const getDocumentViewUrl = async (
     if (error) {
       console.error('Error creating signed URL:', error);
       
-      // Fallback 1: intentar con el bucket alternativo
-      const fallbackBucket = bucketInfo.bucket === 'client-documents' ? 'project-documents' : 'client-documents';
+      // Fallback 1: intentar con el bucket unificado project-documents
+      const fallbackBucket = 'project-documents';
       const fallbackNormalizedPath = normalizePath(filePath, fallbackBucket);
       
       console.log('getDocumentViewUrl - Trying fallback bucket:', { fallbackBucket, fallbackNormalizedPath });
