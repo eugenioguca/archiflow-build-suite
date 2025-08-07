@@ -237,7 +237,7 @@ export const PaymentPlanForm: React.FC<PaymentPlanFormProps> = ({
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <form onSubmit={handleSubmit} className="flex flex-col h-full max-h-[85vh]">
+      <form onSubmit={handleSubmit} className="flex flex-col h-full max-h-[70vh]">
         <div className="flex-1 overflow-y-auto min-h-0">
           <div className="space-y-4 p-4">
             <div>

@@ -247,7 +247,7 @@ export const PaymentPlanManager: React.FC<PaymentPlanManagerProps> = ({
                   Nuevo Plan
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0">
+              <DialogContent className="max-w-5xl h-[75vh] flex flex-col p-0">
                 <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
                   <DialogTitle>Crear Plan de Pago</DialogTitle>
                 </DialogHeader>
