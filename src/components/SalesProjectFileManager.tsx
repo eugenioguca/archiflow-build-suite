@@ -48,7 +48,7 @@ interface Document {
   file_size?: number;
   created_at: string;
   uploaded_by?: string;
-  source: 'client_documents' | 'project_field' | 'inherited';
+  source: 'unified_documents' | 'project_field' | 'inherited';
 }
 
 interface ProgressPhoto {
@@ -144,7 +144,7 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
       file_size: doc.file_size,
       created_at: doc.created_at,
       uploaded_by: doc.uploaded_by,
-      source: 'client_documents' as const
+      source: 'unified_documents' as const
     }));
   };
 
@@ -235,6 +235,14 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
       });
 
       // Insert into database
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!profile) throw new Error('Perfil no encontrado');
+
       const { error: dbError } = await supabase
         .from('documents')
         .insert({
@@ -245,7 +253,10 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
           file_path: filePath,
           file_type: fileUpload.file.type,
           file_size: fileUpload.file.size,
-          uploaded_by: (await supabase.auth.getUser()).data.user?.id
+          uploaded_by: profile.id,
+          department: 'sales',
+          department_permissions: ['all'],
+          document_status: 'active'
         });
 
       if (dbError) throw dbError;

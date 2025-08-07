@@ -105,7 +105,7 @@ export const ClientDocumentUploader: React.FC<ClientDocumentUploaderProps> = ({
       // Upload to unified project-documents bucket
       const fileExt = fileUpload.file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-      const filePath = `project-documents/${projectId}/${fileName}`;
+      const filePath = `${clientId}/${projectId}/general/${fileName}`;
 
       // Simulate progress for UI feedback
       updateFile(fileUpload.id, { progress: 50 });
