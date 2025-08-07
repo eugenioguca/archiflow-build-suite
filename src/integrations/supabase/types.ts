@@ -6186,19 +6186,19 @@ export type Database = {
       }
       get_project_cumulative_documents: {
         Args:
-          | { p_project_id: string }
+          | { project_id_param: string }
           | { project_id_param: string; user_department?: string }
         Returns: {
           id: string
           name: string
           file_path: string
+          department: string
+          uploaded_by: string
+          created_at: string
           file_type: string
           file_size: number
-          created_at: string
-          document_type: string
-          department: string
+          description: string
           uploader_name: string
-          source: string
         }[]
       }
       get_unified_project_documents: {
@@ -6273,6 +6273,10 @@ export type Database = {
           _new_role: Database["public"]["Enums"]["user_role"]
         }
         Returns: undefined
+      }
+      user_can_access_project: {
+        Args: { project_id_param: string }
+        Returns: boolean
       }
     }
     Enums: {

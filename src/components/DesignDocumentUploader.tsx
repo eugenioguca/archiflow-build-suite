@@ -90,7 +90,7 @@ export function DesignDocumentUploader({ projectId, teamMembers }: DesignDocumen
           profiles:uploaded_by (full_name)
         `)
         .eq('project_id', projectId)
-        .eq('department', 'design')
+        .eq('department', 'diseño')
         .eq('document_status', 'active')
         .order('created_at', { ascending: false });
 
@@ -196,7 +196,7 @@ export function DesignDocumentUploader({ projectId, teamMembers }: DesignDocumen
             file_type: file.type,
             file_size: file.size,
             description: documentDescription || null,
-            department: 'design',
+            department: 'diseño',
             design_phase: selectedPhase,
             uploaded_by: profile.id,
             document_status: 'active',

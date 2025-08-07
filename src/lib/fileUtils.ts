@@ -226,7 +226,7 @@ export class PathBuilder {
  */
 
 /**
- * Sube un documento de cliente (fase lead) al bucket privado
+ * Sube un documento de cliente al bucket unificado project-documents
  */
 export const uploadClientDocument = async (
   file: File,
@@ -240,14 +240,22 @@ export const uploadClientDocument = async (
   const fileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
   const filePath = PathBuilder.buildClientPath(clientName, clientId, documentType, fileName);
 
-  // Subir al bucket privado client-documents
+  // Subir al bucket unificado project-documents
   const { data, error: uploadError } = await supabase.storage
-    .from('client-documents')
+    .from('project-documents')
     .upload(filePath, file);
 
   if (uploadError) throw uploadError;
 
-  return { filePath };
+  // Generar URL pública
+  const { data: urlData } = supabase.storage
+    .from('project-documents')
+    .getPublicUrl(filePath);
+
+  return { 
+    filePath,
+    publicUrl: urlData.publicUrl
+  };
 };
 
 /**
@@ -283,14 +291,15 @@ export const uploadProjectDocument = async (
 };
 
 /**
- * Lista documentos de cliente desde bucket privado
+ * Lista documentos de cliente desde tabla unificada documents
  */
 export const listClientDocuments = async (clientId: string) => {
   try {
     const { data, error } = await supabase
-      .from('client_documents')
+      .from('documents')
       .select('*')
       .eq('client_id', clientId)
+      .eq('document_status', 'active')
       .order('created_at', { ascending: false });
 
     if (error) throw error;

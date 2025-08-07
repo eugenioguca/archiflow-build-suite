@@ -102,16 +102,16 @@ export const ClientDocumentUploader: React.FC<ClientDocumentUploaderProps> = ({
     try {
       updateFile(fileUpload.id, { status: 'uploading', progress: 0 });
 
-      // Upload to Supabase Storage
+      // Upload to unified project-documents bucket
       const fileExt = fileUpload.file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-      const filePath = `client-documents/${clientId}/${fileName}`;
+      const filePath = `project-documents/${projectId}/${fileName}`;
 
       // Simulate progress for UI feedback
       updateFile(fileUpload.id, { progress: 50 });
       
       const { error: uploadError } = await supabase.storage
-        .from('client-documents')
+        .from('project-documents')
         .upload(filePath, fileUpload.file);
 
       if (uploadError) throw uploadError;
@@ -125,18 +125,21 @@ export const ClientDocumentUploader: React.FC<ClientDocumentUploaderProps> = ({
 
       if (!profileData) throw new Error('Profile not found');
 
-      // Save document record
+      // Save document record to unified documents table
       const { error: dbError } = await supabase
-        .from('client_documents')
+        .from('documents')
         .insert({
           client_id: clientId,
           project_id: projectId,
-          document_name: fileUpload.file.name,
-          document_type: fileUpload.category,
+          name: fileUpload.file.name,
+          category: fileUpload.category,
+          department: 'general',
           file_path: filePath,
           file_type: fileUpload.file.type,
           file_size: fileUpload.file.size,
-          uploaded_by: profileData.id
+          uploaded_by: profileData.id,
+          document_status: 'active',
+          access_level: 'internal'
         });
 
       if (dbError) throw dbError;

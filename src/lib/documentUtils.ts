@@ -8,55 +8,27 @@ export interface DocumentSource {
 
 /**
  * Determina el bucket correcto y su configuración basado en la fuente del documento
+ * ACTUALIZADO: Todo ahora va al bucket unificado project-documents
  */
 export const getBucketForDocument = (source?: string): DocumentSource => {
-  switch (source) {
-    case 'sales':
-      return {
-        source: 'sales',
-        bucket: 'client-documents',
-        isPublic: false
-      };
-    case 'project':
-      return {
-        source: 'project',
-        bucket: 'project-documents', 
-        isPublic: true
-      };
-    case 'project_field':
-      return {
-        source: 'project_field',
-        bucket: 'client-documents',
-        isPublic: false
-      };
-    default:
-      // Fallback: intentar detectar desde el path
-      return {
-        source: 'sales',
-        bucket: 'client-documents',
-        isPublic: false
-      };
-  }
+  // Sistema unificado: todos los documentos van al bucket project-documents
+  return {
+    source: 'project',
+    bucket: 'project-documents',
+    isPublic: true
+  };
 };
 
 /**
  * Detecta el bucket desde el file_path si es posible
+ * ACTUALIZADO: Sistema unificado siempre usa project-documents
  */
 export const detectBucketFromPath = (filePath: string): DocumentSource => {
-  // Si el path contiene indicadores de proyecto, usar bucket público
-  if (filePath.includes('proyecto_') || filePath.includes('/design/') || filePath.includes('/construction/')) {
-    return {
-      source: 'project',
-      bucket: 'project-documents',
-      isPublic: true
-    };
-  }
-  
-  // Por defecto, asumir que es un documento de cliente (privado)
+  // Sistema unificado: todos los documentos van al bucket project-documents
   return {
-    source: 'sales',
-    bucket: 'client-documents',
-    isPublic: false
+    source: 'project',
+    bucket: 'project-documents',
+    isPublic: true
   };
 };
 

@@ -210,9 +210,9 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
       const fileExt = file.name.split('.').pop();
       const fileName = `${clientProject.client_id}/${clientProjectId}_${docType}_${Date.now()}.${fileExt}`;
 
-      // Upload file to Supabase storage using correct folder structure
+      // Upload file to unified project-documents bucket
       const { error: uploadError } = await supabase.storage
-        .from('client-documents')
+        .from('project-documents')
         .upload(fileName, file);
 
       if (uploadError) {
@@ -220,7 +220,7 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
         throw new Error(`Error al subir archivo: ${uploadError.message}`);
       }
 
-      // Map document types to match ClientDocumentHub expectations
+      // Map document types for unified documents table
       const documentTypeMapping: Record<string, string> = {
         'curp': 'curp',
         'fiscal_certificate': 'constancia_situacion_fiscal', 
@@ -228,18 +228,28 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
         'plan_pagos': 'plan_pagos'
       };
 
-      // Insert into client_documents table for hub integration
+      const departmentMapping: Record<string, string> = {
+        'curp': 'legal',
+        'fiscal_certificate': 'fiscal', 
+        'contract': 'contracts',
+        'plan_pagos': 'financial'
+      };
+
+      // Insert into unified documents table
       const { error: insertError } = await supabase
-        .from('client_documents')
+        .from('documents')
         .insert({
           client_id: clientProject.client_id,
           project_id: clientProjectId,
-          document_name: file.name,
-          document_type: documentTypeMapping[docType] || docType,
+          name: file.name,
+          category: documentTypeMapping[docType] || docType,
+          department: departmentMapping[docType] || 'general',
           file_path: fileName,
           file_type: file.type,
           file_size: file.size,
-          uploaded_by: user.id
+          uploaded_by: profile.id,
+          document_status: 'active',
+          access_level: 'internal'
         });
 
       if (insertError) {

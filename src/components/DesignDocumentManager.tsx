@@ -83,24 +83,24 @@ export const DesignDocumentManager: React.FC<DesignDocumentManagerProps> = ({
 
   const fetchDocuments = async () => {
     try {
-      const { data, error } = await supabase
-        .from('documents')
-        .select(`
-          id,
-          name,
-          file_path,
-          file_type,
-          file_size,
-          description,
-          design_phase,
-          created_at,
-          client_id,
-          profiles:uploaded_by (full_name)
-        `)
-        .eq('project_id', projectId)
-        .eq('department', 'design')
-        .eq('document_status', 'active')
-        .order('created_at', { ascending: false });
+        const { data, error } = await supabase
+          .from('documents')
+          .select(`
+            id,
+            name,
+            file_path,
+            file_type,
+            file_size,
+            description,
+            design_phase,
+            created_at,
+            client_id,
+            profiles:uploaded_by (full_name)
+          `)
+          .eq('project_id', projectId)
+          .eq('department', 'diseño')
+          .eq('document_status', 'active')
+          .order('created_at', { ascending: false });
 
       if (error) throw error;
       setDocuments(data || []);

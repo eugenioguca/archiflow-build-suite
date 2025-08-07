@@ -61,21 +61,20 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false, previe
           return;
         }
 
-        // Use the cumulative documents function for complete document view
-        const { data: cumulativeDocuments, error: docsError } = await supabase
-          .rpc('get_project_cumulative_documents', {
-            project_id_param: projectId,
-            user_department: 'all'
+        // Use the unified documents function for complete document view
+        const { data: unifiedDocuments, error: docsError } = await supabase
+          .rpc('get_unified_project_documents', {
+            project_id_param: projectId
           });
 
         if (docsError) {
-          console.error('Error fetching cumulative documents:', docsError);
+          console.error('Error fetching unified documents:', docsError);
         }
 
-        // Transform cumulative documents to the expected format
-        const allDocuments: ClientDocument[] = (cumulativeDocuments || []).map(doc => ({
+        // Transform unified documents to the expected format
+        const allDocuments: ClientDocument[] = (unifiedDocuments || []).map(doc => ({
           id: doc.id,
-          document_name: doc.name,
+          document_name: doc.file_name,
           document_type: doc.department || 'general',
           file_path: doc.file_path,
           file_type: doc.file_type || 'application/pdf',
@@ -270,11 +269,10 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false, previe
   const handleRefreshDocuments = async () => {
     setLoading(true);
     try {
-      // Usar solo la función SQL corregida para obtener todos los documentos
+      // Usar la función SQL unificada para obtener todos los documentos
       const { data: allDocuments, error } = await supabase
-        .rpc('get_project_cumulative_documents', {
-          project_id_param: projectId,
-          user_department: 'all'
+        .rpc('get_unified_project_documents', {
+          project_id_param: projectId
         });
 
       if (error) {
@@ -285,7 +283,7 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false, previe
       // Transform to expected format
       const transformedDocs = (allDocuments || []).map(doc => ({
         id: doc.id,
-        document_name: doc.name,
+        document_name: doc.file_name,
         document_type: doc.department || 'general',
         file_path: doc.file_path,
         file_type: doc.file_type || 'application/pdf',
