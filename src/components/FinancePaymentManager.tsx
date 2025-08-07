@@ -190,21 +190,22 @@ export const FinancePaymentManager: React.FC<FinancePaymentManagerProps> = ({
         return;
       }
 
-      // Create income record
-      const { error: incomeError } = await supabase
-        .from('incomes')
-        .insert({
+      // Create income record - using exact working approach from PaymentPlanBuilder
+      const { data: projectData } = await supabase
+        .from('client_projects')
+        .select('client_id')
+        .eq('id', plan.client_project_id)
+        .single();
+
+      if (projectData) {
+        await supabase.from('incomes').insert({
+          client_id: projectData.client_id,
           description: `Pago parcialidad ${installment.installment_number} - ${plan.plan_name}`,
           amount: installment.amount,
           expense_date: new Date().toISOString().split('T')[0],
           category: 'other',
-          created_by: (await supabase.auth.getUser()).data.user?.id
+          created_by: (await supabase.from('profiles').select('id').eq('user_id', (await supabase.auth.getUser()).data.user?.id || '').single())?.data?.id
         });
-
-      if (incomeError) {
-        console.error('Error creating income:', incomeError);
-        toast.error('Error al crear registro de ingreso');
-        return;
       }
 
       toast.success('Pago registrado exitosamente');
