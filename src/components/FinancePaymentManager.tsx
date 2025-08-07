@@ -190,22 +190,15 @@ export const FinancePaymentManager: React.FC<FinancePaymentManagerProps> = ({
   const handleMarkAsPaid = async () => {
     if (!paymentDialogData) return;
 
-    if (!paymentForm.payment_method) {
-      toast.error('Por favor selecciona un método de pago');
-      return;
-    }
-
     try {
       const installment = paymentDialogData.installment;
       
-      // Update installment status - using only existing columns
+      // Update installment status - copying exact working logic from PaymentPlanBuilder
       const { error: updateError } = await supabase
         .from('payment_installments')
         .update({
           status: 'paid',
-          paid_date: paymentForm.payment_date,
-          reference_number: paymentForm.reference_number,
-          description: paymentForm.notes ? `${installment.description || ''} - Método: ${paymentForm.payment_method}. Notas: ${paymentForm.notes}` : `${installment.description || ''} - Método: ${paymentForm.payment_method}`
+          paid_date: paymentForm.payment_date || new Date().toISOString().split('T')[0]
         })
         .eq('id', installment.id);
 
