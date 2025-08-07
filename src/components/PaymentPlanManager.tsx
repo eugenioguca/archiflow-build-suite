@@ -247,11 +247,11 @@ export const PaymentPlanManager: React.FC<PaymentPlanManagerProps> = ({
                   Nuevo Plan
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-5xl max-h-[95vh] flex flex-col">
-                <DialogHeader className="flex-shrink-0 pb-4 border-b">
+              <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0">
+                <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
                   <DialogTitle>Crear Plan de Pago</DialogTitle>
                 </DialogHeader>
-                <div className="flex-1 min-h-0 py-4">
+                <div className="flex-1 min-h-0 overflow-hidden">
                   <div className="mb-4">
                     <PaymentPlanValidations 
                       projectId={clientProjectId}
@@ -339,11 +339,11 @@ export const PaymentPlanManager: React.FC<PaymentPlanManagerProps> = ({
 
         {/* Edit Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-5xl max-h-[95vh] flex flex-col">
-            <DialogHeader className="flex-shrink-0 pb-4 border-b">
+          <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0">
+            <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
               <DialogTitle>Editar Plan de Pago</DialogTitle>
             </DialogHeader>
-            <div className="flex-1 min-h-0 py-4">
+            <div className="flex-1 min-h-0 overflow-hidden">
               <PaymentPlanForm
                 onSubmit={handleEdit}
                 onCancel={() => setIsEditDialogOpen(false)}

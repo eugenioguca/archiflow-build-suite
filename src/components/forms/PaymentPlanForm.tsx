@@ -8,7 +8,7 @@ import { CurrencyInput } from '@/components/CurrencyInput';
 import { DatePicker } from '@/components/DatePicker';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
-import { SmartScrollArea } from '@/components/ui/smart-scroll-area';
+
 import { Calculator, Plus, X, Edit3, Calendar, Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { addDays } from 'date-fns';
@@ -237,14 +237,9 @@ export const PaymentPlanForm: React.FC<PaymentPlanFormProps> = ({
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <form onSubmit={handleSubmit} className="flex flex-col h-full min-h-0">
-        <SmartScrollArea 
-          maxHeight="calc(90vh - 200px)" 
-          className="flex-1 min-h-0"
-          showScrollIndicator={true}
-          autoDetectOverflow={true}
-        >
-          <div className="space-y-4 p-1">
+      <form onSubmit={handleSubmit} className="flex flex-col h-full max-h-[85vh]">
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="space-y-4 p-4">
             <div>
               <Label htmlFor="plan_name">Nombre del Plan *</Label>
               <Input
@@ -535,10 +530,10 @@ export const PaymentPlanForm: React.FC<PaymentPlanFormProps> = ({
               </Card>
             )}
           </div>
-        </SmartScrollArea>
+        </div>
 
-        {/* Botones fijos en el footer */}
-        <div className="flex gap-3 pt-4 border-t bg-background mt-4 flex-shrink-0">
+        {/* Footer con botones fijos */}
+        <div className="flex gap-3 pt-4 mt-4 border-t bg-background flex-shrink-0 sticky bottom-0">
           <Button
             type="button"
             variant="outline"
