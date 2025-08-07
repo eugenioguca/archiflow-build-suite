@@ -23,6 +23,7 @@ import {
 
 interface ClientProject {
   id: string;
+  client_id: string;
   curp?: string;
   constancia_situacion_fiscal_url?: string;
   constancia_situacion_fiscal_uploaded?: boolean;
@@ -38,7 +39,7 @@ interface ClientProject {
 interface RequiredDocument {
   id: string;
   name: string;
-  type: 'curp' | 'fiscal_certificate' | 'contract' | 'id_document' | 'other';
+  type: 'curp' | 'fiscal_certificate' | 'contract' | 'plan_pagos' | 'id_document' | 'other';
   required_for_stages: string[];
   description: string;
   icon: any;
@@ -64,7 +65,7 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
   const [selectedDocType, setSelectedDocType] = useState<string>('');
   const { toast } = useToast();
 
-  // Define required documents (removed payment_plan type)
+  // Define required documents including plan_pagos for cliente_cerrado stage
   const requiredDocuments: RequiredDocument[] = [
     {
       id: 'curp',
@@ -90,10 +91,42 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
       required_for_stages: ['documentos_recibidos', 'contrato_firmado'],
       description: 'Contrato de servicios firmado',
       icon: FileText
+    },
+    {
+      id: 'plan_pagos',
+      name: 'Plan de Pagos',
+      type: 'plan_pagos',
+      required_for_stages: ['cliente_cerrado'],
+      description: 'Plan de pagos autorizado para transición a diseño',
+      icon: Building
     }
   ];
 
   const currentStage = clientProject?.sales_pipeline_stage || 'nuevo_lead';
+
+  const [planPagosUploaded, setPlanPagosUploaded] = useState(false);
+
+  useEffect(() => {
+    const checkPlanPagosDocument = async () => {
+      if (currentStage === 'cliente_cerrado') {
+        try {
+          const { data, error } = await supabase
+            .from('client_documents')
+            .select('id')
+            .eq('project_id', clientProjectId)
+            .eq('document_type', 'plan_pagos')
+            .limit(1);
+
+          if (error) throw error;
+          setPlanPagosUploaded(data && data.length > 0);
+        } catch (error) {
+          console.error('Error checking plan_pagos document:', error);
+        }
+      }
+    };
+
+    checkPlanPagosDocument();
+  }, [clientProjectId, currentStage]);
 
   const getDocumentStatus = (doc: RequiredDocument) => {
     const isRequired = doc.required_for_stages.includes(currentStage);
@@ -111,6 +144,11 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
         break;
       case 'contract':
         if (clientProject?.contract_uploaded) {
+          return { uploaded: true, status: 'completed', required: isRequired };
+        }
+        break;
+      case 'plan_pagos':
+        if (planPagosUploaded) {
           return { uploaded: true, status: 'completed', required: isRequired };
         }
         break;
@@ -148,31 +186,60 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
 
       if (uploadError) throw uploadError;
 
-      // Update client_projects record
-      const updates: any = {};
-      
-      switch (docType) {
-        case 'curp':
-          // For CURP, we might want to extract the text content
-          // For now, just mark as uploaded
-          updates.curp_uploaded = true;
-          break;
-        case 'fiscal_certificate':
-          updates.constancia_situacion_fiscal_url = filePath;
-          updates.constancia_situacion_fiscal_uploaded = true;
-          break;
-        case 'contract':
-          updates.contract_url = filePath;
-          updates.contract_uploaded = true;
-          break;
+      // For plan_pagos, save to client_documents table
+      if (docType === 'plan_pagos') {
+        // Get current user's profile
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+          .single();
+
+        if (!profileData) throw new Error('Profile not found');
+
+        // Save to client_documents table
+        const { error: dbError } = await supabase
+          .from('client_documents')
+          .insert({
+            client_id: clientProject.client_id,
+            project_id: clientProjectId,
+            document_name: file.name,
+            document_type: 'plan_pagos',
+            file_path: filePath,
+            file_type: file.type,
+            file_size: file.size,
+            uploaded_by: profileData.id
+          });
+
+        if (dbError) throw dbError;
+        setPlanPagosUploaded(true);
+      } else {
+        // Update client_projects record for other document types
+        const updates: any = {};
+        
+        switch (docType) {
+          case 'curp':
+            // For CURP, we might want to extract the text content
+            // For now, just mark as uploaded
+            updates.curp_uploaded = true;
+            break;
+          case 'fiscal_certificate':
+            updates.constancia_situacion_fiscal_url = filePath;
+            updates.constancia_situacion_fiscal_uploaded = true;
+            break;
+          case 'contract':
+            updates.contract_url = filePath;
+            updates.contract_uploaded = true;
+            break;
+        }
+
+        const { error: updateError } = await supabase
+          .from('client_projects')
+          .update(updates)
+          .eq('id', clientProjectId);
+
+        if (updateError) throw updateError;
       }
-
-      const { error: updateError } = await supabase
-        .from('client_projects')
-        .update(updates)
-        .eq('id', clientProjectId);
-
-      if (updateError) throw updateError;
 
       toast({
         title: "Documento subido exitosamente",

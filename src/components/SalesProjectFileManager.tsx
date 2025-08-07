@@ -73,6 +73,7 @@ interface FileUpload {
 const DOCUMENT_CATEGORIES = [
   { value: 'legal', label: 'Documentos Legales' },
   { value: 'financial', label: 'Documentos Financieros' },
+  { value: 'plan_pagos', label: 'Plan de Pagos' },
   { value: 'technical', label: 'Documentos Técnicos' },
   { value: 'permits', label: 'Permisos y Licencias' },
   { value: 'contracts', label: 'Contratos' },
@@ -571,12 +572,14 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
                           {/* Mostrar nombre personalizado para documentos complementarios */}
                           {doc.document_type === 'contract' ? 'Contrato Firmado' :
                            doc.document_type === 'fiscal' ? 'Constancia de Situación Fiscal' :
+                           doc.document_type === 'plan_pagos' ? 'Plan de Pagos' :
                            doc.document_name}
                         </p>
                         <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
                           <span className="px-2 py-1 bg-muted rounded-md font-medium">
                             {doc.document_type === 'contract' ? 'Contrato' :
                              doc.document_type === 'fiscal' ? 'Documento Fiscal' :
+                             doc.document_type === 'plan_pagos' ? 'Plan de Pagos' :
                              'Doc. Complementario'}
                           </span>
                           <span className="flex items-center gap-1">

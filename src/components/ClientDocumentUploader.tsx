@@ -38,6 +38,7 @@ interface FileUpload {
 
 const DOCUMENT_CATEGORIES = [
   { value: 'contract', label: 'Contrato' },
+  { value: 'plan_pagos', label: 'Plan de Pagos' },
   { value: 'permit', label: 'Permisos' },
   { value: 'legal', label: 'Documentos Legales' },
   { value: 'financial', label: 'Documentos Financieros' },
