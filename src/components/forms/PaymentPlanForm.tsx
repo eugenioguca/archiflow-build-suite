@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CurrencyInput } from '@/components/CurrencyInput';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
-import { Calculator } from 'lucide-react';
+import { Calculator, Plus, X, Edit3 } from 'lucide-react';
 
 interface PaymentPlanFormProps {
   onSubmit: (data: PaymentPlanFormData & { installments?: InstallmentSuggestion[] }) => void;
@@ -49,8 +49,12 @@ export const PaymentPlanForm: React.FC<PaymentPlanFormProps> = ({
   });
 
   const [selectedSuggestion, setSelectedSuggestion] = useState<InstallmentSuggestion[] | null>(null);
+  const [customMode, setCustomMode] = useState(false);
+  const [customInstallments, setCustomInstallments] = useState<InstallmentSuggestion[]>([
+    { installment_number: 1, description: "Anticipo inicial", percentage: 50, amount: 0, due_days: 0 }
+  ]);
 
-  // Sugerencias de planes de pago
+  // Sugerencias de planes de pago (reducido a 3)
   const paymentSuggestions = [
     {
       name: "50% - 50%",
@@ -73,14 +77,6 @@ export const PaymentPlanForm: React.FC<PaymentPlanFormProps> = ({
         { installment_number: 1, description: "Anticipo inicial", percentage: 25, amount: 0, due_days: 0 },
         { installment_number: 2, description: "Pago final", percentage: 75, amount: 0, due_days: 30 }
       ]
-    },
-    {
-      name: "40% - 30% - 30%",
-      installments: [
-        { installment_number: 1, description: "Anticipo inicial", percentage: 40, amount: 0, due_days: 0 },
-        { installment_number: 2, description: "Pago intermedio", percentage: 30, amount: 0, due_days: 15 },
-        { installment_number: 3, description: "Pago final", percentage: 30, amount: 0, due_days: 30 }
-      ]
     }
   ];
 
@@ -100,6 +96,7 @@ export const PaymentPlanForm: React.FC<PaymentPlanFormProps> = ({
     }));
 
     setSelectedSuggestion(installmentsWithAmounts);
+    setCustomMode(false);
     
     // Actualizar el nombre del plan si está vacío
     if (!formData.plan_name.trim()) {
@@ -109,6 +106,98 @@ export const PaymentPlanForm: React.FC<PaymentPlanFormProps> = ({
         plan_name: `Plan de ${planTypeName} - ${suggestion.name}`
       }));
     }
+  };
+
+  const startCustomMode = () => {
+    if (formData.total_amount <= 0) {
+      toast({
+        title: "Error",
+        description: "Primero ingresa el monto total del plan",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setCustomMode(true);
+    setSelectedSuggestion(null);
+    
+    // Recalcular montos basados en porcentajes actuales
+    const updatedInstallments = customInstallments.map(inst => ({
+      ...inst,
+      amount: Math.round((formData.total_amount * inst.percentage) / 100)
+    }));
+    setCustomInstallments(updatedInstallments);
+
+    // Actualizar el nombre del plan si está vacío
+    if (!formData.plan_name.trim()) {
+      const planTypeName = formData.plan_type === 'design_payment' ? 'Diseño' : 'Construcción';
+      setFormData(prev => ({
+        ...prev,
+        plan_name: `Plan de ${planTypeName} - Customizable`
+      }));
+    }
+  };
+
+  const addCustomInstallment = () => {
+    const newInstallment: InstallmentSuggestion = {
+      installment_number: customInstallments.length + 1,
+      description: `Parcialidad ${customInstallments.length + 1}`,
+      percentage: 0,
+      amount: 0,
+      due_days: 30
+    };
+    setCustomInstallments([...customInstallments, newInstallment]);
+  };
+
+  const removeCustomInstallment = (index: number) => {
+    if (customInstallments.length <= 1) {
+      toast({
+        title: "Error",
+        description: "Debe existir al menos una parcialidad",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const updated = customInstallments.filter((_, i) => i !== index);
+    // Renumerar parcialidades
+    const renumbered = updated.map((inst, i) => ({
+      ...inst,
+      installment_number: i + 1
+    }));
+    setCustomInstallments(renumbered);
+  };
+
+  const updateCustomInstallment = (index: number, field: keyof InstallmentSuggestion, value: any) => {
+    const updated = [...customInstallments];
+    updated[index] = { ...updated[index], [field]: value };
+    
+    // Si se actualiza el porcentaje, recalcular el monto
+    if (field === 'percentage') {
+      updated[index].amount = Math.round((formData.total_amount * value) / 100);
+    }
+    
+    setCustomInstallments(updated);
+  };
+
+  const applyCustomPlan = () => {
+    const totalPercentage = customInstallments.reduce((sum, inst) => sum + inst.percentage, 0);
+    
+    if (Math.abs(totalPercentage - 100) > 0.1) {
+      toast({
+        title: "Error de Validación",
+        description: `Los porcentajes deben sumar 100%. Actualmente suman ${totalPercentage.toFixed(1)}%`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSelectedSuggestion(customInstallments);
+    setCustomMode(false);
+  };
+
+  const getTotalPercentage = () => {
+    return customInstallments.reduce((sum, inst) => sum + inst.percentage, 0);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -203,9 +292,117 @@ export const PaymentPlanForm: React.FC<PaymentPlanFormProps> = ({
                   {suggestion.name}
                 </Button>
               ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={startCustomMode}
+                className="text-xs flex items-center gap-1"
+              >
+                <Edit3 className="h-3 w-3" />
+                Plan Customizable
+              </Button>
             </div>
             
-            {selectedSuggestion && (
+            {/* Editor de Plan Customizable */}
+            {customMode && (
+              <div className="space-y-3 border-t pt-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-muted-foreground">Plan Customizable</p>
+                  <span className={`text-xs font-medium ${
+                    Math.abs(getTotalPercentage() - 100) < 0.1 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    Total: {getTotalPercentage().toFixed(1)}%
+                  </span>
+                </div>
+                
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {customInstallments.map((installment, index) => (
+                    <div key={index} className="grid grid-cols-12 gap-2 items-center p-2 border rounded-lg">
+                      <div className="col-span-4">
+                        <Input
+                          placeholder="Descripción"
+                          value={installment.description}
+                          onChange={(e) => updateCustomInstallment(index, 'description', e.target.value)}
+                          className="text-xs"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <Input
+                          type="number"
+                          placeholder="%"
+                          value={installment.percentage}
+                          onChange={(e) => updateCustomInstallment(index, 'percentage', Number(e.target.value))}
+                          className="text-xs"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                        />
+                      </div>
+                      <div className="col-span-3">
+                        <div className="text-xs font-medium text-muted-foreground">
+                          ${installment.amount.toLocaleString('es-MX')}
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        <Input
+                          type="number"
+                          placeholder="Días"
+                          value={installment.due_days}
+                          onChange={(e) => updateCustomInstallment(index, 'due_days', Number(e.target.value))}
+                          className="text-xs"
+                          min="0"
+                        />
+                      </div>
+                      <div className="col-span-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeCustomInstallment(index)}
+                          className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addCustomInstallment}
+                    className="flex items-center gap-1"
+                  >
+                    <Plus className="h-3 w-3" />
+                    Agregar Parcialidad
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    onClick={applyCustomPlan}
+                    disabled={Math.abs(getTotalPercentage() - 100) > 0.1}
+                    className="flex-1"
+                  >
+                    Aplicar Plan Custom
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCustomMode(false)}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {selectedSuggestion && !customMode && (
               <div className="space-y-2 border-t pt-3">
                 <p className="text-sm font-medium text-muted-foreground">Parcialidades Generadas:</p>
                 {selectedSuggestion.map((inst) => (
@@ -224,7 +421,7 @@ export const PaymentPlanForm: React.FC<PaymentPlanFormProps> = ({
                   onClick={() => setSelectedSuggestion(null)}
                   className="w-full"
                 >
-                  Limpiar Sugerencias
+                  Limpiar Plan
                 </Button>
               </div>
             )}
