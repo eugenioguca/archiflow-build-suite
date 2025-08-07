@@ -107,9 +107,18 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
       const documentsFromClientDocs = await fetchClientDocuments();
       const documentsFromProjectFields = await fetchProjectFieldDocuments();
       
+      // Evitar duplicaciones: solo incluir documentos de project fields si NO existen en la tabla documents
+      const unifiedDocuments = documentsFromClientDocs;
+      const existingTypes = new Set(unifiedDocuments.map(doc => doc.document_type));
+      
+      // Solo agregar documentos de project fields si no existen en documents
+      const filteredProjectFieldDocs = documentsFromProjectFields.filter(doc => 
+        !existingTypes.has(doc.document_type)
+      );
+      
       const allDocuments = [
-        ...documentsFromClientDocs,
-        ...documentsFromProjectFields
+        ...unifiedDocuments,
+        ...filteredProjectFieldDocs
       ];
       
       setDocuments(allDocuments);
