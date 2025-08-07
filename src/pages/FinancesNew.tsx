@@ -136,11 +136,11 @@ const FinancesNew: React.FC = () => {
               setSelectedProjectId(undefined);
             }}
           />
-          <PaymentPlanManager 
-            clientProjectId={selectedProjectId || ""}
-            readOnly={false}
-            compact={false}
-          />
+           <PaymentPlanManager 
+             clientProjectId={selectedProjectId || ""}
+             readOnly={false}
+             compact={true}
+           />
         </TabsContent>
 
         <TabsContent value="profitability" className="space-y-4">

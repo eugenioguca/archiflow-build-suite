@@ -65,10 +65,25 @@ export const usePaymentPlans = (clientProjectId?: string, planType?: string) => 
 
   // Mutation for creating payment plan
   const createPaymentPlan = useMutation({
-    mutationFn: async (data: Omit<PaymentPlan, 'id' | 'created_at' | 'updated_at' | 'plan_sequence' | 'is_current_plan' | 'creator' | 'approver' | 'client_project'>) => {
+    mutationFn: async (data: Omit<PaymentPlan, 'id' | 'created_at' | 'updated_at' | 'plan_sequence' | 'is_current_plan' | 'creator' | 'approver' | 'client_project' | 'created_by'>) => {
+      // Get current user profile
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile) throw new Error('Profile not found');
+
       const { data: result, error } = await supabase
         .from('payment_plans')
-        .insert(data)
+        .insert({
+          ...data,
+          created_by: profile.id
+        })
         .select()
         .single();
       

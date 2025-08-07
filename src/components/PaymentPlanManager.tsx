@@ -64,7 +64,7 @@ export const PaymentPlanManager: React.FC<PaymentPlanManagerProps> = ({
     });
   };
 
-  const handleCreate = async (data: any) => {
+  const handleCreate = async (data: any & { installments?: any[] }) => {
     // Validate construction payment plan requirements
     if (data.plan_type === 'construction_payment') {
       try {
@@ -108,12 +108,45 @@ export const PaymentPlanManager: React.FC<PaymentPlanManagerProps> = ({
       plan_name: data.plan_name,
       total_amount: data.total_amount,
       notes: data.notes,
-      status: 'pending',
-      created_by: '' // Will be set by backend
+      status: 'pending'
     }, {
-      onSuccess: () => {
+      onSuccess: async (newPlan) => {
         setIsCreateDialogOpen(false);
         resetForm();
+        
+        // Crear installments automáticamente si existen sugerencias
+        if (data.installments && data.installments.length > 0) {
+          try {
+            const installmentsData = data.installments.map((inst: any, index: number) => ({
+              payment_plan_id: newPlan.id,
+              installment_number: index + 1,
+              description: inst.description,
+              amount: inst.amount,
+              due_date: new Date(Date.now() + (inst.due_days * 24 * 60 * 60 * 1000)).toISOString().split('T')[0],
+              status: 'pending'
+            }));
+
+            const { error: installmentsError } = await supabase
+              .from('payment_installments')
+              .insert(installmentsData);
+
+            if (installmentsError) {
+              console.error('Error creating installments:', installmentsError);
+              toast({
+                title: "Advertencia",
+                description: "Plan creado pero hubo un error al crear las parcialidades automáticamente. Puedes crearlas manualmente.",
+                variant: "destructive"
+              });
+            } else {
+              toast({
+                title: "¡Éxito!",
+                description: `Plan de pago creado con ${data.installments.length} parcialidades.`
+              });
+            }
+          } catch (error) {
+            console.error('Error creating installments:', error);
+          }
+        }
       }
     });
   };
