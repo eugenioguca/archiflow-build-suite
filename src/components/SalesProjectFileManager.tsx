@@ -48,6 +48,7 @@ interface Document {
   file_size?: number;
   created_at: string;
   uploaded_by?: string;
+  description?: string; // Agregar campo descripción
   source: 'unified_documents' | 'project_field' | 'inherited';
 }
 
@@ -162,6 +163,7 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
       file_size: doc.file_size,
       created_at: doc.created_at,
       uploaded_by: doc.uploaded_by,
+      description: doc.description, // Incluir descripción
       source: 'unified_documents' as const
     }));
   };
@@ -266,7 +268,7 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
         .insert({
           client_id: clientId,
           project_id: projectId,
-          name: fileUpload.file.name,
+          name: fileUpload.description || fileUpload.file.name, // Usar descripción como nombre si existe
           category: fileUpload.category,
           file_path: filePath,
           file_type: fileUpload.file.type,
@@ -274,7 +276,8 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
           uploaded_by: profile.id,
           department: 'sales',
           department_permissions: ['all'],
-          document_status: 'active'
+          document_status: 'active',
+          description: fileUpload.description // Guardar también en el campo description
         });
 
       if (dbError) throw dbError;
@@ -433,6 +436,11 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
   };
 
   const getDocumentDisplayName = (document: Document): string => {
+    // Si el documento tiene descripción (documentos subidos desde expediente), usarla
+    if (document.description && document.description.trim()) {
+      return document.description;
+    }
+
     // Mapeo de nombres descriptivos basado en categoría y tipo
     const categoryMapping: Record<string, string> = {
       'contract': 'Contrato Firmado',
