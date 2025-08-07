@@ -293,17 +293,21 @@ export const PaymentPlanManager: React.FC<PaymentPlanManagerProps> = ({
                     <Button variant="outline" size="sm" onClick={() => openViewDialog(plan)}>
                       <Eye className="h-4 w-4" />
                     </Button>
-                    {!readOnly && canEdit && plan.status === 'pending' && (
+                    {!readOnly && canEdit && (
                       <>
-                        <Button variant="outline" size="sm" onClick={() => openEditDialog(plan)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleApprove(plan)}>
-                          <CheckCircle className="h-4 w-4" />
-                        </Button>
+                        {plan.status === 'pending' && (
+                          <>
+                            <Button variant="outline" size="sm" onClick={() => openEditDialog(plan)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleApprove(plan)}>
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
@@ -311,13 +315,21 @@ export const PaymentPlanManager: React.FC<PaymentPlanManagerProps> = ({
                             <AlertDialogHeader>
                               <AlertDialogTitle>¿Eliminar plan de pago?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Esta acción no se puede deshacer. Se eliminará el plan de pago y todas sus parcialidades.
+                                Esta acción no se puede deshacer. Se eliminará el plan de pago "{plan.plan_name}" y todas sus parcialidades asociadas.
+                                {plan.status !== 'pending' && (
+                                  <span className="block mt-2 text-amber-600 font-medium">
+                                    ⚠️ Este plan tiene estado "{plan.status}". Elimínelo solo si está seguro.
+                                  </span>
+                                )}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDelete(plan)}>
-                                Eliminar
+                              <AlertDialogAction 
+                                onClick={() => handleDelete(plan)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Eliminar Plan
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
