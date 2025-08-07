@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { ClientProjectSelector } from './ClientProjectSelector';
 import { 
@@ -14,7 +15,8 @@ import {
   DollarSign,
   Percent,
   Target,
-  BarChart3
+  BarChart3,
+  AlertTriangle
 } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -23,7 +25,6 @@ interface ProfitabilityData {
   id: string;
   name: string;
   type: 'client' | 'project' | 'category';
-  revenue: number;
   costs: number;
   gross_profit: number;
   gross_margin: number;
@@ -35,18 +36,14 @@ interface ProfitabilityData {
 
 interface ClientProfitability extends ProfitabilityData {
   client_id: string;
-  invoices_count: number;
-  avg_invoice_value: number;
-  payment_terms_avg: number;
+  avg_expense_value: number;
 }
 
 interface ProjectProfitability extends ProfitabilityData {
   project_id: string;
   completion_percentage: number;
-  estimated_total_revenue: number;
   estimated_total_costs: number;
   projected_profit: number;
-  roi: number;
 }
 
 interface CategoryProfitability extends ProfitabilityData {
@@ -115,269 +112,203 @@ const ProfitabilityAnalysis: React.FC<ProfitabilityAnalysisProps> = ({ selectedC
   };
 
   const fetchClientProfitability = async (startDate: Date, endDate: Date) => {
-    // Build queries with filters
-    let incomesQuery = supabase
-      .from('incomes')
-      .select('amount, client_id, clients(full_name)')
-      .gte('created_at', startDate.toISOString())
-      .lte('created_at', endDate.toISOString())
-      .not('client_id', 'is', null);
-    
+    // Only fetch expenses now (incomes no longer exist)
     let expensesQuery = supabase
       .from('expenses')
-      .select('amount, client_id')
+      .select('amount, client_id, clients(full_name)')
       .gte('created_at', startDate.toISOString())
       .lte('created_at', endDate.toISOString())
       .not('client_id', 'is', null);
 
     // Apply filters
     if (selectedProjectId) {
-      incomesQuery = incomesQuery.eq('project_id', selectedProjectId);
       expensesQuery = expensesQuery.eq('project_id', selectedProjectId);
     } else if (selectedClientId) {
-      incomesQuery = incomesQuery.eq('client_id', selectedClientId);
       expensesQuery = expensesQuery.eq('client_id', selectedClientId);
     }
 
-    const [incomesResult, expensesResult, clientsResult] = await Promise.all([
-      incomesQuery,
+    const [expensesResult, clientsResult] = await Promise.all([
       expensesQuery,
       supabase.from('clients').select('id, full_name')
     ]);
 
     const clientMap = new Map<string, {
-      revenue: number;
       costs: number;
-      invoices_count: number;
-      client_name: string;
+      transactions: number;
+      name: string;
     }>();
 
-    // Process incomes
-    (incomesResult.data || []).forEach(income => {
-      const clientId = income.client_id!;
-      const clientName = income.clients?.full_name || 'Cliente desconocido';
+    // Process expenses
+    expensesResult.data?.forEach(expense => {
+      const clientId = expense.client_id;
+      const clientName = expense.clients?.full_name || 'Cliente desconocido';
       
       if (!clientMap.has(clientId)) {
         clientMap.set(clientId, {
-          revenue: 0,
           costs: 0,
-          invoices_count: 0,
-          client_name: clientName
+          transactions: 0,
+          name: clientName
         });
       }
       
       const client = clientMap.get(clientId)!;
-      client.revenue += income.amount || 0;
-      client.invoices_count += 1;
+      client.costs += expense.amount || 0;
+      client.transactions += 1;
     });
 
-    // Process expenses
-    (expensesResult.data || []).forEach(expense => {
-      const clientId = expense.client_id!;
-      
-      if (clientMap.has(clientId)) {
-        const client = clientMap.get(clientId)!;
-        client.costs += expense.amount || 0;
-      }
-    });
+    // Convert to ClientProfitability format
+    const clientProfitabilityData: ClientProfitability[] = Array.from(clientMap.entries()).map(([clientId, data]) => ({
+      id: clientId,
+      client_id: clientId,
+      name: data.name,
+      type: 'client' as const,
+      costs: data.costs,
+      gross_profit: -data.costs, // Negative since we only have costs
+      gross_margin: -100, // Only costs
+      net_profit: -data.costs,
+      net_margin: -100,
+      transactions_count: data.transactions,
+      avg_expense_value: data.transactions > 0 ? data.costs / data.transactions : 0,
+      period: `${format(startDate, 'MMM yyyy', { locale: es })} - ${format(endDate, 'MMM yyyy', { locale: es })}`
+    }));
 
-    const clientProfitabilityData: ClientProfitability[] = Array.from(clientMap.entries()).map(([clientId, data]) => {
-      const gross_profit = data.revenue - data.costs;
-      const gross_margin = data.revenue > 0 ? (gross_profit / data.revenue) * 100 : 0;
-      const avg_invoice_value = data.invoices_count > 0 ? data.revenue / data.invoices_count : 0;
-
-      return {
-        id: clientId,
-        client_id: clientId,
-        name: data.client_name,
-        type: 'client' as const,
-        revenue: data.revenue,
-        costs: data.costs,
-        gross_profit,
-        gross_margin,
-        net_profit: gross_profit,
-        net_margin: gross_margin,
-        transactions_count: data.invoices_count,
-        invoices_count: data.invoices_count,
-        avg_invoice_value,
-        payment_terms_avg: 30, // Default value
-        period: format(startDate, 'MMMM yyyy', { locale: es })
-      };
-    }).sort((a, b) => b.revenue - a.revenue);
-
-    setClientProfitability(clientProfitabilityData);
+    setClientProfitability(clientProfitabilityData.sort((a, b) => a.costs - b.costs).slice(0, 20));
   };
 
   const fetchProjectProfitability = async (startDate: Date, endDate: Date) => {
-    const [incomesResult, expensesResult, projectsResult] = await Promise.all([
-      supabase
-        .from('incomes')
-        .select('amount, project_id, client_projects(project_name)')
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString())
-        .not('project_id', 'is', null),
-      supabase
-        .from('expenses')
-        .select('amount, project_id')
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString())
-        .not('project_id', 'is', null),
-      supabase.from('projects').select('id, name, progress_percentage, budget, total_cost')
-    ]);
+    // Only fetch expenses now (incomes no longer exist)
+    let expensesQuery = supabase
+      .from('expenses')
+      .select('amount, project_id, client_projects(project_name, overall_progress_percentage)')
+      .gte('created_at', startDate.toISOString())
+      .lte('created_at', endDate.toISOString())
+      .not('project_id', 'is', null);
+
+    // Apply filters
+    if (selectedClientId) {
+      expensesQuery = expensesQuery.eq('client_id', selectedClientId);
+    }
+    if (selectedProjectId) {
+      expensesQuery = expensesQuery.eq('project_id', selectedProjectId);
+    }
+
+    const expensesResult = await expensesQuery;
 
     const projectMap = new Map<string, {
-      revenue: number;
       costs: number;
-      transactions_count: number;
-      project_name: string;
-      progress_percentage: number;
-      budget: number;
-      estimated_total_costs: number;
+      transactions: number;
+      name: string;
+      completion: number;
     }>();
 
-    // Process incomes
-    (incomesResult.data || []).forEach(income => {
-      const projectId = income.project_id!;
-      const projectName = income.client_projects?.project_name || 'Proyecto desconocido';
+    // Process expenses
+    expensesResult.data?.forEach(expense => {
+      const projectId = expense.project_id;
+      const projectName = expense.client_projects?.project_name || 'Proyecto desconocido';
+      const completion = expense.client_projects?.overall_progress_percentage || 0;
       
       if (!projectMap.has(projectId)) {
-        const project = (projectsResult.data || []).find(p => p.id === projectId);
         projectMap.set(projectId, {
-          revenue: 0,
           costs: 0,
-          transactions_count: 0,
-          project_name: projectName,
-          progress_percentage: project?.progress_percentage || 0,
-          budget: project?.budget || 0,
-          estimated_total_costs: project?.total_cost || 0
+          transactions: 0,
+          name: projectName,
+          completion
         });
       }
       
       const project = projectMap.get(projectId)!;
-      project.revenue += income.amount || 0;
-      project.transactions_count += 1;
+      project.costs += expense.amount || 0;
+      project.transactions += 1;
     });
 
-    // Process expenses
-    (expensesResult.data || []).forEach(expense => {
-      const projectId = expense.project_id!;
-      
-      if (projectMap.has(projectId)) {
-        const project = projectMap.get(projectId)!;
-        project.costs += expense.amount || 0;
-        project.transactions_count += 1;
-      }
-    });
+    // Convert to ProjectProfitability format
+    const projectProfitabilityData: ProjectProfitability[] = Array.from(projectMap.entries()).map(([projectId, data]) => ({
+      id: projectId,
+      project_id: projectId,
+      name: data.name,
+      type: 'project' as const,
+      costs: data.costs,
+      gross_profit: -data.costs, // Negative since we only have costs
+      gross_margin: -100, // Only costs
+      net_profit: -data.costs,
+      net_margin: -100,
+      transactions_count: data.transactions,
+      completion_percentage: data.completion,
+      estimated_total_costs: data.costs, // Simplified
+      projected_profit: -data.costs,
+      period: `${format(startDate, 'MMM yyyy', { locale: es })} - ${format(endDate, 'MMM yyyy', { locale: es })}`
+    }));
 
-    const projectProfitabilityData: ProjectProfitability[] = Array.from(projectMap.entries()).map(([projectId, data]) => {
-      const gross_profit = data.revenue - data.costs;
-      const gross_margin = data.revenue > 0 ? (gross_profit / data.revenue) * 100 : 0;
-      const estimated_total_revenue = data.budget || data.revenue;
-      const projected_profit = estimated_total_revenue - data.estimated_total_costs;
-      const roi = data.estimated_total_costs > 0 ? (projected_profit / data.estimated_total_costs) * 100 : 0;
-
-      return {
-        id: projectId,
-        project_id: projectId,
-        name: data.project_name,
-        type: 'project' as const,
-        revenue: data.revenue,
-        costs: data.costs,
-        gross_profit,
-        gross_margin,
-        net_profit: gross_profit,
-        net_margin: gross_margin,
-        transactions_count: data.transactions_count,
-        completion_percentage: data.progress_percentage,
-        estimated_total_revenue,
-        estimated_total_costs: data.estimated_total_costs,
-        projected_profit,
-        roi,
-        period: format(startDate, 'MMMM yyyy', { locale: es })
-      };
-    }).sort((a, b) => b.gross_profit - a.gross_profit);
-
-    setProjectProfitability(projectProfitabilityData);
+    setProjectProfitability(projectProfitabilityData.sort((a, b) => a.costs - b.costs).slice(0, 20));
   };
 
   const fetchCategoryProfitability = async (startDate: Date, endDate: Date) => {
-    const [incomesResult, expensesResult] = await Promise.all([
-      supabase
-        .from('incomes')
-        .select('amount, category')
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString()),
-      supabase
-        .from('expenses')
-        .select('amount, category')
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString())
-    ]);
+    // Only fetch expenses now (incomes no longer exist)
+    let expensesQuery = supabase
+      .from('expenses')
+      .select('amount, category')
+      .gte('created_at', startDate.toISOString())
+      .lte('created_at', endDate.toISOString());
+
+    // Apply filters
+    if (selectedClientId) {
+      expensesQuery = expensesQuery.eq('client_id', selectedClientId);
+    }
+    if (selectedProjectId) {
+      expensesQuery = expensesQuery.eq('project_id', selectedProjectId);
+    }
+
+    const expensesResult = await expensesQuery;
 
     const categoryMap = new Map<string, {
-      revenue: number;
       costs: number;
-      transactions_count: number;
+      transactions: number;
     }>();
 
-    // Process incomes
-    (incomesResult.data || []).forEach(income => {
-      const category = income.category || 'Sin categoría';
-      
-      if (!categoryMap.has(category)) {
-        categoryMap.set(category, { revenue: 0, costs: 0, transactions_count: 0 });
-      }
-      
-      const cat = categoryMap.get(category)!;
-      cat.revenue += income.amount || 0;
-      cat.transactions_count += 1;
-    });
-
     // Process expenses
-    (expensesResult.data || []).forEach(expense => {
+    expensesResult.data?.forEach(expense => {
       const category = expense.category || 'Sin categoría';
       
       if (!categoryMap.has(category)) {
-        categoryMap.set(category, { revenue: 0, costs: 0, transactions_count: 0 });
+        categoryMap.set(category, {
+          costs: 0,
+          transactions: 0
+        });
       }
       
       const cat = categoryMap.get(category)!;
       cat.costs += expense.amount || 0;
-      cat.transactions_count += 1;
+      cat.transactions += 1;
     });
 
-    const totalRevenue = Array.from(categoryMap.values()).reduce((sum, cat) => sum + cat.revenue, 0);
+    const totalCosts = Array.from(categoryMap.values()).reduce((sum, cat) => sum + cat.costs, 0);
 
-    const categoryProfitabilityData: CategoryProfitability[] = Array.from(categoryMap.entries()).map(([category, data]) => {
-      const gross_profit = data.revenue - data.costs;
-      const gross_margin = data.revenue > 0 ? (gross_profit / data.revenue) * 100 : 0;
-      const market_share = totalRevenue > 0 ? (data.revenue / totalRevenue) * 100 : 0;
+    // Convert to CategoryProfitability format
+    const categoryProfitabilityData: CategoryProfitability[] = Array.from(categoryMap.entries()).map(([category, data]) => ({
+      id: category,
+      category,
+      name: category,
+      type: 'category' as const,
+      costs: data.costs,
+      gross_profit: -data.costs, // Negative since we only have costs
+      gross_margin: -100, // Only costs
+      net_profit: -data.costs,
+      net_margin: -100,
+      transactions_count: data.transactions,
+      growth_rate: 0, // Not available
+      market_share: totalCosts > 0 ? (data.costs / totalCosts) * 100 : 0,
+      period: `${format(startDate, 'MMM yyyy', { locale: es })} - ${format(endDate, 'MMM yyyy', { locale: es })}`
+    }));
 
-      return {
-        id: category,
-        category,
-        name: category,
-        type: 'category' as const,
-        revenue: data.revenue,
-        costs: data.costs,
-        gross_profit,
-        gross_margin,
-        net_profit: gross_profit,
-        net_margin: gross_margin,
-        transactions_count: data.transactions_count,
-        growth_rate: 0, // Would need historical data
-        market_share,
-        period: format(startDate, 'MMMM yyyy', { locale: es })
-      };
-    }).sort((a, b) => b.revenue - a.revenue);
-
-    setCategoryProfitability(categoryProfitabilityData);
+    setCategoryProfitability(categoryProfitabilityData.sort((a, b) => b.costs - a.costs).slice(0, 20));
   };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-MX', {
       style: 'currency',
-      currency: 'MXN'
+      currency: 'MXN',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
     }).format(amount);
   };
 
@@ -385,82 +316,73 @@ const ProfitabilityAnalysis: React.FC<ProfitabilityAnalysisProps> = ({ selectedC
     return `${value.toFixed(1)}%`;
   };
 
-  const getMarginBadge = (margin: number) => {
-    if (margin >= 20) return <Badge variant="default" className="bg-green-500">Excelente</Badge>;
-    if (margin >= 10) return <Badge variant="default" className="bg-blue-500">Bueno</Badge>;
-    if (margin >= 5) return <Badge variant="outline">Regular</Badge>;
-    return <Badge variant="destructive">Bajo</Badge>;
+  const getProfitabilityIcon = (margin: number) => {
+    if (margin > 0) return <TrendingUp className="h-4 w-4 text-green-600" />;
+    return <TrendingDown className="h-4 w-4 text-red-600" />;
   };
 
-  const getSummaryStats = () => {
-    let data: ProfitabilityData[] = [];
-    
-    switch (selectedAnalysis) {
-      case 'clients':
-        data = clientProfitability;
-        break;
-      case 'projects':
-        data = projectProfitability;
-        break;
-      case 'categories':
-        data = categoryProfitability;
-        break;
-    }
-
-    const totalRevenue = data.reduce((sum, item) => sum + item.revenue, 0);
-    const totalCosts = data.reduce((sum, item) => sum + item.costs, 0);
-    const totalProfit = totalRevenue - totalCosts;
-    const avgMargin = data.length > 0 ? data.reduce((sum, item) => sum + item.gross_margin, 0) / data.length : 0;
-    const profitableCount = data.filter(item => item.gross_profit > 0).length;
-
-    return {
-      totalRevenue,
-      totalCosts,
-      totalProfit,
-      avgMargin,
-      profitableCount,
-      totalCount: data.length
-    };
+  const getProfitabilityColor = (margin: number) => {
+    if (margin > 20) return 'text-green-600';
+    if (margin > 10) return 'text-green-500';
+    if (margin > 0) return 'text-yellow-600';
+    return 'text-red-600';
   };
-
-  const getCurrentData = () => {
-    switch (selectedAnalysis) {
-      case 'clients':
-        return clientProfitability;
-      case 'projects':
-        return projectProfitability;
-      case 'categories':
-        return categoryProfitability;
-      default:
-        return [];
-    }
-  };
-
-  const stats = getSummaryStats();
-  const currentData = getCurrentData();
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      <div className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
+                <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 bg-gray-200 rounded w-16 animate-pulse"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {/* Warning about limited functionality */}
+      <Alert>
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>
+          Note: Profitability analysis is now limited to expense tracking only, as income management has been removed from the system.
+          All profitability metrics will show negative values since only costs are tracked.
+        </AlertDescription>
+      </Alert>
 
-      {/* Header */}
-      <div className="flex justify-between items-center">
+      {/* Controles */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Análisis de Rentabilidad</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Análisis de Rentabilidad (Solo Costos)</h1>
           <p className="text-muted-foreground">
-            Evaluación detallada de rentabilidad por cliente, proyecto y categoría
+            Análisis detallado de costos por {selectedAnalysis === 'clients' ? 'cliente' : selectedAnalysis === 'projects' ? 'proyecto' : 'categoría'}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Select value={selectedAnalysis} onValueChange={(value: 'clients' | 'projects' | 'categories') => setSelectedAnalysis(value)}>
+        
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
             <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="current_month">Mes actual</SelectItem>
+              <SelectItem value="previous_month">Mes anterior</SelectItem>
+              <SelectItem value="last_3_months">Últimos 3 meses</SelectItem>
+              <SelectItem value="current_year">Año actual</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Select value={selectedAnalysis} onValueChange={(value: any) => setSelectedAnalysis(value)}>
+            <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -469,187 +391,183 @@ const ProfitabilityAnalysis: React.FC<ProfitabilityAnalysisProps> = ({ selectedC
               <SelectItem value="categories">Por Categoría</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="current_month">Mes Actual</SelectItem>
-              <SelectItem value="previous_month">Mes Anterior</SelectItem>
-              <SelectItem value="last_3_months">Últimos 3 Meses</SelectItem>
-              <SelectItem value="current_year">Año Actual</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       </div>
 
-      {/* Summary Statistics */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      {/* Métricas Resumen */}
+      <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ingresos Totales</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-500" />
+            <CardTitle className="text-sm font-medium">Total Costos</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{formatCurrency(stats.totalRevenue)}</div>
-            <p className="text-xs text-muted-foreground">
-              Período analizado
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Costos Totales</CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{formatCurrency(stats.totalCosts)}</div>
-            <p className="text-xs text-muted-foreground">
-              Gastos del período
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Utilidad Bruta</CardTitle>
-            <TrendingUp className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${stats.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(stats.totalProfit)}
+            <div className="text-2xl font-bold text-red-600">
+              {formatCurrency(
+                selectedAnalysis === 'clients' ? clientProfitability.reduce((sum, item) => sum + item.costs, 0) :
+                selectedAnalysis === 'projects' ? projectProfitability.reduce((sum, item) => sum + item.costs, 0) :
+                categoryProfitability.reduce((sum, item) => sum + item.costs, 0)
+              )}
             </div>
-            <p className="text-xs text-muted-foreground">
-              {formatPercentage(stats.totalRevenue > 0 ? (stats.totalProfit / stats.totalRevenue) * 100 : 0)} margen
-            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Margen Promedio</CardTitle>
-            <Percent className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">
+              {selectedAnalysis === 'clients' ? 'Clientes' : selectedAnalysis === 'projects' ? 'Proyectos' : 'Categorías'} Analizados
+            </CardTitle>
+            {selectedAnalysis === 'clients' ? <Users className="h-4 w-4 text-muted-foreground" /> :
+             selectedAnalysis === 'projects' ? <Building2 className="h-4 w-4 text-muted-foreground" /> :
+             <BarChart3 className="h-4 w-4 text-muted-foreground" />}
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatPercentage(stats.avgMargin)}</div>
-            <p className="text-xs text-muted-foreground">
-              Promedio ponderado
-            </p>
+            <div className="text-2xl font-bold">
+              {selectedAnalysis === 'clients' ? clientProfitability.length :
+               selectedAnalysis === 'projects' ? projectProfitability.length :
+               categoryProfitability.length}
+            </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Items Rentables</CardTitle>
+            <CardTitle className="text-sm font-medium">Promedio de Costo</CardTitle>
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.profitableCount}</div>
-            <p className="text-xs text-muted-foreground">
-              de {stats.totalCount} totales
-            </p>
+            <div className="text-2xl font-bold text-red-600">
+              {formatCurrency(
+                selectedAnalysis === 'clients' && clientProfitability.length > 0 ? 
+                  clientProfitability.reduce((sum, item) => sum + item.costs, 0) / clientProfitability.length :
+                selectedAnalysis === 'projects' && projectProfitability.length > 0 ? 
+                  projectProfitability.reduce((sum, item) => sum + item.costs, 0) / projectProfitability.length :
+                categoryProfitability.length > 0 ? 
+                  categoryProfitability.reduce((sum, item) => sum + item.costs, 0) / categoryProfitability.length : 0
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Transacciones</CardTitle>
+            <Percent className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {selectedAnalysis === 'clients' ? clientProfitability.reduce((sum, item) => sum + item.transactions_count, 0) :
+               selectedAnalysis === 'projects' ? projectProfitability.reduce((sum, item) => sum + item.transactions_count, 0) :
+               categoryProfitability.reduce((sum, item) => sum + item.transactions_count, 0)}
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Profitability Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
-            Análisis de Rentabilidad - {selectedAnalysis === 'clients' ? 'Clientes' : selectedAnalysis === 'projects' ? 'Proyectos' : 'Categorías'}
-          </CardTitle>
-          <CardDescription>
-            Rentabilidad detallada ordenada por ingresos
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
+      {/* Tablas de Datos */}
+      {selectedAnalysis === 'clients' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Análisis de Costos por Cliente</CardTitle>
+            <CardDescription>Costos detallados por cliente en el período seleccionado</CardDescription>
+          </CardHeader>
+          <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead className="text-right">Ingresos</TableHead>
-                  <TableHead className="text-right">Costos</TableHead>
-                  <TableHead className="text-right">Utilidad Bruta</TableHead>
-                  <TableHead className="text-right">Margen Bruto</TableHead>
-                  <TableHead>Clasificación</TableHead>
-                  <TableHead className="text-right">Transacciones</TableHead>
-                  {selectedAnalysis === 'clients' && <TableHead className="text-right">Valor Promedio</TableHead>}
-                  {selectedAnalysis === 'projects' && <TableHead className="text-right">ROI Proyectado</TableHead>}
-                  {selectedAnalysis === 'categories' && <TableHead className="text-right">Participación</TableHead>}
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Costos Totales</TableHead>
+                  <TableHead>Transacciones</TableHead>
+                  <TableHead>Promedio por Transacción</TableHead>
+                  <TableHead>Período</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {currentData.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{item.name}</div>
-                        {selectedAnalysis === 'projects' && 'completion_percentage' in item && (
-                          <div className="flex items-center gap-2 mt-1">
-                            <Progress value={item.completion_percentage} className="w-20 h-2" />
-                            <span className="text-xs text-muted-foreground">
-                              {item.completion_percentage}% completado
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right font-medium text-green-600">
-                      {formatCurrency(item.revenue)}
-                    </TableCell>
-                    <TableCell className="text-right text-red-600">
-                      {formatCurrency(item.costs)}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      <span className={item.gross_profit >= 0 ? 'text-green-600' : 'text-red-600'}>
-                        {formatCurrency(item.gross_profit)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className={item.gross_margin >= 0 ? 'text-green-600' : 'text-red-600'}>
-                        {formatPercentage(item.gross_margin)}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {getMarginBadge(item.gross_margin)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {item.transactions_count}
-                    </TableCell>
-                    {selectedAnalysis === 'clients' && 'avg_invoice_value' in item && (
-                      <TableCell className="text-right">
-                        {formatCurrency(item.avg_invoice_value)}
-                      </TableCell>
-                    )}
-                    {selectedAnalysis === 'projects' && 'roi' in item && (
-                      <TableCell className="text-right">
-                        <span className={item.roi >= 0 ? 'text-green-600' : 'text-red-600'}>
-                          {formatPercentage(item.roi)}
-                        </span>
-                      </TableCell>
-                    )}
-                    {selectedAnalysis === 'categories' && 'market_share' in item && (
-                      <TableCell className="text-right">
-                        {formatPercentage(item.market_share)}
-                      </TableCell>
-                    )}
+                {clientProfitability.map((client) => (
+                  <TableRow key={client.id}>
+                    <TableCell className="font-medium">{client.name}</TableCell>
+                    <TableCell className="text-red-600">{formatCurrency(client.costs)}</TableCell>
+                    <TableCell>{client.transactions_count}</TableCell>
+                    <TableCell>{formatCurrency(client.avg_expense_value)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{client.period}</TableCell>
                   </TableRow>
                 ))}
-                {currentData.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      No se encontraron datos de rentabilidad para el período seleccionado
-                    </TableCell>
-                  </TableRow>
-                )}
               </TableBody>
             </Table>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedAnalysis === 'projects' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Análisis de Costos por Proyecto</CardTitle>
+            <CardDescription>Costos detallados por proyecto en el período seleccionado</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Proyecto</TableHead>
+                  <TableHead>Costos Totales</TableHead>
+                  <TableHead>Progreso</TableHead>
+                  <TableHead>Transacciones</TableHead>
+                  <TableHead>Período</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {projectProfitability.map((project) => (
+                  <TableRow key={project.id}>
+                    <TableCell className="font-medium">{project.name}</TableCell>
+                    <TableCell className="text-red-600">{formatCurrency(project.costs)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Progress value={project.completion_percentage} className="w-16" />
+                        <span className="text-sm">{project.completion_percentage.toFixed(0)}%</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{project.transactions_count}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{project.period}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedAnalysis === 'categories' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Análisis de Costos por Categoría</CardTitle>
+            <CardDescription>Costos detallados por categoría en el período seleccionado</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Categoría</TableHead>
+                  <TableHead>Costos Totales</TableHead>
+                  <TableHead>% del Total</TableHead>
+                  <TableHead>Transacciones</TableHead>
+                  <TableHead>Período</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {categoryProfitability.map((category) => (
+                  <TableRow key={category.id}>
+                    <TableCell className="font-medium">{category.name}</TableCell>
+                    <TableCell className="text-red-600">{formatCurrency(category.costs)}</TableCell>
+                    <TableCell>{formatPercentage(category.market_share)}</TableCell>
+                    <TableCell>{category.transactions_count}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{category.period}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

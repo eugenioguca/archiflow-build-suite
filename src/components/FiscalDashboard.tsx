@@ -19,7 +19,6 @@ import { supabase } from "@/integrations/supabase/client"
 import { CFDISearchPanel } from "./CFDISearchPanel"
 
 interface FiscalMetrics {
-  totalIngresos: number
   totalGastos: number
   totalIVA: number
   totalISR: number
@@ -30,7 +29,6 @@ interface FiscalMetrics {
 
 export function FiscalDashboard() {
   const [metrics, setMetrics] = useState<FiscalMetrics>({
-    totalIngresos: 0,
     totalGastos: 0,
     totalIVA: 0,
     totalISR: 0,
@@ -49,23 +47,19 @@ export function FiscalDashboard() {
     setIsLoading(true)
     try {
       const [
-        ingresosResult,
         gastosResult,
         cfdiResult,
         complementosResult
       ] = await Promise.all([
-        supabase.from('incomes').select('amount, tax_amount'),
         supabase.from('expenses').select('amount, tax_amount'),
         supabase.from('cfdi_documents').select('status, iva, isr, total'),
         supabase.from('payment_complements').select('status')
       ])
 
-      const ingresos = ingresosResult.data || []
       const gastos = gastosResult.data || []
       const cfdis = cfdiResult.data || []
       const complementos = complementosResult.data || []
 
-      const totalIngresos = ingresos.reduce((sum, item) => sum + (item.amount || 0), 0)
       const totalGastos = gastos.reduce((sum, item) => sum + (item.amount || 0), 0)
       const totalIVA = cfdis.reduce((sum, item) => sum + (item.iva || 0), 0)
       const totalISR = cfdis.reduce((sum, item) => sum + (item.isr || 0), 0)
@@ -75,7 +69,6 @@ export function FiscalDashboard() {
       const complementosPendientes = complementos.filter(c => c.status === 'pending').length
 
       setMetrics({
-        totalIngresos,
         totalGastos,
         totalIVA,
         totalISR,
@@ -136,19 +129,7 @@ export function FiscalDashboard() {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Ingresos Totales</p>
-                <p className="text-2xl font-bold text-green-600">{formatCurrency(metrics.totalIngresos)}</p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -253,18 +234,14 @@ export function FiscalDashboard() {
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <span>Ingresos</span>
-                    <span className="font-bold text-green-600">+{formatCurrency(metrics.totalIngresos)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
                     <span>Gastos</span>
                     <span className="font-bold text-red-600">-{formatCurrency(metrics.totalGastos)}</span>
                   </div>
                   <hr />
                   <div className="flex justify-between items-center">
                     <span className="font-bold">Flujo Neto</span>
-                    <span className={`font-bold ${metrics.totalIngresos - metrics.totalGastos >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatCurrency(metrics.totalIngresos - metrics.totalGastos)}
+                    <span className="font-bold text-red-600">
+                      {formatCurrency(-metrics.totalGastos)}
                     </span>
                   </div>
                 </div>

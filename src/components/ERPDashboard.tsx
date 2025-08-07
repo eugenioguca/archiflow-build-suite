@@ -26,7 +26,6 @@ interface FinancialKPIs {
   bankBalance: number;
   cashBalance: number;
   netMonthlyFlow: number;
-  monthlyIncome: number;
   monthlyExpenses: number;
   activeProjects: number;
   pipelineValue: number;
@@ -43,7 +42,6 @@ interface OperationalMetrics {
 
 interface CashFlowData {
   month: string;
-  income: number;
   expenses: number;
   net: number;
 }
@@ -56,10 +54,8 @@ interface ExpenseCategory {
 
 interface ProjectPerformance {
   projectName: string;
-  revenue: number;
   expenses: number;
   profit: number;
-  margin: number;
 }
 
 interface ERPDashboardProps {
@@ -138,20 +134,18 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
     if (selectedProjectId) {
       expenseQuery = expenseQuery.eq('project_id', selectedProjectId);
       projectQuery = projectQuery.eq('id', selectedProjectId);
-      pipelineQuery = pipelineQuery.eq('client_project_id', selectedProjectId);
+      pipelineQuery = pipelineQuery.eq('project_id', selectedProjectId);
     }
 
     const [
       cashAccountsResult,
       bankAccountsResult,
-      incomeResult,
       expenseResult,
       projectsResult,
       pipelineResult
     ] = await Promise.all([
       supabase.from('cash_accounts').select('current_balance').eq('status', 'active'),
       supabase.from('bank_accounts').select('current_balance').eq('status', 'active'),
-      incomeQuery,
       expenseQuery,
       projectQuery,
       pipelineQuery
@@ -159,18 +153,15 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
 
     const cashBalance = (cashAccountsResult.data || []).reduce((sum, account) => sum + (account.current_balance || 0), 0);
     const bankBalance = (bankAccountsResult.data || []).reduce((sum, account) => sum + (account.current_balance || 0), 0);
-    const monthlyIncome = (incomeResult.data || []).reduce((sum, income) => sum + (income.amount || 0), 0);
     const monthlyExpenses = (expenseResult.data || []).reduce((sum, expense) => sum + (expense.amount || 0), 0);
     const activeProjects = (projectsResult.data || []).length;
-    // Pipeline value now uses real payment plans, not project budgets
     const pipelineValue = (pipelineResult.data || []).reduce((sum, plan) => sum + (plan.total_amount || 0), 0);
 
     return {
       totalCash: cashBalance + bankBalance,
       bankBalance,
       cashBalance,
-      netMonthlyFlow: monthlyIncome - monthlyExpenses,
-      monthlyIncome,
+      netMonthlyFlow: -monthlyExpenses, // Only expenses now
       monthlyExpenses,
       activeProjects,
       pipelineValue
@@ -231,37 +222,25 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
       const startDate = startOfMonth(monthDate);
       const endDate = endOfMonth(monthDate);
       
-      let incomeQuery = supabase.from('incomes').select('amount')
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString());
-      
       let expenseQuery = supabase.from('expenses').select('amount')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());
 
       if (selectedClientId) {
-        incomeQuery = incomeQuery.eq('client_id', selectedClientId);
         expenseQuery = expenseQuery.eq('client_id', selectedClientId);
       }
 
       if (selectedProjectId) {
-        incomeQuery = incomeQuery.eq('project_id', selectedProjectId);
         expenseQuery = expenseQuery.eq('project_id', selectedProjectId);
       }
 
-      const [incomeResult, expenseResult] = await Promise.all([
-        incomeQuery,
-        expenseQuery
-      ]);
-
-      const income = (incomeResult.data || []).reduce((sum, item) => sum + (item.amount || 0), 0);
+      const expenseResult = await expenseQuery;
       const expenses = (expenseResult.data || []).reduce((sum, item) => sum + (item.amount || 0), 0);
 
       months.push({
         month: format(monthDate, 'MMM', { locale: es }),
-        income,
         expenses,
-        net: income - expenses
+        net: -expenses // Only expenses now
       });
     }
 
@@ -325,27 +304,20 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
 
     const projectPerformanceData = await Promise.all(
       (projects || []).map(async (project) => {
-        const [incomeResult, expenseResult] = await Promise.all([
-          supabase.from('incomes').select('amount').eq('project_id', project.id),
-          supabase.from('expenses').select('amount').eq('project_id', project.id)
-        ]);
-
-        const revenue = (incomeResult.data || []).reduce((sum, income) => sum + (income.amount || 0), 0);
+        const expenseResult = await supabase.from('expenses').select('amount').eq('project_id', project.id);
+        
         const expenses = (expenseResult.data || []).reduce((sum, expense) => sum + (expense.amount || 0), 0);
-        const profit = revenue - expenses;
-        const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
+        const profit = -expenses; // Simplified calculation
 
         return {
           projectName: project.project_name || 'Proyecto sin nombre',
-          revenue,
           expenses,
-          profit,
-          margin
+          profit
         };
       })
     );
 
-    return projectPerformanceData.filter(project => project.revenue > 0 || project.expenses > 0);
+    return projectPerformanceData.filter(project => project.expenses > 0);
   };
 
   const moduleAccess = [
@@ -360,12 +332,6 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
       icon: Package, 
       value: 'materials',
       description: `${operationalMetrics?.materialRequests || 0} solicitudes pendientes`
-    },
-    { 
-      name: 'Planes de Pago', 
-      icon: Activity, 
-      value: 'payment-plans',
-      description: 'Gestión de pagos'
     },
     { 
       name: 'PPD', 
@@ -445,13 +411,13 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Flujo Neto Mensual</CardTitle>
+            <CardTitle className="text-sm font-medium">Gastos Mensuales</CardTitle>
             {getFlowIcon(kpis?.netMonthlyFlow || 0)}
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(kpis?.netMonthlyFlow || 0)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(kpis?.monthlyExpenses || 0)}</div>
             <p className="text-xs text-muted-foreground">
-              Ingresos: {formatCurrency(kpis?.monthlyIncome || 0)} | Gastos: {formatCurrency(kpis?.monthlyExpenses || 0)}
+              Gastos del mes actual
             </p>
           </CardContent>
         </Card>
@@ -500,105 +466,93 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Solicitudes de Materiales</CardTitle>
+            <CardTitle className="text-sm font-medium">Materiales</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-lg font-bold">{operationalMetrics?.materialRequests || 0} solicitudes</div>
             <p className="text-xs text-muted-foreground">
-              Monto total: {formatCurrency(operationalMetrics?.materialRequestsAmount || 0)}
+              Pendientes de aprobación
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sistema PPD</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Documentos Fiscales</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-lg font-bold">{operationalMetrics?.pendingCFDIs || 0} CFDIs</div>
+            <div className="text-lg font-bold">{operationalMetrics?.pendingCFDIs || 0} CFDIs pendientes</div>
             <p className="text-xs text-muted-foreground">
-              {operationalMetrics?.ppdComplements || 0} complementos pendientes
+              {operationalMetrics?.ppdComplements || 0} complementos PPD
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Real-time Analysis */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      {/* Module Access Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {moduleAccess.map((module) => (
+          <Card key={module.value} className="cursor-pointer hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{module.name}</CardTitle>
+              <module.icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground">{module.description}</p>
+              <ChevronRight className="h-4 w-4 mt-2 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid gap-6 md:grid-cols-2">
         {/* Cash Flow Chart */}
-        <Card className="lg:col-span-2">
+        <Card>
           <CardHeader>
-            <CardTitle>Flujo de Efectivo - Últimos 6 Meses</CardTitle>
-            <CardDescription>Evolución de ingresos y gastos en tiempo real</CardDescription>
+            <CardTitle>Flujo de Gastos (6 meses)</CardTitle>
+            <CardDescription>Histórico de gastos mensuales</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={cashFlowData}>
-                  <XAxis 
-                    dataKey="month" 
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
-                  />
-                  <Tooltip 
-                    formatter={(value, name) => [formatCurrency(Number(value)), name === 'income' ? 'Ingresos' : 'Gastos']}
-                    labelFormatter={(label) => label}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="income"
-                    stroke="hsl(var(--primary))"
-                    fill="hsl(var(--primary))"
-                    fillOpacity={0.3}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="expenses"
-                    stroke="hsl(var(--destructive))"
-                    fill="hsl(var(--destructive))"
-                    fillOpacity={0.3}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={cashFlowData}>
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip formatter={(value, name) => [formatCurrency(Number(value)), name === 'expenses' ? 'Gastos' : 'Neto']} />
+                <Area type="monotone" dataKey="expenses" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive))" fillOpacity={0.3} />
+              </AreaChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
 
         {/* Expense Categories */}
         <Card>
           <CardHeader>
-            <CardTitle>Distribución de Gastos</CardTitle>
-            <CardDescription>Por categoría - Mes actual</CardDescription>
+            <CardTitle>Categorías de Gastos</CardTitle>
+            <CardDescription>Distribución del mes actual</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {expenseCategories.slice(0, 5).map((category, index) => (
-                <div key={category.name} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                    />
-                    <span className="text-sm font-medium">{category.name}</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-bold">{formatCurrency(category.value)}</div>
-                    <div className="text-xs text-muted-foreground">{formatPercentage(category.percentage)}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={expenseCategories}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percentage }) => `${name}: ${formatPercentage(percentage)}`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {expenseCategories.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+              </PieChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
@@ -607,83 +561,21 @@ const ERPDashboard: React.FC<ERPDashboardProps> = ({
       {projectPerformance.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Performance de Proyectos</CardTitle>
-            <CardDescription>Rentabilidad por proyecto activo</CardDescription>
+            <CardTitle>Rendimiento por Proyecto</CardTitle>
+            <CardDescription>Top 5 proyectos con mayor actividad</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={projectPerformance}>
-                  <XAxis 
-                    dataKey="projectName" 
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
-                  />
-                  <Tooltip 
-                    formatter={(value, name) => [formatCurrency(Number(value)), name === 'revenue' ? 'Ingresos' : 'Gastos']}
-                    labelFormatter={(label) => label}
-                  />
-                  <Bar
-                    dataKey="revenue"
-                    fill="hsl(var(--primary))"
-                    name="Ingresos"
-                  />
-                  <Bar
-                    dataKey="expenses"
-                    fill="hsl(var(--destructive))"
-                    name="Gastos"
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={projectPerformance}>
+                <XAxis dataKey="projectName" />
+                <YAxis />
+                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                <Bar dataKey="expenses" fill="hsl(var(--destructive))" />
+              </BarChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       )}
-
-      {/* Module Access */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Acceso a Módulos Financieros</CardTitle>
-          <CardDescription>Navegación rápida a las funcionalidades del sistema</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {moduleAccess.map((module) => {
-              const Icon = module.icon;
-              return (
-                <Button
-                  key={module.value}
-                  variant="outline"
-                  className="flex items-center justify-between p-4 h-auto"
-                  onClick={() => {
-                    // This would navigate to the specific tab in the parent component
-                    const event = new CustomEvent('navigate-to-module', { detail: module.value });
-                    window.dispatchEvent(event);
-                  }}
-                >
-                  <div className="flex items-center space-x-3">
-                    <Icon className="h-5 w-5" />
-                    <div className="text-left">
-                      <div className="font-medium">{module.name}</div>
-                      <div className="text-xs text-muted-foreground">{module.description}</div>
-                    </div>
-                  </div>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };

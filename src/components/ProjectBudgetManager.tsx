@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CurrencyInput } from "@/components/CurrencyInput";
-import { PaymentPlanBuilder } from '@/components/PaymentPlanBuilder';
+// PaymentPlanBuilder removed
 import { Calculator, FileText, Download, Plus, Trash2, Edit, CheckCircle } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 
