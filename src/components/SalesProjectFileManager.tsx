@@ -432,6 +432,58 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
     setSelectedPhoto(photos[newIndex]);
   };
 
+  const getDocumentDisplayName = (document: Document): string => {
+    // Mapeo de nombres descriptivos basado en categoría y tipo
+    const categoryMapping: Record<string, string> = {
+      'contract': 'Contrato Firmado',
+      'fiscal': 'Constancia de Situación Fiscal',
+      'constancia_situacion_fiscal': 'Constancia de Situación Fiscal',
+      'curp': 'CURP',
+      'plan_pagos': 'Plan de Pagos',
+      'legal': 'Documento Legal',
+      'financial': 'Documento Financiero',
+      'technical': 'Documento Técnico',
+      'permits': 'Permisos y Licencias',
+      'contracts': 'Contrato',
+      'correspondence': 'Correspondencia'
+    };
+
+    // Si es un documento heredado, usar el mapeo por tipo
+    if (document.source === 'inherited') {
+      return categoryMapping[document.document_type] || document.document_name;
+    }
+
+    // Si es del sistema unificado, verificar si tiene un nombre descriptivo o usar mapeo
+    if (document.document_name && !document.document_name.includes('.')) {
+      // Si el nombre no tiene extensión, probablemente ya es descriptivo
+      return document.document_name;
+    }
+
+    // Usar mapeo por categoría
+    return categoryMapping[document.document_type] || 
+           categoryMapping[document.document_name?.toLowerCase()] || 
+           document.document_name;
+  };
+
+  const getDocumentCategoryName = (document: Document): string => {
+    const categoryMapping: Record<string, string> = {
+      'contract': 'Contrato',
+      'fiscal': 'Documento Fiscal',
+      'constancia_situacion_fiscal': 'Documento Fiscal',
+      'curp': 'Documento Legal',
+      'plan_pagos': 'Plan de Pagos',
+      'legal': 'Documento Legal',
+      'financial': 'Documento Financiero',
+      'technical': 'Documento Técnico',
+      'permits': 'Permisos',
+      'contracts': 'Contrato',
+      'correspondence': 'Correspondencia',
+      'other': 'Otro'
+    };
+
+    return categoryMapping[document.document_type] || 'Documento';
+  };
+
   const getDocumentIcon = (documentType: string) => {
     switch (documentType) {
       case 'contract':
@@ -646,25 +698,18 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
                       <div className="flex-shrink-0">
                         {getDocumentIcon(doc.document_type)}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate group-hover:text-primary transition-colors">
-                          {/* Mostrar nombre personalizado para documentos complementarios */}
-                          {doc.document_type === 'contract' ? 'Contrato Firmado' :
-                           doc.document_type === 'fiscal' ? 'Constancia de Situación Fiscal' :
-                           doc.document_type === 'plan_pagos' ? 'Plan de Pagos' :
-                           doc.document_name}
-                        </p>
-                        <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                          <span className="px-2 py-1 bg-muted rounded-md font-medium">
-                            {doc.document_type === 'contract' ? 'Contrato' :
-                             doc.document_type === 'fiscal' ? 'Documento Fiscal' :
-                             doc.document_type === 'plan_pagos' ? 'Plan de Pagos' :
-                             'Doc. Complementario'}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {format(new Date(doc.created_at), 'dd/MM/yyyy', { locale: es })}
-                          </span>
+                       <div className="flex-1 min-w-0">
+                         <p className="font-medium text-sm truncate group-hover:text-primary transition-colors">
+                           {getDocumentDisplayName(doc)}
+                         </p>
+                         <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                           <span className="px-2 py-1 bg-muted rounded-md font-medium">
+                             {getDocumentCategoryName(doc)}
+                           </span>
+                           <span className="flex items-center gap-1">
+                             <Calendar className="h-3 w-3" />
+                             {format(new Date(doc.created_at), 'dd/MM/yyyy', { locale: es })}
+                           </span>
                           <span>{formatFileSize(doc.file_size)}</span>
                         </div>
                       </div>

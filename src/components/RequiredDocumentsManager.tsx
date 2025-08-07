@@ -308,13 +308,21 @@ const RequiredDocumentsManager: React.FC<RequiredDocumentsManagerProps> = ({
         'plan_pagos': 'financial'
       };
 
+      // Mapeo de nombres descriptivos para documentos obligatorios
+      const documentNameMapping: Record<string, string> = {
+        'curp': 'CURP',
+        'fiscal_certificate': 'Constancia de Situación Fiscal',
+        'contract': 'Contrato Firmado',
+        'plan_pagos': 'Plan de Pagos'
+      };
+
       // Insert into unified documents table
       const { error: insertError } = await supabase
         .from('documents')
         .insert({
           client_id: clientProject.client_id,
           project_id: clientProjectId,
-          name: file.name,
+          name: documentNameMapping[docType] || file.name, // Usar nombre descriptivo
           category: documentTypeMapping[docType] || docType,
           department: departmentMapping[docType] || 'general',
           file_path: fileName,
