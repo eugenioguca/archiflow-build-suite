@@ -387,8 +387,8 @@ export const PaymentPlanForm: React.FC<PaymentPlanFormProps> = ({
                                 <div className="relative">
                                   <Input
                                     type="number"
-                                    placeholder="0"
-                                    value={installment.percentage}
+                                    placeholder="%"
+                                    value={installment.percentage === 0 ? '' : installment.percentage}
                                     onChange={(e) => updateCustomInstallment(index, 'percentage', Number(e.target.value))}
                                     className="text-sm pr-6"
                                     min="0"
