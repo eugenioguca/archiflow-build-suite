@@ -122,7 +122,7 @@ export const PaymentPlanManager: React.FC<PaymentPlanManagerProps> = ({
               installment_number: index + 1,
               description: inst.description,
               amount: inst.amount,
-              due_date: new Date(Date.now() + (inst.due_days * 24 * 60 * 60 * 1000)).toISOString().split('T')[0],
+              due_date: inst.due_date instanceof Date ? inst.due_date.toISOString().split('T')[0] : inst.due_date,
               status: 'pending'
             }));
 
