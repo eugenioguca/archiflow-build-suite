@@ -363,12 +363,12 @@ export const PaymentPlanManager: React.FC<PaymentPlanManagerProps> = ({
 
         {/* View Dialog */}
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="max-w-4xl">
-            <DialogHeader>
+          <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
+            <DialogHeader className="flex-shrink-0">
               <DialogTitle>Detalles del Plan de Pago</DialogTitle>
             </DialogHeader>
             {selectedPlan && (
-              <div className="space-y-6">
+              <div className="flex-1 overflow-y-auto space-y-6 pr-1">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label>Nombre del Plan</Label>
