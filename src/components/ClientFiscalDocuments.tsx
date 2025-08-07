@@ -77,11 +77,11 @@ export const ClientFiscalDocuments: React.FC<ClientFiscalDocumentsProps> = ({
   const fetchDocuments = async () => {
     try {
       const { data, error } = await supabase
-        .from('client_documents')
+        .from('documents')
         .select(`
           id,
-          document_name,
-          document_type,
+          name,
+          category,
           file_path,
           file_type,
           file_size,
@@ -90,11 +90,25 @@ export const ClientFiscalDocuments: React.FC<ClientFiscalDocumentsProps> = ({
         `)
         .eq('client_id', clientId)
         .eq('project_id', projectId)
+        .eq('document_status', 'active')
+        .eq('department', 'fiscal')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      setDocuments(data || []);
+      // Transform data to match interface
+      const transformedDocs = (data || []).map(doc => ({
+        id: doc.id,
+        document_name: doc.name,
+        document_type: doc.category,
+        file_path: doc.file_path,
+        file_type: doc.file_type,
+        file_size: doc.file_size,
+        uploaded_by: doc.uploaded_by,
+        created_at: doc.created_at
+      }));
+      
+      setDocuments(transformedDocs);
     } catch (error: any) {
       console.error('Error fetching fiscal documents:', error);
       toast({
@@ -127,28 +141,31 @@ export const ClientFiscalDocuments: React.FC<ClientFiscalDocumentsProps> = ({
 
       if (!profile) throw new Error('Perfil no encontrado');
 
-      // Upload file to storage
+      // Upload file to storage - using unified bucket
       const fileExt = file.name.split('.').pop();
-      const fileName = `${clientId}/${projectId}/${documentType}_${Date.now()}.${fileExt}`;
+      const fileName = `${clientId}/${projectId}/fiscal/${documentType}_${Date.now()}.${fileExt}`;
       
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('client-documents')
+        .from('project-documents')
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
-      // Save document record
+      // Save document record in unified table
       const { error: insertError } = await supabase
-        .from('client_documents')
+        .from('documents')
         .insert([{
           client_id: clientId,
           project_id: projectId,
-          document_name: file.name,
-          document_type: documentType,
+          name: file.name,
+          category: documentType,
           file_path: uploadData.path,
           file_type: file.type,
           file_size: file.size,
-          uploaded_by: profile.id
+          uploaded_by: profile.id,
+          department: 'fiscal',
+          department_permissions: ['all'],
+          document_status: 'active'
         }]);
 
       if (insertError) throw insertError;
@@ -173,7 +190,7 @@ export const ClientFiscalDocuments: React.FC<ClientFiscalDocumentsProps> = ({
   const handleDownload = async (filePath: string, fileName: string) => {
     try {
       const { data, error } = await supabase.storage
-        .from('client-documents')
+        .from('project-documents')
         .download(filePath);
 
       if (error) throw error;
@@ -198,7 +215,7 @@ export const ClientFiscalDocuments: React.FC<ClientFiscalDocumentsProps> = ({
   const handleView = async (filePath: string) => {
     try {
       const { data, error } = await supabase.storage
-        .from('client-documents')
+        .from('project-documents')
         .createSignedUrl(filePath, 300); // 5 minutes
 
       if (error) throw error;
@@ -219,13 +236,13 @@ export const ClientFiscalDocuments: React.FC<ClientFiscalDocumentsProps> = ({
     try {
       // Delete from storage
       await supabase.storage
-        .from('client-documents')
+        .from('project-documents')
         .remove([filePath]);
 
-      // Delete from database
+      // Delete from database (soft delete)
       const { error } = await supabase
-        .from('client_documents')
-        .delete()
+        .from('documents')
+        .update({ document_status: 'deleted' })
         .eq('id', documentId);
 
       if (error) throw error;

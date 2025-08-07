@@ -168,10 +168,10 @@ export default function Clients() {
     if (!confirm('¿Estás seguro de que quieres eliminar este cliente y todo su expediente? Esta acción eliminará también todos sus proyectos y documentos asociados y no se puede deshacer.')) return;
 
     try {
-      // Primero eliminar documentos del cliente
+      // Primero marcar documentos del cliente como eliminados
       const { error: documentsError } = await supabase
-        .from('client_documents')
-        .delete()
+        .from('documents')
+        .update({ document_status: 'deleted' })
         .eq('client_id', clientId);
 
       if (documentsError) {

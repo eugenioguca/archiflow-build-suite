@@ -127,17 +127,18 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
 
   const fetchClientDocuments = async (): Promise<Document[]> => {
     const { data, error } = await supabase
-      .from('client_documents')
+      .from('documents')
       .select('*')
       .eq('project_id', projectId)
+      .eq('document_status', 'active')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
 
     return (data || []).map(doc => ({
       id: doc.id,
-      document_name: doc.document_name,
-      document_type: doc.document_type,
+      document_name: doc.name,
+      document_type: doc.category,
       file_path: doc.file_path,
       file_type: doc.file_type,
       file_size: doc.file_size,
@@ -228,19 +229,19 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
 
       // Upload to storage
       const { filePath } = await uploadFileToStorage(fileUpload.file, {
-        bucket: 'client-documents',
-        folder: clientId,
+        bucket: 'project-documents',
+        folder: `${clientId}/${projectId}`,
         generatePublicUrl: false
       });
 
       // Insert into database
       const { error: dbError } = await supabase
-        .from('client_documents')
+        .from('documents')
         .insert({
           client_id: clientId,
           project_id: projectId,
-          document_name: fileUpload.file.name,
-          document_type: fileUpload.category,
+          name: fileUpload.file.name,
+          category: fileUpload.category,
           file_path: filePath,
           file_type: fileUpload.file.type,
           file_size: fileUpload.file.size,
@@ -312,7 +313,7 @@ export const SalesProjectFileManager: React.FC<SalesProjectFileManagerProps> = (
 
   const handleDownloadDocument = async (document: Document) => {
     try {
-      const bucket = document.source === 'client_documents' ? 'client-documents' : 'project-documents';
+      const bucket = 'project-documents'; // All documents now use unified bucket
       const { url } = await getFileUrl(document.file_path, bucket, true);
       await downloadFile(url, document.document_name);
     } catch (error) {

@@ -187,8 +187,8 @@ export function ProjectDocumentManager({ clientId, clientName, currentDepartment
 
   const handleDownloadDocument = async (document: ProjectDocument) => {
     try {
-      // Use correct bucket based on document origin
-      const bucket = document.inherited_from_client ? 'client-documents' : 'project-documents';
+      // All documents now use unified bucket
+      const bucket = 'project-documents';
       const { url } = await getFileUrl(document.file_path, bucket);
       await downloadFile(url, document.name);
       toast.success('Descarga iniciada');
@@ -200,8 +200,8 @@ export function ProjectDocumentManager({ clientId, clientName, currentDepartment
 
   const handleViewDocument = async (document: ProjectDocument) => {
     try {
-      // Use correct bucket based on document origin
-      const bucket = document.inherited_from_client ? 'client-documents' : 'project-documents';
+      // All documents now use unified bucket
+      const bucket = 'project-documents';
       const { url } = await getFileUrl(document.file_path, bucket);
       setSelectedDocument({
         url,

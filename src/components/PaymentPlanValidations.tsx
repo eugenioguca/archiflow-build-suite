@@ -17,7 +17,7 @@ export const PaymentPlanValidations: React.FC<PaymentPlanValidationsProps> = ({
     if (planType === 'design_payment') {
       return [
         {
-          id: 'client_documents',
+          id: 'fiscal_documents',
           label: 'Documentos del Cliente',
           description: 'Constancia fiscal y contrato firmado',
           status: 'completed', // This should be checked against actual data

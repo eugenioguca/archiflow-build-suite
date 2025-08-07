@@ -266,7 +266,7 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
           const filePath = `chat-attachments/${clientId}/${projectId}/${fileName}`;
           
           const { error: uploadError } = await supabase.storage
-            .from('client-documents')
+            .from('project-documents')
             .upload(filePath, file);
 
           if (uploadError) throw uploadError;
@@ -349,7 +349,7 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
   const downloadAttachment = async (attachment: any) => {
     try {
       const { data, error } = await supabase.storage
-        .from('client-documents')
+        .from('project-documents')
         .download(attachment.path);
 
       if (error) throw error;

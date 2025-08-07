@@ -136,13 +136,13 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false, previe
     // Only set up real-time subscriptions if not in preview mode
     if (!previewDocuments) {
       const channel = supabase
-        .channel('client-documents-changes')
+        .channel('documents-changes')
         .on(
           'postgres_changes',
           {
             event: '*',
             schema: 'public',
-            table: 'client_documents',
+            table: 'documents',
             filter: `client_id=eq.${clientId}`
           },
           () => {

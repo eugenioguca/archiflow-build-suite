@@ -187,18 +187,34 @@ export const downloadDocument = async (
     if (error) {
       console.error('downloadDocument - Primary bucket failed:', error);
       
-      // Si falla el bucket primario, intentar con el otro bucket
-      const fallbackBucket = bucketInfo.bucket === 'client-documents' ? 'project-documents' : 'client-documents';
-      const fallbackNormalizedPath = normalizePath(filePath, fallbackBucket);
+      // Si falla, intentar path alternativo en el mismo bucket
+      console.log('downloadDocument - Primary path failed, trying alternative path patterns');
       
-      console.log('downloadDocument - Trying fallback:', { fallbackBucket, fallbackNormalizedPath });
+      // Try alternative path interpretations
+      const altPaths = [
+        filePath.replace(/^[^\/]*\//, ''), // Remove first path segment
+        filePath.split('/').slice(-1)[0], // Get just filename
+        filePath.replace(/^\/+/, '') // Remove leading slashes only
+      ];
       
-      const { data: fallbackData, error: fallbackError } = await supabase.storage
-        .from(fallbackBucket)
-        .download(fallbackNormalizedPath);
+      let fallbackData = null;
+      for (const altPath of altPaths) {
+        try {
+          const { data, error: altError } = await supabase.storage
+            .from(bucketInfo.bucket)
+            .download(altPath);
+          if (!altError && data) {
+            fallbackData = data;
+            console.log('downloadDocument - Success with alternative path:', altPath);
+            break;
+          }
+        } catch (altError) {
+          console.log('downloadDocument - Alternative path failed:', altPath, altError);
+        }
+      }
       
-      if (fallbackError) {
-        throw new Error(`Error en ambos buckets: ${error.message} | ${fallbackError.message}`);
+      if (!fallbackData) {
+        throw new Error(`Error downloading from bucket ${bucketInfo.bucket}: ${error.message}`);
       }
       
       // Usar datos del fallback
@@ -337,13 +353,13 @@ export const openDocumentInNewTab = async (
         return result.url ? { url: result.url, source: 'standard' } : null;
       },
       
-      // Opción 2: Intentar con path directo sin bucket en client-documents
+      // Opción 2: Intentar con signed URL en project-documents  
       async () => {
         try {
           const { data } = await supabase.storage
-            .from('client-documents')
+            .from('project-documents')
             .createSignedUrl(filePath.replace(/^\/+/, ''), 3600);
-          return data?.signedUrl ? { url: data.signedUrl, source: 'direct-client' } : null;
+          return data?.signedUrl ? { url: data.signedUrl, source: 'signed-project' } : null;
         } catch {
           return null;
         }
@@ -361,13 +377,15 @@ export const openDocumentInNewTab = async (
         }
       },
       
-      // Opción 4: Fallback final con URL pública de client-documents
+      // Opción 4: Fallback final con path alternativo en project-documents
       async () => {
         try {
+          // Try with different path patterns in case there's a path mismatch
+          const altPath = filePath.includes('/') ? filePath.split('/').slice(-1)[0] : filePath;
           const { data } = supabase.storage
-            .from('client-documents')
-            .getPublicUrl(filePath.replace(/^\/+/, ''));
-          return data?.publicUrl ? { url: data.publicUrl, source: 'public-fallback' } : null;
+            .from('project-documents')
+            .getPublicUrl(altPath.replace(/^\/+/, ''));
+          return data?.publicUrl ? { url: data.publicUrl, source: 'alt-path-fallback' } : null;
         } catch {
           return null;
         }
