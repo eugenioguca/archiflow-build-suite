@@ -6417,6 +6417,17 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      update_user_approval_secure: {
+        Args: { _user_id: string; _approval_status: string }
+        Returns: undefined
+      }
+      update_user_role_secure: {
+        Args: {
+          _user_id: string
+          _new_role: Database["public"]["Enums"]["user_role"]
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       activity_type:
