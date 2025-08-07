@@ -247,15 +247,17 @@ export const PaymentPlanManager: React.FC<PaymentPlanManagerProps> = ({
                   Nuevo Plan
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
-                <DialogHeader className="flex-shrink-0 pb-4">
+              <DialogContent className="max-w-5xl max-h-[95vh] flex flex-col">
+                <DialogHeader className="flex-shrink-0 pb-4 border-b">
                   <DialogTitle>Crear Plan de Pago</DialogTitle>
                 </DialogHeader>
-                <div className="flex-1 overflow-hidden px-2">
-                  <PaymentPlanValidations 
-                    projectId={clientProjectId}
-                    planType={planType || 'design_payment'}
-                  />
+                <div className="flex-1 min-h-0 py-4">
+                  <div className="mb-4">
+                    <PaymentPlanValidations 
+                      projectId={clientProjectId}
+                      planType={planType || 'design_payment'}
+                    />
+                  </div>
                   <PaymentPlanForm
                     onSubmit={handleCreate}
                     onCancel={() => setIsCreateDialogOpen(false)}
@@ -337,11 +339,11 @@ export const PaymentPlanManager: React.FC<PaymentPlanManagerProps> = ({
 
         {/* Edit Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
-            <DialogHeader className="flex-shrink-0 pb-4">
+          <DialogContent className="max-w-5xl max-h-[95vh] flex flex-col">
+            <DialogHeader className="flex-shrink-0 pb-4 border-b">
               <DialogTitle>Editar Plan de Pago</DialogTitle>
             </DialogHeader>
-            <div className="flex-1 overflow-hidden px-2">
+            <div className="flex-1 min-h-0 py-4">
               <PaymentPlanForm
                 onSubmit={handleEdit}
                 onCancel={() => setIsEditDialogOpen(false)}
