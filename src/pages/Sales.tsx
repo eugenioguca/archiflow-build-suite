@@ -14,7 +14,7 @@ import { SmartCRM } from "@/components/SmartCRM";
 import { ClientProjectManager } from "@/components/ClientProjectManager";
 import { RequiredDocumentsManager } from "@/components/RequiredDocumentsManager";
 import { PaymentPlanBuilder } from "@/components/PaymentPlanBuilder";
-import { PaymentPlansUnified } from "@/components/PaymentPlansUnified";
+import { PaymentPlanManager } from "@/components/PaymentPlanManager";
 import { PaymentStatusIndicator } from "@/components/PaymentStatusIndicator";
 import { SalesDesignCalendar } from "@/components/SalesDesignCalendar";
 import { SalesExecutiveDashboard } from "@/components/SalesExecutiveDashboard";
@@ -720,10 +720,7 @@ export default function Sales() {
               </p>
             </CardHeader>
             <CardContent>
-              <PaymentPlansUnified 
-                mode="sales"
-                selectedClientId={advisorFilter !== 'all' ? advisorFilter : undefined}
-              />
+              <PaymentPlanManager />
             </CardContent>
           </Card>
         </TabsContent>
@@ -933,10 +930,7 @@ export default function Sales() {
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <PaymentPlansUnified 
-                          mode="sales"
-                          selectedProjectId={selectedProject.id}
-                        />
+                        <PaymentPlanManager />
                       </CardContent>
                     </Card>
                   </div>

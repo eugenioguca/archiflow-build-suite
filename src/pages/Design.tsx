@@ -17,7 +17,7 @@ import { ClientInfoPanel } from "@/components/ClientInfoPanel";
 import { DesignCompletionManager } from "@/components/DesignCompletionManager";
 import { CompletedDesignsTab } from "@/components/CompletedDesignsTab";
 import { DesignDocumentManager } from "@/components/DesignDocumentManager";
-import { PaymentPlansUnified } from "@/components/PaymentPlansUnified";
+
 import { TeamClientChat } from "@/components/TeamClientChat";
 import { ModuleNotifications } from "@/components/ModuleNotifications";
 import { 
@@ -771,11 +771,11 @@ export default function Design() {
 
         <TabsContent value="payments">
           <div className="bg-card rounded-lg p-4 border">
-            <PaymentPlansUnified 
-              selectedProjectId={projectId}
-              mode="design"
-              planType="design_to_construction"
-            />
+            <div className="text-center p-8">
+              <p className="text-muted-foreground">
+                Los pagos se gestionan desde el módulo de finanzas una vez que se crean los planes de pago.
+              </p>
+            </div>
           </div>
         </TabsContent>
 

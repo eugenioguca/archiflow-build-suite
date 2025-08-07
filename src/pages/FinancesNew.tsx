@@ -6,7 +6,7 @@ import PPDMonitoringDashboard from '@/components/PPDMonitoringDashboard';
 import { PaymentComplementsDashboard } from '@/components/PaymentComplementsDashboard';
 import ProfitabilityAnalysis from '@/components/ProfitabilityAnalysis';
 import { ElectronicInvoicingDashboard } from '@/components/ElectronicInvoicingDashboard';
-import { PaymentPlansUnified } from '@/components/PaymentPlansUnified';
+import { FinancePaymentManager } from '@/components/FinancePaymentManager';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   LayoutDashboard, 
@@ -39,8 +39,8 @@ const FinancesNew: React.FC = () => {
       </div>
 
       <Tabs defaultValue="dashboard" className="space-y-3">
-        {/* MENÚ LIMPIO - Solo 7 funcionalidades esenciales */}
-        <TabsList className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 w-full h-auto gap-1 p-1 bg-muted">
+        {/* MENÚ LIMPIO - Solo 6 funcionalidades esenciales */}
+        <TabsList className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-6 w-full h-auto gap-1 p-1 bg-muted">
           <TabsTrigger value="dashboard" className="flex items-center gap-2 py-2 px-3 text-sm">
             <LayoutDashboard className="h-4 w-4" />
             <span>Dashboard</span>
@@ -103,7 +103,7 @@ const FinancesNew: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="payment-plans" className="space-y-4">
-          <GlobalFilters
+          <FinancePaymentManager 
             selectedClientId={selectedClientId}
             selectedProjectId={selectedProjectId}
             onClientChange={setSelectedClientId}
@@ -111,32 +111,7 @@ const FinancesNew: React.FC = () => {
             onClearFilters={() => {
               setSelectedClientId(undefined);
               setSelectedProjectId(undefined);
-              setSelectedPlanType('all');
             }}
-          />
-          
-          {/* Filtro adicional por tipo de plan */}
-          <div className="flex items-center gap-4 mb-4">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="plan-type-filter">Tipo de Plan:</Label>
-              <Select value={selectedPlanType} onValueChange={(value: 'all' | 'sales_to_design' | 'design_to_construction') => setSelectedPlanType(value)}>
-                <SelectTrigger className="w-48" id="plan-type-filter">
-                  <SelectValue placeholder="Seleccionar tipo de plan" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los planes</SelectItem>
-                  <SelectItem value="sales_to_design">Planes de Ventas</SelectItem>
-                  <SelectItem value="design_to_construction">Planes de Construcción</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <PaymentPlansUnified 
-            mode="finance"
-            selectedClientId={selectedClientId}
-            selectedProjectId={selectedProjectId}
-            planType={selectedPlanType}
           />
         </TabsContent>
 
