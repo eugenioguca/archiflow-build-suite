@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Form,
   FormControl,
@@ -138,26 +139,6 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
     }
   }, [event, defaultDate, form]);
 
-  const handleAddAlert = (minutes: number) => {
-    if (!selectedAlerts.includes(minutes)) {
-      setSelectedAlerts([...selectedAlerts, minutes]);
-    }
-  };
-
-  const handleRemoveAlert = (minutes: number) => {
-    setSelectedAlerts(selectedAlerts.filter(alert => alert !== minutes));
-  };
-
-  const handleAddInvitedUser = (user: TeamMember) => {
-    if (!invitedUsers.find(u => u.profile_id === user.profile_id)) {
-      setInvitedUsers([...invitedUsers, user]);
-    }
-  };
-
-  const handleRemoveInvitedUser = (profileId: string) => {
-    setInvitedUsers(invitedUsers.filter(u => u.profile_id !== profileId));
-  };
-
   const onSubmit = async (data: EventFormData) => {
     try {
       const startDateTime = isAllDay 
@@ -214,17 +195,17 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="max-w-md max-h-[90vh] p-0">
+        <DialogHeader className="p-6 pb-0">
+          <DialogTitle className="text-lg font-semibold">
             {event ? 'Editar Evento' : 'Nuevo Evento'}
           </DialogTitle>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Información básica */}
-            <div className="space-y-4">
+        <ScrollArea className="max-h-[75vh] px-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pb-6">
+              {/* Título */}
               <FormField
                 control={form.control}
                 name="title"
@@ -239,12 +220,13 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
                 )}
               />
 
+              {/* Tipo de evento */}
               <FormField
                 control={form.control}
                 name="event_type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tipo de Evento</FormLabel>
+                    <FormLabel>Tipo</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -262,25 +244,158 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
                 )}
               />
 
+              {/* Todo el día */}
               <FormField
                 control={form.control}
-                name="description"
+                name="is_all_day"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Descripción</FormLabel>
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                    <div className="space-y-0.5">
+                      <FormLabel>Todo el día</FormLabel>
+                    </div>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Descripción del evento..."
-                        className="resize-none"
-                        rows={3}
-                        {...field} 
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={(checked) => {
+                          field.onChange(checked);
+                          if (checked) {
+                            form.setValue('start_time', '');
+                            form.setValue('end_time', '');
+                          }
+                        }}
                       />
                     </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {/* Fecha de inicio */}
+              <FormField
+                control={form.control}
+                name="start_date"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Fecha de inicio *</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP", { locale: es })
+                            ) : (
+                              <span>Selecciona fecha</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) => date < new Date("1900-01-01")}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
+              {/* Hora de inicio - Solo si no es todo el día */}
+              {!isAllDay && (
+                <FormField
+                  control={form.control}
+                  name="start_time"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Hora de inicio</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="time"
+                          {...field}
+                          className="w-full"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {/* Fecha de fin */}
+              <FormField
+                control={form.control}
+                name="end_date"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Fecha de fin *</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP", { locale: es })
+                            ) : (
+                              <span>Selecciona fecha</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) => date < new Date("1900-01-01")}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Hora de fin - Solo si no es todo el día */}
+              {!isAllDay && (
+                <FormField
+                  control={form.control}
+                  name="end_time"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Hora de fin</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="time"
+                          {...field}
+                          className="w-full"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {/* Ubicación */}
               <FormField
                 control={form.control}
                 name="location"
@@ -288,251 +403,55 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
                   <FormItem>
                     <FormLabel>Ubicación</FormLabel>
                     <FormControl>
-                      <div className="relative">
-                        <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input 
-                          placeholder="Ubicación del evento"
-                          className="pl-10"
-                          {...field} 
-                        />
-                      </div>
+                      <Input placeholder="Ubicación del evento" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
 
-            {/* Fechas y horarios */}
-            <div className="space-y-4">
+              {/* Descripción */}
               <FormField
                 control={form.control}
-                name="is_all_day"
+                name="description"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel className="text-base">Evento de todo el día</FormLabel>
-                    </div>
+                  <FormItem>
+                    <FormLabel>Descripción</FormLabel>
                     <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
+                      <Textarea
+                        placeholder="Descripción del evento"
+                        className="min-h-[80px] resize-none"
+                        {...field}
                       />
                     </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="start_date"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Fecha de inicio *</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP", { locale: es })
-                              ) : (
-                                <span>Selecciona fecha</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                            initialFocus
-                            className="pointer-events-auto"
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="end_date"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>Fecha de fin *</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant="outline"
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP", { locale: es })
-                              ) : (
-                                <span>Selecciona fecha</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                            initialFocus
-                            className="pointer-events-auto"
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {!isAllDay && (
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="start_time"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Hora de inicio</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Clock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                            <Input 
-                              type="time"
-                              className="pl-10"
-                              {...field} 
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="end_time"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Hora de fin</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Clock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                            <Input 
-                              type="time"
-                              className="pl-10"
-                              {...field} 
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              {/* Invitar usuarios */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <FormLabel>Invitados</FormLabel>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowInvitePanel(!showInvitePanel)}
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Invitar ({invitedUsers.length})
+                  </Button>
                 </div>
-              )}
-            </div>
 
-            {/* Alertas */}
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <Bell className="h-4 w-4" />
-                <span className="font-medium">Alertas</span>
-              </div>
-              
-              <Select onValueChange={(value) => handleAddAlert(parseInt(value))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Agregar alerta..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {ALERT_OPTIONS.map((option) => (
-                    <SelectItem 
-                      key={option.value} 
-                      value={option.value.toString()}
-                      disabled={selectedAlerts.includes(option.value)}
-                    >
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {selectedAlerts.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {selectedAlerts.map((minutes) => {
-                    const alertOption = ALERT_OPTIONS.find(opt => opt.value === minutes);
-                    return (
-                      <Badge key={minutes} variant="secondary" className="flex items-center space-x-1">
-                        <span>{alertOption?.label}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveAlert(minutes)}
-                          className="ml-1 hover:text-destructive"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Invitaciones */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Users className="h-4 w-4" />
-                  <span className="font-medium">Invitar usuarios</span>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowInvitePanel(!showInvitePanel)}
-                >
-                  {showInvitePanel ? 'Ocultar' : 'Invitar'}
-                </Button>
-              </div>
-
-              {showInvitePanel && (
-                <EventQuickInvite
-                  onUserSelect={handleAddInvitedUser}
-                  excludeUserIds={invitedUsers.map(u => u.profile_id)}
-                />
-              )}
-
-              {invitedUsers.length > 0 && (
-                <div className="space-y-2">
-                  <span className="text-sm font-medium">Usuarios invitados:</span>
+                {invitedUsers.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {invitedUsers.map((user) => (
-                      <Badge key={user.profile_id} variant="outline" className="flex items-center space-x-1">
-                        <span>{user.full_name}</span>
+                      <Badge key={user.profile_id} variant="secondary" className="text-xs">
+                        {user.full_name}
                         <button
                           type="button"
-                          onClick={() => handleRemoveInvitedUser(user.profile_id)}
+                          onClick={() => setInvitedUsers(invitedUsers.filter(u => u.profile_id !== user.profile_id))}
                           className="ml-1 hover:text-destructive"
                         >
                           <X className="h-3 w-3" />
@@ -540,45 +459,58 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
                       </Badge>
                     ))}
                   </div>
-                </div>
-              )}
-            </div>
+                )}
 
-            {/* Botones de acción */}
-            <div className="flex justify-between pt-4">
-              <div>
-                {event && (
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    onClick={handleDelete}
-                    disabled={isDeleting}
-                  >
-                    {isDeleting ? 'Eliminando...' : 'Eliminar'}
-                  </Button>
+                {showInvitePanel && (
+                  <div className="border rounded-lg p-3 bg-muted/50">
+                    <EventQuickInvite 
+                      onUserSelect={(user) => {
+                        if (!invitedUsers.find(u => u.profile_id === user.profile_id)) {
+                          setInvitedUsers([...invitedUsers, user]);
+                        }
+                      }}
+                      excludeUserIds={invitedUsers.map(u => u.profile_id)}
+                    />
+                  </div>
                 )}
               </div>
-              
-              <div className="flex space-x-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
+
+              {/* Botones de acción */}
+              <div className="flex flex-col gap-2 pt-4">
+                <Button 
+                  type="submit" 
                   disabled={isCreating || isUpdating}
+                  className="w-full"
                 >
-                  {isCreating ? 'Creando...' : 
-                   isUpdating ? 'Actualizando...' : 
-                   event ? 'Actualizar' : 'Crear Evento'}
+                  {isCreating || isUpdating ? 'Guardando...' : (event ? 'Actualizar' : 'Crear Evento')}
                 </Button>
+                
+                <div className="flex gap-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => onOpenChange(false)}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                  
+                  {event && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={handleDelete}
+                      disabled={isDeleting}
+                      className="flex-1"
+                    >
+                      {isDeleting ? 'Eliminando...' : 'Eliminar'}
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
-          </form>
-        </Form>
+            </form>
+          </Form>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
