@@ -52,8 +52,10 @@ import {
   Building,
   Home,
   MapPin,
-  Euro
+  Euro,
+  CreditCard
 } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -104,6 +106,7 @@ export default function Sales() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [advisorFilter, setAdvisorFilter] = useState<string>("all");
+  const [selectedPlanType, setSelectedPlanType] = useState<'all' | 'design_payment' | 'construction_payment'>('all');
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<ClientProject | null>(null);
   const [selectedChatProject, setSelectedChatProject] = useState<string | null>(null);
@@ -871,19 +874,54 @@ export default function Sales() {
 
               <TabsContent value="payments" className="px-6 pb-6 overflow-y-auto flex-1">
                 <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="h-5 w-5 text-primary" />
-                    <h3 className="text-lg font-semibold">Planes de Pago de Diseño</h3>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-semibold">Gestión Completa de Planes de Pago</h3>
+                    </div>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Gestiona los planes de pago para el diseño de este proyecto. Solo se pueden crear planes de diseño desde el módulo de ventas.
+                    Visualiza y gestiona todos los planes de pago del proyecto (diseño y construcción). Los asesores de ventas pueden ver todos los tipos de planes para tener una visión completa.
                   </p>
-                   <PaymentPlanManager 
-                     clientProjectId={selectedProject.id}
-                     planType="design_payment"
-                     readOnly={false}
-                     compact={true}
-                   />
+                  
+                  <div className="mb-4">
+                    <Label htmlFor="planType" className="text-sm font-medium">Tipo de Plan de Pago</Label>
+                    <Select 
+                      value={selectedPlanType} 
+                      onValueChange={(value: 'all' | 'design_payment' | 'construction_payment') => setSelectedPlanType(value)}
+                    >
+                      <SelectTrigger className="w-full mt-1">
+                        <SelectValue placeholder="Seleccionar tipo de plan" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">
+                          <div className="flex items-center gap-2">
+                            <CreditCard className="h-4 w-4" />
+                            Todos los planes
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="design_payment">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            Planes de Diseño
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="construction_payment">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                            Planes de Construcción
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <PaymentPlanManager 
+                    clientProjectId={selectedProject.id}
+                    planType={selectedPlanType === 'all' ? undefined : selectedPlanType}
+                    readOnly={false}
+                    compact={true}
+                  />
                 </div>
               </TabsContent>
 
