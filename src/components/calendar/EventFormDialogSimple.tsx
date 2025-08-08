@@ -190,8 +190,8 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className={`${isMobile ? 'w-[95vw] h-[90vh]' : 'max-w-2xl h-[85vh]'} p-0 overflow-hidden`}>
-        <div className="flex flex-col h-full">
+      <DialogContent className={`${isMobile ? 'w-[95vw] max-h-[90vh]' : 'max-w-2xl max-h-[85vh]'} p-0 flex flex-col`}>
+        <div className="flex flex-col max-h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b flex-shrink-0">
             <Button
@@ -213,8 +213,8 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
             </Button>
           </div>
 
-          {/* Form Content */}
-          <ScrollArea className="flex-1 overflow-y-auto">
+          {/* Form Content - Native Scroll */}
+          <div className="flex-1 overflow-y-auto min-h-0" style={{ maxHeight: 'calc(85vh - 80px)' }}>
             <div className="p-4 space-y-6">
               <Form {...form}>
                 <form className="space-y-6">
@@ -445,7 +445,7 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                       </Button>
                     </CollapsibleTrigger>
                     <CollapsibleContent className="mt-4">
-                      <div className="max-h-64 overflow-y-auto">
+                      <div className="max-h-48 overflow-y-auto border rounded-lg p-3 bg-muted/5">
                         {/* Selected Users */}
                         {invitedUsers.length > 0 && (
                           <div className="mb-4 space-y-2">
@@ -489,7 +489,7 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                 </form>
               </Form>
             </div>
-          </ScrollArea>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
