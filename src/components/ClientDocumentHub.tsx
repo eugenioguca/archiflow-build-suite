@@ -145,7 +145,7 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false, previe
             event: '*',
             schema: 'public',
             table: 'documents',
-            filter: `client_id=eq.${clientId}`
+            filter: `project_id=eq.${projectId}`
           },
           () => {
             fetchDocuments();
