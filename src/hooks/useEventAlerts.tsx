@@ -138,14 +138,45 @@ export const useEventAlerts = () => {
   };
 
   const playAlertSound = (soundType: SoundType) => {
-    if (!audioRef.current || soundType === 'none') return;
+    if (soundType === 'none') return;
 
-    const soundFile = SOUND_FILES[soundType];
-    if (soundFile) {
-      audioRef.current.src = soundFile;
-      audioRef.current.play().catch(error => {
-        console.error('Error playing alert sound:', error);
-      });
+    try {
+      // Use Web Audio API for all sounds for better compatibility
+      if (soundType === 'icq') {
+        // ICQ-style: Short, high-pitched double beep
+        generateBeep(800, 100);
+        setTimeout(() => generateBeep(900, 100), 150);
+      } else if (soundType === 'soft') {
+        // Soft: Gentle, low-pitched tone
+        generateBeep(400, 300);
+      } else if (soundType === 'loud') {
+        // Professional: Clear, medium-pitched alert
+        generateBeep(600, 400);
+      }
+    } catch (error) {
+      console.error('Error playing alert sound:', error);
+    }
+  };
+
+  const generateBeep = (frequency: number, duration: number) => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.frequency.value = frequency;
+      oscillator.type = 'sine';
+
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + duration / 1000);
+    } catch (error) {
+      console.error('Error generating beep:', error);
     }
   };
 
