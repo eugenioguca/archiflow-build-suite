@@ -6573,6 +6573,7 @@ export type Database = {
         | "construcción"
         | "finanzas"
         | "contabilidad"
+        | "general"
       expense_category:
         | "administration"
         | "sales"
@@ -6838,6 +6839,7 @@ export const Constants = {
         "construcción",
         "finanzas",
         "contabilidad",
+        "general",
       ],
       expense_category: [
         "administration",
