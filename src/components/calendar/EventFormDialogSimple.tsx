@@ -233,7 +233,7 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className={`${isMobile ? 'w-[95vw] max-h-[90vh]' : 'max-w-2xl max-h-[85vh]'} p-0 flex flex-col`}>
+      <DialogContent className={`${isMobile ? 'w-[95vw] max-h-[90vh]' : 'max-w-2xl max-h-[85vh]'} p-0 flex flex-col overflow-hidden`}>
         <div className="flex flex-col max-h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
@@ -489,10 +489,10 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                       </Button>
                     </CollapsibleTrigger>
                     <CollapsibleContent className="mt-4">
-                      <div className="max-h-48 overflow-y-auto border rounded-lg p-4 bg-muted/5 mx-2">
+                      <div className="space-y-4">
                         {/* Selected Users */}
                         {invitedUsers.length > 0 && (
-                          <div className="mb-4 space-y-2">
+                          <div className="space-y-2">
                             <p className="text-sm font-medium">Invitados:</p>
                             <div className="flex flex-wrap gap-2">
                               {invitedUsers.map((user) => (
@@ -507,13 +507,15 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                           </div>
                         )}
                         
-                        {/* Event Invite Manager */}
-                        <EventInviteManager
-                          onUserSelect={handleUserSelect}
-                          excludeUserIds={invitedUsers.map(u => u.profile_id)}
-                          selectedUsers={invitedUsers}
-                          onRemoveUser={handleRemoveUser}
-                        />
+                        {/* Event Invite Manager Container */}
+                        <div className="border rounded-lg p-3 bg-muted/5 max-h-64 overflow-y-auto">
+                          <EventInviteManager
+                            onUserSelect={handleUserSelect}
+                            excludeUserIds={invitedUsers.map(u => u.profile_id)}
+                            selectedUsers={invitedUsers}
+                            onRemoveUser={handleRemoveUser}
+                          />
+                        </div>
                       </div>
                     </CollapsibleContent>
                   </Collapsible>
