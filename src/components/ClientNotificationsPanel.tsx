@@ -151,9 +151,7 @@ export const ClientNotificationsPanel: React.FC<ClientNotificationsPanelProps> =
       case 'construction_update':
       case 'construction_milestone':
         return <Construction className="h-4 w-4" />;
-      case 'appointment_scheduled':
-      case 'appointment_reminder':
-        return <Calendar className="h-4 w-4" />;
+      // Removed appointment-related notifications
       case 'document_uploaded':
       case 'document_required':
         return <FileText className="h-4 w-4" />;
@@ -176,8 +174,7 @@ export const ClientNotificationsPanel: React.FC<ClientNotificationsPanelProps> =
       design_completed: { label: 'Diseño', variant: 'default' as const },
       construction_update: { label: 'Construcción', variant: 'secondary' as const },
       construction_milestone: { label: 'Construcción', variant: 'default' as const },
-      appointment_scheduled: { label: 'Cita', variant: 'outline' as const },
-      appointment_reminder: { label: 'Recordatorio', variant: 'destructive' as const },
+      // Removed appointment notification types
       document_uploaded: { label: 'Documento', variant: 'default' as const },
       document_required: { label: 'Documento', variant: 'destructive' as const },
       project_status_change: { label: 'Proyecto', variant: 'secondary' as const },

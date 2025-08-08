@@ -265,7 +265,7 @@ export function SmartCRM({ clientId, clientName, lastContactDate, leadScore = 0,
           suggested_actions: [
             "Contactar en las próximas 2 horas",
             "Enviar mensaje de bienvenida personalizado",
-            "Programar cita inicial dentro de 24-48h",
+            "Hacer seguimiento inicial dentro de 24-48h",
             "Registrar fuente del lead y expectativas"
           ]
         });
