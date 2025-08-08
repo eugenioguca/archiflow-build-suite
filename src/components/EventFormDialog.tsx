@@ -556,12 +556,14 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
                   </div>
                   
                   <div className="flex-1 overflow-hidden">
-                    <EventInviteManager
-                      onUserSelect={handleUserSelect}
-                      excludeUserIds={invitedUsers.map(u => u.profile_id)}
-                      selectedUsers={invitedUsers}
-                      onRemoveUser={handleRemoveUser}
-                    />
+                <div className="p-2">
+                  <EventInviteManager
+                    onUserSelect={handleUserSelect}
+                    excludeUserIds={invitedUsers.map(u => u.profile_id)}
+                    selectedUsers={invitedUsers}
+                    onRemoveUser={handleRemoveUser}
+                  />
+                </div>
                   </div>
                 </div>
               </>

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDebounce } from "@/hooks/use-debounce";
 import { usePersonalCalendar, TeamMember } from "@/hooks/usePersonalCalendar";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/hooks/useAuth";
 import { Combobox } from "@/components/ui/combobox";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +43,7 @@ export const EventInviteManager = ({
   
   const debouncedSearch = useDebounce(searchTerm, 300);
   const isMobile = useIsMobile();
+  const { profile } = useAuth();
   
   const { 
     getProjectTeamMembers, 
@@ -49,6 +51,14 @@ export const EventInviteManager = ({
     getUsersByPosition,
     searchUsersForInvitation 
   } = usePersonalCalendar();
+
+  // Crear lista de usuarios excluidos incluyendo al usuario actual
+  const allExcludedUserIds = useMemo(() => {
+    const currentUserProfileId = profile?.id;
+    return currentUserProfileId 
+      ? [...excludeUserIds, currentUserProfileId] 
+      : excludeUserIds;
+  }, [excludeUserIds, profile?.id]);
 
   // Obtener proyectos disponibles
   const { data: projects = [] } = useQuery({
@@ -80,7 +90,7 @@ export const EventInviteManager = ({
         .from('profiles')
         .select('department_enum')
         .not('department_enum', 'is', null)
-        .eq('role', 'employee');
+        .in('role', ['admin', 'employee']);
 
       if (error) throw error;
       const unique = [...new Set(data.map(d => d.department_enum))];
@@ -96,7 +106,7 @@ export const EventInviteManager = ({
         .from('profiles')
         .select('position_enum')
         .not('position_enum', 'is', null)
-        .eq('role', 'employee');
+        .in('role', ['admin', 'employee']);
 
       if (error) throw error;
       const unique = [...new Set(data.map(p => p.position_enum))];
@@ -120,8 +130,8 @@ export const EventInviteManager = ({
         users = await getUsersByPosition(activeFilter.value);
       }
 
-      // Filtrar usuarios ya seleccionados
-      return users.filter(user => !excludeUserIds.includes(user.profile_id));
+      // Filtrar usuarios ya seleccionados y usuario actual
+      return users.filter(user => !allExcludedUserIds.includes(user.profile_id));
     },
     enabled: !!(activeFilter.type && activeFilter.value) || !!debouncedSearch,
   });
@@ -207,7 +217,7 @@ export const EventInviteManager = ({
         )}
 
         {/* Filtros inteligentes */}
-        <div className={`grid gap-2 ${isMobile ? 'grid-cols-1' : 'grid-cols-3'}`}>
+        <div className={`grid gap-3 ${isMobile ? 'grid-cols-1 space-y-1' : 'md:grid-cols-3'}`}>
           <Combobox
             items={projectOptions}
             value={activeFilter.type === 'project' ? activeFilter.value : ""}
