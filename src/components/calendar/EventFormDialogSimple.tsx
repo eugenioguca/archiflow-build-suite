@@ -233,7 +233,7 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className={`${isMobile ? 'w-[95vw] max-h-[90vh]' : 'max-w-2xl max-h-[85vh]'} p-0 flex flex-col overflow-hidden`}>
+      <DialogContent className={`${isMobile ? 'w-[95vw] max-h-[85vh]' : 'max-w-2xl max-h-[80vh]'} p-0 flex flex-col overflow-hidden my-4`}>
         <div className="flex flex-col max-h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
@@ -258,8 +258,8 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
           </div>
 
           {/* Form Content - Native Scroll */}
-          <div className="flex-1 overflow-y-auto min-h-0" style={{ maxHeight: 'calc(85vh - 80px)' }}>
-            <div className="p-6 space-y-8">
+          <div className="flex-1 overflow-y-auto min-h-0 max-h-full">
+            <div className="p-6 space-y-6 pb-8">
               <Form {...form}>
                 <form className="space-y-6">
                   
@@ -508,7 +508,7 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                         )}
                         
                         {/* Event Invite Manager Container */}
-                        <div className="border rounded-lg p-3 bg-muted/5 max-h-64 overflow-y-auto">
+                        <div className="border rounded-lg p-3 bg-muted/5 max-h-48 overflow-y-auto">
                           <EventInviteManager
                             onUserSelect={handleUserSelect}
                             excludeUserIds={invitedUsers.map(u => u.profile_id)}
