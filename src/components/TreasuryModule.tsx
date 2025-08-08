@@ -73,12 +73,6 @@ export const TreasuryModule: React.FC<TreasuryModuleProps> = ({
         onClearFilters={clearFilters}
       />
 
-      {/* Compact Treasury Dashboard */}
-      <TreasuryCompactDashboard 
-        selectedClientId={effectiveClientId}
-        selectedProjectId={effectiveProjectId}
-      />
-
       {/* Compact Navigation Menu - Inspired by FinancesNew */}
       <Tabs value={activeSection} onValueChange={setActiveSection} className="space-y-4">
         <TabsList className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 w-full h-auto gap-1 p-1 bg-muted sticky top-0 z-10">
