@@ -233,10 +233,10 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className={`${isMobile ? 'w-[95vw] max-h-[85vh]' : 'max-w-2xl max-h-[80vh]'} p-0 flex flex-col my-4`}>
-        <div className="flex flex-col max-h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
+      <DialogContent className={`${isMobile ? 'w-[95vw] max-h-[95vh]' : 'max-w-2xl max-h-[90vh]'} p-0 flex flex-col overflow-hidden`}>
+        <div className="flex flex-col h-full min-h-0">
+          {/* Header - Fixed */}
+          <div className="flex items-center justify-between p-4 border-b flex-shrink-0 bg-background">
             <Button
               variant="ghost"
               onClick={() => onOpenChange(false)}
@@ -257,9 +257,9 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
             </Button>
           </div>
 
-          {/* Form Content - Native Scroll */}
-          <div className="flex-1 overflow-y-auto min-h-0 max-h-full">
-            <div className="p-6 space-y-6 pb-8">
+          {/* Form Content - Scrollable Body */}
+          <div className="flex-1 overflow-y-auto min-h-0">
+            <div className={`p-4 space-y-4 ${isMobile ? 'pb-6' : 'pb-8'}`}>
               <Form {...form}>
                 <form className="space-y-6">
                   
@@ -449,7 +449,7 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                   </div>
 
                   {/* Description - Collapsible */}
-                  <div className="relative">
+                  <div className="space-y-2">
                     <Collapsible open={showDescription} onOpenChange={setShowDescription}>
                       <CollapsibleTrigger asChild>
                         <Button variant="ghost" className="w-full justify-start p-0 h-auto font-normal">
@@ -458,29 +458,31 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                           <ChevronDown className={cn("h-4 w-4 ml-auto transition-transform", showDescription && "rotate-180")} />
                         </Button>
                       </CollapsibleTrigger>
-                      <CollapsibleContent className="mt-2 overflow-hidden">
-                        <FormField
-                          control={form.control}
-                          name="description"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormControl>
-                                <Textarea 
-                                  placeholder="Descripción del evento..." 
-                                  className="min-h-[80px] max-h-32 resize-none"
-                                  {...field} 
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                      <CollapsibleContent className="data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up overflow-hidden">
+                        <div className="pt-2">
+                          <FormField
+                            control={form.control}
+                            name="description"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Textarea 
+                                    placeholder="Descripción del evento..." 
+                                    className="min-h-[60px] max-h-28 resize-none"
+                                    {...field} 
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
                       </CollapsibleContent>
                     </Collapsible>
                   </div>
 
                   {/* Invitations - Collapsible */}
-                  <div className="relative">
+                  <div className="space-y-2">
                     <Collapsible open={showInvitations} onOpenChange={setShowInvitations}>
                       <CollapsibleTrigger asChild>
                         <Button variant="ghost" className="w-full justify-start p-0 h-auto font-normal">
@@ -491,33 +493,35 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                           <ChevronDown className={cn("h-4 w-4 ml-auto transition-transform", showInvitations && "rotate-180")} />
                         </Button>
                       </CollapsibleTrigger>
-                      <CollapsibleContent className="mt-4 overflow-hidden">
-                        <div className="space-y-4 max-h-60 overflow-y-auto">
-                          {/* Selected Users */}
-                          {invitedUsers.length > 0 && (
-                            <div className="space-y-2">
-                              <p className="text-sm font-medium">Invitados:</p>
-                              <div className="flex flex-wrap gap-2">
-                                {invitedUsers.map((user) => (
-                                  <Badge key={user.profile_id} variant="secondary" className="flex items-center gap-1">
-                                    {user.full_name}
-                                    <button onClick={() => handleRemoveUser(user.profile_id)}>
-                                      ×
-                                    </button>
-                                  </Badge>
-                                ))}
+                      <CollapsibleContent className="data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up overflow-hidden">
+                        <div className="pt-2">
+                          <div className="space-y-3 max-h-36 overflow-y-auto rounded-md">
+                            {/* Selected Users */}
+                            {invitedUsers.length > 0 && (
+                              <div className="space-y-2">
+                                <p className="text-sm font-medium">Invitados:</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {invitedUsers.map((user) => (
+                                    <Badge key={user.profile_id} variant="secondary" className="flex items-center gap-1">
+                                      {user.full_name}
+                                      <button onClick={() => handleRemoveUser(user.profile_id)}>
+                                        ×
+                                      </button>
+                                    </Badge>
+                                  ))}
+                                </div>
                               </div>
+                            )}
+                            
+                            {/* Event Invite Manager Container */}
+                            <div className="border rounded-lg p-2 bg-muted/5">
+                              <EventInviteManager
+                                onUserSelect={handleUserSelect}
+                                excludeUserIds={invitedUsers.map(u => u.profile_id)}
+                                selectedUsers={invitedUsers}
+                                onRemoveUser={handleRemoveUser}
+                              />
                             </div>
-                          )}
-                          
-                          {/* Event Invite Manager Container */}
-                          <div className="border rounded-lg p-3 bg-muted/5">
-                            <EventInviteManager
-                              onUserSelect={handleUserSelect}
-                              excludeUserIds={invitedUsers.map(u => u.profile_id)}
-                              selectedUsers={invitedUsers}
-                              onRemoveUser={handleRemoveUser}
-                            />
                           </div>
                         </div>
                       </CollapsibleContent>
