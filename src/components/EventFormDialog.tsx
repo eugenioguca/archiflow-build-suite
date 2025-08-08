@@ -197,7 +197,7 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
             <Button
               variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="text-blue-500 hover:bg-transparent p-0 h-auto font-normal"
+              className="ios-system-blue hover:bg-transparent p-0 h-auto font-normal"
             >
               Cancelar
             </Button>
@@ -208,7 +208,7 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
               variant="ghost"
               onClick={form.handleSubmit(onSubmit)}
               disabled={isCreating || isUpdating || isDeleting}
-              className="text-blue-500 hover:bg-transparent p-0 h-auto font-semibold"
+              className="ios-system-blue hover:bg-transparent p-0 h-auto font-semibold"
             >
               {event ? "Guardar" : "Agregar"}
             </Button>
@@ -229,9 +229,9 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
                 <Form {...form}>
                   <form className="space-y-6 py-6">
                     
-                    {/* Event Type Tabs */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-1">
-                      <div className="flex rounded-lg bg-gray-100 dark:bg-gray-700 p-1">
+                     {/* Event Type Tabs */}
+                     <div className="bg-card rounded-xl p-1 border border-border">
+                       <div className="flex rounded-lg bg-muted p-1">
                         <button
                           type="button"
                           onClick={() => form.setValue('event_type', 'event')}

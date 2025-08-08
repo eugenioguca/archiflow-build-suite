@@ -148,8 +148,11 @@ export const EventInviteManager = ({
       console.log('🔍 Excluded user IDs:', allExcludedUserIds);
       
       // Filtrar usuarios ya seleccionados y usuario actual
-      const filtered = users.filter(user => !allExcludedUserIds.includes(user.profile_id));
-      console.log('🔍 Filtered users after exclusions:', filtered);
+      const filtered = users.filter(user => {
+        const isCurrentUser = user.profile_id === profile?.id;
+        const isExcluded = allExcludedUserIds.includes(user.profile_id);
+        return !isCurrentUser && !isExcluded;
+      });
       return filtered;
     },
     enabled: !!(activeFilter.type && activeFilter.value) || !!debouncedSearch,
@@ -157,30 +160,24 @@ export const EventInviteManager = ({
 
   // Preparar opciones para comboboxes
   const projectOptions = useMemo(() => {
-    const options = projects.map(p => ({
+    return projects.map(p => ({
       value: p.id,
       label: `${p.project_name} (${p.clients?.full_name || 'Sin cliente'})`
     }));
-    console.log('🔍 Project options:', options);
-    return options;
   }, [projects]);
 
   const departmentOptions = useMemo(() => {
-    const options = departments.map(d => ({
+    return departments.map(d => ({
       value: d,
       label: d.charAt(0).toUpperCase() + d.slice(1)
     }));
-    console.log('🔍 Department options:', options);
-    return options;
   }, [departments]);
 
   const positionOptions = useMemo(() => {
-    const options = positions.map(p => ({
+    return positions.map(p => ({
       value: p,
       label: p.charAt(0).toUpperCase() + p.slice(1).replace('_', ' ')
     }));
-    console.log('🔍 Position options:', options);
-    return options;
   }, [positions]);
 
   // Manejar selección de filtros
@@ -242,7 +239,7 @@ export const EventInviteManager = ({
         )}
 
         {/* Filtros inteligentes */}
-        <div className={`grid gap-3 ${isMobile ? 'grid-cols-1 space-y-1' : 'md:grid-cols-3'}`}>
+        <div className={isMobile ? 'space-y-3' : 'grid grid-cols-1 md:grid-cols-3 gap-3'}>
           <Combobox
             items={projectOptions}
             value={activeFilter.type === 'project' ? activeFilter.value : ""}
