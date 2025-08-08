@@ -233,7 +233,7 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className={`${isMobile ? 'w-[95vw] max-h-[85vh]' : 'max-w-2xl max-h-[80vh]'} p-0 flex flex-col overflow-hidden my-4`}>
+      <DialogContent className={`${isMobile ? 'w-[95vw] max-h-[85vh]' : 'max-w-2xl max-h-[80vh]'} p-0 flex flex-col my-4`}>
         <div className="flex flex-col max-h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
@@ -449,76 +449,80 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                   </div>
 
                   {/* Description - Collapsible */}
-                  <Collapsible open={showDescription} onOpenChange={setShowDescription}>
-                    <CollapsibleTrigger asChild>
-                      <Button variant="ghost" className="w-full justify-start p-0 h-auto font-normal">
-                        <AlignLeft className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span className="text-muted-foreground">Agregar descripción</span>
-                        <ChevronDown className={cn("h-4 w-4 ml-auto transition-transform", showDescription && "rotate-180")} />
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="mt-2">
-                      <FormField
-                        control={form.control}
-                        name="description"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Textarea 
-                                placeholder="Descripción del evento..." 
-                                className="min-h-[80px]"
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </CollapsibleContent>
-                  </Collapsible>
+                  <div className="relative">
+                    <Collapsible open={showDescription} onOpenChange={setShowDescription}>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" className="w-full justify-start p-0 h-auto font-normal">
+                          <AlignLeft className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <span className="text-muted-foreground">Agregar descripción</span>
+                          <ChevronDown className={cn("h-4 w-4 ml-auto transition-transform", showDescription && "rotate-180")} />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="mt-2 overflow-hidden">
+                        <FormField
+                          control={form.control}
+                          name="description"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Descripción del evento..." 
+                                  className="min-h-[80px] max-h-32 resize-none"
+                                  {...field} 
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </div>
 
                   {/* Invitations - Collapsible */}
-                  <Collapsible open={showInvitations} onOpenChange={setShowInvitations}>
-                    <CollapsibleTrigger asChild>
-                      <Button variant="ghost" className="w-full justify-start p-0 h-auto font-normal">
-                        <Users className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span className="text-muted-foreground">
-                          Invitar personas {invitedUsers.length > 0 && `(${invitedUsers.length})`}
-                        </span>
-                        <ChevronDown className={cn("h-4 w-4 ml-auto transition-transform", showInvitations && "rotate-180")} />
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="mt-4">
-                      <div className="space-y-4">
-                        {/* Selected Users */}
-                        {invitedUsers.length > 0 && (
-                          <div className="space-y-2">
-                            <p className="text-sm font-medium">Invitados:</p>
-                            <div className="flex flex-wrap gap-2">
-                              {invitedUsers.map((user) => (
-                                <Badge key={user.profile_id} variant="secondary" className="flex items-center gap-1">
-                                  {user.full_name}
-                                  <button onClick={() => handleRemoveUser(user.profile_id)}>
-                                    ×
-                                  </button>
-                                </Badge>
-                              ))}
+                  <div className="relative">
+                    <Collapsible open={showInvitations} onOpenChange={setShowInvitations}>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" className="w-full justify-start p-0 h-auto font-normal">
+                          <Users className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <span className="text-muted-foreground">
+                            Invitar personas {invitedUsers.length > 0 && `(${invitedUsers.length})`}
+                          </span>
+                          <ChevronDown className={cn("h-4 w-4 ml-auto transition-transform", showInvitations && "rotate-180")} />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="mt-4 overflow-hidden">
+                        <div className="space-y-4 max-h-60 overflow-y-auto">
+                          {/* Selected Users */}
+                          {invitedUsers.length > 0 && (
+                            <div className="space-y-2">
+                              <p className="text-sm font-medium">Invitados:</p>
+                              <div className="flex flex-wrap gap-2">
+                                {invitedUsers.map((user) => (
+                                  <Badge key={user.profile_id} variant="secondary" className="flex items-center gap-1">
+                                    {user.full_name}
+                                    <button onClick={() => handleRemoveUser(user.profile_id)}>
+                                      ×
+                                    </button>
+                                  </Badge>
+                                ))}
+                              </div>
                             </div>
+                          )}
+                          
+                          {/* Event Invite Manager Container */}
+                          <div className="border rounded-lg p-3 bg-muted/5">
+                            <EventInviteManager
+                              onUserSelect={handleUserSelect}
+                              excludeUserIds={invitedUsers.map(u => u.profile_id)}
+                              selectedUsers={invitedUsers}
+                              onRemoveUser={handleRemoveUser}
+                            />
                           </div>
-                        )}
-                        
-                        {/* Event Invite Manager Container */}
-                        <div className="border rounded-lg p-3 bg-muted/5 max-h-48 overflow-y-auto">
-                          <EventInviteManager
-                            onUserSelect={handleUserSelect}
-                            excludeUserIds={invitedUsers.map(u => u.profile_id)}
-                            selectedUsers={invitedUsers}
-                            onRemoveUser={handleRemoveUser}
-                          />
                         </div>
-                      </div>
-                    </CollapsibleContent>
-                  </Collapsible>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </div>
 
                   {/* Delete Button for existing events */}
                   {event && (
