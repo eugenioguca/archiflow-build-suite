@@ -137,7 +137,7 @@ export const usePersonalCalendar = () => {
 
   // Crear evento con invitaciones y alertas
   const createEventMutation = useMutation({
-    mutationFn: async (eventData: Omit<PersonalEvent, 'id' | 'created_at' | 'updated_at' | 'user_id'> & {
+    mutationFn: async (eventData: Omit<PersonalEvent, 'id' | 'created_at' | 'updated_at' | 'user_id' | 'alerts'> & {
       invitedUsers?: string[];
       alerts?: Array<{
         minutes_before: number;

@@ -195,13 +195,12 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
       if (event) {
         updateEvent({ id: event.id, ...basicEventData });
       } else {
-        // For creation, add the custom properties
-        const eventDataWithExtras = {
+        // For creation, pass the basic event data with the extra properties
+        createEvent({
           ...basicEventData,
           invitedUsers: invitedUsers.map(u => u.profile_id),
           alerts: alerts
-        };
-        createEvent(eventDataWithExtras);
+        } as any); // Type assertion to bypass the strict typing
       }
 
       if (invitedUsers.length > 0) {
