@@ -106,14 +106,57 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
       setInvitedUsers([]);
       setShowDescription(!!event.description);
     } else if (defaultDate) {
+      // Use current time or a reasonable default
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      
+      // Round to next 30-minute interval
+      let startHour = currentHour;
+      let startMinute = currentMinute < 30 ? 30 : 0;
+      if (startMinute === 0 && currentMinute >= 30) {
+        startHour = startHour + 1;
+      }
+      
+      const startTime = `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
+      const endTime = `${(startHour + 1).toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
+      
       form.reset({
         title: "",
         description: "",
         location: "",
         start_date: defaultDate,
-        start_time: "09:00",
+        start_time: startTime,
         end_date: defaultDate,
-        end_time: "10:00",
+        end_time: endTime,
+        is_all_day: false,
+        event_type: 'event',
+      });
+      setInvitedUsers([]);
+      setShowDescription(false);
+    } else {
+      // Default when no date is provided
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      
+      let startHour = currentHour;
+      let startMinute = currentMinute < 30 ? 30 : 0;
+      if (startMinute === 0 && currentMinute >= 30) {
+        startHour = startHour + 1;
+      }
+      
+      const startTime = `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
+      const endTime = `${(startHour + 1).toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
+      
+      form.reset({
+        title: "",
+        description: "",
+        location: "",
+        start_date: now,
+        start_time: startTime,
+        end_date: now,
+        end_time: endTime,
         is_all_day: false,
         event_type: 'event',
       });
@@ -193,21 +236,22 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
       <DialogContent className={`${isMobile ? 'w-[95vw] max-h-[90vh]' : 'max-w-2xl max-h-[85vh]'} p-0 flex flex-col`}>
         <div className="flex flex-col max-h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b flex-shrink-0">
+          <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
             <Button
               variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground px-4"
             >
               Cancelar
             </Button>
-            <h2 className="font-semibold">
+            <h2 className="font-semibold mx-4">
               {event ? "Editar evento" : "Nuevo evento"}
             </h2>
             <Button
               onClick={form.handleSubmit(onSubmit)}
               disabled={isCreating || isUpdating || isDeleting}
               size="sm"
+              className="px-6"
             >
               {event ? "Guardar" : "Crear"}
             </Button>
@@ -215,7 +259,7 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
 
           {/* Form Content - Native Scroll */}
           <div className="flex-1 overflow-y-auto min-h-0" style={{ maxHeight: 'calc(85vh - 80px)' }}>
-            <div className="p-4 space-y-6">
+            <div className="p-6 space-y-8">
               <Form {...form}>
                 <form className="space-y-6">
                   
@@ -445,7 +489,7 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                       </Button>
                     </CollapsibleTrigger>
                     <CollapsibleContent className="mt-4">
-                      <div className="max-h-48 overflow-y-auto border rounded-lg p-3 bg-muted/5">
+                      <div className="max-h-48 overflow-y-auto border rounded-lg p-4 bg-muted/5 mx-2">
                         {/* Selected Users */}
                         {invitedUsers.length > 0 && (
                           <div className="mb-4 space-y-2">
