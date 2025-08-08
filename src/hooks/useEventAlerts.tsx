@@ -85,7 +85,11 @@ export const useEventAlerts = () => {
         
         if (alertTime > now) {
           const timeout = setTimeout(() => {
-            triggerAlert(alert);
+            triggerAlert({
+              ...alert,
+              alert_type: alert.alert_type as 'popup' | 'email' | 'sound',
+              sound_type: (alert as any).sound_type as SoundType
+            });
           }, alertTime.getTime() - now.getTime());
 
           setActiveAlerts(prev => new Map(prev.set(`${eventId}-${alert.id}`, timeout)));
