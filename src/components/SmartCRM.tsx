@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Bell, Calendar, Clock, Send, Plus, Brain, TrendingUp } from "lucide-react";
 import { format, addDays, addWeeks, addMonths } from "date-fns";
 import { es } from "date-fns/locale";
-import { SalesAppointmentScheduler } from "./SalesAppointmentScheduler";
+
 import { PaymentPlanManager } from "./PaymentPlanManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -470,34 +470,15 @@ export function SmartCRM({ clientId, clientName, lastContactDate, leadScore = 0,
             {/* Project Management */}
             {clientProject && (
               <div className="border-t pt-4">
-                <Tabs defaultValue="appointments" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="appointments">Citas</TabsTrigger>
-                    <TabsTrigger value="payments">Planes de Pago</TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="appointments" className="space-y-2">
-                    <h4 className="text-sm font-medium">Gestión de Citas</h4>
-                    <SalesAppointmentScheduler 
-                      clientProject={{
-                        id: clientProject.id,
-                        client_id: clientId,
-                        project_name: clientProject.project_name,
-                        client: { full_name: clientName }
-                      }}
-                    />
-                  </TabsContent>
-                  
-                  <TabsContent value="payments" className="space-y-2">
-                    <h4 className="text-sm font-medium">Planes de Pago</h4>
-                    <PaymentPlanManager 
-                      clientProjectId={clientProject.id}
-                      planType="design_payment"
-                      readOnly={false}
-                      compact={true}
-                    />
-                  </TabsContent>
-                </Tabs>
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Planes de Pago</h4>
+                  <PaymentPlanManager 
+                    clientProjectId={clientProject.id}
+                    planType="design_payment"
+                    readOnly={false}
+                    compact={true}
+                  />
+                </div>
               </div>
             )}
           </div>

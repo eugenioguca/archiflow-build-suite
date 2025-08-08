@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { TeamMemberSelector } from "@/components/TeamMemberSelector";
-import { DesignCalendar } from "@/components/DesignCalendar";
+
 import { ProjectBudgetManager } from "@/components/ProjectBudgetManager";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -627,7 +627,7 @@ export default function Design() {
 
       {/* Main Content with Tabs */}
       <Tabs defaultValue="phases" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-8 bg-muted h-9">
+        <TabsList className="grid w-full grid-cols-7 bg-muted h-9">
           <TabsTrigger value="phases" className="text-xs">
             <Layers className="h-3 w-3 mr-1" />
             Fases
@@ -635,10 +635,6 @@ export default function Design() {
           <TabsTrigger value="team" className="text-xs">
             <Users className="h-3 w-3 mr-1" />
             Equipo
-          </TabsTrigger>
-          <TabsTrigger value="calendar" className="text-xs">
-            <CalendarIcon className="h-3 w-3 mr-1" />
-            Calendario
           </TabsTrigger>
           <TabsTrigger value="budget" className="text-xs">
             <DollarSign className="h-3 w-3 mr-1" />
@@ -754,15 +750,6 @@ export default function Design() {
           </div>
         </TabsContent>
 
-        <TabsContent value="calendar">
-          <div className="bg-card rounded-lg p-4 border">
-            <DesignCalendar projectId={projectId} teamMembers={teamMembers.map(member => ({
-              id: member.profile.id,
-              full_name: member.profile.full_name,
-              avatar_url: member.profile.avatar_url
-            }))} />
-          </div>
-        </TabsContent>
 
         <TabsContent value="budget">
           <div className="bg-card rounded-lg p-4 border">

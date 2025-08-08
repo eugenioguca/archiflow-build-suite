@@ -13,10 +13,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { SmartCRM } from "@/components/SmartCRM";
 import { ClientProjectManager } from "@/components/ClientProjectManager";
 import { RequiredDocumentsManager } from "@/components/RequiredDocumentsManager";
-import { SalesDesignCalendar } from "@/components/SalesDesignCalendar";
 import { SalesExecutiveDashboard } from "@/components/SalesExecutiveDashboard";
 import { ContractTemplateManager } from "@/components/ContractTemplateManager";
-import { SalesAppointmentScheduler } from "@/components/SalesAppointmentScheduler";
 import { TeamClientChat } from "@/components/TeamClientChat";
 import { ModuleNotifications } from "@/components/ModuleNotifications";
 import { SalesChatProjectSelector } from "@/components/SalesChatProjectSelector";
@@ -420,11 +418,9 @@ export default function Sales() {
 
       {/* Tabs principales */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-6 w-full">
+        <TabsList className="grid grid-cols-5 w-full">
           <TabsTrigger value="list">Smart View</TabsTrigger>
           <TabsTrigger value="pipeline">Pipeline Kanban</TabsTrigger>
-          
-          <TabsTrigger value="calendar">Calendario</TabsTrigger>
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="contracts">Contratos</TabsTrigger>
           <TabsTrigger value="chat">Chat Cliente</TabsTrigger>
@@ -654,20 +650,6 @@ export default function Sales() {
                       </div>
 
                           <div className="flex gap-2 ml-4">
-                        <SalesAppointmentScheduler 
-                          clientProject={{
-                            id: project.id,
-                            client_id: project.client_id,
-                            project_name: project.project_name,
-                            client: { full_name: project.clients?.full_name || '' }
-                          }}
-                          triggerButton={
-                            <Button variant="outline" size="sm">
-                              <CalendarLucide className="h-4 w-4 mr-2" />
-                              Programar Cita
-                            </Button>
-                          }
-                        />
                         <Button
                           variant="outline"
                           size="sm"
@@ -686,10 +668,6 @@ export default function Sales() {
         </TabsContent>
 
 
-        {/* Calendario de Diseño */}
-        <TabsContent value="calendar">
-          <SalesDesignCalendar showNotifications={true} />
-        </TabsContent>
 
         {/* Dashboard Ejecutivo */}
         <TabsContent value="dashboard">
