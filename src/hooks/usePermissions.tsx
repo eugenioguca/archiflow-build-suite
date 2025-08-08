@@ -49,7 +49,7 @@ export const usePermissions = (): UserPermissions => {
           }
 
           // Get module permissions
-          const modules = ['dashboard', 'clients', 'sales', 'design', 'construction', 'suppliers', 'finances', 'accounting', 'client_portal_preview', 'tools'];
+          const modules = ['dashboard', 'calendar', 'clients', 'sales', 'design', 'construction', 'suppliers', 'finances', 'accounting', 'client_portal_preview', 'tools'];
           const permissions: Record<string, boolean> = {};
 
           for (const module of modules) {
@@ -73,6 +73,8 @@ export const usePermissions = (): UserPermissions => {
   }, [user?.id]);
 
   const hasModuleAccess = (module: string): boolean => {
+    // Calendar should be accessible to all authenticated users
+    if (module === 'calendar') return true;
     return modulePermissions[module] || false;
   };
 
