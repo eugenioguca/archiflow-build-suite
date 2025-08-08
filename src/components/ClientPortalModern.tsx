@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { usePaymentPlans } from '@/hooks/usePaymentPlans';
+import { usePaymentInstallments } from '@/hooks/usePaymentInstallments';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -162,30 +164,25 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
 
   const fetchPaidAmount = async (projectId: string) => {
     try {
-      // Since payment plans were removed, get payments from client_payments table
-      const { data: profile } = await supabase
-        .from('profiles')
+      // Get payment plans for this project
+      const { data: paymentPlans } = await supabase
+        .from('payment_plans')
         .select('id')
-        .eq('user_id', user?.id)
-        .single();
+        .eq('client_project_id', projectId);
 
-      if (!profile) return;
+      if (!paymentPlans || paymentPlans.length === 0) {
+        setPaidAmount(0);
+        return;
+      }
 
-      const { data: client } = await supabase
-        .from('clients')
-        .select('id')
-        .eq('profile_id', profile.id)
-        .single();
+      // Get all paid installments for all plans
+      const { data: paidInstallments } = await supabase
+        .from('payment_installments')
+        .select('amount')
+        .in('payment_plan_id', paymentPlans.map(plan => plan.id))
+        .eq('status', 'paid');
 
-      if (!client) return;
-
-      // Get paid amount from client_payments
-      const { data: payments } = await supabase
-        .from('client_payments')
-        .select('amount_paid')
-        .eq('client_id', client.id);
-
-      const total = payments?.reduce((sum, payment) => sum + (payment.amount_paid || 0), 0) || 0;
+      const total = paidInstallments?.reduce((sum, installment) => sum + (installment.amount || 0), 0) || 0;
       setPaidAmount(total);
     } catch (error) {
       console.error('Error fetching paid amount:', error);
@@ -303,7 +300,10 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
             value={selectedProject?.id || ''}
             onChange={(e) => {
               const project = clientProjects.find(p => p.id === e.target.value);
-              if (project) setSelectedProject(project);
+              if (project) {
+                setSelectedProject(project);
+                fetchPaidAmount(project.id);
+              }
             }}
             className="w-full p-3 rounded-xl bg-card border border-border text-foreground"
           >
