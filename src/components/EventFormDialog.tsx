@@ -142,8 +142,6 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
         end_date: endDateTime.toISOString(),
         is_all_day: data.is_all_day,
         event_type: data.event_type,
-        user_id: '', // Se asigna automáticamente en el hook
-        created_by: '',
       };
 
       if (event) {
@@ -283,11 +281,11 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
                                       !field.value && "text-muted-foreground"
                                     )}
                                   >
-                                    {field.value ? (
-                                      format(field.value, "dd/MM", { locale: es })
-                                    ) : (
-                                      <span>Fecha</span>
-                                    )}
+                    {field.value ? (
+                      format(field.value, "dd/MM/yyyy", { locale: es })
+                    ) : (
+                      <span>Fecha</span>
+                    )}
                                     <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                   </Button>
                                 </FormControl>
@@ -325,11 +323,11 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
                                       !field.value && "text-muted-foreground"
                                     )}
                                   >
-                                    {field.value ? (
-                                      format(field.value, "dd/MM", { locale: es })
-                                    ) : (
-                                      <span>Fecha</span>
-                                    )}
+                    {field.value ? (
+                      format(field.value, "dd/MM/yyyy", { locale: es })
+                    ) : (
+                      <span>Fecha</span>
+                    )}
                                     <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                   </Button>
                                 </FormControl>

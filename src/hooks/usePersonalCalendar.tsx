@@ -136,10 +136,15 @@ export const usePersonalCalendar = () => {
 
   // Crear evento
   const createEventMutation = useMutation({
-    mutationFn: async (eventData: Omit<PersonalEvent, 'id' | 'created_at' | 'updated_at'>) => {
+    mutationFn: async (eventData: Omit<PersonalEvent, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
+      if (!user?.id) throw new Error('Usuario no autenticado');
+      
       const { data, error } = await supabase
         .from('personal_events')
-        .insert([eventData])
+        .insert([{
+          ...eventData,
+          user_id: user.id
+        }])
         .select()
         .single();
 
