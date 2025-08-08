@@ -61,11 +61,13 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false, previe
           return;
         }
 
-        // Use the unified documents function for complete document view
+        // Use the same unified documents table as the sales module
         const { data: unifiedDocuments, error: docsError } = await supabase
-          .rpc('get_unified_project_documents', {
-            project_id_param: projectId
-          });
+          .from('documents')
+          .select('*')
+          .eq('project_id', projectId)
+          .eq('document_status', 'active')
+          .order('created_at', { ascending: false });
 
         if (docsError) {
           console.error('Error fetching unified documents:', docsError);
@@ -74,8 +76,8 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false, previe
         // Transform unified documents to the expected format
         const allDocuments: ClientDocument[] = (unifiedDocuments || []).map(doc => ({
           id: doc.id,
-          document_name: doc.file_name,
-          document_type: doc.department || 'general',
+          document_name: doc.name,
+          document_type: doc.category || 'general',
           file_path: doc.file_path,
           file_type: doc.file_type || 'application/pdf',
           file_size: doc.file_size || 0,
@@ -269,11 +271,13 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false, previe
   const handleRefreshDocuments = async () => {
     setLoading(true);
     try {
-      // Usar la función SQL unificada para obtener todos los documentos
+      // Use the same unified documents table as the sales module
       const { data: allDocuments, error } = await supabase
-        .rpc('get_unified_project_documents', {
-          project_id_param: projectId
-        });
+        .from('documents')
+        .select('*')
+        .eq('project_id', projectId)
+        .eq('document_status', 'active')
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching documents:', error);
@@ -283,14 +287,49 @@ export const ClientDocumentHub = ({ clientId, projectId, compact = false, previe
       // Transform to expected format
       const transformedDocs = (allDocuments || []).map(doc => ({
         id: doc.id,
-        document_name: doc.file_name,
-        document_type: doc.department || 'general',
+        document_name: doc.name,
+        document_type: doc.category || 'general',
         file_path: doc.file_path,
         file_type: doc.file_type || 'application/pdf',
         file_size: doc.file_size || 0,
         created_at: doc.created_at,
         source: 'project'
       }));
+
+      // Also get project field documents (contract, fiscal documents)
+      const { data: projectData } = await supabase
+        .from('client_projects')
+        .select('contract_url, constancia_situacion_fiscal_url, created_at')
+        .eq('id', projectId)
+        .single();
+
+      if (projectData) {
+        if (projectData.contract_url) {
+          transformedDocs.push({
+            id: `contract-${projectId}`,
+            document_name: 'Contrato Firmado',
+            document_type: 'contract',
+            file_path: projectData.contract_url,
+            file_type: 'application/pdf',
+            file_size: 0,
+            created_at: projectData.created_at,
+            source: 'project_field'
+          });
+        }
+        
+        if (projectData.constancia_situacion_fiscal_url) {
+          transformedDocs.push({
+            id: `fiscal-${projectId}`,
+            document_name: 'Constancia de Situación Fiscal',
+            document_type: 'fiscal',
+            file_path: projectData.constancia_situacion_fiscal_url,
+            file_type: 'application/pdf',
+            file_size: 0,
+            created_at: projectData.created_at,
+            source: 'project_field'
+          });
+        }
+      }
 
       setDocuments(transformedDocs);
     } catch (error) {
