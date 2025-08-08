@@ -13,7 +13,8 @@ import {
   Clock,
   TrendingUp,
   Wrench,
-  Camera
+  Camera,
+  Home
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { 
@@ -50,6 +51,8 @@ interface ConstructionStats {
   budgetExecuted: number;
   budgetRemaining: number;
   totalBudget: number;
+  totalPaidAmount: number;
+  landSquareMeters: number;
 }
 
 interface ConstructionDashboardProps {
@@ -82,6 +85,8 @@ export function ConstructionDashboard({ projectId, projectData }: ConstructionDa
     budgetExecuted: 0,
     budgetRemaining: 0,
     totalBudget: 0,
+    totalPaidAmount: 0,
+    landSquareMeters: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -111,12 +116,29 @@ export function ConstructionDashboard({ projectId, projectData }: ConstructionDa
         .select("*")
         .eq("project_id", projectId);
 
-      // Fetch project construction budget
+      // Fetch project construction budget and land area
       const { data: projectData } = await supabase
         .from("client_projects")
-        .select("construction_budget")
+        .select("construction_budget, land_square_meters")
         .eq("id", projectId)
         .single();
+
+      // Fetch payment plans and installments to calculate total paid amount
+      const { data: paymentPlans } = await supabase
+        .from("payment_plans")
+        .select("id")
+        .eq("client_project_id", projectId);
+
+      let totalPaidAmount = 0;
+      if (paymentPlans && paymentPlans.length > 0) {
+        const { data: paidInstallments } = await supabase
+          .from("payment_installments")
+          .select("amount")
+          .in("payment_plan_id", paymentPlans.map(plan => plan.id))
+          .eq("status", "paid");
+
+        totalPaidAmount = paidInstallments?.reduce((sum, installment) => sum + (installment.amount || 0), 0) || 0;
+      }
 
       // Fetch equipment
       const { data: equipment } = await supabase
@@ -168,6 +190,8 @@ export function ConstructionDashboard({ projectId, projectData }: ConstructionDa
         budgetExecuted: budgetItems?.reduce((sum, item) => sum + (item.executed_amount || 0), 0) || 0,
         budgetRemaining: budgetItems?.reduce((sum, item) => sum + (item.total_price - (item.executed_amount || 0)), 0) || 0,
         totalBudget: calculatedTotalBudget, // Usar el valor calculado directamente desde los items
+        totalPaidAmount: totalPaidAmount,
+        landSquareMeters: projectData?.land_square_meters || 0,
       };
 
       setStats(newStats);
@@ -276,6 +300,36 @@ export function ConstructionDashboard({ projectId, projectData }: ConstructionDa
                 <p className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>{inspectionPassRate.toFixed(1)}%</p>
                 <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>
                   {stats.passedInspections} / {stats.totalInspections} inspecciones
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
+            <div className={`flex items-center ${isMobile ? 'gap-3' : 'gap-4'}`}>
+              <DollarSign className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-green-600`} />
+              <div className="flex-1 min-w-0">
+                <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-muted-foreground`}>Pagos Realizados</p>
+                <p className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>${stats.totalPaidAmount.toLocaleString()}</p>
+                <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>
+                  Total pagado por el cliente
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
+            <div className={`flex items-center ${isMobile ? 'gap-3' : 'gap-4'}`}>
+              <Home className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-orange-600`} />
+              <div className="flex-1 min-w-0">
+                <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-muted-foreground`}>Área del Terreno</p>
+                <p className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold`}>{stats.landSquareMeters.toLocaleString()} m²</p>
+                <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>
+                  Metros cuadrados totales
                 </p>
               </div>
             </div>
