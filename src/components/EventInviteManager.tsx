@@ -215,36 +215,14 @@ export const EventInviteManager = ({
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* Sugerencia inteligente de proyecto */}
-        {suggestedProject && !activeFilter.type && (
-          <div className="p-3 bg-muted/50 rounded-lg border border-dashed">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <BrainCircuit className="h-4 w-4 text-primary" />
-                <div>
-                  <p className="text-sm font-medium">Proyecto sugerido</p>
-                  <p className="text-xs text-muted-foreground">{suggestedProject.project_name}</p>
-                </div>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => handleFilterSelect('project', suggestedProject.id)}
-              >
-                <Plus className="h-3 w-3 mr-1" />
-                Usar
-              </Button>
-            </div>
-          </div>
-        )}
 
-        {/* Filtros inteligentes */}
-        <div className={isMobile ? 'space-y-3' : 'grid grid-cols-1 md:grid-cols-3 gap-3'}>
+        {/* Filtros verticales */}
+        <div className="space-y-3">
           <Combobox
             items={projectOptions}
             value={activeFilter.type === 'project' ? activeFilter.value : ""}
             onValueChange={(value) => handleFilterSelect('project', value)}
-            placeholder="Por proyecto..."
+            placeholder="Proyecto"
             emptyText="No hay proyectos"
           />
           
@@ -252,7 +230,7 @@ export const EventInviteManager = ({
             items={departmentOptions}
             value={activeFilter.type === 'department' ? activeFilter.value : ""}
             onValueChange={(value) => handleFilterSelect('department', value)}
-            placeholder="Por departamento..."
+            placeholder="Departamento"
             emptyText="No hay departamentos"
           />
           
@@ -260,7 +238,7 @@ export const EventInviteManager = ({
             items={positionOptions}
             value={activeFilter.type === 'position' ? activeFilter.value : ""}
             onValueChange={(value) => handleFilterSelect('position', value)}
-            placeholder="Por posición..."
+            placeholder="Posición"
             emptyText="No hay posiciones"
           />
         </div>

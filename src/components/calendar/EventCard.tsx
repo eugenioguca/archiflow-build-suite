@@ -55,7 +55,7 @@ export const EventCard: React.FC<EventCardProps> = ({
       <div
         onClick={handleClick}
         className={cn(
-          "p-2 rounded-lg border-l-2 cursor-pointer hover:shadow-sm transition-all duration-200",
+          "p-2 rounded-lg border-l-2 cursor-pointer hover:bg-muted/5 transition-all duration-200 border-muted/20",
           getEventColor(event.event_type),
           className
         )}
@@ -83,7 +83,7 @@ export const EventCard: React.FC<EventCardProps> = ({
     <div
       onClick={handleClick}
       className={cn(
-        "p-3 rounded-lg border-l-4 cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02]",
+        "p-3 rounded-lg border-l-4 cursor-pointer hover:bg-muted/5 transition-all duration-200 border-muted/20",
         getEventColor(event.event_type),
         className
       )}

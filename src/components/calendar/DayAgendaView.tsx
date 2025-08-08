@@ -107,7 +107,7 @@ export const DayAgendaView: React.FC<DayAgendaViewProps> = ({
             sortedEvents.map((event) => (
               <Card 
                 key={event.id} 
-                className="cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-[1.02]"
+                className="cursor-pointer hover:bg-muted/5 transition-all duration-200 border-muted/20"
                 onClick={() => onEventClick(event)}
               >
                 <CardContent className="p-4">

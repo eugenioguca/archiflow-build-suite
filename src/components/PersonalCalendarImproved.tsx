@@ -11,6 +11,8 @@ import { usePersonalCalendar, PersonalEvent } from '@/hooks/usePersonalCalendar'
 import { EventFormDialogSimple } from './calendar/EventFormDialogSimple';
 import { EventDetailsModal } from './calendar/EventDetailsModal';
 import { DayAgendaView } from './calendar/DayAgendaView';
+import { DayTimelineView } from './calendar/DayTimelineView';
+import { AgendaTimelineView } from './calendar/AgendaTimelineView';
 import { EventCard } from './calendar/EventCard';
 import { EventInvitationPanel } from './EventInvitationPanel';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -26,6 +28,9 @@ export const PersonalCalendarImproved: React.FC = () => {
   const [isEventDetailsOpen, setIsEventDetailsOpen] = useState(false);
   const [showInvitations, setShowInvitations] = useState(false);
   const [showDayAgenda, setShowDayAgenda] = useState(false);
+  const [showDayTimeline, setShowDayTimeline] = useState(false);
+  const [showAgendaTimeline, setShowAgendaTimeline] = useState(false);
+  const [selectedAgendaDate, setSelectedAgendaDate] = useState<Date | null>(null);
 
   const { events, receivedInvitations, isLoading, error } = usePersonalCalendar();
   const isMobile = useIsMobile();
@@ -68,12 +73,17 @@ export const PersonalCalendarImproved: React.FC = () => {
   };
 
   const handleDateClick = (date: Date) => {
-    const dayEvents = getEventsForDate(date);
-    
     if (view === 'month' || view === 'week') {
+      // Show day timeline view
+      setSelectedAgendaDate(date);
+      setShowDayTimeline(true);
+    } else if (view === 'day') {
+      // Create event for this day
       setSelectedDate(date);
-      setShowDayAgenda(true);
+      setSelectedEvent(null);
+      setIsEventDialogOpen(true);
     } else {
+      // Agenda view - create event
       setSelectedDate(date);
       setSelectedEvent(null);
       setIsEventDialogOpen(true);
@@ -115,15 +125,52 @@ export const PersonalCalendarImproved: React.FC = () => {
     );
   }
 
-  if (showDayAgenda && selectedDate) {
+  // Show day timeline view
+  if (showDayTimeline && selectedAgendaDate) {
     return (
       <div className="space-y-4">
-        <DayAgendaView
-          date={selectedDate}
-          events={getEventsForDate(selectedDate)}
+        <DayTimelineView
+          date={selectedAgendaDate}
+          events={getEventsForDate(selectedAgendaDate)}
+          onEventClick={handleEventClick}
+          onCreateEvent={() => {
+            setSelectedDate(selectedAgendaDate);
+            setSelectedEvent(null);
+            setIsEventDialogOpen(true);
+          }}
+          onBack={() => setShowDayTimeline(false)}
+        />
+        
+        <EventFormDialogSimple
+          isOpen={isEventDialogOpen}
+          onOpenChange={setIsEventDialogOpen}
+          event={selectedEvent}
+          defaultDate={selectedAgendaDate}
+        />
+        
+        <EventDetailsModal
+          isOpen={isEventDetailsOpen}
+          onOpenChange={setIsEventDetailsOpen}
+          event={selectedEvent}
+          onEdit={handleEditEvent}
+        />
+      </div>
+    );
+  }
+
+  // Show agenda timeline view
+  if (showAgendaTimeline) {
+    return (
+      <div className="space-y-4">
+        <AgendaTimelineView
+          currentDate={currentDate}
+          events={events || []}
           onEventClick={handleEventClick}
           onCreateEvent={handleCreateEvent}
-          onClose={() => setShowDayAgenda(false)}
+          onNavigateWeek={(direction) => {
+            setCurrentDate(direction === 'next' ? addDays(currentDate, 7) : addDays(currentDate, -7));
+          }}
+          onBack={() => setShowAgendaTimeline(false)}
         />
         
         <EventFormDialogSimple
@@ -350,10 +397,21 @@ export const PersonalCalendarImproved: React.FC = () => {
 
           {view === 'day' && (
             <div className="space-y-4">
-              <div className="text-center">
+              <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium">
                   {format(currentDate, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}
                 </h3>
+                <Button
+                  onClick={() => {
+                    setSelectedAgendaDate(currentDate);
+                    setShowDayTimeline(true);
+                  }}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  Vista por horas
+                </Button>
               </div>
               
               <ScrollArea className="h-96">
@@ -383,6 +441,17 @@ export const PersonalCalendarImproved: React.FC = () => {
 
           {view === 'agenda' && (
             <div className="space-y-4">
+              <div className="flex justify-center">
+                <Button
+                  onClick={() => setShowAgendaTimeline(true)}
+                  variant="outline"
+                  className="mb-4"
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  Ver agenda por horas
+                </Button>
+              </div>
+              
               <ScrollArea className="h-96">
                 <div className="space-y-4">
                   {upcomingEvents.length === 0 ? (

@@ -190,7 +190,7 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className={`${isMobile ? 'w-[95vw] max-h-[95vh]' : 'max-w-lg'} p-0`}>
+      <DialogContent className={`${isMobile ? 'w-[95vw] max-h-[95vh]' : 'max-w-2xl'} p-0 overflow-hidden`}>
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b">
@@ -245,9 +245,9 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                     render={({ field }) => (
                       <FormItem>
                         <FormControl>
-                          <Input 
+                           <Input 
                             placeholder="Título del evento" 
-                            className="text-lg font-medium border-0 border-b rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary"
+                            className="text-lg font-medium border-0 border-b-2 border-muted/20 rounded-none px-0 py-3 focus-visible:ring-0 focus-visible:border-primary bg-transparent"
                             {...field} 
                           />
                         </FormControl>
@@ -265,11 +265,11 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                         <div className="flex items-center space-x-2">
                           <MapPin className="h-4 w-4 text-muted-foreground" />
                           <FormControl>
-                            <Input 
-                              placeholder="Agregar ubicación" 
-                              className="border-0 px-0 focus-visible:ring-0"
-                              {...field} 
-                            />
+                             <Input 
+                               placeholder="Agregar ubicación" 
+                               className="border-0 border-b border-muted/10 rounded-none px-0 py-2 focus-visible:ring-0 focus-visible:border-primary bg-transparent"
+                               {...field} 
+                             />
                           </FormControl>
                         </div>
                         <FormMessage />
@@ -307,10 +307,10 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
-                                <Button
-                                  variant="outline"
-                                  className="w-full justify-start text-left font-normal"
-                                >
+                                 <Button
+                                   variant="outline"
+                                   className="w-full justify-start text-left font-normal border-muted/20 bg-muted/5 hover:bg-muted/10"
+                                 >
                                   <CalendarIcon className="mr-2 h-4 w-4" />
                                   {field.value ? format(field.value, "d MMM", { locale: es }) : "Fecha"}
                                 </Button>
@@ -361,10 +361,10 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
-                                <Button
-                                  variant="outline"
-                                  className="w-full justify-start text-left font-normal"
-                                >
+                                 <Button
+                                   variant="outline"
+                                   className="w-full justify-start text-left font-normal border-muted/20 bg-muted/5 hover:bg-muted/10"
+                                 >
                                   <CalendarIcon className="mr-2 h-4 w-4" />
                                   {field.value ? format(field.value, "d MMM", { locale: es }) : "Fecha"}
                                 </Button>
