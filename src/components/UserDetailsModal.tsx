@@ -26,6 +26,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { UserProfile, BranchOffice, UserDetailsModalProps } from '@/types/user';
 
 const departmentOptions = [
+  { value: 'general', label: 'General' },
   { value: 'ventas', label: 'Ventas' },
   { value: 'diseño', label: 'Diseño' },
   { value: 'construcción', label: 'Construcción' },
