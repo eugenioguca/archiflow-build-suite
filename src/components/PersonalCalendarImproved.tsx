@@ -14,8 +14,11 @@ import { DayAgendaView } from './calendar/DayAgendaView';
 import { DayTimelineView } from './calendar/DayTimelineView';
 import { AgendaTimelineView } from './calendar/AgendaTimelineView';
 import { EventCard } from './calendar/EventCard';
+import { NotificationBadge } from './calendar/NotificationBadge';
 import { EventInvitationPanel } from './EventInvitationPanel';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useCalendarNotifications } from '@/hooks/useCalendarNotifications';
+import { useEventAlerts } from '@/hooks/useEventAlerts';
 
 type CalendarView = 'month' | 'week' | 'day' | 'agenda';
 
@@ -34,6 +37,10 @@ export const PersonalCalendarImproved: React.FC = () => {
 
   const { events, receivedInvitations, isLoading, error } = usePersonalCalendar();
   const isMobile = useIsMobile();
+  
+  // Initialize notifications and alerts
+  useCalendarNotifications();
+  useEventAlerts();
 
   // Get events for a specific date
   const getEventsForDate = (date: Date): PersonalEvent[] => {
@@ -201,11 +208,14 @@ export const PersonalCalendarImproved: React.FC = () => {
               <CardTitle className="text-xl font-semibold">
                 Mi Calendario
               </CardTitle>
-              <div className="flex items-center space-x-2">
-                <Button onClick={handleCreateEvent} size={isMobile ? "sm" : "default"}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nuevo evento
-                </Button>
+               <div className="flex items-center space-x-2">
+                 {/* Notification Badge */}
+                 <NotificationBadge />
+                 
+                 <Button onClick={handleCreateEvent} size={isMobile ? "sm" : "default"}>
+                   <Plus className="h-4 w-4 mr-2" />
+                   Nuevo evento
+                 </Button>
                 {receivedInvitations && receivedInvitations.length > 0 && (
                   <Button
                     variant="outline"

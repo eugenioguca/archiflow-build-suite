@@ -25,7 +25,8 @@ export interface EventAlert {
   id: string;
   event_id: string;
   alert_minutes_before: number;
-  alert_type: 'popup' | 'email';
+  alert_type: 'popup' | 'email' | 'sound';
+  sound_type?: string;
   is_active: boolean;
 }
 
@@ -134,22 +135,79 @@ export const usePersonalCalendar = () => {
     enabled: !!user?.id,
   });
 
-  // Crear evento
+  // Crear evento con invitaciones y alertas
   const createEventMutation = useMutation({
-    mutationFn: async (eventData: Omit<PersonalEvent, 'id' | 'created_at' | 'updated_at' | 'user_id'>) => {
+    mutationFn: async (eventData: Omit<PersonalEvent, 'id' | 'created_at' | 'updated_at' | 'user_id'> & {
+      invitedUsers?: string[];
+      alerts?: Array<{
+        minutes_before: number;
+        alert_type: 'popup' | 'email' | 'sound';
+        sound_type?: string;
+      }>;
+    }) => {
       if (!user?.id) throw new Error('Usuario no autenticado');
       
-      const { data, error } = await supabase
+      // Crear el evento
+      const { data: event, error: eventError } = await supabase
         .from('personal_events')
         .insert([{
-          ...eventData,
-          user_id: user.id
+          title: eventData.title,
+          description: eventData.description,
+          location: eventData.location,
+          start_date: eventData.start_date,
+          end_date: eventData.end_date,
+          is_all_day: eventData.is_all_day,
+          event_type: eventData.event_type,
+          user_id: user.id,
+          created_by: user.id
         }])
         .select()
         .single();
 
-      if (error) throw error;
-      return data;
+      if (eventError) throw eventError;
+
+      // Crear invitaciones si hay usuarios invitados
+      if (eventData.invitedUsers && eventData.invitedUsers.length > 0) {
+        const { data: currentProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+
+        if (currentProfile) {
+          const invitations = eventData.invitedUsers.map(profileId => ({
+            event_id: event.id,
+            inviter_id: currentProfile.id,
+            invitee_id: profileId,
+            status: 'pending' as const
+          }));
+
+          const { error: invitationError } = await supabase
+            .from('event_invitations')
+            .insert(invitations);
+
+          if (invitationError) console.error('Error creating invitations:', invitationError);
+        }
+      }
+
+      // Crear alertas si hay alertas configuradas
+      if (eventData.alerts && eventData.alerts.length > 0) {
+        const alerts = eventData.alerts.map(alert => ({
+          event_id: event.id,
+          alert_minutes_before: alert.minutes_before,
+          alert_type: alert.alert_type,
+          sound_type: alert.sound_type,
+          is_active: true
+        }));
+
+        const { error: alertError } = await supabase
+          .from('event_alerts')
+          .insert(alerts);
+
+        if (alertError) console.error('Error creating alerts:', alertError);
+      }
+
+      return event;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['personal-events'] });
@@ -213,12 +271,15 @@ export const usePersonalCalendar = () => {
     mutationFn: async ({ 
       invitationId, 
       status, 
-      message 
+      message,
+      eventData
     }: { 
       invitationId: string; 
       status: 'accepted' | 'declined';
       message?: string;
+      eventData?: any;
     }) => {
+      // Actualizar estado de invitación
       const { data, error } = await supabase
         .from('event_invitations')
         .update({
@@ -227,10 +288,33 @@ export const usePersonalCalendar = () => {
           response_message: message
         })
         .eq('id', invitationId)
-        .select()
+        .select(`
+          *,
+          event:personal_events(*)
+        `)
         .single();
 
       if (error) throw error;
+
+      // Si se acepta, crear el evento en el calendario del usuario invitado
+      if (status === 'accepted' && data.event && user?.id) {
+        const { error: eventError } = await supabase
+          .from('personal_events')
+          .insert([{
+            title: data.event.title,
+            description: data.event.description,
+            location: data.event.location,
+            start_date: data.event.start_date,
+            end_date: data.event.end_date,
+            is_all_day: data.event.is_all_day,
+            event_type: data.event.event_type,
+            user_id: user.id,
+            created_by: data.event.created_by // Mantener referencia al creador original
+          }]);
+
+        if (eventError) console.error('Error creating accepted event:', eventError);
+      }
+
       return data;
     },
     onSuccess: (_, { status }) => {

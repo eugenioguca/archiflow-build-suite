@@ -37,6 +37,7 @@ import {
 import { cn } from "@/lib/utils";
 import { usePersonalCalendar, PersonalEvent, TeamMember } from "@/hooks/usePersonalCalendar";
 import { EventInviteManager } from "../EventInviteManager";
+import { EventAlertsConfig } from "./EventAlertsConfig";
 import { toast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -69,6 +70,12 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
   const [invitedUsers, setInvitedUsers] = useState<TeamMember[]>([]);
   const [showInvitations, setShowInvitations] = useState(false);
   const [showDescription, setShowDescription] = useState(false);
+  const [showAlerts, setShowAlerts] = useState(false);
+  const [alerts, setAlerts] = useState<Array<{
+    minutes_before: number;
+    alert_type: 'popup' | 'email' | 'sound';
+    sound_type?: string;
+  }>>([]);
   
   const { createEvent, updateEvent, deleteEvent, isCreating, isUpdating, isDeleting } = usePersonalCalendar();
   const isMobile = useIsMobile();
@@ -175,7 +182,7 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
         ? data.end_date
         : new Date(`${format(data.end_date, 'yyyy-MM-dd')}T${data.end_time}`);
 
-      const eventData = {
+      const basicEventData = {
         title: data.title,
         description: data.description,
         location: data.location,
@@ -186,9 +193,15 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
       };
 
       if (event) {
-        updateEvent({ id: event.id, ...eventData });
+        updateEvent({ id: event.id, ...basicEventData });
       } else {
-        createEvent(eventData);
+        // For creation, add the custom properties
+        const eventDataWithExtras = {
+          ...basicEventData,
+          invitedUsers: invitedUsers.map(u => u.profile_id),
+          alerts: alerts
+        };
+        createEvent(eventDataWithExtras);
       }
 
       if (invitedUsers.length > 0) {
@@ -526,7 +539,34 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                         </div>
                       </CollapsibleContent>
                     </Collapsible>
-                  </div>
+                   </div>
+
+                   {/* Alerts Configuration - Collapsible */}
+                   <div className="space-y-2">
+                     <Collapsible open={showAlerts} onOpenChange={setShowAlerts}>
+                       <CollapsibleTrigger asChild>
+                         <Button variant="ghost" className="w-full justify-start p-0 h-auto font-normal">
+                           <CalendarIcon className="h-4 w-4 mr-2 text-muted-foreground" />
+                           <span className="text-muted-foreground">
+                             Recordatorios {alerts.length > 0 && `(${alerts.length})`}
+                           </span>
+                           <ChevronDown className={cn("h-4 w-4 ml-auto transition-transform", showAlerts && "rotate-180")} />
+                         </Button>
+                       </CollapsibleTrigger>
+                       <CollapsibleContent className="data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up overflow-hidden">
+                         <div className="pt-2">
+                            <EventAlertsConfig
+                              onAlertsChange={(newAlerts) => setAlerts(newAlerts)}
+                              initialAlerts={alerts.map(alert => ({
+                                minutes_before: alert.minutes_before,
+                                alert_type: alert.alert_type,
+                                sound_type: alert.sound_type as 'none' | 'icq' | 'soft' | 'loud'
+                              }))}
+                            />
+                         </div>
+                       </CollapsibleContent>
+                     </Collapsible>
+                   </div>
 
                   {/* Delete Button for existing events */}
                   {event && (
