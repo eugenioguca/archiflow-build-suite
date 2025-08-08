@@ -210,24 +210,13 @@ export function DesignCompletionManager({
   };
 
   const handleBudgetAccepted = async () => {
-    const validation = validateConstructionPaymentRequirements();
-    
-    if (!validation.isValid) {
-      toast({
-        title: "Requisitos no cumplidos",
-        description: validation.message,
-        variant: "destructive"
-      });
-      return;
-    }
-
     setLoading(true);
     try {
+      // Only save the budget as accepted, do not change project status
       const { error } = await supabase
         .from("client_projects")
         .update({
-          status: 'construction',
-          moved_to_construction_at: new Date().toISOString(),
+          budget_accepted_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
         .eq("id", projectId);
@@ -236,7 +225,7 @@ export function DesignCompletionManager({
 
       toast({
         title: "Presupuesto Aceptado",
-        description: "El proyecto ha pasado automáticamente al módulo de construcción",
+        description: "El presupuesto ha sido marcado como aceptado",
       });
 
       // Refresh to reflect changes
