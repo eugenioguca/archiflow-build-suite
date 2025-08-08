@@ -92,8 +92,10 @@ export const EventInviteManager = ({
         .not('department_enum', 'is', null)
         .in('role', ['admin', 'employee']);
 
+      console.log('🔍 Departments query result:', { data, error });
       if (error) throw error;
       const unique = [...new Set(data.map(d => d.department_enum))];
+      console.log('🔍 Unique departments:', unique);
       return unique.filter(Boolean);
     },
   });
@@ -108,8 +110,10 @@ export const EventInviteManager = ({
         .not('position_enum', 'is', null)
         .in('role', ['admin', 'employee']);
 
+      console.log('🔍 Positions query result:', { data, error });
       if (error) throw error;
       const unique = [...new Set(data.map(p => p.position_enum))];
+      console.log('🔍 Unique positions:', unique);
       return unique.filter(Boolean);
     },
   });
@@ -118,45 +122,66 @@ export const EventInviteManager = ({
   const { data: filteredUsers = [], isLoading } = useQuery({
     queryKey: ['filtered-users', activeFilter.type, activeFilter.value, debouncedSearch],
     queryFn: async () => {
+      console.log('🔍 Starting user filter query:', { 
+        type: activeFilter.type, 
+        value: activeFilter.value, 
+        search: debouncedSearch 
+      });
+      
       let users: TeamMember[] = [];
 
       if (activeFilter.type === 'search' || debouncedSearch) {
+        console.log('🔍 Using search users function');
         users = await searchUsersForInvitation(debouncedSearch);
       } else if (activeFilter.type === 'project' && activeFilter.value) {
+        console.log('🔍 Using project team members function');
         users = await getProjectTeamMembers(activeFilter.value);
       } else if (activeFilter.type === 'department' && activeFilter.value) {
+        console.log('🔍 Using department users function');
         users = await getUsersByDepartment(activeFilter.value);
       } else if (activeFilter.type === 'position' && activeFilter.value) {
+        console.log('🔍 Using position users function');
         users = await getUsersByPosition(activeFilter.value);
       }
 
+      console.log('🔍 Fetched users:', users);
+      console.log('🔍 Excluded user IDs:', allExcludedUserIds);
+      
       // Filtrar usuarios ya seleccionados y usuario actual
-      return users.filter(user => !allExcludedUserIds.includes(user.profile_id));
+      const filtered = users.filter(user => !allExcludedUserIds.includes(user.profile_id));
+      console.log('🔍 Filtered users after exclusions:', filtered);
+      return filtered;
     },
     enabled: !!(activeFilter.type && activeFilter.value) || !!debouncedSearch,
   });
 
   // Preparar opciones para comboboxes
-  const projectOptions = useMemo(() => 
-    projects.map(p => ({
+  const projectOptions = useMemo(() => {
+    const options = projects.map(p => ({
       value: p.id,
       label: `${p.project_name} (${p.clients?.full_name || 'Sin cliente'})`
-    })), [projects]
-  );
+    }));
+    console.log('🔍 Project options:', options);
+    return options;
+  }, [projects]);
 
-  const departmentOptions = useMemo(() => 
-    departments.map(d => ({
+  const departmentOptions = useMemo(() => {
+    const options = departments.map(d => ({
       value: d,
       label: d.charAt(0).toUpperCase() + d.slice(1)
-    })), [departments]
-  );
+    }));
+    console.log('🔍 Department options:', options);
+    return options;
+  }, [departments]);
 
-  const positionOptions = useMemo(() => 
-    positions.map(p => ({
+  const positionOptions = useMemo(() => {
+    const options = positions.map(p => ({
       value: p,
       label: p.charAt(0).toUpperCase() + p.slice(1).replace('_', ' ')
-    })), [positions]
-  );
+    }));
+    console.log('🔍 Position options:', options);
+    return options;
+  }, [positions]);
 
   // Manejar selección de filtros
   const handleFilterSelect = (type: 'project' | 'department' | 'position', value: string) => {
