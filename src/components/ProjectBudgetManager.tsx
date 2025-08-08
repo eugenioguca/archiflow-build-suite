@@ -321,10 +321,24 @@ export function ProjectBudgetManager({ projectId, projectName, clientName, onBud
         
       if (budgetError) throw budgetError;
       
-      // Update client_projects construction_budget
+      // Migrate budget to construction and get the real total
+      const migrationResult = await supabase.rpc('migrate_design_budget_to_construction', {
+        p_project_id: projectId
+      });
+      
+      // Get the actual total from construction_budget_items
+      const { data: constructionItems } = await supabase
+        .from('construction_budget_items')
+        .select('total_price')
+        .eq('project_id', projectId);
+      
+      const actualConstructionBudget = constructionItems?.reduce((sum, item) => 
+        sum + (item.total_price || 0), 0) || 0;
+      
+      // Update client_projects construction_budget with the real value
       const { error: projectError } = await supabase
         .from('client_projects')
-        .update({ construction_budget: budget.total_amount })
+        .update({ construction_budget: actualConstructionBudget })
         .eq('id', projectId);
         
       if (projectError) throw projectError;
