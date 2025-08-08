@@ -10,8 +10,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CurrencyInput } from "@/components/CurrencyInput";
-// PaymentPlanBuilder removed
-import { Calculator, FileText, Download, Plus, Trash2, Edit, CheckCircle } from "lucide-react";
+import { usePaymentPlans } from "@/hooks/usePaymentPlans";
+import { usePaymentInstallments } from "@/hooks/usePaymentInstallments";
+import { Calculator, FileText, Download, Plus, Trash2, Edit, CheckCircle, AlertTriangle } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 
 interface BudgetItem {
@@ -56,6 +57,11 @@ export function ProjectBudgetManager({ projectId, projectName, clientName, onBud
   const [showAcceptBudgetDialog, setShowAcceptBudgetDialog] = useState(false);
   const [editingItem, setEditingItem] = useState<BudgetItem | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Payment plan validation hooks
+  const { paymentPlans } = usePaymentPlans(projectId, 'construction_payment');
+  const currentConstructionPlan = paymentPlans?.find(plan => plan.is_current_plan === true);
+  const { installments } = usePaymentInstallments(currentConstructionPlan?.id);
 
   const defaultItems = [
     "Tierra", "Cimentación", "Muros PB", "Losa", "Muros PA", 
@@ -369,6 +375,27 @@ export function ProjectBudgetManager({ projectId, projectName, clientName, onBud
     }).format(amount);
   };
 
+  // Validate construction payment requirements
+  const validateConstructionPaymentRequirements = () => {
+    const hasConstructionPlan = currentConstructionPlan && 
+      currentConstructionPlan.status === 'approved';
+    
+    const firstInstallment = installments?.find(inst => inst.installment_number === 1);
+    const firstInstallmentPaid = firstInstallment?.status === 'paid';
+    
+    return {
+      hasConstructionPlan,
+      firstInstallmentPaid,
+      isValid: hasConstructionPlan && firstInstallmentPaid,
+      planStatus: currentConstructionPlan?.status || 'none',
+      message: !hasConstructionPlan 
+        ? 'Se requiere crear un plan de pagos de construcción aprobado'
+        : !firstInstallmentPaid 
+        ? 'Se requiere el pago de la primera parcialidad de construcción'
+        : 'Todos los requisitos cumplidos'
+    };
+  };
+
   const totalBudget = items.reduce((sum, item) => sum + item.total_price, 0);
 
   if (loading) {
@@ -403,10 +430,10 @@ export function ProjectBudgetManager({ projectId, projectName, clientName, onBud
               variant="default" 
               size="sm"
               onClick={() => setShowAcceptBudgetDialog(true)}
-              disabled={!budget || budget.total_amount <= 0}
+              disabled={!budget || budget.total_amount <= 0 || budget.status === 'approved'}
             >
               <CheckCircle className="h-4 w-4 mr-2" />
-              Cliente Acepta Presupuesto
+              {budget?.status === 'approved' ? 'Presupuesto Aprobado' : 'Cliente Acepta Presupuesto'}
             </Button>
           </div>
         </div>
@@ -540,26 +567,85 @@ export function ProjectBudgetManager({ projectId, projectName, clientName, onBud
       )}
       
       <Dialog open={showAcceptBudgetDialog} onOpenChange={setShowAcceptBudgetDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Presupuesto Aceptado</DialogTitle>
+            <DialogTitle>Aceptación del Presupuesto</DialogTitle>
             <DialogDescription>
-              El cliente ha aceptado el presupuesto de obra por {formatCurrency(budget?.total_amount || 0)}. 
-              El sistema ya no requiere crear planes de pago.
+              Para que el proyecto pueda avanzar a construcción, se requiere completar los siguientes pasos:
             </DialogDescription>
           </DialogHeader>
           
-          <div className="text-center p-8">
-            <p className="text-muted-foreground">
-              Payment plan functionality has been removed from the system.
-              The project can now proceed to construction phase.
-            </p>
-            <Button 
-              onClick={() => setShowAcceptBudgetDialog(false)}
-              className="mt-4"
-            >
-              Continuar
-            </Button>
+          <div className="space-y-4">
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <h4 className="font-medium mb-3">Presupuesto de Obra</h4>
+              <div className="flex items-center justify-between">
+                <span>Total: {formatCurrency(budget?.total_amount || 0)}</span>
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              </div>
+            </div>
+
+            {(() => {
+              const validation = validateConstructionPaymentRequirements();
+              return (
+                <div className="space-y-3">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    Requisitos para Construcción
+                  </h4>
+                  
+                  <div className="space-y-2 ml-6">
+                    <div className="flex items-center gap-2">
+                      {validation.hasConstructionPlan ? (
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
+                      )}
+                      <span className={validation.hasConstructionPlan ? 'text-green-700' : 'text-gray-600'}>
+                        Plan de pagos de construcción aprobado
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      {validation.firstInstallmentPaid ? (
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
+                      )}
+                      <span className={validation.firstInstallmentPaid ? 'text-green-700' : 'text-gray-600'}>
+                        Primera parcialidad de construcción pagada
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      {validation.message}
+                    </p>
+                    {!validation.isValid && (
+                      <p className="text-xs text-blue-600 mt-1">
+                        Una vez cumplidos estos requisitos, el proyecto transitará automáticamente a construcción.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            <div className="flex gap-2 pt-4">
+              <Button 
+                onClick={handleAcceptBudget}
+                disabled={saving}
+                className="flex-1"
+              >
+                {saving ? 'Procesando...' : 'Aprobar Presupuesto'}
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => setShowAcceptBudgetDialog(false)}
+              >
+                Cancelar
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
