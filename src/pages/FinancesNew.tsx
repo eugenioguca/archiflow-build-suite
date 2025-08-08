@@ -28,7 +28,7 @@ const FinancesNew: React.FC = () => {
   const [selectedClientId, setSelectedClientId] = useState<string | undefined>();
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>();
   // Estado para filtro de tipo de plan de pago
-  const [selectedPlanType, setSelectedPlanType] = useState<'all' | 'sales_to_design' | 'design_to_construction'>('all');
+  const [selectedPlanType, setSelectedPlanType] = useState<'all' | 'design_payment' | 'construction_payment'>('all');
 
   return (
     <div className="container mx-auto p-2 sm:p-4 max-w-full">
@@ -136,11 +136,30 @@ const FinancesNew: React.FC = () => {
               setSelectedProjectId(undefined);
             }}
           />
-           <PaymentPlanManager 
-             clientProjectId={selectedProjectId || ""}
-             readOnly={false}
-             compact={true}
-           />
+          
+          <div className="mb-4">
+            <Label htmlFor="planType">Tipo de Plan de Pago</Label>
+            <Select 
+              value={selectedPlanType} 
+              onValueChange={(value: 'all' | 'design_payment' | 'construction_payment') => setSelectedPlanType(value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Seleccionar tipo de plan" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los planes</SelectItem>
+                <SelectItem value="design_payment">Planes de Diseño</SelectItem>
+                <SelectItem value="construction_payment">Planes de Construcción</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <PaymentPlanManager 
+            clientProjectId={selectedProjectId || ""}
+            planType={selectedPlanType === 'all' ? undefined : selectedPlanType}
+            readOnly={false}
+            compact={true}
+          />
         </TabsContent>
 
         <TabsContent value="profitability" className="space-y-4">

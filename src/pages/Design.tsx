@@ -772,8 +772,13 @@ export default function Design() {
 
         <TabsContent value="payments">
           <div className="bg-card rounded-lg p-4 border">
+            <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Planes de Pago de Construcción
+            </h3>
             <PaymentPlanManager 
               clientProjectId={projectId}
+              planType="construction_payment"
               compact={true}
             />
           </div>

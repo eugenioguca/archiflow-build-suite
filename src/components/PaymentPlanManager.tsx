@@ -217,9 +217,15 @@ export const PaymentPlanManager: React.FC<PaymentPlanManagerProps> = ({
 
   const getPlanTypeBadge = (type: string) => {
     return type === 'design_payment' ? (
-      <Badge variant="outline">Diseño</Badge>
+      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+        <div className="w-2 h-2 bg-blue-500 rounded-full mr-1"></div>
+        Diseño
+      </Badge>
     ) : (
-      <Badge variant="outline">Construcción</Badge>
+      <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+        <div className="w-2 h-2 bg-orange-500 rounded-full mr-1"></div>
+        Construcción
+      </Badge>
     );
   };
 
