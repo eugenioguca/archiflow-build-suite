@@ -34,6 +34,7 @@ interface EmployeeSetupDialogProps {
 }
 
 const departmentOptions = [
+  { value: 'general', label: 'General' },
   { value: 'ventas', label: 'Ventas' },
   { value: 'diseño', label: 'Diseño' },
   { value: 'construcción', label: 'Construcción' },
