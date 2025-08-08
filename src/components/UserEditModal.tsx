@@ -54,8 +54,9 @@ const departmentOptions = [
 const positionOptions = [
   { value: 'director', label: 'Director' },
   { value: 'gerente', label: 'Gerente' },
-  { value: 'jefatura', label: 'Jefatura' },
-  { value: 'analista', label: 'Analista' },
+  { value: 'coordinador', label: 'Coordinador' },
+  { value: 'supervisor', label: 'Supervisor' },
+  { value: 'especialista', label: 'Especialista' },
   { value: 'auxiliar', label: 'Auxiliar' }
 ];
 

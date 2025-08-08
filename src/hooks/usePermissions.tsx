@@ -44,7 +44,7 @@ export const usePermissions = (): UserPermissions => {
           // Check if user can view all branches
           if (profile.role === 'admin' || 
               profile.position_enum === 'director' || 
-              ['finanzas', 'contabilidad'].includes(profile.department_enum)) {
+              ['finanzas', 'contabilidad'].includes(profile.department_enum as string)) {
             setCanViewAllBranches(true);
           }
 

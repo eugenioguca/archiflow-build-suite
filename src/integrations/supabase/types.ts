@@ -2431,36 +2431,6 @@ export type Database = {
           },
         ]
       }
-      department_permissions: {
-        Row: {
-          can_access: boolean | null
-          can_view_all_branches: boolean | null
-          created_at: string | null
-          department: Database["public"]["Enums"]["department_type"]
-          id: string
-          module_name: string
-          position: Database["public"]["Enums"]["position_hierarchy"]
-        }
-        Insert: {
-          can_access?: boolean | null
-          can_view_all_branches?: boolean | null
-          created_at?: string | null
-          department: Database["public"]["Enums"]["department_type"]
-          id?: string
-          module_name: string
-          position: Database["public"]["Enums"]["position_hierarchy"]
-        }
-        Update: {
-          can_access?: boolean | null
-          can_view_all_branches?: boolean | null
-          created_at?: string | null
-          department?: Database["public"]["Enums"]["department_type"]
-          id?: string
-          module_name?: string
-          position?: Database["public"]["Enums"]["position_hierarchy"]
-        }
-        Relationships: []
-      }
       design_appointments: {
         Row: {
           appointment_date: string
@@ -6613,11 +6583,11 @@ export type Database = {
       payable_status: "pending" | "partial" | "paid" | "overdue" | "cancelled"
       plan_type: "sales_to_design" | "design_to_construction"
       position_hierarchy:
-        | "direccion_general"
         | "director"
         | "gerente"
-        | "jefatura"
-        | "analista"
+        | "coordinador"
+        | "supervisor"
+        | "especialista"
         | "auxiliar"
       priority_level: "low" | "medium" | "high" | "urgent"
       progress_milestone_type:
@@ -6885,11 +6855,11 @@ export const Constants = {
       payable_status: ["pending", "partial", "paid", "overdue", "cancelled"],
       plan_type: ["sales_to_design", "design_to_construction"],
       position_hierarchy: [
-        "direccion_general",
         "director",
         "gerente",
-        "jefatura",
-        "analista",
+        "coordinador",
+        "supervisor",
+        "especialista",
         "auxiliar",
       ],
       priority_level: ["low", "medium", "high", "urgent"],

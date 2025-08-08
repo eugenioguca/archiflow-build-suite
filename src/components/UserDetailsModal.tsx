@@ -37,8 +37,9 @@ const departmentOptions = [
 const positionOptions = [
   { value: 'director', label: 'Director' },
   { value: 'gerente', label: 'Gerente' },
-  { value: 'jefatura', label: 'Jefatura' },
-  { value: 'analista', label: 'Analista' },
+  { value: 'coordinador', label: 'Coordinador' },
+  { value: 'supervisor', label: 'Supervisor' },
+  { value: 'especialista', label: 'Especialista' },
   { value: 'auxiliar', label: 'Auxiliar' }
 ];
 
@@ -297,9 +298,43 @@ export function UserDetailsModal({
     }
   };
 
+  const getPositionDisplay = (position: string | null, department: string | null) => {
+    // Special case for Director General
+    if (position === 'director' && department === 'general') {
+      return 'Director General';
+    }
+    
+    const positionLabels: Record<string, string> = {
+      'director': 'Director',
+      'gerente': 'Gerente',
+      'coordinador': 'Coordinador',
+      'supervisor': 'Supervisor',
+      'especialista': 'Especialista',
+      'auxiliar': 'Auxiliar'
+    };
+    
+    const departmentLabels: Record<string, string> = {
+      'general': 'General',
+      'ventas': 'Ventas',
+      'diseño': 'Diseño',
+      'construcción': 'Construcción',
+      'finanzas': 'Finanzas',
+      'contabilidad': 'Contabilidad'
+    };
+    
+    const positionLabel = position ? positionLabels[position] || position : '';
+    const departmentLabel = department ? departmentLabels[department] || department : '';
+    
+    if (positionLabel && departmentLabel) {
+      return `${positionLabel} de ${departmentLabel}`;
+    }
+    
+    return positionLabel || departmentLabel || '';
+  };
+
   const shouldShowBranches = formData.role === 'employee' && 
     ['construcción', 'ventas', 'diseño'].includes(formData.department_enum) &&
-    ['director', 'gerente', 'jefatura'].includes(formData.position_enum);
+    ['director', 'gerente', 'coordinador'].includes(formData.position_enum);
 
   return (
     <>

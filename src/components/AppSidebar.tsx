@@ -120,16 +120,22 @@ export function AppSidebar() {
   const getPositionDisplay = (position: string | null, department: string | null) => {
     if (!position) return 'Usuario';
     
+    // Special case for Director General
+    if (position === 'director' && department === 'general') {
+      return 'Director General';
+    }
+    
     const positionMap: Record<string, string> = {
-      'direccion_general': 'Dirección General',
       'director': 'Director',
       'gerente': 'Gerente',
-      'jefatura': 'Jefatura',
-      'analista': 'Analista',
+      'coordinador': 'Coordinador',
+      'supervisor': 'Supervisor',
+      'especialista': 'Especialista',
       'auxiliar': 'Auxiliar'
     };
 
     const departmentMap: Record<string, string> = {
+      'general': 'General',
       'ventas': 'Ventas',
       'diseño': 'Diseño',
       'construcción': 'Construcción',
@@ -140,7 +146,7 @@ export function AppSidebar() {
     const positionTitle = positionMap[position] || position;
     const departmentTitle = department ? departmentMap[department] || department : '';
     
-    return position === 'direccion_general' ? positionTitle : `${positionTitle} ${departmentTitle}`.trim();
+    return `${positionTitle} ${departmentTitle}`.trim();
   };
 
   return (
