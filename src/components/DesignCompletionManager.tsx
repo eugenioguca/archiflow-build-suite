@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { usePaymentPlans } from "@/hooks/usePaymentPlans";
+import { usePaymentInstallments } from "@/hooks/usePaymentInstallments";
 // Construction module removed - reverting and transition features disabled
 import { 
   CheckCircle, 
@@ -16,7 +18,8 @@ import {
   FileText, 
   Clock,
   AlertCircle,
-  RotateCcw
+  RotateCcw,
+  XCircle
 } from "lucide-react";
 
 interface DesignPhase {
@@ -52,6 +55,14 @@ export function DesignCompletionManager({
   // const [revertDialogOpen, setRevertDialogOpen] = useState(false); // Disabled - construction module removed
   const [projectStatus, setProjectStatus] = useState<string>('');
   const [projectName, setProjectName] = useState<string>('');
+  
+  // Payment plans validation
+  const { paymentPlans } = usePaymentPlans(projectId, 'construction_payment');
+  const currentConstructionPlan = paymentPlans.find(plan => 
+    plan.is_current_plan && ['approved', 'active'].includes(plan.status)
+  );
+  const { installments } = usePaymentInstallments(currentConstructionPlan?.id);
+  const firstInstallment = installments.find(inst => inst.installment_number === 1);
 
   const isDesignCompleted = phases.every(phase => 
     phase.phase_name === 'Diseño Completado' ? phase.status === 'completed' : true
@@ -182,7 +193,34 @@ export function DesignCompletionManager({
     }
   };
 
+  const validateConstructionPaymentRequirements = () => {
+    const hasConstructionPlan = !!currentConstructionPlan;
+    const firstPaymentPaid = firstInstallment?.status === 'paid';
+    
+    return {
+      hasConstructionPlan,
+      firstPaymentPaid,
+      isValid: hasConstructionPlan && firstPaymentPaid,
+      message: !hasConstructionPlan 
+        ? "Falta crear el plan de pagos de construcción"
+        : !firstPaymentPaid 
+        ? "Falta aplicar el primer pago de construcción"
+        : "Requisitos cumplidos para pasar a construcción"
+    };
+  };
+
   const handleBudgetAccepted = async () => {
+    const validation = validateConstructionPaymentRequirements();
+    
+    if (!validation.isValid) {
+      toast({
+        title: "Requisitos no cumplidos",
+        description: validation.message,
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const { error } = await supabase
@@ -297,6 +335,34 @@ export function DesignCompletionManager({
           </div>
         )}
 
+        {/* Construction Payment Requirements Status */}
+        {!validateConstructionPaymentRequirements().isValid && (
+          <div className="space-y-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <span className="text-sm font-medium text-amber-800">Requisitos para construcción</span>
+            </div>
+            <div className="space-y-1 text-xs text-amber-700">
+              <div className="flex items-center gap-2">
+                {currentConstructionPlan ? (
+                  <CheckCircle className="h-3 w-3 text-green-600" />
+                ) : (
+                  <XCircle className="h-3 w-3 text-red-500" />
+                )}
+                <span>Plan de pagos de construcción</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {firstInstallment?.status === 'paid' ? (
+                  <CheckCircle className="h-3 w-3 text-green-600" />
+                ) : (
+                  <XCircle className="h-3 w-3 text-red-500" />
+                )}
+                <span>Primer pago de construcción aplicado</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Design Status Options */}
         <div className="space-y-3">
           <div className="text-sm font-medium mb-2">Estado del Diseño</div>
@@ -319,15 +385,21 @@ export function DesignCompletionManager({
 
             <Button 
               onClick={handleBudgetAccepted}
-              disabled={loading}
+              disabled={loading || !validateConstructionPaymentRequirements().isValid}
               className="w-full justify-start h-auto p-3"
               variant="outline"
             >
               <div className="flex items-center gap-3 w-full">
-                <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                {validateConstructionPaymentRequirements().isValid ? (
+                  <CheckCircle className="h-4 w-4 flex-shrink-0 text-green-600" />
+                ) : (
+                  <XCircle className="h-4 w-4 flex-shrink-0 text-red-500" />
+                )}
                 <div className="text-left">
                   <div className="font-medium">Cliente Acepta presupuesto de Obra</div>
-                  <div className="text-xs text-muted-foreground">Proyecto pasa automáticamente a construcción</div>
+                  <div className="text-xs text-muted-foreground">
+                    {validateConstructionPaymentRequirements().message}
+                  </div>
                 </div>
               </div>
             </Button>
