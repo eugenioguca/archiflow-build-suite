@@ -2861,6 +2861,135 @@ export type Database = {
         }
         Relationships: []
       }
+      event_alerts: {
+        Row: {
+          alert_minutes_before: number
+          alert_type: string | null
+          created_at: string | null
+          event_id: string
+          id: string
+          is_active: boolean | null
+        }
+        Insert: {
+          alert_minutes_before: number
+          alert_type?: string | null
+          created_at?: string | null
+          event_id: string
+          id?: string
+          is_active?: boolean | null
+        }
+        Update: {
+          alert_minutes_before?: number
+          alert_type?: string | null
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          is_active?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_alerts_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "personal_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_invitations: {
+        Row: {
+          created_at: string | null
+          event_id: string
+          id: string
+          invitee_id: string
+          inviter_id: string
+          response_date: string | null
+          response_message: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_id: string
+          id?: string
+          invitee_id: string
+          inviter_id: string
+          response_date?: string | null
+          response_message?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string
+          id?: string
+          invitee_id?: string
+          inviter_id?: string
+          response_date?: string | null
+          response_message?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_invitations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "personal_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_invitations_invitee_id_fkey"
+            columns: ["invitee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_invitations_inviter_id_fkey"
+            columns: ["inviter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_participants: {
+        Row: {
+          added_at: string | null
+          event_id: string
+          id: string
+          participation_status: string | null
+          user_id: string
+        }
+        Insert: {
+          added_at?: string | null
+          event_id: string
+          id?: string
+          participation_status?: string | null
+          user_id: string
+        }
+        Update: {
+          added_at?: string | null
+          event_id?: string
+          id?: string
+          participation_status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_participants_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "personal_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expenses: {
         Row: {
           amount: number
@@ -4115,6 +4244,59 @@ export type Database = {
           },
           {
             foreignKeyName: "payment_plans_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      personal_events: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          end_date: string
+          event_type: string | null
+          id: string
+          is_all_day: boolean | null
+          location: string | null
+          start_date: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_date: string
+          event_type?: string | null
+          id?: string
+          is_all_day?: boolean | null
+          location?: string | null
+          start_date: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_date?: string
+          event_type?: string | null
+          id?: string
+          is_all_day?: boolean | null
+          location?: string | null
+          start_date?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personal_events_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -6213,6 +6395,17 @@ export type Database = {
           uploader_name: string
         }[]
       }
+      get_project_team_members: {
+        Args: { project_id_param: string }
+        Returns: {
+          user_id: string
+          profile_id: string
+          full_name: string
+          email: string
+          user_role: string
+          user_position: string
+        }[]
+      }
       get_unified_project_documents: {
         Args: { project_id_param: string }
         Returns: {
@@ -6236,6 +6429,28 @@ export type Database = {
       get_user_branch_offices: {
         Args: { _user_id: string }
         Returns: string[]
+      }
+      get_users_by_department: {
+        Args: { department_param: string }
+        Returns: {
+          user_id: string
+          profile_id: string
+          full_name: string
+          email: string
+          user_role: string
+          user_position: string
+        }[]
+      }
+      get_users_by_position: {
+        Args: { position_param: string }
+        Returns: {
+          user_id: string
+          profile_id: string
+          full_name: string
+          email: string
+          user_role: string
+          department: string
+        }[]
       }
       has_module_permission: {
         Args:
