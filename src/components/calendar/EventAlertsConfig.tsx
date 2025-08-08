@@ -56,7 +56,7 @@ export const EventAlertsConfig: React.FC<EventAlertsConfigProps> = ({
       const alertConfigs = existingAlerts.map(alert => ({
         minutes_before: alert.alert_minutes_before,
         alert_type: alert.alert_type as 'popup' | 'email' | 'sound',
-        sound_type: (alert as any).sound_type as SoundType
+        sound_type: alert.sound_type as SoundType
       }));
       setAlerts(alertConfigs);
       setSoundEnabled(alertConfigs.some(alert => alert.alert_type === 'sound'));

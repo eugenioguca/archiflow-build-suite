@@ -2839,6 +2839,7 @@ export type Database = {
           event_id: string
           id: string
           is_active: boolean | null
+          sound_type: string | null
         }
         Insert: {
           alert_minutes_before: number
@@ -2847,6 +2848,7 @@ export type Database = {
           event_id: string
           id?: string
           is_active?: boolean | null
+          sound_type?: string | null
         }
         Update: {
           alert_minutes_before?: number
@@ -2855,6 +2857,7 @@ export type Database = {
           event_id?: string
           id?: string
           is_active?: boolean | null
+          sound_type?: string | null
         }
         Relationships: [
           {
