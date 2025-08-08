@@ -11,10 +11,9 @@ import { CashTransactionsTable } from "./CashTransactionsTable";
 import { TreasuryTransactionForm } from "./TreasuryTransactionForm";
 import { MaterialToTreasuryExporter } from "./MaterialToTreasuryExporter";
 import { TreasuryPaymentProcessor } from "./TreasuryPaymentProcessor";
-import { TreasuryEmptyState } from "./TreasuryEmptyState";
-import { TreasuryDashboard } from "./TreasuryDashboard";
 import { TreasuryMaterialsPayments } from "./TreasuryMaterialsPayments";
-import { GlobalFilters } from "./GlobalFilters";
+import { TreasuryCompactDashboard } from "./TreasuryCompactDashboard";
+import { CollapsibleFilters } from "./CollapsibleFilters";
 import { useClientProjectFilters } from "@/hooks/useClientProjectFilters";
 
 interface TreasuryModuleProps {
@@ -65,24 +64,20 @@ export const TreasuryModule: React.FC<TreasuryModuleProps> = ({
         </Badge>
       </div>
 
-      {/* Treasury Dashboard - Always visible */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-primary" />
-            Dashboard de Tesorería
-          </CardTitle>
-          <CardDescription>
-            Resumen ejecutivo y métricas clave de la situación financiera
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <TreasuryDashboard 
-            selectedClientId={effectiveClientId}
-            selectedProjectId={effectiveProjectId}
-          />
-        </CardContent>
-      </Card>
+      {/* Collapsible Filters */}
+      <CollapsibleFilters
+        selectedClientId={effectiveClientId}
+        selectedProjectId={effectiveProjectId}
+        onClientChange={setClientId}
+        onProjectChange={setProjectId}
+        onClearFilters={clearFilters}
+      />
+
+      {/* Compact Treasury Dashboard */}
+      <TreasuryCompactDashboard 
+        selectedClientId={effectiveClientId}
+        selectedProjectId={effectiveProjectId}
+      />
 
       {/* Collapsible Sections for Better Organization */}
       <Accordion type="multiple" className="space-y-4">
