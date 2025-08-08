@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { CalendarIcon, Clock, MapPin, Bell, Users, X } from "lucide-react";
 import {
   Dialog,
@@ -340,7 +341,7 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
                               )}
                             >
                               {field.value ? (
-                                format(field.value, "PPP", { locale: require('date-fns/locale/es') })
+                                format(field.value, "PPP", { locale: es })
                               ) : (
                                 <span>Selecciona fecha</span>
                               )}
@@ -381,7 +382,7 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
                               )}
                             >
                               {field.value ? (
-                                format(field.value, "PPP", { locale: require('date-fns/locale/es') })
+                                format(field.value, "PPP", { locale: es })
                               ) : (
                                 <span>Selecciona fecha</span>
                               )}
