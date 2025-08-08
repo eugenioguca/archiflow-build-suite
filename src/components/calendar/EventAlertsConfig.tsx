@@ -26,7 +26,7 @@ const SOUND_OPTIONS = [
   { value: 'none' as SoundType, label: 'Sin sonido' },
   { value: 'icq' as SoundType, label: 'ICQ Clásico' },
   { value: 'soft' as SoundType, label: 'Suave' },
-  { value: 'loud' as SoundType, label: 'Fuerte' }
+  { value: 'loud' as SoundType, label: 'Profesional' }
 ];
 
 export const EventAlertsConfig: React.FC<EventAlertsConfigProps> = ({

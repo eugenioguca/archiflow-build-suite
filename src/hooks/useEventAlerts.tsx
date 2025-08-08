@@ -22,7 +22,7 @@ export interface AlertConfig {
 const SOUND_FILES = {
   icq: '/sounds/icq-message.mp3',
   soft: '/sounds/soft-alert.mp3',
-  loud: '/sounds/loud-alert.mp3'
+  loud: '/sounds/professional-alert.mp3'
 };
 
 export const useEventAlerts = () => {
