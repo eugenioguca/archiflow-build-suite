@@ -101,8 +101,22 @@ export function UserManagementTable({
 
   const formatDepartmentPosition = (department?: string, position?: string) => {
     if (!department && !position) return 'No asignado';
-    if (department && position) return `${department} - ${position}`;
-    return department || position || 'No asignado';
+    
+    // Formateo especial para Director General
+    if (department === 'general' && position === 'director') {
+      return 'Director General';
+    }
+    
+    // Capitalizar primera letra para mejor formato
+    const formatText = (text: string) => {
+      return text.charAt(0).toUpperCase() + text.slice(1);
+    };
+    
+    if (department && position) {
+      return `${formatText(position)} de ${formatText(department)}`;
+    }
+    
+    return formatText(department || position || 'No asignado');
   };
 
   return (
