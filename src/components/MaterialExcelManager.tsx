@@ -31,6 +31,7 @@ export function MaterialExcelManager({ projectId, onImportComplete }: MaterialEx
   const [importing, setImporting] = useState(false)
   const [exportingTemplate, setExportingTemplate] = useState(false)
   const [exportingData, setExportingData] = useState(false)
+  const [exportingTemplateWithData, setExportingTemplateWithData] = useState(false)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
   const { toast } = useToast()
 
@@ -140,6 +141,144 @@ export function MaterialExcelManager({ projectId, onImportComplete }: MaterialEx
       })
     } finally {
       setExportingTemplate(false)
+    }
+  }
+
+  const downloadTemplateWithData = async () => {
+    setExportingTemplateWithData(true)
+    try {
+      // Fetch dropdown options for reference
+      const { data: cuentasMayor } = await supabase
+        .from('material_dropdown_options')
+        .select('option_label')
+        .eq('dropdown_type', 'cuentas_mayor')
+        .eq('is_active', true)
+        .order('order_index')
+
+      const { data: partidas } = await supabase
+        .from('material_dropdown_options')
+        .select('option_label')
+        .eq('dropdown_type', 'partidas')
+        .eq('is_active', true)
+        .order('order_index')
+
+      const { data: descripciones } = await supabase
+        .from('material_dropdown_options')
+        .select('option_label')
+        .eq('dropdown_type', 'descripciones_producto')
+        .eq('is_active', true)
+        .order('order_index')
+
+      // Fetch suppliers for reference
+      const { data: suppliers } = await supabase
+        .from('suppliers')
+        .select('company_name')
+        .eq('status', 'active')
+        .order('company_name')
+
+      // Create workbook
+      const wb = XLSX.utils.book_new()
+
+      // Main template sheet with all available options listed
+      const templateData = [
+        [
+          "Cuentas de Mayor",
+          "Partida", 
+          "Sub Partida",
+          "Descripción del Producto",
+          "Unidad",
+          "Cantidad Requerida",
+          "Costo Unitario",
+          "Notas de Procuración",
+          "Requisito de Almacenamiento",
+          "Proveedor"
+        ]
+      ]
+
+      // Add some example rows with actual data from dropdowns
+      const maxRows = Math.max(
+        cuentasMayor?.length || 0,
+        partidas?.length || 0,
+        descripciones?.length || 0,
+        suppliers?.length || 0,
+        10 // Minimum 10 rows
+      )
+
+      for (let i = 0; i < maxRows; i++) {
+        templateData.push([
+          cuentasMayor?.[i]?.option_label || "",
+          partidas?.[i]?.option_label || "",
+          (i + 1).toString(),
+          descripciones?.[i]?.option_label || "",
+          i < 9 ? ["M3", "M2", "PZA", "ML", "KG", "TON", "LT", "GLN", "M"][i] : "PZA",
+          "",
+          "",
+          "",
+          "",
+          suppliers?.[i]?.company_name || ""
+        ])
+      }
+
+      const ws = XLSX.utils.aoa_to_sheet(templateData)
+      XLSX.utils.book_append_sheet(wb, ws, "Template con Información")
+
+      // Reference sheets for dropdown options
+      if (cuentasMayor?.length) {
+        const cuentasWs = XLSX.utils.aoa_to_sheet([
+          ["Cuentas de Mayor Disponibles"],
+          ...cuentasMayor.map(item => [item.option_label])
+        ])
+        XLSX.utils.book_append_sheet(wb, cuentasWs, "Cuentas de Mayor")
+      }
+
+      if (partidas?.length) {
+        const partidasWs = XLSX.utils.aoa_to_sheet([
+          ["Partidas Disponibles"],
+          ...partidas.map(item => [item.option_label])
+        ])
+        XLSX.utils.book_append_sheet(wb, partidasWs, "Partidas")
+      }
+
+      if (descripciones?.length) {
+        const descripcionesWs = XLSX.utils.aoa_to_sheet([
+          ["Descripciones Disponibles"],
+          ...descripciones.map(item => [item.option_label])
+        ])
+        XLSX.utils.book_append_sheet(wb, descripcionesWs, "Descripciones")
+      }
+
+      if (suppliers?.length) {
+        const suppliersWs = XLSX.utils.aoa_to_sheet([
+          ["Proveedores Disponibles"],
+          ...suppliers.map(item => [item.company_name])
+        ])
+        XLSX.utils.book_append_sheet(wb, suppliersWs, "Proveedores")
+      }
+
+      // Units reference sheet
+      const unitsData = [
+        ["Unidades Disponibles"],
+        ["PZA"], ["M2"], ["M3"], ["ML"], ["KG"], ["TON"], ["LT"], ["GLN"], ["M"]
+      ]
+      const unitsWs = XLSX.utils.aoa_to_sheet(unitsData)
+      XLSX.utils.book_append_sheet(wb, unitsWs, "Unidades")
+
+      // Generate and download
+      const fileName = `Template_Con_Informacion_${new Date().toISOString().split('T')[0]}.xlsx`
+      XLSX.writeFile(wb, fileName)
+
+      toast({
+        title: "Template con información descargado",
+        description: "El template de Excel con toda la información de dropdowns ha sido descargado exitosamente.",
+      })
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Error al generar el template con información: " + error.message,
+        variant: "destructive",
+      })
+    } finally {
+      setExportingTemplateWithData(false)
     }
   }
 
@@ -428,6 +567,24 @@ export function MaterialExcelManager({ projectId, onImportComplete }: MaterialEx
                 >
                   <Download className="mr-2 h-4 w-4" />
                   {exportingTemplate ? "Generando..." : "Descargar Template"}
+                </Button>
+              </div>
+
+              <Separator />
+
+              <div className="flex flex-col space-y-2">
+                <h4 className="text-sm font-medium">Descargar Template con Información</h4>
+                <p className="text-xs text-muted-foreground">
+                  Descarga un template con todas las opciones de dropdowns ya pobladas
+                </p>
+                <Button 
+                  onClick={downloadTemplateWithData}
+                  disabled={exportingTemplateWithData}
+                  variant="secondary"
+                  className="w-fit"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  {exportingTemplateWithData ? "Generando..." : "Descargar Template con Información"}
                 </Button>
               </div>
 
