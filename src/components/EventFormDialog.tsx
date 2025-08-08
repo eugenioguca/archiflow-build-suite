@@ -28,13 +28,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { usePersonalCalendar, PersonalEvent, TeamMember } from "@/hooks/usePersonalCalendar";
 import { EventInviteManager } from "./EventInviteManager";
@@ -71,7 +64,6 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
   const [showInvitePanel, setShowInvitePanel] = useState(false);
   
   const { createEvent, updateEvent, deleteEvent, isCreating, isUpdating, isDeleting } = usePersonalCalendar();
-  const isMobile = useIsMobile();
 
   const form = useForm<EventFormData>({
     resolver: zodResolver(eventSchema),
@@ -103,7 +95,6 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
         is_all_day: event.is_all_day,
         event_type: event.event_type,
       });
-
       setInvitedUsers([]);
     } else if (defaultDate) {
       form.reset({
@@ -147,7 +138,6 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
         createEvent(eventData);
       }
 
-      // TODO: Implementar invitaciones
       if (invitedUsers.length > 0) {
         console.log('Usuarios a invitar:', invitedUsers);
       }
@@ -191,15 +181,6 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
     } else {
       return format(date, "d 'de' MMMM 'de' yyyy", { locale: es });
     }
-  };
-
-  const formatTimeDisplay = (time: string) => {
-    if (!time) return "";
-    const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours);
-    const period = hour >= 12 ? 'p.m.' : 'a.m.';
-    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-    return `${displayHour}:${minutes} ${period}`;
   };
 
   return (
@@ -462,7 +443,7 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
                     <span className="text-base">Calendario</span>
                     <div className="flex items-center">
                       <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                      <span className="ios-system-blue">Casa</span>
+                      <span className="text-blue-500">Casa</span>
                       <ChevronRight className="w-4 h-4 ml-1 text-gray-400" />
                     </div>
                   </div>
