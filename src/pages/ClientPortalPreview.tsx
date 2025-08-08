@@ -34,6 +34,80 @@ interface PreviewProject {
   service_type: string;
 }
 
+interface PreviewDocument {
+  id: string;
+  name: string;
+  file_path: string;
+  file_type?: string;
+  file_size?: number;
+  created_at: string;
+  uploader_name?: string;
+  category: string;
+  description?: string;
+  source?: string;
+}
+
+// Helper functions to fetch documents using the same logic as SalesProjectFileManager
+const fetchUnifiedDocuments = async (projectId: string): Promise<PreviewDocument[]> => {
+  const { data, error } = await supabase
+    .from('documents')
+    .select('*')
+    .eq('project_id', projectId)
+    .eq('document_status', 'active')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  return (data || []).map(doc => ({
+    id: doc.id,
+    name: doc.name,
+    category: doc.category,
+    file_path: doc.file_path,
+    file_type: doc.file_type,
+    file_size: doc.file_size,
+    created_at: doc.created_at,
+    uploader_name: doc.uploaded_by,
+    description: doc.description,
+    source: 'unified_documents'
+  }));
+};
+
+const fetchProjectFieldDocuments = async (projectId: string, project: any): Promise<PreviewDocument[]> => {
+  const inheritedDocs: PreviewDocument[] = [];
+
+  if (project.contract_url) {
+    inheritedDocs.push({
+      id: `contract_${projectId}`,
+      name: 'Contrato',
+      category: 'contract',
+      file_path: project.contract_url,
+      file_type: 'application/pdf',
+      file_size: 0,
+      created_at: project.created_at,
+      uploader_name: 'Ventas',
+      description: 'Contrato firmado del proyecto',
+      source: 'inherited'
+    });
+  }
+
+  if (project.constancia_situacion_fiscal_url) {
+    inheritedDocs.push({
+      id: `fiscal_${projectId}`,
+      name: 'Constancia de Situación Fiscal',
+      category: 'fiscal',
+      file_path: project.constancia_situacion_fiscal_url,
+      file_type: 'application/pdf',
+      file_size: 0,
+      created_at: project.created_at,
+      uploader_name: 'Ventas',
+      description: 'Constancia de situación fiscal del cliente',
+      source: 'inherited'
+    });
+  }
+
+  return inheritedDocs;
+};
+
 const ClientPortalPreview = () => {
   const { toast } = useToast();
   const [selectedClientId, setSelectedClientId] = useState<string>('');
@@ -103,58 +177,32 @@ const ClientPortalPreview = () => {
         status: 'paid'
       })) || []);
 
-      // Use the cumulative documents function to get all inherited project documents
-      const { data: cumulativeDocuments, error: docsError } = await supabase
-        .rpc('get_project_cumulative_documents', {
-          project_id_param: selectedProjectId,
-          user_department: 'all'
-        });
-
-      if (docsError) {
-        console.error('Error fetching cumulative documents:', docsError);
-      }
-
-      // Transform cumulative documents to the expected format
-      const allDocuments = (cumulativeDocuments || []).map(doc => ({
-        id: doc.id,
-        name: doc.name,
-        file_path: doc.file_path,
-        file_type: doc.file_type,
-        file_size: doc.file_size,
-        created_at: doc.created_at,
-        uploader_name: doc.uploader_name || 'Sistema',
-        category: doc.department || 'general',
-        description: doc.description || `Documento de ${doc.department || 'proyecto'}`
-      }));
-
-      // Also include project field documents (contract, fiscal documents)
-      if (project.contract_url) {
-        allDocuments.push({
-          id: `contract-${selectedProjectId}`,
-          name: 'Contrato Firmado',
-          file_path: project.contract_url,
-          file_type: 'application/pdf',
-          file_size: 0,
-          created_at: project.created_at,
-          uploader_name: 'Ventas',
-          category: 'contract',
-          description: 'Contrato firmado del proyecto'
-        });
-      }
-
-      if (project.constancia_situacion_fiscal_url) {
-        allDocuments.push({
-          id: `fiscal-${selectedProjectId}`,
-          name: 'Constancia de Situación Fiscal',
-          file_path: project.constancia_situacion_fiscal_url,
-          file_type: 'application/pdf',
-          file_size: 0,
-          created_at: project.created_at,
-          uploader_name: 'Ventas',
-          category: 'fiscal',
-          description: 'Constancia de situación fiscal del cliente'
-        });
-      }
+      // Use the same direct queries as SalesProjectFileManager
+      const documentsFromUnified = await fetchUnifiedDocuments(selectedProjectId);
+      const documentsFromProjectFields = await fetchProjectFieldDocuments(selectedProjectId, project);
+      
+      // Evitar duplicaciones de forma más específica
+      const unifiedDocuments = documentsFromUnified;
+      const existingPaths = new Set(unifiedDocuments.map(doc => doc.file_path));
+      const existingNames = new Set(unifiedDocuments.map(doc => doc.name.toLowerCase()));
+      
+      // Solo agregar documentos de project fields si NO existen duplicados
+      const filteredProjectFieldDocs = documentsFromProjectFields.filter(doc => 
+        !existingPaths.has(doc.file_path) && 
+        !existingNames.has(doc.name.toLowerCase())
+      );
+      
+      const allDocuments = [
+        ...unifiedDocuments,
+        ...filteredProjectFieldDocs
+      ];
+      
+      console.log('Documents loaded for preview:', {
+        unified: unifiedDocuments.length,
+        inherited: filteredProjectFieldDocs.length,
+        total: allDocuments.length,
+        documents: allDocuments.map(d => ({ name: d.name, category: d.category, source: d.source }))
+      });
 
       setDocuments(allDocuments);
 
