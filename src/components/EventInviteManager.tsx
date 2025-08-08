@@ -306,8 +306,7 @@ export const EventInviteManager = ({
               {filteredUsers.length} persona{filteredUsers.length !== 1 ? 's' : ''} encontrada{filteredUsers.length !== 1 ? 's' : ''}:
             </div>
             
-            <ScrollArea className={`${isMobile ? 'h-48' : 'h-64'} w-full`}>
-              <div className="space-y-2 pr-2">
+            <div className="space-y-2 max-h-64 overflow-y-auto">
                 {filteredUsers.map((user) => (
                   <div
                     key={user.profile_id}
@@ -340,8 +339,7 @@ export const EventInviteManager = ({
                     </Button>
                   </div>
                 ))}
-              </div>
-            </ScrollArea>
+            </div>
           </div>
         )}
 

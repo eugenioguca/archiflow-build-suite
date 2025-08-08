@@ -57,13 +57,13 @@ export function Combobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-[--radix-popover-trigger-width] p-0 z-[100] bg-background border shadow-lg" 
+        className="w-[--radix-popover-trigger-width] p-0 z-[9999] bg-background border shadow-lg" 
         align="start"
         sideOffset={4}
       >
         <Command>
           <CommandInput placeholder={`Search ${placeholder.toLowerCase()}...`} />
-          <CommandList>
+          <CommandList className="max-h-96">
             <CommandEmpty>{emptyText}</CommandEmpty>
             <CommandGroup>
               {items.map((item) => (
