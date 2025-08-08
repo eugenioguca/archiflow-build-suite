@@ -4,12 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { CalendarIcon, Users, X } from "lucide-react";
+import { CalendarIcon, Users, X, ChevronRight } from "lucide-react";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -17,9 +15,7 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
-  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -89,6 +85,7 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
   });
 
   const isAllDay = form.watch('is_all_day');
+  const eventType = form.watch('event_type');
 
   useEffect(() => {
     if (event) {
@@ -182,115 +179,163 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
     setInvitedUsers(invitedUsers.filter(u => u.profile_id !== userId));
   };
 
+  const formatDateDisplay = (date: Date) => {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    if (date.toDateString() === today.toDateString()) {
+      return "Hoy";
+    } else if (date.toDateString() === tomorrow.toDateString()) {
+      return "Mañana";
+    } else {
+      return format(date, "d 'de' MMMM 'de' yyyy", { locale: es });
+    }
+  };
+
+  const formatTimeDisplay = (time: string) => {
+    if (!time) return "";
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours);
+    const period = hour >= 12 ? 'p.m.' : 'a.m.';
+    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    return `${displayHour}:${minutes} ${period}`;
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className={cn(
-        "overflow-hidden",
-        isMobile 
-          ? "max-w-[95vw] w-[95vw] max-h-[95vh] h-[95vh]" 
-          : "max-w-5xl w-[90vw] max-h-[90vh]"
-      )}>
-        <DialogHeader>
-          <DialogTitle>
-            {event ? "Editar Evento" : "Nuevo Evento"}
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="p-0 max-w-sm w-full mx-auto ios-form-container">
+        <div className="flex flex-col h-full max-h-[95vh]">
+          {/* iOS Header */}
+          <div className="ios-form-header">
+            <Button
+              variant="ghost"
+              onClick={() => onOpenChange(false)}
+              className="text-blue-500 hover:bg-transparent p-0 h-auto font-normal"
+            >
+              Cancelar
+            </Button>
+            <h2 className="font-semibold text-lg">
+              {event ? "Editar" : "Nuevo"}
+            </h2>
+            <Button
+              variant="ghost"
+              onClick={form.handleSubmit(onSubmit)}
+              disabled={isCreating || isUpdating || isDeleting}
+              className="text-blue-500 hover:bg-transparent p-0 h-auto font-semibold"
+            >
+              {event ? "Guardar" : "Agregar"}
+            </Button>
+          </div>
 
-        <ScrollArea className="max-h-[80vh] overflow-y-auto">
-          <div className="space-y-6 p-1">
+          {/* Scrollable Content */}
+          <ScrollArea className="flex-1 px-4">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className={cn(
-                  "grid gap-6",
-                  isMobile ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"
-                )}>
-                  {/* Columna izquierda: Formulario principal */}
-                  <div className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="title"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Título del evento</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Reunión de proyecto..." {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
+              <form className="space-y-6 py-6">
+                
+                {/* Event Type Tabs */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-1">
+                  <div className="flex rounded-lg bg-gray-100 dark:bg-gray-700 p-1">
+                    <button
+                      type="button"
+                      onClick={() => form.setValue('event_type', 'event')}
+                      className={cn(
+                        "ios-tab-button",
+                        eventType === 'event' ? "active" : ""
                       )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="event_type"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Tipo de evento</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecciona un tipo" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="event">Evento</SelectItem>
-                              <SelectItem value="meeting">Reunión</SelectItem>
-                              <SelectItem value="reminder">Recordatorio</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
+                    >
+                      Evento
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => form.setValue('event_type', 'reminder')}
+                      className={cn(
+                        "ios-tab-button",
+                        eventType === 'reminder' ? "active" : ""
                       )}
-                    />
+                    >
+                      Recordatorio
+                    </button>
+                  </div>
+                </div>
 
-                    <FormField
-                      control={form.control}
-                      name="is_all_day"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                          <div className="space-y-0.5">
-                            <FormLabel>Todo el día</FormLabel>
-                            <FormDescription>
-                              El evento durará todo el día
-                            </FormDescription>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
+                {/* Title Field */}
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input 
+                          placeholder="Título" 
+                          className="ios-form-field text-lg font-medium"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                    <div className="grid grid-cols-2 gap-4">
+                {/* Location Field */}
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input 
+                          placeholder="Ubicación o Videollamada" 
+                          className="ios-form-field"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* All Day Toggle */}
+                <FormField
+                  control={form.control}
+                  name="is_all_day"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="ios-toggle-container">
+                        <span className="text-base">Todo el día</span>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                {/* Start Date/Time */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between ios-toggle-container">
+                    <span className="text-base">Empieza</span>
+                    <div className="flex items-center space-x-2">
                       <FormField
                         control={form.control}
                         name="start_date"
                         render={({ field }) => (
-                          <FormItem className="flex flex-col">
-                            <FormLabel>Fecha de inicio</FormLabel>
+                          <FormItem>
                             <Popover>
                               <PopoverTrigger asChild>
                                 <FormControl>
                                   <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                      "w-full pl-3 text-left font-normal",
-                                      !field.value && "text-muted-foreground"
-                                    )}
+                                    variant="ghost"
+                                    className="h-auto p-0 font-normal text-blue-500 hover:bg-transparent"
                                   >
-                    {field.value ? (
-                      format(field.value, "dd/MM/yyyy", { locale: es })
-                    ) : (
-                      <span>Fecha</span>
-                    )}
-                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    {field.value ? formatDateDisplay(field.value) : "Fecha"}
                                   </Button>
                                 </FormControl>
                               </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
+                              <PopoverContent className="w-auto p-0" align="end">
                                 <Calendar
                                   mode="single"
                                   selected={field.value}
@@ -306,144 +351,138 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
                           </FormItem>
                         )}
                       />
-
-                      <FormField
-                        control={form.control}
-                        name="end_date"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-col">
-                            <FormLabel>Fecha de fin</FormLabel>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                      "w-full pl-3 text-left font-normal",
-                                      !field.value && "text-muted-foreground"
-                                    )}
-                                  >
-                    {field.value ? (
-                      format(field.value, "dd/MM/yyyy", { locale: es })
-                    ) : (
-                      <span>Fecha</span>
-                    )}
-                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                  </Button>
-                                </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                  mode="single"
-                                  selected={field.value}
-                                  onSelect={field.onChange}
-                                  disabled={(date) =>
-                                    date < new Date(new Date().setHours(0, 0, 0, 0))
-                                  }
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    {!isAllDay && (
-                      <div className="grid grid-cols-2 gap-4">
+                      
+                      {!isAllDay && (
                         <FormField
                           control={form.control}
                           name="start_time"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Hora inicio</FormLabel>
                               <FormControl>
-                                <Input type="time" {...field} />
+                                <input
+                                  type="time"
+                                  {...field}
+                                  className="bg-transparent text-blue-500 border-none outline-none"
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
+                      )}
+                    </div>
+                  </div>
+                </div>
 
+                {/* End Date/Time */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between ios-toggle-container">
+                    <span className="text-base">Termina</span>
+                    <div className="flex items-center space-x-2">
+                      <FormField
+                        control={form.control}
+                        name="end_date"
+                        render={({ field }) => (
+                          <FormItem>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant="ghost"
+                                    className="h-auto p-0 font-normal text-blue-500 hover:bg-transparent"
+                                  >
+                                    {field.value ? formatDateDisplay(field.value) : "Fecha"}
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="end">
+                                <Calendar
+                                  mode="single"
+                                  selected={field.value}
+                                  onSelect={field.onChange}
+                                  disabled={(date) =>
+                                    date < new Date(new Date().setHours(0, 0, 0, 0))
+                                  }
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      {!isAllDay && (
                         <FormField
                           control={form.control}
                           name="end_time"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Hora fin</FormLabel>
                               <FormControl>
-                                <Input type="time" {...field} />
+                                <input
+                                  type="time"
+                                  {...field}
+                                  className="bg-transparent text-blue-500 border-none outline-none"
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                      </div>
-                    )}
-
-                    <FormField
-                      control={form.control}
-                      name="location"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Ubicación</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Sala de juntas, Zoom, etc." {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
                       )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Descripción</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Detalles del evento..."
-                              className="min-h-[80px] resize-none"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  {/* Columna derecha: Invitaciones mejoradas */}
-                  {!isMobile && (
-                    <div className="space-y-4">
-                      <EventInviteManager
-                        onUserSelect={handleUserSelect}
-                        excludeUserIds={invitedUsers.map(u => u.profile_id)}
-                        selectedUsers={invitedUsers}
-                        onRemoveUser={handleRemoveUser}
-                      />
                     </div>
-                  )}
+                  </div>
                 </div>
 
-                {/* Invitaciones en móvil */}
-                {isMobile && (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <FormLabel>Invitados</FormLabel>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowInvitePanel(!showInvitePanel)}
-                      >
-                        <Users className="h-4 w-4 mr-2" />
-                        Invitar ({invitedUsers.length})
-                      </Button>
-                    </div>
+                {/* Spacer */}
+                <div className="ios-section-divider"></div>
 
+                {/* Additional Options */}
+                <div className="space-y-2">
+                  {/* Travel Time */}
+                  <div className="ios-toggle-container">
+                    <span className="text-base">Tiempo de viaje</span>
+                    <div className="flex items-center text-gray-500">
+                      <span>Ninguno</span>
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </div>
+                  </div>
+
+                  {/* Repeat */}
+                  <div className="ios-toggle-container">
+                    <span className="text-base">Repetir</span>
+                    <div className="flex items-center text-gray-500">
+                      <span>Nunca</span>
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </div>
+                  </div>
+
+                  {/* Calendar */}
+                  <div className="ios-toggle-container">
+                    <span className="text-base">Calendario</span>
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                      <span className="ios-system-blue">Casa</span>
+                      <ChevronRight className="w-4 h-4 ml-1 text-gray-400" />
+                    </div>
+                  </div>
+
+                  {/* Invitees */}
+                  <div 
+                    className="ios-toggle-container cursor-pointer"
+                    onClick={() => setShowInvitePanel(!showInvitePanel)}
+                  >
+                    <span className="text-base">Invitados</span>
+                    <div className="flex items-center text-gray-500">
+                      <span>{invitedUsers.length > 0 ? `${invitedUsers.length} invitados` : "Ninguno"}</span>
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Invitees Panel */}
+                {showInvitePanel && (
+                  <div className="bg-white dark:bg-gray-800 rounded-xl p-4 space-y-3">
                     {invitedUsers.length > 0 && (
                       <div className="flex flex-wrap gap-2">
                         {invitedUsers.map((user) => (
@@ -460,55 +499,54 @@ export const EventFormDialog = ({ isOpen, onOpenChange, event, defaultDate }: Ev
                         ))}
                       </div>
                     )}
-
-                    {showInvitePanel && (
-                      <div className="border rounded-lg p-3 bg-muted/50">
-                        <EventInviteManager
-                          onUserSelect={handleUserSelect}
-                          excludeUserIds={invitedUsers.map(u => u.profile_id)}
-                          selectedUsers={invitedUsers}
-                          onRemoveUser={handleRemoveUser}
-                        />
-                      </div>
-                    )}
+                    <EventInviteManager
+                      onUserSelect={handleUserSelect}
+                      excludeUserIds={invitedUsers.map(u => u.profile_id)}
+                      selectedUsers={invitedUsers}
+                      onRemoveUser={handleRemoveUser}
+                    />
                   </div>
                 )}
 
-                <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4 border-t">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => onOpenChange(false)}
-                    disabled={isCreating || isUpdating || isDeleting}
-                  >
-                    Cancelar
-                  </Button>
-                  
-                  {event && (
+                {/* Notes */}
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Notas"
+                          className="ios-form-field min-h-[80px] resize-none"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Delete Button (if editing) */}
+                {event && (
+                  <div className="pt-4">
                     <Button
                       type="button"
                       variant="destructive"
                       onClick={handleDelete}
                       disabled={isCreating || isUpdating || isDeleting}
+                      className="w-full ios-form-field bg-red-500 text-white hover:bg-red-600"
                     >
-                      {isDeleting ? "Eliminando..." : "Eliminar"}
+                      {isDeleting ? "Eliminando..." : "Eliminar evento"}
                     </Button>
-                  )}
-                  
-                  <Button
-                    type="submit"
-                    disabled={isCreating || isUpdating || isDeleting}
-                  >
-                    {isCreating || isUpdating 
-                      ? (event ? "Actualizando..." : "Creando...") 
-                      : (event ? "Actualizar" : "Crear evento")
-                    }
-                  </Button>
-                </div>
+                  </div>
+                )}
+
+                {/* Bottom spacing */}
+                <div className="h-8"></div>
               </form>
             </Form>
-          </div>
-        </ScrollArea>
+          </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
