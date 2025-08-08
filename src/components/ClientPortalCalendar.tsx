@@ -14,16 +14,6 @@ export const ClientPortalCalendar: React.FC<ClientPortalCalendarProps> = ({
   projectId,
   isPreview = false
 }) => {
-  if (isPreview) {
-    return (
-      <div className="text-center text-muted-foreground p-8">
-        <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-        <p>Vista previa del calendario - Funcionalidad disponible para el cliente</p>
-        <p className="text-sm mt-2">El cliente puede ver y gestionar eventos relacionados con su proyecto</p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
       {/* Calendar Instructions */}
@@ -43,7 +33,7 @@ export const ClientPortalCalendar: React.FC<ClientPortalCalendarProps> = ({
         </CardContent>
       </Card>
 
-      {/* Personal Calendar Component */}
+      {/* Personal Calendar Component - Always show the real calendar */}
       <PersonalCalendar />
     </div>
   );
