@@ -190,10 +190,10 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className={`${isMobile ? 'w-[95vw] max-h-[95vh]' : 'max-w-2xl'} p-0 overflow-hidden`}>
+      <DialogContent className={`${isMobile ? 'w-[95vw] h-[90vh]' : 'max-w-2xl h-[85vh]'} p-0 overflow-hidden`}>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center justify-between p-4 border-b flex-shrink-0">
             <Button
               variant="ghost"
               onClick={() => onOpenChange(false)}
@@ -214,7 +214,7 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
           </div>
 
           {/* Form Content */}
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 overflow-y-auto">
             <div className="p-4 space-y-6">
               <Form {...form}>
                 <form className="space-y-6">
@@ -245,7 +245,7 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                     render={({ field }) => (
                       <FormItem>
                         <FormControl>
-                           <Input 
+                          <Input 
                             placeholder="Título del evento" 
                             className="text-lg font-medium border-0 border-b-2 border-muted/20 rounded-none px-0 py-3 focus-visible:ring-0 focus-visible:border-primary bg-transparent"
                             {...field} 
@@ -265,11 +265,11 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                         <div className="flex items-center space-x-2">
                           <MapPin className="h-4 w-4 text-muted-foreground" />
                           <FormControl>
-                             <Input 
-                               placeholder="Agregar ubicación" 
-                               className="border-0 border-b border-muted/10 rounded-none px-0 py-2 focus-visible:ring-0 focus-visible:border-primary bg-transparent"
-                               {...field} 
-                             />
+                            <Input 
+                              placeholder="Agregar ubicación" 
+                              className="border-0 border-b border-muted/10 rounded-none px-0 py-2 focus-visible:ring-0 focus-visible:border-primary bg-transparent"
+                              {...field} 
+                            />
                           </FormControl>
                         </div>
                         <FormMessage />
@@ -307,10 +307,10 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
-                                 <Button
-                                   variant="outline"
-                                   className="w-full justify-start text-left font-normal border-muted/20 bg-muted/5 hover:bg-muted/10"
-                                 >
+                                <Button
+                                  variant="outline"
+                                  className="w-full justify-start text-left font-normal border-muted/20 bg-muted/5 hover:bg-muted/10"
+                                >
                                   <CalendarIcon className="mr-2 h-4 w-4" />
                                   {field.value ? format(field.value, "d MMM", { locale: es }) : "Fecha"}
                                 </Button>
@@ -361,10 +361,10 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
-                                 <Button
-                                   variant="outline"
-                                   className="w-full justify-start text-left font-normal border-muted/20 bg-muted/5 hover:bg-muted/10"
-                                 >
+                                <Button
+                                  variant="outline"
+                                  className="w-full justify-start text-left font-normal border-muted/20 bg-muted/5 hover:bg-muted/10"
+                                >
                                   <CalendarIcon className="mr-2 h-4 w-4" />
                                   {field.value ? format(field.value, "d MMM", { locale: es }) : "Fecha"}
                                 </Button>
@@ -445,30 +445,32 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                       </Button>
                     </CollapsibleTrigger>
                     <CollapsibleContent className="mt-4">
-                      {/* Selected Users */}
-                      {invitedUsers.length > 0 && (
-                        <div className="mb-4 space-y-2">
-                          <p className="text-sm font-medium">Invitados:</p>
-                          <div className="flex flex-wrap gap-2">
-                            {invitedUsers.map((user) => (
-                              <Badge key={user.profile_id} variant="secondary" className="flex items-center gap-1">
-                                {user.full_name}
-                                <button onClick={() => handleRemoveUser(user.profile_id)}>
-                                  ×
-                                </button>
-                              </Badge>
-                            ))}
+                      <div className="max-h-64 overflow-y-auto">
+                        {/* Selected Users */}
+                        {invitedUsers.length > 0 && (
+                          <div className="mb-4 space-y-2">
+                            <p className="text-sm font-medium">Invitados:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {invitedUsers.map((user) => (
+                                <Badge key={user.profile_id} variant="secondary" className="flex items-center gap-1">
+                                  {user.full_name}
+                                  <button onClick={() => handleRemoveUser(user.profile_id)}>
+                                    ×
+                                  </button>
+                                </Badge>
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      
-                      {/* Invite Manager */}
-                      <EventInviteManager
-                        onUserSelect={handleUserSelect}
-                        excludeUserIds={invitedUsers.map(u => u.profile_id)}
-                        selectedUsers={invitedUsers}
-                        onRemoveUser={handleRemoveUser}
-                      />
+                        )}
+                        
+                        {/* Event Invite Manager */}
+                        <EventInviteManager
+                          onUserSelect={handleUserSelect}
+                          excludeUserIds={invitedUsers.map(u => u.profile_id)}
+                          selectedUsers={invitedUsers}
+                          onRemoveUser={handleRemoveUser}
+                        />
+                      </div>
                     </CollapsibleContent>
                   </Collapsible>
 
