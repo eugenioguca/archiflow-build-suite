@@ -18,7 +18,8 @@ import {
   HardHat,
   Eye,
   UserCheck,
-  HandHeart
+  HandHeart,
+  Calendar
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -42,6 +43,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 const allMenuItems = [
   { title: "Dashboard", url: "/dashboard", icon: BarChart3, color: "text-primary", module: "dashboard" },
+  { title: "Calendario", url: "/calendar", icon: Calendar, color: "text-blue-600", module: "calendar" },
   { title: "Clientes", url: "/clients", icon: Users, color: "text-primary", module: "clients" },
   { title: "Ventas", url: "/sales", icon: TrendingUp, color: "text-success", module: "sales" },
   { title: "Diseño", url: "/design", icon: Palette, color: "text-purple", module: "design" },
@@ -55,6 +57,7 @@ const allMenuItems = [
 
 const clientItems = [
   { title: "Mi Proyecto", url: "/my-project", icon: Building2, color: "text-info", module: "client_portal" },
+  { title: "Mi Calendario", url: "/calendar", icon: Calendar, color: "text-blue-600", module: "calendar" },
 ];
 
 export function AppSidebar() {
