@@ -6404,6 +6404,7 @@ export type Database = {
           email: string
           user_role: string
           user_position: string
+          department: string
         }[]
       }
       get_unified_project_documents: {
@@ -6439,6 +6440,7 @@ export type Database = {
           email: string
           user_role: string
           user_position: string
+          department: string
         }[]
       }
       get_users_by_position: {
@@ -6449,6 +6451,7 @@ export type Database = {
           full_name: string
           email: string
           user_role: string
+          user_position: string
           department: string
         }[]
       }
@@ -6485,6 +6488,18 @@ export type Database = {
       refresh_financial_summary: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      search_users_for_invitation: {
+        Args: { search_text?: string; limit_results?: number }
+        Returns: {
+          user_id: string
+          profile_id: string
+          full_name: string
+          email: string
+          user_role: string
+          user_position: string
+          department: string
+        }[]
       }
       update_design_phase_days_elapsed: {
         Args: Record<PropertyKey, never>

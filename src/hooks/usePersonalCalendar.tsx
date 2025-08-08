@@ -268,6 +268,17 @@ export const usePersonalCalendar = () => {
     return data || [];
   };
 
+  // Nueva función de búsqueda inteligente
+  const searchUsersForInvitation = async (searchText: string = '', limit: number = 20): Promise<TeamMember[]> => {
+    const { data, error } = await supabase.rpc('search_users_for_invitation', {
+      search_text: searchText,
+      limit_results: limit
+    });
+    
+    if (error) throw error;
+    return data || [];
+  };
+
   return {
     events,
     receivedInvitations,
@@ -280,6 +291,7 @@ export const usePersonalCalendar = () => {
     getProjectTeamMembers,
     getUsersByDepartment,
     getUsersByPosition,
+    searchUsersForInvitation,
     isCreating: createEventMutation.isPending,
     isUpdating: updateEventMutation.isPending,
     isDeleting: deleteEventMutation.isPending,
