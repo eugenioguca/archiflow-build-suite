@@ -6462,6 +6462,19 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      search_users_and_clients_for_invitation: {
+        Args: { search_text?: string; limit_results?: number }
+        Returns: {
+          user_id: string
+          profile_id: string
+          full_name: string
+          email: string
+          user_role: string
+          user_position: string
+          department: string
+          user_type: string
+        }[]
+      }
       search_users_for_invitation: {
         Args: { search_text?: string; limit_results?: number }
         Returns: {

@@ -316,13 +316,16 @@ export const EventInviteManager = ({
                       <div className="font-medium truncate">{user.full_name}</div>
                       <div className="text-sm text-muted-foreground truncate">{user.email}</div>
                       <div className="flex items-center space-x-1 mt-1">
+                        <Badge variant={user.user_type === 'client' ? 'default' : 'secondary'} className="text-xs">
+                          {user.user_type === 'client' ? 'Cliente' : 'Empleado'}
+                        </Badge>
                         {user.user_position && (
                           <Badge variant="outline" className="text-xs">
                             {user.user_position.replace('_', ' ')}
                           </Badge>
                         )}
                         {user.department && (
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge variant="outline" className="text-xs">
                             {user.department}
                           </Badge>
                         )}
@@ -331,7 +334,11 @@ export const EventInviteManager = ({
                     
                     <Button
                       size="sm"
-                      onClick={() => onUserSelect(user)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onUserSelect(user);
+                      }}
                       className="ml-2 shrink-0"
                     >
                       <Plus className="h-3 w-3 mr-1" />
@@ -358,7 +365,8 @@ export const EventInviteManager = ({
 
         {!activeFilter.type && !searchTerm && (
           <div className="text-center py-4 text-muted-foreground text-sm">
-            Usa los filtros o busca personas para invitar al evento
+            Usa los filtros o busca personas para invitar al evento<br/>
+            <span className="text-xs">💡 Puedes invitar tanto empleados como clientes</span>
           </div>
         )}
       </CardContent>

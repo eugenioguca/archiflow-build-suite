@@ -58,13 +58,14 @@ export interface EventParticipant {
 }
 
 export interface TeamMember {
-  user_id: string;
+  user_id: string | null;
   profile_id: string;
   full_name: string;
   email: string;
   user_role: string;
   user_position?: string;
   department?: string;
+  user_type: 'employee' | 'client';
 }
 
 export const usePersonalCalendar = () => {
@@ -334,7 +335,10 @@ export const usePersonalCalendar = () => {
     });
     
     if (error) throw error;
-    return data || [];
+    return (data || []).map((member: any) => ({
+      ...member,
+      user_type: 'employee' as const
+    }));
   };
 
   // Obtener usuarios por departamento
@@ -344,7 +348,10 @@ export const usePersonalCalendar = () => {
     });
     
     if (error) throw error;
-    return data || [];
+    return (data || []).map((member: any) => ({
+      ...member,
+      user_type: 'employee' as const
+    }));
   };
 
   // Obtener usuarios por posición
@@ -354,18 +361,24 @@ export const usePersonalCalendar = () => {
     });
     
     if (error) throw error;
-    return data || [];
+    return (data || []).map((member: any) => ({
+      ...member,
+      user_type: 'employee' as const
+    }));
   };
 
-  // Nueva función de búsqueda inteligente
+  // Nueva función de búsqueda inteligente que incluye empleados y clientes
   const searchUsersForInvitation = async (searchText: string = '', limit: number = 20): Promise<TeamMember[]> => {
-    const { data, error } = await supabase.rpc('search_users_for_invitation', {
+    const { data, error } = await supabase.rpc('search_users_and_clients_for_invitation', {
       search_text: searchText,
       limit_results: limit
     });
     
     if (error) throw error;
-    return data || [];
+    return (data || []).map((member: any) => ({
+      ...member,
+      user_type: member.user_type as 'employee' | 'client'
+    }));
   };
 
   return {
