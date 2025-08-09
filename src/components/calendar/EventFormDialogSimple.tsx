@@ -365,7 +365,7 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                               <FormControl>
                                 <Button
                                   variant="outline"
-                                  className="w-full justify-start text-left font-normal border-muted/20 bg-muted/5 hover:bg-muted/10"
+                                  className="w-full justify-start text-left font-normal"
                                 >
                                   <CalendarIcon className="mr-2 h-4 w-4" />
                                   {field.value ? format(field.value, "d MMM", { locale: es }) : "Fecha"}
@@ -419,7 +419,7 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                               <FormControl>
                                 <Button
                                   variant="outline"
-                                  className="w-full justify-start text-left font-normal border-muted/20 bg-muted/5 hover:bg-muted/10"
+                                  className="w-full justify-start text-left font-normal"
                                 >
                                   <CalendarIcon className="mr-2 h-4 w-4" />
                                   {field.value ? format(field.value, "d MMM", { locale: es }) : "Fecha"}
@@ -526,7 +526,7 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                             )}
                             
                             {/* Event Invite Manager Container */}
-                            <div className="border rounded-lg p-2 bg-muted/5">
+                            <div className="border rounded-lg p-2 bg-background">
                               <EventInviteManager
                                 onUserSelect={handleUserSelect}
                                 excludeUserIds={invitedUsers.map(u => u.profile_id)}
