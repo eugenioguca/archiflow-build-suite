@@ -8,6 +8,8 @@ import { CalendarIcon, MapPin, AlignLeft, Users, ChevronDown } from "lucide-reac
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -173,48 +175,40 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
   }, [event, defaultDate, form]);
 
   const onSubmit = async (data: EventFormData) => {
-    try {
-      const startDateTime = isAllDay 
-        ? data.start_date
-        : new Date(`${format(data.start_date, 'yyyy-MM-dd')}T${data.start_time}`);
-      
-      const endDateTime = isAllDay
-        ? data.end_date
-        : new Date(`${format(data.end_date, 'yyyy-MM-dd')}T${data.end_time}`);
+    const startDateTime = isAllDay 
+      ? data.start_date
+      : new Date(`${format(data.start_date, 'yyyy-MM-dd')}T${data.start_time}`);
+    
+    const endDateTime = isAllDay
+      ? data.end_date
+      : new Date(`${format(data.end_date, 'yyyy-MM-dd')}T${data.end_time}`);
 
-      const basicEventData = {
-        title: data.title,
-        description: data.description,
-        location: data.location,
-        start_date: startDateTime.toISOString(),
-        end_date: endDateTime.toISOString(),
-        is_all_day: data.is_all_day,
-        event_type: data.event_type,
-      };
+    const basicEventData = {
+      title: data.title,
+      description: data.description,
+      location: data.location,
+      start_date: startDateTime.toISOString(),
+      end_date: endDateTime.toISOString(),
+      is_all_day: data.is_all_day,
+      event_type: data.event_type,
+    };
 
-      if (event) {
-        updateEvent({ id: event.id, ...basicEventData });
-      } else {
-        // For creation, pass the basic event data with the extra properties
-        createEvent({
-          ...basicEventData,
-          invitedUsers: invitedUsers.map(u => u.profile_id),
-          alerts: alerts
-        } as any); // Type assertion to bypass the strict typing
-      }
-
-      if (invitedUsers.length > 0) {
-        console.log('Usuarios a invitar:', invitedUsers);
-      }
-
-      onOpenChange(false);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo guardar el evento.",
-        variant: "destructive",
-      });
+    if (event) {
+      updateEvent({ id: event.id, ...basicEventData });
+    } else {
+      // For creation, pass the basic event data with the extra properties
+      createEvent({
+        ...basicEventData,
+        invitedUsers: invitedUsers.map(u => u.profile_id),
+        alerts: alerts
+      } as any); // Type assertion to bypass the strict typing
     }
+
+    if (invitedUsers.length > 0) {
+      console.log('Usuarios a invitar:', invitedUsers);
+    }
+
+    onOpenChange(false);
   };
 
   const handleDelete = () => {
@@ -246,6 +240,12 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className={`${isMobile ? 'w-[95vw] max-h-[95vh]' : 'max-w-2xl max-h-[90vh]'} p-0 flex flex-col overflow-hidden`}>
+        <DialogTitle className="sr-only">
+          {event ? 'Editar Evento' : 'Crear Nuevo Evento'}
+        </DialogTitle>
+        <DialogDescription className="sr-only">
+          Formulario para crear o editar eventos del calendario personal
+        </DialogDescription>
         <div className="flex flex-col h-full min-h-0">
           {/* Header - Fixed */}
           <div className="flex items-center justify-between p-4 border-b flex-shrink-0 bg-background">
