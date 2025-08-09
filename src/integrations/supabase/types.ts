@@ -2875,7 +2875,9 @@ export type Database = {
           event_id: string
           id: string
           invitee_id: string
+          invitee_user_id: string | null
           inviter_id: string
+          inviter_user_id: string | null
           response_date: string | null
           response_message: string | null
           status: string | null
@@ -2885,7 +2887,9 @@ export type Database = {
           event_id: string
           id?: string
           invitee_id: string
+          invitee_user_id?: string | null
           inviter_id: string
+          inviter_user_id?: string | null
           response_date?: string | null
           response_message?: string | null
           status?: string | null
@@ -2895,7 +2899,9 @@ export type Database = {
           event_id?: string
           id?: string
           invitee_id?: string
+          invitee_user_id?: string | null
           inviter_id?: string
+          inviter_user_id?: string | null
           response_date?: string | null
           response_message?: string | null
           status?: string | null
@@ -2908,20 +2914,6 @@ export type Database = {
             referencedRelation: "personal_events"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "event_invitations_invitee_id_fkey"
-            columns: ["invitee_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_invitations_inviter_id_fkey"
-            columns: ["inviter_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       event_participants: {
@@ -2929,6 +2921,7 @@ export type Database = {
           added_at: string | null
           event_id: string
           id: string
+          participant_user_id: string | null
           participation_status: string | null
           user_id: string
         }
@@ -2936,6 +2929,7 @@ export type Database = {
           added_at?: string | null
           event_id: string
           id?: string
+          participant_user_id?: string | null
           participation_status?: string | null
           user_id: string
         }
@@ -2943,6 +2937,7 @@ export type Database = {
           added_at?: string | null
           event_id?: string
           id?: string
+          participant_user_id?: string | null
           participation_status?: string | null
           user_id?: string
         }
@@ -4267,15 +4262,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "personal_events_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       platform_settings: {
         Row: {
