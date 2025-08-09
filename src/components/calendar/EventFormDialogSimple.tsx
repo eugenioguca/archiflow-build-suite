@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
 import { es } from 'date-fns/locale';
-import { CalendarIcon, MapPin, AlignLeft, Users, ChevronDown } from "lucide-react";
+import { CalendarIcon, MapPin, AlignLeft, ChevronDown } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -37,8 +37,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
-import { usePersonalCalendar, PersonalEvent, TeamMember } from "@/hooks/usePersonalCalendar";
-import { EventInviteManager } from "../EventInviteManager";
+import { usePersonalCalendar, PersonalEvent } from "@/hooks/usePersonalCalendar";
 import { EventAlertsConfig } from "./EventAlertsConfig";
 import { toast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -69,8 +68,6 @@ interface EventFormDialogSimpleProps {
 }
 
 export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate }: EventFormDialogSimpleProps) => {
-  const [invitedUsers, setInvitedUsers] = useState<TeamMember[]>([]);
-  const [showInvitations, setShowInvitations] = useState(false);
   const [showDescription, setShowDescription] = useState(false);
   const [showAlerts, setShowAlerts] = useState(false);
   const [alerts, setAlerts] = useState<Array<{
@@ -115,7 +112,6 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
         is_all_day: event.is_all_day,
         event_type: event.event_type,
       });
-      setInvitedUsers([]);
       setShowDescription(!!event.description);
     } else if (defaultDate) {
       // Use current time or a reasonable default
@@ -144,7 +140,6 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
         is_all_day: false,
         event_type: 'event',
       });
-      setInvitedUsers([]);
       setShowDescription(false);
     } else {
       // Default when no date is provided
@@ -172,7 +167,6 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
         is_all_day: false,
         event_type: 'event',
       });
-      setInvitedUsers([]);
       setShowDescription(false);
     }
   }, [event, defaultDate, form]);
@@ -244,16 +238,11 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
       if (event) {
         updateEvent({ id: event.id, ...basicEventData });
       } else {
-        // For creation, pass the basic event data with the extra properties
+        // For creation, pass the basic event data with alerts
         createEvent({
           ...basicEventData,
-          invitedUsers: invitedUsers.map(u => u.profile_id),
           alerts: alerts
         } as any); // Type assertion to bypass the strict typing
-      }
-
-      if (invitedUsers.length > 0) {
-        console.log('Usuarios invitados:', invitedUsers.map(u => ({ name: u.full_name, id: u.profile_id })));
       }
 
       onOpenChange(false);
@@ -274,15 +263,6 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
     }
   };
 
-  const handleUserSelect = (user: TeamMember) => {
-    if (!invitedUsers.find(u => u.profile_id === user.profile_id)) {
-      setInvitedUsers([...invitedUsers, user]);
-    }
-  };
-
-  const handleRemoveUser = (userId: string) => {
-    setInvitedUsers(invitedUsers.filter(u => u.profile_id !== userId));
-  };
 
   const getEventTypeDisplay = (type: string) => {
     switch (type) {
@@ -589,52 +569,6 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                     </Collapsible>
                   </div>
 
-                  {/* Invitations - Collapsible */}
-                  <div className="space-y-2">
-                    <Collapsible open={showInvitations} onOpenChange={setShowInvitations}>
-                      <CollapsibleTrigger asChild>
-                        <Button variant="ghost" className="w-full justify-start p-0 h-auto font-normal">
-                          <Users className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <span className="text-muted-foreground">
-                            Invitar personas {invitedUsers.length > 0 && `(${invitedUsers.length})`}
-                          </span>
-                          <ChevronDown className={cn("h-4 w-4 ml-auto transition-transform", showInvitations && "rotate-180")} />
-                        </Button>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up overflow-hidden">
-                        <div className="pt-2">
-                          <div className="space-y-3 rounded-md">
-                            {/* Selected Users */}
-                            {invitedUsers.length > 0 && (
-                              <div className="space-y-2">
-                                <p className="text-sm font-medium">Invitados:</p>
-                                <div className="flex flex-wrap gap-2">
-                                  {invitedUsers.map((user) => (
-                                    <Badge key={user.profile_id} variant="secondary" className="flex items-center gap-1">
-                                      {user.full_name}
-                                      <button onClick={() => handleRemoveUser(user.profile_id)}>
-                                        ×
-                                      </button>
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            
-                            {/* Event Invite Manager Container */}
-                            <div className="border rounded-lg p-2 bg-background">
-                              <EventInviteManager
-                                onUserSelect={handleUserSelect}
-                                excludeUserIds={invitedUsers.map(u => u.profile_id)}
-                                selectedUsers={invitedUsers}
-                                onRemoveUser={handleRemoveUser}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </CollapsibleContent>
-                    </Collapsible>
-                   </div>
 
                    {/* Alerts Configuration - Collapsible */}
                    <div className="space-y-2">

@@ -8,7 +8,7 @@ import { format, isToday, isTomorrow } from "date-fns";
 import { es } from "date-fns/locale";
 
 export const CalendarNotificationSystem = () => {
-  const { events, receivedInvitations } = usePersonalCalendar();
+  const { events } = usePersonalCalendar();
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
 
   useEffect(() => {
@@ -55,9 +55,7 @@ export const CalendarNotificationSystem = () => {
     }
   };
 
-  const totalNotifications = upcomingEvents.length + receivedInvitations.length;
-
-  if (totalNotifications === 0) return null;
+  if (upcomingEvents.length === 0) return null;
 
   return (
     <Card className="border-0 shadow-lg glassmorphic-bg">
@@ -68,39 +66,11 @@ export const CalendarNotificationSystem = () => {
           </div>
           Notificaciones del Calendario
           <Badge variant="secondary" className="bg-red-100 text-red-800 border-red-200">
-            {totalNotifications}
+            {upcomingEvents.length}
           </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="p-4 space-y-4">
-        {/* Invitaciones pendientes */}
-        {receivedInvitations.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground">
-              Invitaciones pendientes ({receivedInvitations.length})
-            </h4>
-            {receivedInvitations.map((invitation: any) => (
-              <div key={invitation.id} className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{invitation.event?.title}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Invitado por: {invitation.inviter?.full_name}
-                    </p>
-                    {invitation.event?.start_date && (
-                      <p className="text-xs text-muted-foreground">
-                        {getEventTimeDescription(invitation.event.start_date)}
-                      </p>
-                    )}
-                  </div>
-                  <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300">
-                    Pendiente
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
 
         {/* Eventos próximos */}
         {upcomingEvents.length > 0 && (

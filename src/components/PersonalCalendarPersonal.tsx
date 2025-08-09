@@ -1,44 +1,29 @@
 import React, { useState, useMemo } from 'react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, startOfWeek, endOfWeek, addDays } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Plus, Calendar, Clock, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { usePersonalCalendar, PersonalEvent } from '@/hooks/usePersonalCalendar';
 import { EventFormDialogSimple } from './calendar/EventFormDialogSimple';
 import { EventDetailsModal } from './calendar/EventDetailsModal';
-import { DayAgendaView } from './calendar/DayAgendaView';
-import { DayTimelineView } from './calendar/DayTimelineView';
-import { AgendaTimelineView } from './calendar/AgendaTimelineView';
 import { EventCard } from './calendar/EventCard';
-import { NotificationBadge } from './calendar/NotificationBadge';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useCalendarNotifications } from '@/hooks/useCalendarNotifications';
-import { useEventAlerts } from '@/hooks/useEventAlerts';
 
 type CalendarView = 'month' | 'week' | 'day' | 'agenda';
 
-export const PersonalCalendarImproved: React.FC = () => {
+export const PersonalCalendarPersonal: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<CalendarView>('month');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<PersonalEvent | null>(null);
   const [isEventDetailsOpen, setIsEventDetailsOpen] = useState(false);
-  const [showDayAgenda, setShowDayAgenda] = useState(false);
-  const [showDayTimeline, setShowDayTimeline] = useState(false);
-  const [showAgendaTimeline, setShowAgendaTimeline] = useState(false);
-  const [selectedAgendaDate, setSelectedAgendaDate] = useState<Date | null>(null);
 
   const { events, isLoading, error } = usePersonalCalendar();
   const isMobile = useIsMobile();
-  
-  // Initialize notifications and alerts
-  useCalendarNotifications();
-  useEventAlerts();
 
   // Get events for a specific date
   const getEventsForDate = (date: Date): PersonalEvent[] => {
@@ -78,21 +63,9 @@ export const PersonalCalendarImproved: React.FC = () => {
   };
 
   const handleDateClick = (date: Date) => {
-    if (view === 'month' || view === 'week') {
-      // Show day timeline view
-      setSelectedAgendaDate(date);
-      setShowDayTimeline(true);
-    } else if (view === 'day') {
-      // Create event for this day
-      setSelectedDate(date);
-      setSelectedEvent(null);
-      setIsEventDialogOpen(true);
-    } else {
-      // Agenda view - create event
-      setSelectedDate(date);
-      setSelectedEvent(null);
-      setIsEventDialogOpen(true);
-    }
+    setSelectedDate(date);
+    setSelectedEvent(null);
+    setIsEventDialogOpen(true);
   };
 
   const handleEventClick = (event: PersonalEvent) => {
@@ -110,15 +83,6 @@ export const PersonalCalendarImproved: React.FC = () => {
     setIsEventDialogOpen(true);
   };
 
-  const getEventColor = (event: PersonalEvent): string => {
-    switch (event.event_type) {
-      case 'event': return 'bg-primary text-primary-foreground';
-      case 'meeting': return 'bg-secondary text-secondary-foreground';
-      case 'reminder': return 'bg-accent text-accent-foreground';
-      default: return 'bg-muted text-muted-foreground';
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -126,71 +90,6 @@ export const PersonalCalendarImproved: React.FC = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Cargando calendario...</p>
         </div>
-      </div>
-    );
-  }
-
-  // Show day timeline view
-  if (showDayTimeline && selectedAgendaDate) {
-    return (
-      <div className="space-y-4">
-        <DayTimelineView
-          date={selectedAgendaDate}
-          events={getEventsForDate(selectedAgendaDate)}
-          onEventClick={handleEventClick}
-          onCreateEvent={() => {
-            setSelectedDate(selectedAgendaDate);
-            setSelectedEvent(null);
-            setIsEventDialogOpen(true);
-          }}
-          onBack={() => setShowDayTimeline(false)}
-        />
-        
-        <EventFormDialogSimple
-          isOpen={isEventDialogOpen}
-          onOpenChange={setIsEventDialogOpen}
-          event={selectedEvent}
-          defaultDate={selectedAgendaDate}
-        />
-        
-        <EventDetailsModal
-          isOpen={isEventDetailsOpen}
-          onOpenChange={setIsEventDetailsOpen}
-          event={selectedEvent}
-          onEdit={handleEditEvent}
-        />
-      </div>
-    );
-  }
-
-  // Show agenda timeline view
-  if (showAgendaTimeline) {
-    return (
-      <div className="space-y-4">
-        <AgendaTimelineView
-          currentDate={currentDate}
-          events={events || []}
-          onEventClick={handleEventClick}
-          onCreateEvent={handleCreateEvent}
-          onNavigateWeek={(direction) => {
-            setCurrentDate(direction === 'next' ? addDays(currentDate, 7) : addDays(currentDate, -7));
-          }}
-          onBack={() => setShowAgendaTimeline(false)}
-        />
-        
-        <EventFormDialogSimple
-          isOpen={isEventDialogOpen}
-          onOpenChange={setIsEventDialogOpen}
-          event={selectedEvent}
-          defaultDate={selectedDate}
-        />
-        
-        <EventDetailsModal
-          isOpen={isEventDetailsOpen}
-          onOpenChange={setIsEventDetailsOpen}
-          event={selectedEvent}
-          onEdit={handleEditEvent}
-        />
       </div>
     );
   }
@@ -204,12 +103,9 @@ export const PersonalCalendarImproved: React.FC = () => {
             {/* Title and Main Actions */}
             <div className="flex items-center justify-between">
               <CardTitle className="text-xl font-semibold">
-                Mi Calendario
+                Mi Calendario Personal
               </CardTitle>
                <div className="flex items-center space-x-2">
-                 {/* Notification Badge */}
-                 <NotificationBadge />
-                 
                  <Button onClick={handleCreateEvent} size={isMobile ? "sm" : "default"}>
                    <Plus className="h-4 w-4 mr-2" />
                    Nuevo evento
@@ -388,17 +284,6 @@ export const PersonalCalendarImproved: React.FC = () => {
                 <h3 className="text-lg font-medium">
                   {format(currentDate, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })}
                 </h3>
-                <Button
-                  onClick={() => {
-                    setSelectedAgendaDate(currentDate);
-                    setShowDayTimeline(true);
-                  }}
-                  variant="outline"
-                  size="sm"
-                >
-                  <Clock className="h-4 w-4 mr-2" />
-                  Vista por horas
-                </Button>
               </div>
               
               <ScrollArea className="h-96">
@@ -428,17 +313,6 @@ export const PersonalCalendarImproved: React.FC = () => {
 
           {view === 'agenda' && (
             <div className="space-y-4">
-              <div className="flex justify-center">
-                <Button
-                  onClick={() => setShowAgendaTimeline(true)}
-                  variant="outline"
-                  className="mb-4"
-                >
-                  <Clock className="h-4 w-4 mr-2" />
-                  Ver agenda por horas
-                </Button>
-              </div>
-              
               <ScrollArea className="h-96">
                 <div className="space-y-4">
                   {upcomingEvents.length === 0 ? (
