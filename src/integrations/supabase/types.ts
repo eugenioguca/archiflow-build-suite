@@ -6472,7 +6472,6 @@ export type Database = {
           user_role: string
           user_position: string
           department: string
-          user_type: string
         }[]
       }
       search_users_for_invitation: {

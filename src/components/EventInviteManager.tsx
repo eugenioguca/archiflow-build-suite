@@ -157,7 +157,16 @@ export const EventInviteManager = ({
         return filtered;
       } catch (error) {
         console.error('Error fetching users in EventInviteManager:', error);
-        throw error;
+        // Log more details about the error for debugging
+        if (error instanceof Error) {
+          console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+          });
+        }
+        // Return empty array instead of throwing to prevent complete UI failure
+        return [];
       }
     },
     enabled: !!(activeFilter.type && activeFilter.value) || !!debouncedSearch,
@@ -362,15 +371,30 @@ export const EventInviteManager = ({
         {/* Estados vacíos y errores */}
         {usersError ? (
           <div className="text-center py-4 text-destructive">
-            <p className="text-sm">Error al cargar usuarios: {usersError.message}</p>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => window.location.reload()} 
-              className="mt-2"
-            >
-              Recargar página
-            </Button>
+            <p className="text-sm">Error al cargar usuarios: {usersError instanceof Error ? usersError.message : 'Error desconocido'}</p>
+            <div className="flex gap-2 justify-center mt-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  console.log('Retrying user query...');
+                  window.location.reload();
+                }} 
+              >
+                Recargar página
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  console.log('Clearing filters and retrying...');
+                  setActiveFilter({ type: null, value: null });
+                  setSearchTerm('');
+                }} 
+              >
+                Limpiar filtros
+              </Button>
+            </div>
           </div>
         ) : isLoading ? (
           <div className="text-center py-4 text-muted-foreground text-sm">

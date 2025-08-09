@@ -387,17 +387,33 @@ export const usePersonalCalendar = () => {
       
       if (error) {
         console.error('RPC Error searching users:', error);
-        throw new Error(`Error al buscar usuarios: ${error.message}`);
+        // Try fallback to the original function
+        console.log('Trying fallback search function...');
+        const fallbackResult = await supabase.rpc('search_users_for_invitation', {
+          search_text: searchText,
+          limit_results: limit
+        });
+        
+        if (fallbackResult.error) {
+          console.error('Fallback search also failed:', fallbackResult.error);
+          return []; // Return empty array instead of throwing
+        }
+        
+        console.log('Fallback search successful:', fallbackResult.data?.length || 0);
+        return (fallbackResult.data || []).map((member: any) => ({
+          ...member,
+          user_type: 'employee' as 'employee' | 'client'
+        }));
       }
       
       console.log('Found users for invitation:', data?.length || 0);
       return (data || []).map((member: any) => ({
         ...member,
-        user_type: member.user_type as 'employee' | 'client'
+        user_type: member.user_role === 'client' ? 'client' as const : 'employee' as const
       }));
     } catch (error) {
       console.error('Unexpected error in searchUsersForInvitation:', error);
-      throw error;
+      return []; // Return empty array instead of throwing to prevent UI crashes
     }
   };
 
