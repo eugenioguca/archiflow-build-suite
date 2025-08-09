@@ -93,8 +93,11 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
     },
   });
 
+  // Watch for changes in all_day and event_type to conditionally render time inputs
   const isAllDay = form.watch('is_all_day');
   const eventType = form.watch('event_type');
+  const watchedStartDate = form.watch('start_date');
+  const watchedStartTime = form.watch('start_time');
 
   useEffect(() => {
     if (event) {
@@ -173,6 +176,40 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
       setShowDescription(false);
     }
   }, [event, defaultDate, form]);
+
+  // Auto-update end date/time when start date/time changes (only for new events)
+  useEffect(() => {
+    if (!event && watchedStartDate && !isAllDay && watchedStartTime) {
+      try {
+        // Create start datetime
+        const startDateTime = new Date(`${format(watchedStartDate, 'yyyy-MM-dd')}T${watchedStartTime}`);
+        
+        // Add 1 hour for end time
+        const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
+        
+        // Only update if current end time is before or equal to start time
+        const currentEndDate = form.getValues('end_date');
+        const currentEndTime = form.getValues('end_time');
+        
+        if (currentEndDate && currentEndTime) {
+          const currentEndDateTime = new Date(`${format(currentEndDate, 'yyyy-MM-dd')}T${currentEndTime}`);
+          if (currentEndDateTime <= startDateTime) {
+            form.setValue('end_date', endDateTime);
+            form.setValue('end_time', format(endDateTime, 'HH:mm'));
+          }
+        } else {
+          // No end time set, always update
+          form.setValue('end_date', endDateTime);
+          form.setValue('end_time', format(endDateTime, 'HH:mm'));
+        }
+      } catch (error) {
+        console.error('Error updating end date/time:', error);
+      }
+    } else if (!event && watchedStartDate && isAllDay) {
+      // For all-day events, set end date to same day
+      form.setValue('end_date', watchedStartDate);
+    }
+  }, [watchedStartDate, watchedStartTime, isAllDay, form, event]);
 
   const onSubmit = async (data: EventFormData) => {
     const startDateTime = isAllDay 
@@ -354,37 +391,46 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
 
                   {/* Start Date/Time */}
                   <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="start_date"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Inicio</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant="outline"
-                                  className="w-full justify-start text-left font-normal"
-                                >
-                                  <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {field.value ? format(field.value, "d MMM", { locale: es }) : "Fecha"}
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                     <FormField
+                       control={form.control}
+                       name="start_date"
+                       render={({ field }) => (
+                         <FormItem>
+                           <FormLabel>Inicio</FormLabel>
+                           <Popover>
+                             <PopoverTrigger asChild>
+                               <FormControl>
+                                 <Button
+                                   variant="outline"
+                                   className="w-full justify-start text-left font-normal"
+                                 >
+                                   <CalendarIcon className="mr-2 h-4 w-4" />
+                                   {field.value ? format(field.value, "d MMM", { locale: es }) : "Fecha"}
+                                 </Button>
+                               </FormControl>
+                             </PopoverTrigger>
+                             <PopoverContent className="w-auto p-0" align="start">
+                               <Calendar
+                                 mode="single"
+                                 selected={field.value}
+                                 onSelect={(date) => {
+                                   field.onChange(date);
+                                   // Auto-update end date if it's before the new start date
+                                   const currentEndDate = form.getValues('end_date');
+                                   if (date && currentEndDate && date > currentEndDate) {
+                                     form.setValue('end_date', date);
+                                   }
+                                 }}
+                                 disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                                 initialFocus
+                                 className="pointer-events-auto"
+                               />
+                             </PopoverContent>
+                           </Popover>
+                           <FormMessage />
+                         </FormItem>
+                       )}
+                     />
 
                     {!isAllDay && (
                       <FormField
@@ -426,14 +472,26 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                                 </Button>
                               </FormControl>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                initialFocus
-                              />
-                            </PopoverContent>
+                             <PopoverContent className="w-auto p-0" align="start">
+                               <Calendar
+                                 mode="single"
+                                 selected={field.value}
+                                 onSelect={(date) => {
+                                   field.onChange(date);
+                                   // Prevent end date from being before start date
+                                   const startDate = form.getValues('start_date');
+                                   if (date && startDate && date < startDate) {
+                                     form.setValue('end_date', startDate);
+                                   }
+                                 }}
+                                 disabled={(date) => {
+                                   const startDate = form.getValues('start_date');
+                                   return startDate ? date < startDate : date < new Date(new Date().setHours(0, 0, 0, 0));
+                                 }}
+                                 initialFocus
+                                 className="pointer-events-auto"
+                               />
+                             </PopoverContent>
                           </Popover>
                           <FormMessage />
                         </FormItem>
