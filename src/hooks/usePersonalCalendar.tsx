@@ -16,14 +16,12 @@ export interface PersonalEvent {
   created_at: string;
   updated_at: string;
   created_by?: string;
-  alerts?: EventAlert[];
-  invitations?: EventInvitation[];
-  participants?: EventParticipant[];
 }
 
 export interface EventAlert {
   id: string;
   event_id: string;
+  user_id?: string;
   alert_minutes_before: number;
   alert_type: 'popup' | 'email' | 'sound';
   sound_type?: string;
@@ -35,14 +33,14 @@ export interface EventInvitation {
   event_id: string;
   inviter_id: string;
   invitee_id: string;
+  inviter_user_id?: string;
+  invitee_user_id?: string;
   status: 'pending' | 'accepted' | 'declined';
-  response_date?: string;
-  response_message?: string;
-  invitee?: {
-    id: string;
-    full_name: string;
-    email: string;
-  };
+  created_at?: string;
+  responded_at?: string;
+  message?: string;
+  event?: any;
+  inviter?: any;
 }
 
 export interface EventParticipant {
@@ -50,11 +48,7 @@ export interface EventParticipant {
   event_id: string;
   user_id: string;
   participation_status: 'confirmed' | 'tentative' | 'declined';
-  user?: {
-    id: string;
-    full_name: string;
-    email: string;
-  };
+  added_at?: string;
 }
 
 export interface TeamMember {
@@ -84,18 +78,8 @@ export const usePersonalCalendar = () => {
 
       const { data, error } = await supabase
         .from('personal_events')
-        .select(`
-          *,
-          alerts:event_alerts(*),
-          invitations:event_invitations(
-            *,
-            invitee:profiles!invitee_id(id, full_name, email)
-          ),
-          participants:event_participants(
-            *,
-            user:profiles!user_id(id, full_name, email)
-          )
-        `)
+        .select('*')
+        .eq('user_id', user.id)
         .order('start_date', { ascending: true });
 
       if (error) throw error;
@@ -104,21 +88,13 @@ export const usePersonalCalendar = () => {
     enabled: !!user?.id,
   });
 
-  // Obtener invitaciones recibidas
+  // Obtener invitaciones recibidas usando las nuevas columnas user_id
   const {
     data: receivedInvitations = [],
   } = useQuery({
     queryKey: ['received-invitations', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) return [];
 
       const { data, error } = await supabase
         .from('event_invitations')
@@ -127,18 +103,18 @@ export const usePersonalCalendar = () => {
           event:personal_events(*),
           inviter:profiles!inviter_id(id, full_name, email)
         `)
-        .eq('invitee_id', profile.id)
+        .eq('invitee_user_id', user.id)
         .eq('status', 'pending');
 
       if (error) throw error;
-      return data;
+      return data as EventInvitation[];
     },
     enabled: !!user?.id,
   });
 
   // Crear evento con invitaciones y alertas
   const createEventMutation = useMutation({
-    mutationFn: async (eventData: Omit<PersonalEvent, 'id' | 'created_at' | 'updated_at' | 'user_id' | 'alerts'> & {
+    mutationFn: async (eventData: Omit<PersonalEvent, 'id' | 'created_at' | 'updated_at' | 'user_id'> & {
       invitedUsers?: string[];
       alerts?: Array<{
         minutes_before: number;
@@ -148,7 +124,7 @@ export const usePersonalCalendar = () => {
     }) => {
       if (!user?.id) throw new Error('Usuario no autenticado');
       
-      // CRÍTICO: Obtener el profile.id del usuario autenticado para created_by
+      // Obtener el profile.id del usuario autenticado para created_by
       const { data: currentProfile, error: profileError } = await supabase
         .from('profiles')
         .select('id')
@@ -159,7 +135,7 @@ export const usePersonalCalendar = () => {
         throw new Error('No se pudo obtener el perfil del usuario');
       }
       
-      // Crear el evento con el profile_id correcto en created_by
+      // Crear el evento
       const { data: event, error: eventError } = await supabase
         .from('personal_events')
         .insert([{
@@ -171,7 +147,7 @@ export const usePersonalCalendar = () => {
           is_all_day: eventData.is_all_day,
           event_type: eventData.event_type,
           user_id: user.id,
-          created_by: currentProfile.id // FIX: Usar profile.id en lugar de user.id
+          created_by: currentProfile.id
         }])
         .select()
         .single();
@@ -180,21 +156,37 @@ export const usePersonalCalendar = () => {
 
       // Crear invitaciones si hay usuarios invitados
       if (eventData.invitedUsers && eventData.invitedUsers.length > 0) {
-        // Ya tenemos currentProfile de arriba, usarlo directamente
-        const invitations = eventData.invitedUsers.map(profileId => ({
-          event_id: event.id,
-          inviter_id: currentProfile.id,
-          invitee_id: profileId,
-          status: 'pending' as const
-        }));
+        const invitations = [];
+        
+        for (const inviteeProfileId of eventData.invitedUsers) {
+          // Obtener el user_id del invitado basado en su profile_id
+          const { data: inviteeProfile } = await supabase
+            .from('profiles')
+            .select('user_id')
+            .eq('id', inviteeProfileId)
+            .single();
 
-        const { error: invitationError } = await supabase
-          .from('event_invitations')
-          .insert(invitations);
+          if (inviteeProfile?.user_id) {
+            invitations.push({
+              event_id: event.id,
+              inviter_id: currentProfile.id,
+              invitee_id: inviteeProfileId,
+              inviter_user_id: user.id,
+              invitee_user_id: inviteeProfile.user_id,
+              status: 'pending' as const
+            });
+          }
+        }
 
-        if (invitationError) {
-          console.error('Error creating invitations:', invitationError);
-          throw new Error('Error al crear las invitaciones');
+        if (invitations.length > 0) {
+          const { error: invitationError } = await supabase
+            .from('event_invitations')
+            .insert(invitations);
+
+          if (invitationError) {
+            console.error('Error creating invitations:', invitationError);
+            throw new Error('Error al crear las invitaciones');
+          }
         }
       }
 
@@ -202,6 +194,7 @@ export const usePersonalCalendar = () => {
       if (eventData.alerts && eventData.alerts.length > 0) {
         const alerts = eventData.alerts.map(alert => ({
           event_id: event.id,
+          user_id: user.id,
           alert_minutes_before: alert.minutes_before,
           alert_type: alert.alert_type,
           sound_type: alert.sound_type,
@@ -241,6 +234,7 @@ export const usePersonalCalendar = () => {
         .from('personal_events')
         .update(eventData)
         .eq('id', id)
+        .eq('user_id', user?.id) // Solo permitir actualizar propios eventos
         .select()
         .single();
 
@@ -262,7 +256,8 @@ export const usePersonalCalendar = () => {
       const { error } = await supabase
         .from('personal_events')
         .delete()
-        .eq('id', eventId);
+        .eq('id', eventId)
+        .eq('user_id', user?.id); // Solo permitir eliminar propios eventos
 
       if (error) throw error;
     },
@@ -275,56 +270,26 @@ export const usePersonalCalendar = () => {
     },
   });
 
-  // Responder a invitación
+  // Responder a invitación usando las nuevas funciones de la BD
   const respondToInvitationMutation = useMutation({
     mutationFn: async ({ 
       invitationId, 
-      status, 
-      message,
-      eventData
+      status
     }: { 
       invitationId: string; 
       status: 'accepted' | 'declined';
-      message?: string;
-      eventData?: any;
     }) => {
-      // Actualizar estado de invitación
-      const { data, error } = await supabase
-        .from('event_invitations')
-        .update({
-          status,
-          response_date: new Date().toISOString(),
-          response_message: message
-        })
-        .eq('id', invitationId)
-        .select(`
-          *,
-          event:personal_events(*)
-        `)
-        .single();
-
-      if (error) throw error;
-
-      // Si se acepta, crear el evento en el calendario del usuario invitado
-      if (status === 'accepted' && data.event && user?.id) {
-        const { error: eventError } = await supabase
-          .from('personal_events')
-          .insert([{
-            title: data.event.title,
-            description: data.event.description,
-            location: data.event.location,
-            start_date: data.event.start_date,
-            end_date: data.event.end_date,
-            is_all_day: data.event.is_all_day,
-            event_type: data.event.event_type,
-            user_id: user.id,
-            created_by: data.event.created_by // Mantener referencia al creador original
-          }]);
-
-        if (eventError) console.error('Error creating accepted event:', eventError);
+      if (status === 'accepted') {
+        const { error } = await supabase.rpc('accept_event_invitation', {
+          invitation_id: invitationId
+        });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.rpc('decline_event_invitation', {
+          invitation_id: invitationId
+        });
+        if (error) throw error;
       }
-
-      return data;
     },
     onSuccess: (_, { status }) => {
       queryClient.invalidateQueries({ queryKey: ['received-invitations'] });
@@ -336,96 +301,7 @@ export const usePersonalCalendar = () => {
     },
   });
 
-  // Direct Supabase queries - simplified and more reliable
-  const getProjectTeamMembers = async (projectId: string): Promise<TeamMember[]> => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('user_id, id, full_name, email, role, position_enum, department_enum')
-        .in('role', ['admin', 'employee'])
-        .limit(50);
-
-      if (error) {
-        console.error('Error fetching project team members:', error);
-        throw error;
-      }
-
-      return (data || []).map((user: any) => ({
-        user_id: user.user_id,
-        profile_id: user.id,
-        full_name: user.full_name,
-        email: user.email,
-        user_role: user.role,
-        user_position: user.position_enum || '',
-        department: user.department_enum || '',
-        user_type: 'employee' as const
-      }));
-    } catch (error) {
-      console.error('Error in getProjectTeamMembers:', error);
-      throw error;
-    }
-  };
-
-  const getUsersByDepartment = async (department: string): Promise<TeamMember[]> => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('user_id, id, full_name, email, role, position_enum, department_enum')
-        .eq('department_enum', department as any)
-        .in('role', ['admin', 'employee'])
-        .limit(50);
-
-      if (error) {
-        console.error('Error fetching users by department:', error);
-        throw error;
-      }
-
-      return (data || []).map((user: any) => ({
-        user_id: user.user_id,
-        profile_id: user.id,
-        full_name: user.full_name,
-        email: user.email,
-        user_role: user.role,
-        user_position: user.position_enum || '',
-        department: user.department_enum || '',
-        user_type: 'employee' as const
-      }));
-    } catch (error) {
-      console.error('Error in getUsersByDepartment:', error);
-      throw error;
-    }
-  };
-
-  const getUsersByPosition = async (position: string): Promise<TeamMember[]> => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('user_id, id, full_name, email, role, position_enum, department_enum')
-        .eq('position_enum', position as any)
-        .in('role', ['admin', 'employee'])
-        .limit(50);
-
-      if (error) {
-        console.error('Error fetching users by position:', error);
-        throw error;
-      }
-
-      return (data || []).map((user: any) => ({
-        user_id: user.user_id,
-        profile_id: user.id,
-        full_name: user.full_name,
-        email: user.email,
-        user_role: user.role,
-        user_position: user.position_enum || '',
-        department: user.department_enum || '',
-        user_type: 'employee' as const
-      }));
-    } catch (error) {
-      console.error('Error in getUsersByPosition:', error);
-      throw error;
-    }
-  };
-
+  // Búsqueda de usuarios mejorada
   const searchUsersForInvitation = async (searchText: string = '', limit: number = 20): Promise<TeamMember[]> => {
     try {
       console.log('🔍 Searching users with direct queries:', searchText);
@@ -436,19 +312,19 @@ export const usePersonalCalendar = () => {
         .select('user_id, id, full_name, email, role, position_enum, department_enum')
         .in('role', ['admin', 'employee'])
         .or(`full_name.ilike.%${searchText}%,email.ilike.%${searchText}%`)
-        .limit(Math.floor(limit * 0.7)); // Reserve 70% for employees
+        .limit(Math.floor(limit * 0.7));
 
       if (employeesError) {
         console.error('❌ Error fetching employees:', employeesError);
         throw employeesError;
       }
 
-      // Search clients
+      // Search clients with profile_id lookup
       const { data: clients, error: clientsError } = await supabase
         .from('clients')
-        .select('id, profile_id, full_name, email')
+        .select('id, profile_id, full_name, email, profiles!profile_id(user_id)')
         .or(`full_name.ilike.%${searchText}%,email.ilike.%${searchText}%`)
-        .limit(Math.floor(limit * 0.3)); // Reserve 30% for clients
+        .limit(Math.floor(limit * 0.3));
 
       if (clientsError) {
         console.warn('⚠️ Error fetching clients (continuing with employees only):', clientsError);
@@ -468,7 +344,7 @@ export const usePersonalCalendar = () => {
 
       // Transform client results
       const clientResults = (clients || []).map((client: any) => ({
-        user_id: null, // Clients might not have user_id
+        user_id: client.profiles?.user_id || null,
         profile_id: client.profile_id,
         full_name: client.full_name,
         email: client.email || '',
@@ -488,6 +364,65 @@ export const usePersonalCalendar = () => {
     }
   };
 
+  // Simplified team member functions
+  const getProjectTeamMembers = async (projectId: string): Promise<TeamMember[]> => {
+    return searchUsersForInvitation('', 50);
+  };
+
+  const getUsersByDepartment = async (department: string): Promise<TeamMember[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('user_id, id, full_name, email, role, position_enum, department_enum')
+        .eq('department_enum', department as any)
+        .in('role', ['admin', 'employee'])
+        .limit(50);
+
+      if (error) throw error;
+
+      return (data || []).map((user: any) => ({
+        user_id: user.user_id,
+        profile_id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        user_role: user.role,
+        user_position: user.position_enum || '',
+        department: user.department_enum || '',
+        user_type: 'employee' as const
+      }));
+    } catch (error) {
+      console.error('Error in getUsersByDepartment:', error);
+      return [];
+    }
+  };
+
+  const getUsersByPosition = async (position: string): Promise<TeamMember[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('user_id, id, full_name, email, role, position_enum, department_enum')
+        .eq('position_enum', position as any)
+        .in('role', ['admin', 'employee'])
+        .limit(50);
+
+      if (error) throw error;
+
+      return (data || []).map((user: any) => ({
+        user_id: user.user_id,
+        profile_id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        user_role: user.role,
+        user_position: user.position_enum || '',
+        department: user.department_enum || '',
+        user_type: 'employee' as const
+      }));
+    } catch (error) {
+      console.error('Error in getUsersByPosition:', error);
+      return [];
+    }
+  };
+
   return {
     events,
     receivedInvitations,
@@ -504,5 +439,6 @@ export const usePersonalCalendar = () => {
     isCreating: createEventMutation.isPending,
     isUpdating: updateEventMutation.isPending,
     isDeleting: deleteEventMutation.isPending,
+    isResponding: respondToInvitationMutation.isPending,
   };
 };

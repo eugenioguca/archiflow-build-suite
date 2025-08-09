@@ -140,24 +140,19 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
                 </div>
               )}
 
-              {/* Invitations */}
-              {event.invitations && event.invitations.length > 0 && (
-                <div className="flex items-start space-x-3">
-                  <div className="p-2 bg-accent/10 rounded-lg mt-0.5">
-                    <Users className="h-4 w-4 text-accent" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm text-muted-foreground">Invitados</p>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {event.invitations.map((invitation, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          Invitado {index + 1}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
+              {/* Event Type */}
+              <div className="flex items-start space-x-3">
+                <div className="p-2 bg-accent/10 rounded-lg mt-0.5">
+                  <Users className="h-4 w-4 text-accent" />
                 </div>
-              )}
+                <div>
+                  <p className="font-medium text-sm text-muted-foreground">Tipo de evento</p>
+                  <Badge variant="outline" className="text-xs mt-1">
+                    {event.event_type === 'meeting' ? 'Reunión' : 
+                     event.event_type === 'reminder' ? 'Recordatorio' : 'Evento'}
+                  </Badge>
+                </div>
+              </div>
             </div>
           </ScrollArea>
 

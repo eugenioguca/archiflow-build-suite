@@ -1,6 +1,6 @@
 import React from 'react';
 import { format } from 'date-fns';
-import { Clock, MapPin, Users } from 'lucide-react';
+import { Clock, MapPin, Calendar } from 'lucide-react';
 import { PersonalEvent } from '@/hooks/usePersonalCalendar';
 import { cn } from '@/lib/utils';
 
@@ -30,27 +30,13 @@ export const EventCard: React.FC<EventCardProps> = ({
     return format(new Date(dateString), 'HH:mm');
   };
 
-  const getInviteeNames = (event: PersonalEvent) => {
-    if (!event.invitations || event.invitations.length === 0) return null;
-    
-    const acceptedInvitations = event.invitations.filter(inv => inv.status === 'accepted');
-    const pendingInvitations = event.invitations.filter(inv => inv.status === 'pending');
-    
-    // Show accepted first, then pending
-    const allInvitations = [...acceptedInvitations, ...pendingInvitations];
-    const names = allInvitations
-      .filter(inv => inv.invitee?.full_name)
-      .map(inv => inv.invitee!.full_name)
-      .slice(0, 3); // Show max 3 names
-    
-    if (names.length === 0) return null;
-    
-    let displayText = names.join(', ');
-    if (allInvitations.length > 3) {
-      displayText += ` +${allInvitations.length - 3}`;
+  const getEventTypeLabel = (type: string) => {
+    switch (type) {
+      case 'meeting': return 'Reunión';
+      case 'reminder': return 'Recordatorio';
+      case 'event': return 'Evento';
+      default: return 'Evento';
     }
-    
-    return displayText;
   };
 
   const handleClick = () => {
@@ -99,14 +85,10 @@ export const EventCard: React.FC<EventCardProps> = ({
           </div>
         )}
         
-        {getInviteeNames(event) && (
-          <div className="flex items-center mt-1 text-xs text-muted-foreground">
-            <Users className="h-3 w-3 mr-1 flex-shrink-0" />
-            <span className="truncate" title={getInviteeNames(event) || ''}>
-              {getInviteeNames(event)}
-            </span>
-          </div>
-        )}
+        <div className="flex items-center mt-1 text-xs text-muted-foreground">
+          <Calendar className="h-3 w-3 mr-1" />
+          <span>{getEventTypeLabel(event.event_type)}</span>
+        </div>
       </div>
     );
   }
@@ -145,21 +127,10 @@ export const EventCard: React.FC<EventCardProps> = ({
         </p>
       )}
 
-      {getInviteeNames(event) && (
-        <div className="flex items-center text-sm text-muted-foreground mb-2">
-          <Users className="h-4 w-4 mr-1 flex-shrink-0" />
-          <span className="truncate" title={getInviteeNames(event) || ''}>
-            Con: {getInviteeNames(event)}
-          </span>
-        </div>
-      )}
-
-      {event.invitations && event.invitations.length > 0 && !getInviteeNames(event) && (
-        <div className="flex items-center mt-2 text-xs text-muted-foreground">
-          <Users className="h-3 w-3 mr-1" />
-          <span>{event.invitations.length} invitado{event.invitations.length !== 1 ? 's' : ''}</span>
-        </div>
-      )}
+      <div className="flex items-center text-sm text-muted-foreground">
+        <Calendar className="h-3 w-3 mr-1" />
+        <span>{getEventTypeLabel(event.event_type)}</span>
+      </div>
     </div>
   );
 };

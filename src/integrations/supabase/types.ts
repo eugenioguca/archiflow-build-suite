@@ -6250,6 +6250,10 @@ export type Database = {
       }
     }
     Functions: {
+      accept_event_invitation: {
+        Args: { invitation_id: string }
+        Returns: undefined
+      }
       calculate_complement_due_date: {
         Args: { payment_date: string }
         Returns: string
@@ -6260,6 +6264,10 @@ export type Database = {
       }
       create_default_design_phases: {
         Args: { project_id_param: string }
+        Returns: undefined
+      }
+      decline_event_invitation: {
+        Args: { invitation_id: string }
         Returns: undefined
       }
       delete_client_cascade: {

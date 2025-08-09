@@ -29,8 +29,7 @@ export const EventInvitationPanel = ({ isOpen, onOpenChange, invitations }: Even
   const handleResponse = (invitationId: string, status: 'accepted' | 'declined') => {
     respondToInvitation({
       invitationId,
-      status,
-      message: responseMessage.trim() || undefined
+      status
     });
     
     setSelectedInvitation(null);

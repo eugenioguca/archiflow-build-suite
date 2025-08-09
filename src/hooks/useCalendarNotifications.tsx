@@ -51,7 +51,7 @@ export const useCalendarNotifications = () => {
             const notification: CalendarNotification = {
               id: invitationData.id,
               event_id: invitationData.event_id,
-              inviter_name: invitationData.inviter?.full_name || 'Usuario desconocido',
+              inviter_name: (invitationData.inviter as any)?.full_name || 'Usuario desconocido',
               event_title: invitationData.event?.title || 'Evento sin título',
               event_start_date: invitationData.event?.start_date || '',
               created_at: invitationData.created_at

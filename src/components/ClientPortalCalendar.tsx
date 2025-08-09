@@ -1,5 +1,6 @@
 import React from 'react';
 import { PersonalCalendarImproved } from './PersonalCalendarImproved';
+import { ClientPortalEventInvitations } from './ClientPortalEventInvitations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from 'lucide-react';
 
@@ -32,6 +33,9 @@ export const ClientPortalCalendar: React.FC<ClientPortalCalendarProps> = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Event Invitations */}
+      <ClientPortalEventInvitations />
 
       {/* Personal Calendar Component - Always show the real calendar */}
       <PersonalCalendarImproved />
