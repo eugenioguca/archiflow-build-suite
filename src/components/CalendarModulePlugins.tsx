@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { Plus, Calendar, Users, Building2 } from "lucide-react";
+import { Calendar, Users, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { EventFormDialog } from "./EventFormDialog";
-import { EventQuickInvite } from "./EventQuickInvite";
 import { usePersonalCalendar } from "@/hooks/usePersonalCalendar";
 
 interface CalendarModulePluginsProps {
@@ -15,8 +13,6 @@ interface CalendarModulePluginsProps {
 }
 
 export const CalendarModulePlugins = ({ context }: CalendarModulePluginsProps) => {
-  const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
-  const [isQuickInviteOpen, setIsQuickInviteOpen] = useState(false);
   const { createEvent } = usePersonalCalendar();
 
   const handleQuickMeeting = () => {
@@ -76,17 +72,7 @@ export const CalendarModulePlugins = ({ context }: CalendarModulePluginsProps) =
             </h3>
           </div>
           
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsEventDialogOpen(true)}
-              className="w-full justify-start text-xs"
-            >
-              <Plus className="h-3 w-3 mr-1" />
-              Evento
-            </Button>
-            
+          <div className="grid grid-cols-2 gap-2">            
             <Button
               variant="outline"
               size="sm"
@@ -106,39 +92,10 @@ export const CalendarModulePlugins = ({ context }: CalendarModulePluginsProps) =
               <Calendar className="h-3 w-3 mr-1" />
               Recordatorio
             </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsQuickInviteOpen(true)}
-              className="w-full justify-start text-xs"
-            >
-              <Plus className="h-3 w-3 mr-1" />
-              Invitar
-            </Button>
           </div>
         </CardContent>
       </Card>
 
-      <EventFormDialog
-        isOpen={isEventDialogOpen}
-        onOpenChange={setIsEventDialogOpen}
-        event={null}
-        defaultDate={new Date()}
-      />
-
-      {isQuickInviteOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-4 max-w-md w-full mx-4">
-            <EventQuickInvite
-              onUserSelect={(user) => {
-                console.log('User selected:', user);
-                setIsQuickInviteOpen(false);
-              }}
-            />
-          </div>
-        </div>
-      )}
     </>
   );
 };
