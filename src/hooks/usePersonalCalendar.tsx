@@ -336,84 +336,155 @@ export const usePersonalCalendar = () => {
     },
   });
 
-  // Obtener miembros del equipo por proyecto
+  // Direct Supabase queries - simplified and more reliable
   const getProjectTeamMembers = async (projectId: string): Promise<TeamMember[]> => {
-    const { data, error } = await supabase.rpc('get_project_team_members', {
-      project_id_param: projectId
-    });
-    
-    if (error) throw error;
-    return (data || []).map((member: any) => ({
-      ...member,
-      user_type: 'employee' as const
-    }));
-  };
-
-  // Obtener usuarios por departamento
-  const getUsersByDepartment = async (department: string): Promise<TeamMember[]> => {
-    const { data, error } = await supabase.rpc('get_users_by_department', {
-      department_param: department
-    });
-    
-    if (error) throw error;
-    return (data || []).map((member: any) => ({
-      ...member,
-      user_type: 'employee' as const
-    }));
-  };
-
-  // Obtener usuarios por posición
-  const getUsersByPosition = async (position: string): Promise<TeamMember[]> => {
-    const { data, error } = await supabase.rpc('get_users_by_position', {
-      position_param: position
-    });
-    
-    if (error) throw error;
-    return (data || []).map((member: any) => ({
-      ...member,
-      user_type: 'employee' as const
-    }));
-  };
-
-  // Nueva función de búsqueda inteligente que incluye empleados y clientes
-  const searchUsersForInvitation = async (searchText: string = '', limit: number = 20): Promise<TeamMember[]> => {
     try {
-      console.log('Searching users for invitation:', { searchText, limit });
-      
-      const { data, error } = await supabase.rpc('search_users_and_clients_for_invitation', {
-        search_text: searchText,
-        limit_results: limit
-      });
-      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('user_id, id, full_name, email, role, position_enum, department_enum')
+        .in('role', ['admin', 'employee'])
+        .limit(50);
+
       if (error) {
-        console.error('RPC Error searching users:', error);
-        // Try fallback to the original function
-        console.log('Trying fallback search function...');
-        const fallbackResult = await supabase.rpc('search_users_for_invitation', {
-          search_text: searchText,
-          limit_results: limit
-        });
-        
-        if (fallbackResult.error) {
-          console.error('Fallback search also failed:', fallbackResult.error);
-          return []; // Return empty array instead of throwing
-        }
-        
-        console.log('Fallback search successful:', fallbackResult.data?.length || 0);
-        return (fallbackResult.data || []).map((member: any) => ({
-          ...member,
-          user_type: 'employee' as 'employee' | 'client'
-        }));
+        console.error('Error fetching project team members:', error);
+        throw error;
       }
-      
-      console.log('Found users for invitation:', data?.length || 0);
-      return (data || []).map((member: any) => ({
-        ...member,
-        user_type: member.user_role === 'client' ? 'client' as const : 'employee' as const
+
+      return (data || []).map((user: any) => ({
+        user_id: user.user_id,
+        profile_id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        user_role: user.role,
+        user_position: user.position_enum || '',
+        department: user.department_enum || '',
+        user_type: 'employee' as const
       }));
     } catch (error) {
-      console.error('Unexpected error in searchUsersForInvitation:', error);
-      return []; // Return empty array instead of throwing to prevent UI crashes
+      console.error('Error in getProjectTeamMembers:', error);
+      throw error;
+    }
+  };
+
+  const getUsersByDepartment = async (department: string): Promise<TeamMember[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('user_id, id, full_name, email, role, position_enum, department_enum')
+        .eq('department_enum', department as any)
+        .in('role', ['admin', 'employee'])
+        .limit(50);
+
+      if (error) {
+        console.error('Error fetching users by department:', error);
+        throw error;
+      }
+
+      return (data || []).map((user: any) => ({
+        user_id: user.user_id,
+        profile_id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        user_role: user.role,
+        user_position: user.position_enum || '',
+        department: user.department_enum || '',
+        user_type: 'employee' as const
+      }));
+    } catch (error) {
+      console.error('Error in getUsersByDepartment:', error);
+      throw error;
+    }
+  };
+
+  const getUsersByPosition = async (position: string): Promise<TeamMember[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('user_id, id, full_name, email, role, position_enum, department_enum')
+        .eq('position_enum', position as any)
+        .in('role', ['admin', 'employee'])
+        .limit(50);
+
+      if (error) {
+        console.error('Error fetching users by position:', error);
+        throw error;
+      }
+
+      return (data || []).map((user: any) => ({
+        user_id: user.user_id,
+        profile_id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        user_role: user.role,
+        user_position: user.position_enum || '',
+        department: user.department_enum || '',
+        user_type: 'employee' as const
+      }));
+    } catch (error) {
+      console.error('Error in getUsersByPosition:', error);
+      throw error;
+    }
+  };
+
+  const searchUsersForInvitation = async (searchText: string = '', limit: number = 20): Promise<TeamMember[]> => {
+    try {
+      console.log('🔍 Searching users with direct queries:', searchText);
+      
+      // Search employees and admins first
+      const { data: employees, error: employeesError } = await supabase
+        .from('profiles')
+        .select('user_id, id, full_name, email, role, position_enum, department_enum')
+        .in('role', ['admin', 'employee'])
+        .or(`full_name.ilike.%${searchText}%,email.ilike.%${searchText}%`)
+        .limit(Math.floor(limit * 0.7)); // Reserve 70% for employees
+
+      if (employeesError) {
+        console.error('❌ Error fetching employees:', employeesError);
+        throw employeesError;
+      }
+
+      // Search clients
+      const { data: clients, error: clientsError } = await supabase
+        .from('clients')
+        .select('id, profile_id, full_name, email')
+        .or(`full_name.ilike.%${searchText}%,email.ilike.%${searchText}%`)
+        .limit(Math.floor(limit * 0.3)); // Reserve 30% for clients
+
+      if (clientsError) {
+        console.warn('⚠️ Error fetching clients (continuing with employees only):', clientsError);
+      }
+
+      // Transform employee results
+      const employeeResults = (employees || []).map((user: any) => ({
+        user_id: user.user_id,
+        profile_id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        user_role: user.role,
+        user_position: user.position_enum || '',
+        department: user.department_enum || '',
+        user_type: 'employee' as const
+      }));
+
+      // Transform client results
+      const clientResults = (clients || []).map((client: any) => ({
+        user_id: null, // Clients might not have user_id
+        profile_id: client.profile_id,
+        full_name: client.full_name,
+        email: client.email || '',
+        user_role: 'client',
+        user_position: '',
+        department: '',
+        user_type: 'client' as const
+      }));
+
+      const allResults = [...employeeResults, ...clientResults];
+      console.log('✅ Direct search successful, users found:', allResults.length);
+      return allResults;
+      
+    } catch (error) {
+      console.error('❌ Error in searchUsersForInvitation:', error);
+      return []; // Return empty array to prevent UI crashes
     }
   };
 

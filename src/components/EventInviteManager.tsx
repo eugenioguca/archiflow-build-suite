@@ -132,16 +132,16 @@ export const EventInviteManager = ({
         let users: TeamMember[] = [];
 
         if (activeFilter.type === 'search' || debouncedSearch) {
-          console.log('🔍 Using search users function');
+          console.log('🔍 Using direct search for:', debouncedSearch);
           users = await searchUsersForInvitation(debouncedSearch);
         } else if (activeFilter.type === 'project' && activeFilter.value) {
-          console.log('🔍 Using project team members function');
+          console.log('🔍 Getting all team members (simplified)');
           users = await getProjectTeamMembers(activeFilter.value);
         } else if (activeFilter.type === 'department' && activeFilter.value) {
-          console.log('🔍 Using department users function');
+          console.log('🔍 Getting users by department:', activeFilter.value);
           users = await getUsersByDepartment(activeFilter.value);
         } else if (activeFilter.type === 'position' && activeFilter.value) {
-          console.log('🔍 Using position users function');
+          console.log('🔍 Getting users by position:', activeFilter.value);
           users = await getUsersByPosition(activeFilter.value);
         }
 
