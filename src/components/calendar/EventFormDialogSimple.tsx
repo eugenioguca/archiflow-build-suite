@@ -507,7 +507,7 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                       </CollapsibleTrigger>
                       <CollapsibleContent className="data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up overflow-hidden">
                         <div className="pt-2">
-                          <div className="space-y-3 max-h-36 overflow-y-auto rounded-md">
+                          <div className="space-y-3 rounded-md">
                             {/* Selected Users */}
                             {invitedUsers.length > 0 && (
                               <div className="space-y-2">
