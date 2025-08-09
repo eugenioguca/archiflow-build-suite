@@ -377,16 +377,28 @@ export const usePersonalCalendar = () => {
 
   // Nueva función de búsqueda inteligente que incluye empleados y clientes
   const searchUsersForInvitation = async (searchText: string = '', limit: number = 20): Promise<TeamMember[]> => {
-    const { data, error } = await supabase.rpc('search_users_and_clients_for_invitation', {
-      search_text: searchText,
-      limit_results: limit
-    });
-    
-    if (error) throw error;
-    return (data || []).map((member: any) => ({
-      ...member,
-      user_type: member.user_type as 'employee' | 'client'
-    }));
+    try {
+      console.log('Searching users for invitation:', { searchText, limit });
+      
+      const { data, error } = await supabase.rpc('search_users_and_clients_for_invitation', {
+        search_text: searchText,
+        limit_results: limit
+      });
+      
+      if (error) {
+        console.error('RPC Error searching users:', error);
+        throw new Error(`Error al buscar usuarios: ${error.message}`);
+      }
+      
+      console.log('Found users for invitation:', data?.length || 0);
+      return (data || []).map((member: any) => ({
+        ...member,
+        user_type: member.user_type as 'employee' | 'client'
+      }));
+    } catch (error) {
+      console.error('Unexpected error in searchUsersForInvitation:', error);
+      throw error;
+    }
   };
 
   return {

@@ -119,7 +119,7 @@ export const EventInviteManager = ({
   });
 
   // Obtener usuarios filtrados
-  const { data: filteredUsers = [], isLoading } = useQuery({
+  const { data: filteredUsers = [], isLoading, error: usersError } = useQuery({
     queryKey: ['filtered-users', activeFilter.type, activeFilter.value, debouncedSearch],
     queryFn: async () => {
       console.log('🔍 Starting user filter query:', { 
@@ -128,34 +128,43 @@ export const EventInviteManager = ({
         search: debouncedSearch 
       });
       
-      let users: TeamMember[] = [];
+      try {
+        let users: TeamMember[] = [];
 
-      if (activeFilter.type === 'search' || debouncedSearch) {
-        console.log('🔍 Using search users function');
-        users = await searchUsersForInvitation(debouncedSearch);
-      } else if (activeFilter.type === 'project' && activeFilter.value) {
-        console.log('🔍 Using project team members function');
-        users = await getProjectTeamMembers(activeFilter.value);
-      } else if (activeFilter.type === 'department' && activeFilter.value) {
-        console.log('🔍 Using department users function');
-        users = await getUsersByDepartment(activeFilter.value);
-      } else if (activeFilter.type === 'position' && activeFilter.value) {
-        console.log('🔍 Using position users function');
-        users = await getUsersByPosition(activeFilter.value);
+        if (activeFilter.type === 'search' || debouncedSearch) {
+          console.log('🔍 Using search users function');
+          users = await searchUsersForInvitation(debouncedSearch);
+        } else if (activeFilter.type === 'project' && activeFilter.value) {
+          console.log('🔍 Using project team members function');
+          users = await getProjectTeamMembers(activeFilter.value);
+        } else if (activeFilter.type === 'department' && activeFilter.value) {
+          console.log('🔍 Using department users function');
+          users = await getUsersByDepartment(activeFilter.value);
+        } else if (activeFilter.type === 'position' && activeFilter.value) {
+          console.log('🔍 Using position users function');
+          users = await getUsersByPosition(activeFilter.value);
+        }
+
+        console.log('🔍 Fetched users:', users);
+        console.log('🔍 Excluded user IDs:', allExcludedUserIds);
+        
+        // Filtrar usuarios ya seleccionados y usuario actual
+        const filtered = users.filter(user => {
+          const isCurrentUser = user.profile_id === profile?.id;
+          const isExcluded = allExcludedUserIds.includes(user.profile_id);
+          return !isCurrentUser && !isExcluded;
+        });
+        return filtered;
+      } catch (error) {
+        console.error('Error fetching users in EventInviteManager:', error);
+        throw error;
       }
-
-      console.log('🔍 Fetched users:', users);
-      console.log('🔍 Excluded user IDs:', allExcludedUserIds);
-      
-      // Filtrar usuarios ya seleccionados y usuario actual
-      const filtered = users.filter(user => {
-        const isCurrentUser = user.profile_id === profile?.id;
-        const isExcluded = allExcludedUserIds.includes(user.profile_id);
-        return !isCurrentUser && !isExcluded;
-      });
-      return filtered;
     },
     enabled: !!(activeFilter.type && activeFilter.value) || !!debouncedSearch,
+    retry: (failureCount, error) => {
+      console.error(`Query failed (attempt ${failureCount + 1}):`, error);
+      return failureCount < 2; // Retry up to 2 times
+    }
   });
 
   // Preparar opciones para comboboxes
@@ -350,25 +359,33 @@ export const EventInviteManager = ({
           </div>
         )}
 
-        {/* Estados vacíos */}
-        {isLoading && (
+        {/* Estados vacíos y errores */}
+        {usersError ? (
+          <div className="text-center py-4 text-destructive">
+            <p className="text-sm">Error al cargar usuarios: {usersError.message}</p>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => window.location.reload()} 
+              className="mt-2"
+            >
+              Recargar página
+            </Button>
+          </div>
+        ) : isLoading ? (
           <div className="text-center py-4 text-muted-foreground text-sm">
             Buscando personas...
           </div>
-        )}
-
-        {activeFilter.type && !isLoading && filteredUsers.length === 0 && (
+        ) : activeFilter.type && filteredUsers.length === 0 ? (
           <div className="text-center py-4 text-muted-foreground text-sm">
             No se encontraron personas con {activeFilter.type === 'search' ? 'la búsqueda' : 'el filtro'} seleccionado
           </div>
-        )}
-
-        {!activeFilter.type && !searchTerm && (
+        ) : !activeFilter.type && !searchTerm ? (
           <div className="text-center py-4 text-muted-foreground text-sm">
             Usa los filtros o busca personas para invitar al evento<br/>
             <span className="text-xs">💡 Puedes invitar tanto empleados como clientes</span>
           </div>
-        )}
+        ) : null}
       </CardContent>
     </Card>
   );
