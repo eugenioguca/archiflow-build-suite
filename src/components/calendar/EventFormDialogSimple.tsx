@@ -270,7 +270,7 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
           </div>
 
           {/* Form Content - Scrollable Body */}
-          <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="flex-1 overflow-y-auto min-h-0 bg-muted/30">
             <div className={`p-4 space-y-4 ${isMobile ? 'pb-6' : 'pb-8'}`}>
               <Form {...form}>
                 <form className="space-y-6">
@@ -303,7 +303,7 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                         <FormControl>
                           <Input 
                             placeholder="Título del evento" 
-                            className="text-lg font-medium border-0 border-b-2 border-muted/20 rounded-none px-0 py-3 focus-visible:ring-0 focus-visible:border-primary bg-transparent"
+                            className="text-lg font-medium border border-border rounded-md px-3 py-3 bg-background focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary"
                             {...field} 
                           />
                         </FormControl>
@@ -323,7 +323,7 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                           <FormControl>
                             <Input 
                               placeholder="Agregar ubicación" 
-                              className="border-0 border-b border-muted/10 rounded-none px-0 py-2 focus-visible:ring-0 focus-visible:border-primary bg-transparent"
+                              className="border border-border rounded-md px-3 py-2 bg-background focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary"
                               {...field} 
                             />
                           </FormControl>
@@ -480,7 +480,7 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                                 <FormControl>
                                   <Textarea 
                                     placeholder="Descripción del evento..." 
-                                    className="min-h-[60px] max-h-28 resize-none"
+                                    className="min-h-[60px] max-h-28 resize-none border border-border rounded-md px-3 py-2 bg-background focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary"
                                     {...field} 
                                   />
                                 </FormControl>
