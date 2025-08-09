@@ -306,7 +306,7 @@ export const EventInviteManager = ({
               {filteredUsers.length} persona{filteredUsers.length !== 1 ? 's' : ''} encontrada{filteredUsers.length !== 1 ? 's' : ''}:
             </div>
             
-            <div className="space-y-2 max-h-64 overflow-y-auto">
+            <div className="space-y-2">
                 {filteredUsers.map((user) => (
                   <div
                     key={user.profile_id}
