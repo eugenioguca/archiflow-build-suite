@@ -212,40 +212,59 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
   }, [watchedStartDate, watchedStartTime, isAllDay, form, event]);
 
   const onSubmit = async (data: EventFormData) => {
-    const startDateTime = isAllDay 
-      ? data.start_date
-      : new Date(`${format(data.start_date, 'yyyy-MM-dd')}T${data.start_time}`);
-    
-    const endDateTime = isAllDay
-      ? data.end_date
-      : new Date(`${format(data.end_date, 'yyyy-MM-dd')}T${data.end_time}`);
+    try {
+      // Validate end time is after start time
+      const startDateTime = isAllDay 
+        ? data.start_date
+        : new Date(`${format(data.start_date, 'yyyy-MM-dd')}T${data.start_time}`);
+      
+      const endDateTime = isAllDay
+        ? data.end_date
+        : new Date(`${format(data.end_date, 'yyyy-MM-dd')}T${data.end_time}`);
 
-    const basicEventData = {
-      title: data.title,
-      description: data.description,
-      location: data.location,
-      start_date: startDateTime.toISOString(),
-      end_date: endDateTime.toISOString(),
-      is_all_day: data.is_all_day,
-      event_type: data.event_type,
-    };
+      if (endDateTime <= startDateTime) {
+        toast({
+          title: "Error en fechas",
+          description: "La fecha de fin debe ser posterior a la fecha de inicio",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    if (event) {
-      updateEvent({ id: event.id, ...basicEventData });
-    } else {
-      // For creation, pass the basic event data with the extra properties
-      createEvent({
-        ...basicEventData,
-        invitedUsers: invitedUsers.map(u => u.profile_id),
-        alerts: alerts
-      } as any); // Type assertion to bypass the strict typing
+      const basicEventData = {
+        title: data.title,
+        description: data.description,
+        location: data.location,
+        start_date: startDateTime.toISOString(),
+        end_date: endDateTime.toISOString(),
+        is_all_day: data.is_all_day,
+        event_type: data.event_type,
+      };
+
+      if (event) {
+        updateEvent({ id: event.id, ...basicEventData });
+      } else {
+        // For creation, pass the basic event data with the extra properties
+        createEvent({
+          ...basicEventData,
+          invitedUsers: invitedUsers.map(u => u.profile_id),
+          alerts: alerts
+        } as any); // Type assertion to bypass the strict typing
+      }
+
+      if (invitedUsers.length > 0) {
+        console.log('Usuarios invitados:', invitedUsers.map(u => ({ name: u.full_name, id: u.profile_id })));
+      }
+
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error submitting event:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo guardar el evento. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
     }
-
-    if (invitedUsers.length > 0) {
-      console.log('Usuarios a invitar:', invitedUsers);
-    }
-
-    onOpenChange(false);
   };
 
   const handleDelete = () => {
@@ -288,7 +307,11 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
           <div className="flex items-center justify-between p-4 border-b flex-shrink-0 bg-background">
             <Button
               variant="ghost"
-              onClick={() => onOpenChange(false)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onOpenChange(false);
+              }}
               className="text-muted-foreground hover:text-foreground px-4"
             >
               Cancelar
@@ -297,12 +320,23 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
               {event ? "Editar evento" : "Nuevo evento"}
             </h2>
             <Button
-              onClick={form.handleSubmit(onSubmit)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                form.handleSubmit(onSubmit)(e);
+              }}
               disabled={isCreating || isUpdating || isDeleting}
               size="sm"
               className="px-6"
             >
-              {event ? "Guardar" : "Crear"}
+              {(isCreating || isUpdating) ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  {event ? "Guardando..." : "Creando..."}
+                </>
+              ) : (
+                event ? "Guardar" : "Crear"
+              )}
             </Button>
           </div>
 
@@ -322,7 +356,11 @@ export const EventFormDialogSimple = ({ isOpen, onOpenChange, event, defaultDate
                           type="button"
                           variant={eventType === type ? "default" : "outline"}
                           size="sm"
-                          onClick={() => form.setValue('event_type', type)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            form.setValue('event_type', type);
+                          }}
                           className="text-xs"
                         >
                           {getEventTypeDisplay(type)}

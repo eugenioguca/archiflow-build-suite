@@ -148,7 +148,18 @@ export const usePersonalCalendar = () => {
     }) => {
       if (!user?.id) throw new Error('Usuario no autenticado');
       
-      // Crear el evento
+      // CRÍTICO: Obtener el profile.id del usuario autenticado para created_by
+      const { data: currentProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError || !currentProfile) {
+        throw new Error('No se pudo obtener el perfil del usuario');
+      }
+      
+      // Crear el evento con el profile_id correcto en created_by
       const { data: event, error: eventError } = await supabase
         .from('personal_events')
         .insert([{
@@ -160,7 +171,7 @@ export const usePersonalCalendar = () => {
           is_all_day: eventData.is_all_day,
           event_type: eventData.event_type,
           user_id: user.id,
-          created_by: user.id
+          created_by: currentProfile.id // FIX: Usar profile.id en lugar de user.id
         }])
         .select()
         .single();
@@ -169,25 +180,21 @@ export const usePersonalCalendar = () => {
 
       // Crear invitaciones si hay usuarios invitados
       if (eventData.invitedUsers && eventData.invitedUsers.length > 0) {
-        const { data: currentProfile } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', user.id)
-          .single();
+        // Ya tenemos currentProfile de arriba, usarlo directamente
+        const invitations = eventData.invitedUsers.map(profileId => ({
+          event_id: event.id,
+          inviter_id: currentProfile.id,
+          invitee_id: profileId,
+          status: 'pending' as const
+        }));
 
-        if (currentProfile) {
-          const invitations = eventData.invitedUsers.map(profileId => ({
-            event_id: event.id,
-            inviter_id: currentProfile.id,
-            invitee_id: profileId,
-            status: 'pending' as const
-          }));
+        const { error: invitationError } = await supabase
+          .from('event_invitations')
+          .insert(invitations);
 
-          const { error: invitationError } = await supabase
-            .from('event_invitations')
-            .insert(invitations);
-
-          if (invitationError) console.error('Error creating invitations:', invitationError);
+        if (invitationError) {
+          console.error('Error creating invitations:', invitationError);
+          throw new Error('Error al crear las invitaciones');
         }
       }
 
@@ -218,9 +225,10 @@ export const usePersonalCalendar = () => {
       });
     },
     onError: (error) => {
+      console.error('Error creating event:', error);
       toast({
-        title: "Error",
-        description: "No se pudo crear el evento.",
+        title: "Error al crear evento",
+        description: error instanceof Error ? error.message : "No se pudo crear el evento.",
         variant: "destructive",
       });
     },
