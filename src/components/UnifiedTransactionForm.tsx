@@ -327,7 +327,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {sucursales.map((item) => (
+                        {sucursales.filter(item => item.id && item.id.trim() !== '').map((item) => (
                           <SelectItem key={item.id} value={item.id}>
                             {item.nombre}
                           </SelectItem>
@@ -353,7 +353,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {proyectos.map((item) => (
+                        {proyectos.filter(item => item.id && item.id.trim() !== '').map((item) => (
                           <SelectItem key={item.id} value={item.id}>
                             {item.nombre}
                           </SelectItem>
@@ -451,7 +451,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {mayores.map((item) => (
+                        {mayores.filter(item => item.id && item.id.trim() !== '').map((item) => (
                           <SelectItem key={item.id} value={item.id}>
                             {item.nombre}
                           </SelectItem>
@@ -481,7 +481,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {partidas.map((item) => (
+                        {partidas.filter(item => item.id && item.id.trim() !== '').map((item) => (
                           <SelectItem key={item.id} value={item.id}>
                             {item.nombre}
                           </SelectItem>
@@ -511,7 +511,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {subpartidas.map((item) => (
+                        {subpartidas.filter(item => item.id && item.id.trim() !== '').map((item) => (
                           <SelectItem key={item.id} value={item.id}>
                             {item.nombre}
                           </SelectItem>
@@ -537,7 +537,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {clientesProveedores.map((item) => (
+                        {clientesProveedores.filter(item => item.id && item.id.trim() !== '').map((item) => (
                           <SelectItem key={item.id} value={item.id}>
                             {item.nombre}
                           </SelectItem>
