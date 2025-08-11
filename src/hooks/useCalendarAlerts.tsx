@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -19,86 +19,25 @@ export function useCalendarAlerts() {
   const [activeAlert, setActiveAlert] = useState<UpcomingAlert | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+  const checkAlertsRef = useRef<(() => Promise<void>) | null>(null);
 
   const playAlertSound = useCallback((soundType: string) => {
-    console.log("🎵 Attempting to play sound:", soundType);
     const audio = new Audio(`/sounds/${soundType}-alert.mp3`);
-    audio.play()
-      .then(() => console.log("✅ Sound played successfully"))
-      .catch((error) => {
-        console.error("❌ Error playing sound:", error);
-        // Fallback to system sound if available
-        if ('Notification' in window) {
-          new Notification('Recordatorio de Calendario', {
-            body: 'Tienes un evento próximo',
-            icon: '/favicon.ico'
-          });
-        }
-      });
+    audio.play().catch(() => {
+      // Fallback to system notification if available
+      if ('Notification' in window) {
+        new Notification('Recordatorio de Calendario', {
+          body: 'Tienes un evento próximo',
+          icon: '/favicon.ico'
+        });
+      }
+    });
   }, []);
 
-  const checkUpcomingAlerts = useCallback(async () => {
-    if (!user) {
-      console.log("❌ No user found for alerts");
-      return;
-    }
-
-    console.log("🔔 Checking upcoming alerts for user:", user.id);
-
-    try {
-      const { data, error } = await supabase
-        .rpc("get_upcoming_alerts", { user_uuid: user.id });
-
-      if (error) {
-        console.error("❌ Error calling get_upcoming_alerts:", error);
-        throw error;
-      }
-
-      console.log("📊 Alerts data received:", data);
-
-      if (data && data.length > 0) {
-        setUpcomingAlerts(data as UpcomingAlert[]);
-        
-        // Process alerts that should trigger now
-        const now = new Date();
-        console.log("⏰ Current time:", now.toISOString());
-        
-        const triggeredAlerts = data.filter((alert: UpcomingAlert) => {
-          const eventTime = new Date(alert.event_start_date);
-          const timeDiff = eventTime.getTime() - now.getTime();
-          
-          console.log(`🎯 Alert "${alert.event_title}":`, {
-            eventTime: eventTime.toISOString(),
-            alertType: alert.alert_type,
-            alertValue: alert.alert_value,
-            timeDiff: Math.round(timeDiff / 1000 / 60), // minutes
-            shouldTrigger: timeDiff <= 60000 // within 1 minute
-          });
-          
-          // Trigger alert if event is within 1 minute
-          return timeDiff <= 60000 && timeDiff > -300000; // within 1 minute but not more than 5 minutes past
-        });
-
-        console.log("🚨 Alerts to trigger now:", triggeredAlerts.length);
-
-        for (const alert of triggeredAlerts) {
-          console.log("🔔 Triggering alert:", alert.event_title);
-          showAlert(alert as UpcomingAlert);
-        }
-      } else {
-        console.log("📭 No upcoming alerts found");
-      }
-    } catch (error) {
-      console.error("❌ Error checking alerts:", error);
-    }
-  }, [user]);
-
   const showAlert = useCallback((alert: UpcomingAlert) => {
-    console.log("🚨 Showing alert:", alert.event_title);
     setActiveAlert(alert);
     
     if (alert.sound_enabled) {
-      console.log("🔊 Playing sound:", alert.sound_type);
       playAlertSound(alert.sound_type);
     }
 
@@ -114,6 +53,38 @@ export function useCalendarAlerts() {
     // Mark alert as triggered
     markAlertAsTriggered(alert.alert_id);
   }, [playAlertSound, toast]);
+
+  // Create a stable ref for the check function
+  checkAlertsRef.current = useCallback(async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data, error } = await supabase
+        .rpc("get_upcoming_alerts", { user_uuid: user.id });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setUpcomingAlerts(data as UpcomingAlert[]);
+        
+        // Process alerts that should trigger now
+        const now = new Date();
+        const triggeredAlerts = data.filter((alert: UpcomingAlert) => {
+          const eventTime = new Date(alert.event_start_date);
+          const timeDiff = eventTime.getTime() - now.getTime();
+          
+          // Trigger alert if event is within 1 minute
+          return timeDiff <= 60000 && timeDiff > -300000;
+        });
+
+        for (const alert of triggeredAlerts) {
+          showAlert(alert as UpcomingAlert);
+        }
+      }
+    } catch (error) {
+      console.error("Error checking alerts:", error);
+    }
+  }, [user?.id, showAlert]);
 
   const markAlertAsTriggered = async (alertId: string) => {
     try {
@@ -131,25 +102,29 @@ export function useCalendarAlerts() {
   };
 
   useEffect(() => {
-    if (!user) {
-      console.log("❌ No user, skipping alert setup");
-      return;
-    }
+    if (!user?.id) return;
 
-    console.log("🚀 Setting up calendar alerts for user:", user.id);
+    let interval: NodeJS.Timeout | null = null;
 
-    // Check alerts immediately
-    checkUpcomingAlerts();
+    // Use ref to access current function without dependencies
+    const checkAlerts = () => {
+      if (checkAlertsRef.current) {
+        checkAlertsRef.current();
+      }
+    };
 
-    // Set up interval to check every 30 seconds for better responsiveness
-    console.log("⏱️ Setting up 30-second alert check interval");
-    const interval = setInterval(checkUpcomingAlerts, 30000);
+    // Start checking alerts immediately
+    checkAlerts();
+
+    // Set up interval
+    interval = setInterval(checkAlerts, 30000);
 
     return () => {
-      console.log("🛑 Cleaning up alert interval");
-      clearInterval(interval);
+      if (interval) {
+        clearInterval(interval);
+      }
     };
-  }, [user, checkUpcomingAlerts]);
+  }, [user?.id]); // Only depend on user.id
 
   return {
     upcomingAlerts,
