@@ -177,19 +177,23 @@ export function QuickEventCreator({
       const startDate = new Date(newStartDate);
       const endDate = new Date(startDate);
       
-      // If all-day is enabled, just change the date part and keep it as all-day
+      // If all-day is enabled, keep the same date
       if (prevData.all_day) {
-        endDate.setDate(endDate.getDate());
+        // For all-day events, end date should be the same day
+        return {
+          ...prevData,
+          start_date: newStartDate,
+          end_date: format(startDate, "yyyy-MM-dd'T'HH:mm")
+        };
       } else {
         // Add 1 hour for regular events
         endDate.setHours(endDate.getHours() + 1);
+        return {
+          ...prevData,
+          start_date: newStartDate,
+          end_date: format(endDate, "yyyy-MM-dd'T'HH:mm")
+        };
       }
-      
-      return {
-        ...prevData,
-        start_date: newStartDate,
-        end_date: format(endDate, "yyyy-MM-dd'T'HH:mm")
-      };
     });
   };
 

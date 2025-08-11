@@ -83,7 +83,10 @@ export const ClientProjectCalendar: React.FC<ClientProjectCalendarProps> = ({
   };
 
   const getPrePopulatedEventData = () => {
-    const now = selectedDate || new Date();
+    // Only return pre-populated data if a specific date was clicked
+    if (!selectedDate) return undefined;
+
+    const now = selectedDate;
     const oneHourLater = new Date(now);
     oneHourLater.setHours(oneHourLater.getHours() + 1);
 
