@@ -76,6 +76,10 @@ export const ClientDocumentUploader: React.FC<ClientDocumentUploaderProps> = ({
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     
+    if (files.length === 0) return;
+    
+    console.log('Files selected:', files.length);
+    
     const newFiles: FileUpload[] = files.map(file => ({
       file,
       id: generateFileId(),
@@ -86,6 +90,9 @@ export const ClientDocumentUploader: React.FC<ClientDocumentUploaderProps> = ({
     }));
 
     setSelectedFiles(prev => [...prev, ...newFiles]);
+    
+    // Reset input to allow selecting the same files again
+    event.target.value = '';
   };
 
   const removeFile = (fileId: string) => {
@@ -148,8 +155,26 @@ export const ClientDocumentUploader: React.FC<ClientDocumentUploaderProps> = ({
       return true;
 
     } catch (error) {
-      console.error('Error uploading file:', error);
-      updateFile(fileUpload.id, { status: 'error' });
+      console.error('Upload error:', error);
+      updateFile(fileUpload.id, { status: 'error', progress: 0 });
+      
+      let errorMessage = 'Error al subir el archivo';
+      if (error instanceof Error) {
+        if (error.message.includes('bucket')) {
+          errorMessage = 'Error de permisos. No tienes acceso para subir archivos.';
+        } else if (error.message.includes('size')) {
+          errorMessage = 'El archivo es demasiado grande.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast({
+        title: "Error de carga",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      
       return false;
     }
   };
@@ -202,18 +227,26 @@ export const ClientDocumentUploader: React.FC<ClientDocumentUploaderProps> = ({
       <CardContent className="space-y-6">
         {/* File Selection */}
         <div>
-          <Label htmlFor="file-upload" className="cursor-pointer">
-            <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover:border-muted-foreground/50 transition-colors">
-              <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-lg font-medium mb-2">Selecciona documentos para subir</p>
-              <p className="text-sm text-muted-foreground">
-                Arrastra archivos aquí o haz clic para seleccionar
-              </p>
-              <Button variant="outline" className="mt-4">
-                Seleccionar Archivos
-              </Button>
-            </div>
-          </Label>
+          <div 
+            className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover:border-muted-foreground/50 transition-colors cursor-pointer"
+            onClick={() => document.getElementById('file-upload')?.click()}
+          >
+            <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <p className="text-lg font-medium mb-2">Selecciona documentos para subir</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Arrastra archivos aquí o haz clic para seleccionar
+            </p>
+            <Button 
+              variant="outline" 
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                document.getElementById('file-upload')?.click();
+              }}
+            >
+              Seleccionar Archivos
+            </Button>
+          </div>
           <Input
             id="file-upload"
             type="file"
