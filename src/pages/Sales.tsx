@@ -20,6 +20,7 @@ import { ModuleNotifications } from "@/components/ModuleNotifications";
 import { SalesChatProjectSelector } from "@/components/SalesChatProjectSelector";
 import { SalesProjectFileManager } from "@/components/SalesProjectFileManager";
 import { PaymentPlanManager } from "@/components/PaymentPlanManager";
+import { CRMClientCalendar } from "@/components/CRMClientCalendar";
 import {
   Users, 
   TrendingUp, 
@@ -723,7 +724,7 @@ export default function Sales() {
           
           {selectedProject && (
             <Tabs defaultValue="crm" className="w-full flex flex-col flex-1 overflow-hidden">
-              <TabsList className="grid grid-cols-6 w-full flex-shrink-0 mx-6">
+              <TabsList className="grid grid-cols-7 w-full flex-shrink-0 mx-6">
                 <TabsTrigger value="crm">CRM & Información</TabsTrigger>
                 <TabsTrigger 
                   value="required-docs"
@@ -747,6 +748,7 @@ export default function Sales() {
                   Planes de Pago
                 </TabsTrigger>
                 <TabsTrigger value="projects">Gestión de Proyectos</TabsTrigger>
+                <TabsTrigger value="calendar">Calendario Cliente</TabsTrigger>
                 <TabsTrigger value="chat">Chat Cliente</TabsTrigger>
               </TabsList>
 
@@ -910,6 +912,14 @@ export default function Sales() {
                   onProjectSelected={(projectId) => {
                     
                   }}
+                />
+              </TabsContent>
+
+              <TabsContent value="calendar" className="px-6 pb-6 overflow-y-auto flex-1">
+                <CRMClientCalendar
+                  clientId={selectedProject.client_id}
+                  projectId={selectedProject.id}
+                  projectName={selectedProject.project_name}
                 />
               </TabsContent>
 
