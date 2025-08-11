@@ -880,6 +880,76 @@ export type Database = {
           },
         ]
       }
+      client_project_calendar_events: {
+        Row: {
+          all_day: boolean
+          client_project_id: string
+          color: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          end_date: string
+          event_type: string
+          id: string
+          location: string | null
+          start_date: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          all_day?: boolean
+          client_project_id: string
+          color?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          end_date: string
+          event_type?: string
+          id?: string
+          location?: string | null
+          start_date: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          all_day?: boolean
+          client_project_id?: string
+          color?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          end_date?: string
+          event_type?: string
+          id?: string
+          location?: string | null
+          start_date?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_project_calendar_events_client_project_id_fkey"
+            columns: ["client_project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_project_calendar_events_client_project_id_fkey"
+            columns: ["client_project_id"]
+            isOneToOne: false
+            referencedRelation: "financial_summary_by_client_project"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "client_project_calendar_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_projects: {
         Row: {
           actual_completion_date: string | null
