@@ -29,12 +29,26 @@ export function usePersonalCalendar() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  // Debug: Check authentication state
+  const checkAuth = async () => {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    console.log("🔐 Auth Debug - Session:", session?.user?.id);
+    console.log("🔐 Auth Debug - Error:", error);
+    return session?.user?.id;
+  };
+
   const fetchEvents = async () => {
     try {
+      const userId = await checkAuth();
+      console.log("📅 Fetching events for user:", userId);
+      
       const { data: eventsData, error: eventsError } = await supabase
         .from("personal_calendar_events")
         .select("*")
         .order("start_date", { ascending: true });
+
+      console.log("📅 Events fetched:", eventsData?.length || 0, "events");
+      console.log("📅 Fetch error:", eventsError);
 
       if (eventsError) throw eventsError;
 
@@ -69,13 +83,28 @@ export function usePersonalCalendar() {
 
   const createEvent = async (eventData: Partial<CalendarEvent> & { alerts?: Partial<EventAlert>[] }) => {
     try {
+      const userId = await checkAuth();
+      if (!userId) {
+        throw new Error("Usuario no autenticado");
+      }
+
       const { alerts, ...eventFields } = eventData;
+      
+      // Ensure user_id is included in the event data and cast to proper type
+      const eventToCreate = {
+        ...eventFields,
+        user_id: userId
+      } as any;
+
+      console.log("💾 Creating event with data:", eventToCreate);
       
       const { data: newEvent, error: eventError } = await supabase
         .from("personal_calendar_events")
-        .insert([eventFields as any])
+        .insert([eventToCreate])
         .select()
         .single();
+
+      console.log("💾 Event creation result:", { newEvent, eventError });
 
       if (eventError) throw eventError;
 
