@@ -170,7 +170,7 @@ export const ClientProjectCalendar: React.FC<ClientProjectCalendarProps> = ({
       {selectedEvent && (
         <EventDetailsModal
           open={showEventModal}
-          onOpenChange={setShowEventModal}
+          onClose={() => setShowEventModal(false)}
           event={{
             id: selectedEvent.id,
             title: selectedEvent.title,
@@ -189,9 +189,9 @@ export const ClientProjectCalendar: React.FC<ClientProjectCalendarProps> = ({
       {canEdit && (
         <QuickEventCreator
           open={showCreateModal}
-          onOpen={setShowCreateModal}
+          onClose={() => setShowCreateModal(false)}
           prePopulatedData={getPrePopulatedEventData()}
-          onCreateEvent={handleCreateEvent}
+          onSubmit={handleCreateEvent}
         />
       )}
     </div>
