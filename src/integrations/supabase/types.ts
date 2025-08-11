@@ -6676,6 +6676,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: string[]
       }
+      get_user_role: {
+        Args: { user_uuid?: string }
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
       get_users_by_department: {
         Args: { department_param: string }
         Returns: {
