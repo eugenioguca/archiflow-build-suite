@@ -366,149 +366,49 @@ export function QuickEventCreator({
                       <SelectTrigger className="flex-1">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-background border border-border shadow-lg z-50">
                         {calendarType === 'personal' ? (
                           <>
-                            <SelectItem value="soft">
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-5 w-5 p-0"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const audio = new Audio('/sounds/soft-alert.mp3');
-                                    audio.volume = 0.7;
-                                    audio.play().catch(console.error);
-                                  }}
-                                >
-                                  <Play className="h-3 w-3" />
-                                </Button>
-                                Suave
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="professional">
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-5 w-5 p-0"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const audio = new Audio('/sounds/professional-alert.mp3');
-                                    audio.volume = 0.7;
-                                    audio.play().catch(console.error);
-                                  }}
-                                >
-                                  <Play className="h-3 w-3" />
-                                </Button>
-                                Profesional
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="loud">
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-5 w-5 p-0"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const audio = new Audio('/sounds/loud-alert.mp3');
-                                    audio.volume = 0.7;
-                                    audio.play().catch(console.error);
-                                  }}
-                                >
-                                  <Play className="h-3 w-3" />
-                                </Button>
-                                Fuerte
-                              </div>
-                            </SelectItem>
+                            <SelectItem value="soft">Suave</SelectItem>
+                            <SelectItem value="professional">Profesional</SelectItem>
+                            <SelectItem value="loud">Fuerte</SelectItem>
                           </>
                         ) : (
                           <>
-                            <SelectItem value="soft">
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-5 w-5 p-0"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const audio = new Audio('/sounds/soft-alert.mp3');
-                                    audio.volume = 0.7;
-                                    audio.play().catch(console.error);
-                                  }}
-                                >
-                                  <Play className="h-3 w-3" />
-                                </Button>
-                                Suave
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="professional">
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-5 w-5 p-0"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const audio = new Audio('/sounds/professional-alert.mp3');
-                                    audio.volume = 0.7;
-                                    audio.play().catch(console.error);
-                                  }}
-                                >
-                                  <Play className="h-3 w-3" />
-                                </Button>
-                                Profesional
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="loud">
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-5 w-5 p-0"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const audio = new Audio('/sounds/loud-alert.mp3');
-                                    audio.volume = 0.7;
-                                    audio.play().catch(console.error);
-                                  }}
-                                >
-                                  <Play className="h-3 w-3" />
-                                </Button>
-                                Fuerte
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="icq-message">
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-5 w-5 p-0"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const audio = new Audio('/sounds/icq-message.mp3');
-                                    audio.volume = 0.7;
-                                    audio.play().catch(console.error);
-                                  }}
-                                >
-                                  <Play className="h-3 w-3" />
-                                </Button>
-                                ICQ
-                              </div>
-                            </SelectItem>
+                            <SelectItem value="soft">Suave</SelectItem>
+                            <SelectItem value="professional">Profesional</SelectItem>
+                            <SelectItem value="loud">Fuerte</SelectItem>
+                            <SelectItem value="icq-message">ICQ</SelectItem>
                           </>
                         )}
                       </SelectContent>
                     </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => {
+                        const currentSoundType = alert.sound_type || (calendarType === 'personal' ? 'soft' : 'soft');
+                        let soundFile = '';
+                        
+                        if (calendarType === 'personal') {
+                          soundFile = `/sounds/${currentSoundType}-alert.mp3`;
+                        } else {
+                          if (currentSoundType === 'icq-message') {
+                            soundFile = `/sounds/icq-message.mp3`;
+                          } else {
+                            soundFile = `/sounds/${currentSoundType}-alert.mp3`;
+                          }
+                        }
+                        
+                        const audio = new Audio(soundFile);
+                        audio.volume = 0.7;
+                        audio.play().catch(console.error);
+                      }}
+                    >
+                      <Play className="h-3 w-3" />
+                    </Button>
                   </div>
                 )}
               </div>
