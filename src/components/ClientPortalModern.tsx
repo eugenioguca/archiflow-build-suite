@@ -35,11 +35,13 @@ import {
   Construction,
   Calculator,
   Hammer,
-  Palette
+  Palette,
+  LogOut
 } from 'lucide-react';
 import { format, differenceInDays, isAfter, isBefore } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
+import dovitaLogo from '@/assets/dovita-logo.png';
 import { ClientDocumentHub } from './ClientDocumentHub';
 import { downloadDocument } from '@/lib/documentUtils';
 import { ProgressPhotosCarousel } from './ProgressPhotosCarousel';
@@ -82,6 +84,7 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
   const { user } = useAuth();
   const [clientProjects, setClientProjects] = useState<ClientProject[]>([]);
   const [selectedProject, setSelectedProject] = useState<ClientProject | null>(null);
+  const [clientName, setClientName] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('calendar');
   const [paidAmount, setPaidAmount] = useState(0);
@@ -122,11 +125,12 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
 
       const { data: client } = await supabase
         .from('clients')
-        .select('id')
+        .select('id, full_name')
         .eq('profile_id', profile.id)
         .single();
 
       if (!client) return;
+      setClientName(client.full_name);
 
       const { data: projects } = await supabase
         .from('client_projects')
@@ -278,6 +282,16 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
     return timelineData;
   };
 
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      window.location.href = '/auth';
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast.error('Error al cerrar sesión');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background flex items-center justify-center">
@@ -311,22 +325,37 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
-      {/* Mobile Header */}
-      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-lg border-b border-border/50">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center space-x-3">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src="/lovable-uploads/7a3755e3-978f-4182-af7d-1db88590b5a4.png" />
-              <AvatarFallback>DA</AvatarFallback>
-            </Avatar>
-            <div>
-              <h1 className="font-bold text-foreground">Portal Cliente</h1>
-              <p className="text-sm text-muted-foreground">{selectedProject?.project_name}</p>
+      {/* Mobile Header - Style App */}
+      <div className="sticky top-0 z-50 bg-background/98 backdrop-blur-xl border-b border-border/50 shadow-sm">
+        <div className="p-4 space-y-3">
+          {/* Top row - Logout button */}
+          <div className="flex justify-end">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={handleLogout}
+              className="text-muted-foreground hover:text-destructive flex items-center gap-2 px-3 py-1 h-8"
+            >
+              <LogOut className="h-4 w-4" />
+              Cerrar Sesión
+            </Button>
+          </div>
+          
+          {/* Center - Logo and client info */}
+          <div className="flex flex-col items-center space-y-2">
+            <div className="w-24 h-12 flex items-center justify-center">
+              <img 
+                src="/lovable-uploads/8fc0699f-f4d1-4a0f-a989-2f0456de8d2a.png" 
+                alt="Dovita Logo" 
+                className="max-w-full max-h-full object-contain"
+              />
+            </div>
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">
+                Portal para {clientName || 'Cliente'}
+              </p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" className="h-10 w-10">
-            <Bell className="h-5 w-5" />
-          </Button>
         </div>
       </div>
 
