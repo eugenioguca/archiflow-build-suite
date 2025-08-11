@@ -49,7 +49,7 @@ export const ProgressPhotosCarousel: React.FC<ProgressPhotosCarouselProps> = ({
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
   const [selectedPhase, setSelectedPhase] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'carousel' | 'grid'>(isMobile ? 'grid' : 'carousel');
+  const [viewMode, setViewMode] = useState<'carousel' | 'grid'>('grid');
   const [selectedPhoto, setSelectedPhoto] = useState<ProgressPhoto | null>(null);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
 
