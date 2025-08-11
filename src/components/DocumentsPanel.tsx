@@ -134,9 +134,13 @@ export const DocumentsPanel: React.FC<DocumentsPanelProps> = ({
                             <FileIconComponent className="h-5 w-5 text-primary" />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className={`font-medium truncate ${isMobile ? 'text-sm' : ''}`}>{doc.name}</p>
+                            <p className={`font-medium truncate ${isMobile ? 'text-sm' : ''}`}>
+                              {doc.description || doc.name}
+                            </p>
                             {doc.description && (
-                              <p className={`text-sm text-muted-foreground truncate ${isMobile ? 'text-xs' : ''}`}>{doc.description}</p>
+                              <p className={`text-sm text-muted-foreground truncate ${isMobile ? 'text-xs' : ''}`}>
+                                Archivo: {doc.name}
+                              </p>
                             )}
                             <div className={`flex items-center gap-2 text-xs text-muted-foreground mt-1 ${isMobile ? 'flex-wrap' : ''}`}>
                               <div className="flex items-center gap-1">
