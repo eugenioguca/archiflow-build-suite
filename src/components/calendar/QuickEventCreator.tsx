@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { CalendarEvent, EventAlert } from "@/hooks/usePersonalCalendar";
 import { format, addHours } from "date-fns";
 import { Plus, Trash2 } from "lucide-react";
@@ -145,24 +146,25 @@ export function QuickEventCreator({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg w-[95vw] h-[95vh] flex flex-col p-0">
+      <DialogContent className="max-w-lg w-[95vw] h-[90vh] md:h-[85vh] flex flex-col p-0">
         <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
           <DialogTitle>
             {event ? "Editar Evento" : "Nuevo Evento"}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="title">Título *</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                required
-              />
-            </div>
+        <ScrollArea className="flex-1 px-6">
+          <div className="py-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="title">Título *</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  required
+                />
+              </div>
 
           <div>
             <Label htmlFor="description">Descripción</Label>
@@ -312,16 +314,17 @@ export function QuickEventCreator({
             ))}
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit">
-              {event ? "Actualizar" : "Crear"} Evento
-            </Button>
+              <div className="flex justify-end gap-2 pt-4 pb-2">
+                <Button type="button" variant="outline" onClick={onClose}>
+                  Cancelar
+                </Button>
+                <Button type="submit">
+                  {event ? "Actualizar" : "Crear"} Evento
+                </Button>
+              </div>
+            </form>
           </div>
-        </form>
-        </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
