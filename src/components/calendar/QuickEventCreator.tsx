@@ -379,7 +379,7 @@ export function QuickEventCreator({
                             <SelectItem value="soft">Suave</SelectItem>
                             <SelectItem value="professional">Profesional</SelectItem>
                             <SelectItem value="loud">Fuerte</SelectItem>
-                            <SelectItem value="icq-message">ICQ</SelectItem>
+                            <SelectItem value="uh-oh">Uh-Oh</SelectItem>
                           </>
                         )}
                       </SelectContent>
@@ -391,7 +391,7 @@ export function QuickEventCreator({
                       className="h-8 w-8 p-0"
                       onClick={() => {
                         const currentSoundType = alert.sound_type || (calendarType === 'personal' ? 'soft' : 'soft');
-                        generateAlertSound(currentSoundType as 'soft' | 'professional' | 'loud' | 'icq-message')
+                        generateAlertSound(currentSoundType as 'soft' | 'professional' | 'loud' | 'uh-oh')
                           .catch(console.error);
                       }}
                     >

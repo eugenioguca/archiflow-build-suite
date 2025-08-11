@@ -24,7 +24,7 @@ export function useCalendarAlerts() {
 
   const playAlertSound = useCallback((soundType: string) => {
     console.log(`Playing generated sound: ${soundType}`);
-    generateAlertSound(soundType as 'soft' | 'professional' | 'loud' | 'icq-message')
+    generateAlertSound(soundType as 'soft' | 'professional' | 'loud' | 'uh-oh')
       .catch((error) => {
         console.error(`Error playing generated sound ${soundType}:`, error);
         // Fallback to browser notification

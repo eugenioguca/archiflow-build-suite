@@ -1,5 +1,5 @@
 // Audio generator for unique alert sounds
-export const generateAlertSound = (type: 'soft' | 'professional' | 'loud' | 'icq-message'): Promise<void> => {
+export const generateAlertSound = (type: 'soft' | 'professional' | 'loud' | 'uh-oh'): Promise<void> => {
   return new Promise((resolve, reject) => {
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -32,13 +32,28 @@ export const generateAlertSound = (type: 'soft' | 'professional' | 'loud' | 'icq
           oscillator.type = 'square';
           break;
           
-        case 'icq-message':
-          // Create a distinctive two-tone sound like ICQ
-          oscillator.frequency.setValueAtTime(659, audioContext.currentTime); // E note
-          oscillator.frequency.setValueAtTime(523, audioContext.currentTime + 0.1); // C note
-          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
-          oscillator.type = 'sawtooth';
+        case 'uh-oh':
+          // Create the classic ICQ "uh-oh" sound with two distinct tones
+          const oscillator2 = audioContext.createOscillator();
+          const gainNode2 = audioContext.createGain();
+          
+          oscillator2.connect(gainNode2);
+          gainNode2.connect(audioContext.destination);
+          
+          // First tone "uh" - lower pitch
+          oscillator.frequency.setValueAtTime(440, audioContext.currentTime); // A note
+          oscillator.type = 'sine';
+          gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+          
+          // Second tone "oh" - higher pitch with slight delay
+          oscillator2.frequency.setValueAtTime(330, audioContext.currentTime + 0.18); // E note
+          oscillator2.type = 'sine';
+          gainNode2.gain.setValueAtTime(0.4, audioContext.currentTime + 0.18);
+          gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.35);
+          
+          oscillator2.start(audioContext.currentTime + 0.18);
+          oscillator2.stop(audioContext.currentTime + 0.35);
           break;
       }
       
