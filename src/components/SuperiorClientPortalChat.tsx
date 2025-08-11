@@ -109,14 +109,25 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
           let sender_role = 'unknown';
           
           if (msg.is_client_message) {
-            // Para mensajes de cliente, sender_id es el client_id
-            const { data: client } = await supabase
-              .from('clients')
-              .select('full_name')
+            // Para mensajes de cliente, sender_id es el profile_id, obtener info del cliente
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('id')
               .eq('id', msg.sender_id)
               .single();
             
-            sender_name = client?.full_name || 'Cliente';
+            if (profile) {
+              // Ahora buscar el cliente asociado a este profile
+              const { data: client } = await supabase
+                .from('clients')
+                .select('full_name')
+                .eq('profile_id', profile.id)
+                .single();
+              
+              sender_name = client?.full_name || 'Cliente';
+            } else {
+              sender_name = 'Cliente';
+            }
             sender_role = 'client';
           } else {
             // Para mensajes del equipo, sender_id es el profile_id
@@ -214,14 +225,25 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
           let sender_role = 'unknown';
           
           if (newMsg.is_client_message) {
-            // Para mensajes de cliente, sender_id es el client_id
-            const { data: client } = await supabase
-              .from('clients')
-              .select('full_name')
+            // Para mensajes de cliente, sender_id es el profile_id, obtener info del cliente
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('id')
               .eq('id', newMsg.sender_id)
               .single();
             
-            sender_name = client?.full_name || 'Cliente';
+            if (profile) {
+              // Ahora buscar el cliente asociado a este profile
+              const { data: client } = await supabase
+                .from('clients')
+                .select('full_name')
+                .eq('profile_id', profile.id)
+                .single();
+              
+              sender_name = client?.full_name || 'Cliente';
+            } else {
+              sender_name = 'Cliente';
+            }
             sender_role = 'client';
           } else {
             // Para mensajes del equipo, sender_id es el profile_id
@@ -302,13 +324,8 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
       let senderId;
       const isClientMessage = userProfile?.role === 'client';
       
-      if (isClientMessage) {
-        // Para clientes, usar client_id como sender_id
-        senderId = clientId;
-      } else {
-        // Para empleados, usar profile_id como sender_id
-        senderId = userProfile?.id;
-      }
+      // Para TODOS los usuarios (clientes y empleados), sender_id es siempre su profile_id
+      senderId = userProfile?.id;
 
       if (!senderId) {
         throw new Error('No se pudo determinar el remitente del mensaje');
