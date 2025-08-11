@@ -83,7 +83,7 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
 
   const fetchMessages = async () => {
     try {
-      console.log('Fetching messages for:', { projectId, clientId, userId: user?.id });
+      console.log('Fetching messages for:', { projectId, clientId, userId: user?.id, timestamp: Date.now() });
       
       const { data, error } = await supabase
         .from('client_portal_chat')
