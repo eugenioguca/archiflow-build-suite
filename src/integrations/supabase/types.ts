@@ -6715,7 +6715,7 @@ export type Database = {
         Returns: undefined
       }
       is_admin: {
-        Args: { _user_id: string }
+        Args: { user_uuid?: string }
         Returns: boolean
       }
       is_client_of_project: {
