@@ -343,7 +343,7 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
           
           {/* Center - Logo and client info */}
           <div className="flex flex-col items-center space-y-2">
-            <div className="w-24 h-12 flex items-center justify-center">
+            <div className="w-48 h-24 flex items-center justify-center">
               <img 
                 src="/lovable-uploads/8fc0699f-f4d1-4a0f-a989-2f0456de8d2a.png" 
                 alt="Dovita Logo" 
