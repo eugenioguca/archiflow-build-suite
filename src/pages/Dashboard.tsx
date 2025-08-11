@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { PaymentNotifications } from '@/components/PaymentNotifications';
-import { CalendarWidget } from '@/components/CalendarWidget';
+
 
 interface DashboardStats {
   totalClients: number;
@@ -449,7 +449,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <CalendarWidget />
+        
       </div>
     </div>
   );
