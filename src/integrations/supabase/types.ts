@@ -6719,7 +6719,7 @@ export type Database = {
         Returns: boolean
       }
       is_client_of_project: {
-        Args: { project_uuid: string }
+        Args: { project_uuid: string; user_uuid: string }
         Returns: boolean
       }
       log_security_event: {
