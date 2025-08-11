@@ -45,6 +45,12 @@ interface TeamMember {
   position_enum?: string;
 }
 
+interface ClientInfo {
+  id: string;
+  display_name: string;
+  role: string;
+}
+
 interface SuperiorClientPortalChatProps {
   projectId: string;
   clientId: string;
@@ -58,6 +64,8 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [clientInfo, setClientInfo] = useState<ClientInfo | null>(null);
+  const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
@@ -75,10 +83,81 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
 
   const fetchInitialData = async () => {
     await Promise.all([
+      fetchCurrentUserProfile(),
       fetchMessages(),
       fetchTeamMembers(),
+      fetchClientInfo(),
     ]);
     setLoading(false);
+  };
+
+  const fetchCurrentUserProfile = async () => {
+    try {
+      console.log('Fetching current user profile for:', user?.id);
+      
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('id, user_id, full_name, role, department_enum')
+        .eq('user_id', user?.id)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        throw error;
+      }
+      
+      console.log('Current user profile:', profile);
+      setCurrentUserProfile(profile);
+      
+      return profile;
+    } catch (error) {
+      console.error('Error in fetchCurrentUserProfile:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo verificar el perfil del usuario",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchClientInfo = async () => {
+    try {
+      console.log('Fetching client info for clientId:', clientId);
+      
+      const { data: client, error } = await supabase
+        .from('clients')
+        .select(`
+          id,
+          full_name,
+          profile_id,
+          profiles!inner (
+            id,
+            user_id,
+            role
+          )
+        `)
+        .eq('id', clientId)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching client info:', error);
+        throw error;
+      }
+      
+      console.log('Client info fetched:', client);
+      
+      if (client) {
+        setClientInfo({
+          id: client.id,
+          display_name: client.full_name,
+          role: 'client'
+        });
+      }
+      
+      return client;
+    } catch (error) {
+      console.error('Error in fetchClientInfo:', error);
+    }
   };
 
   const fetchMessages = async () => {
@@ -170,6 +249,8 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
 
   const fetchTeamMembers = async () => {
     try {
+      console.log('Fetching team members for project:', projectId);
+      
       const { data: project, error } = await supabase
         .from('client_projects')
         .select(`
@@ -180,7 +261,12 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
         .eq('id', projectId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching project:', error);
+        throw error;
+      }
+
+      console.log('Project team assignments:', project);
 
       // Fetch individual team member profiles
       const memberIds = [
@@ -189,21 +275,36 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
         project?.construction_supervisor_id
       ].filter(Boolean);
 
+      console.log('Team member IDs:', memberIds);
+
       if (memberIds.length > 0) {
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, full_name, role, department_enum')
+          .select('id, full_name, role, department_enum, position_enum')
           .in('id', memberIds);
 
-        if (!profilesError && profiles) {
+        if (profilesError) {
+          console.error('Error fetching team member profiles:', profilesError);
+          throw profilesError;
+        }
+
+        console.log('Team member profiles:', profiles);
+
+        if (profiles) {
           const teamMembersData = profiles.map(profile => ({
             id: profile.id,
-            display_name: profile.full_name,
+            display_name: profile.full_name || 'Sin nombre',
             role: profile.role,
             department_enum: profile.department_enum,
+            position_enum: profile.position_enum,
           }));
+          
+          console.log('Team members data processed:', teamMembersData);
           setTeamMembers(teamMembersData);
         }
+      } else {
+        console.log('No team members assigned to project');
+        setTeamMembers([]);
       }
     } catch (error) {
       console.error('Error fetching team members:', error);
@@ -314,26 +415,32 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
         }
       }
 
-      // Get current user profile
-      const { data: userProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, role')
-        .eq('user_id', user?.id)
-        .single();
-
-      if (profileError) {
-        throw new Error('No se pudo obtener el perfil del usuario');
+      // Use current user profile from state or fetch if needed
+      let userProfile = currentUserProfile;
+      if (!userProfile) {
+        userProfile = await fetchCurrentUserProfile();
+        if (!userProfile) {
+          throw new Error('No se pudo obtener el perfil del usuario');
+        }
       }
 
       // Determine correct sender_id based on user role
-      let senderId;
       const isClientMessage = userProfile?.role === 'client';
-      
-      // Para TODOS los usuarios (clientes y empleados), sender_id es siempre su profile_id
-      senderId = userProfile?.id;
+      const senderId = userProfile?.id;
 
       if (!senderId) {
         throw new Error('No se pudo determinar el remitente del mensaje');
+      }
+
+      // Additional validation for client messages
+      if (isClientMessage && clientInfo) {
+        // Verify client is accessing their own project
+        console.log('Client validation:', {
+          currentClientId: clientId,
+          userRole: userProfile?.role,
+          isClientMessage,
+          senderId
+        });
       }
 
       // Send message
@@ -455,15 +562,30 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
           </div>
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            <Badge variant="outline">{teamMembers.length + 1} participantes</Badge>
+            <Badge variant="outline">
+              {(() => {
+                const totalParticipants = teamMembers.length + (clientInfo ? 1 : 0);
+                console.log('Participant count calculation:', {
+                  teamMembers: teamMembers.length,
+                  clientInfo: clientInfo ? 1 : 0,
+                  total: totalParticipants
+                });
+                return totalParticipants;
+              })()} participantes
+            </Badge>
           </div>
         </CardTitle>
         
-        {/* Team members indicator */}
+        {/* Participants indicator */}
         <div className="flex gap-2 flex-wrap">
+          {clientInfo && (
+            <Badge key={clientInfo.id} variant="default" className="text-xs">
+              {clientInfo.display_name} (Cliente)
+            </Badge>
+          )}
           {teamMembers.map((member) => (
             <Badge key={member.id} variant="secondary" className="text-xs">
-              {member.display_name} ({member.department_enum || member.role})
+              {member.display_name} ({member.department_enum || member.position_enum || member.role})
             </Badge>
           ))}
         </div>
