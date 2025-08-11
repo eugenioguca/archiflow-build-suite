@@ -456,7 +456,7 @@ export default function Dashboard() {
               <div className="p-2 bg-info/20 rounded-lg">
                 <Calendar className="h-6 w-6 text-info" />
               </div>
-              Calendario Personal
+              Calendario
             </CardTitle>
             <CardDescription className="text-base">
               Tus próximos eventos y recordatorios

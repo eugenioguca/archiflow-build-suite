@@ -43,7 +43,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 const allMenuItems = [
   { title: "Dashboard", url: "/dashboard", icon: BarChart3, color: "text-primary", module: "dashboard" },
-  { title: "Mi Calendario", url: "/calendar", icon: Calendar, color: "text-info", module: "calendar" },
+  { title: "Calendario", url: "/calendar", icon: Calendar, color: "text-info", module: "calendar" },
   { title: "Clientes", url: "/clients", icon: Users, color: "text-primary", module: "clients" },
   { title: "Ventas", url: "/sales", icon: TrendingUp, color: "text-success", module: "sales" },
   { title: "Diseño", url: "/design", icon: Palette, color: "text-purple", module: "design" },

@@ -46,7 +46,7 @@ export default function Calendar() {
     <Layout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-foreground">Mi Calendario</h1>
+          <h1 className="text-3xl font-bold text-foreground">Calendario</h1>
           <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
             Nuevo Evento

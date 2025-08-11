@@ -1,6 +1,7 @@
 
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
+import { AlertNotification } from "@/components/calendar/AlertNotification";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -115,7 +116,7 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
-            <Route 
+            <Route
               path="/clients" 
               element={
                 <ProtectedRoute>
@@ -214,9 +215,10 @@ const App = () => (
                } 
              />
              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+              <Route path="*" element={<NotFound />} />
+           </Routes>
+           <AlertNotification />
+         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>

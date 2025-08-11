@@ -21,47 +21,84 @@ export function useCalendarAlerts() {
   const { toast } = useToast();
 
   const playAlertSound = useCallback((soundType: string) => {
+    console.log("🎵 Attempting to play sound:", soundType);
     const audio = new Audio(`/sounds/${soundType}-alert.mp3`);
-    audio.play().catch(console.error);
+    audio.play()
+      .then(() => console.log("✅ Sound played successfully"))
+      .catch((error) => {
+        console.error("❌ Error playing sound:", error);
+        // Fallback to system sound if available
+        if ('Notification' in window) {
+          new Notification('Recordatorio de Calendario', {
+            body: 'Tienes un evento próximo',
+            icon: '/favicon.ico'
+          });
+        }
+      });
   }, []);
 
   const checkUpcomingAlerts = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      console.log("❌ No user found for alerts");
+      return;
+    }
+
+    console.log("🔔 Checking upcoming alerts for user:", user.id);
 
     try {
       const { data, error } = await supabase
         .rpc("get_upcoming_alerts", { user_uuid: user.id });
 
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Error calling get_upcoming_alerts:", error);
+        throw error;
+      }
+
+      console.log("📊 Alerts data received:", data);
 
       if (data && data.length > 0) {
         setUpcomingAlerts(data as UpcomingAlert[]);
         
-        // Process immediate alerts (within 1 minute)
-        const immediateAlerts = data.filter((alert: UpcomingAlert) => {
+        // Process alerts that should trigger now
+        const now = new Date();
+        console.log("⏰ Current time:", now.toISOString());
+        
+        const triggeredAlerts = data.filter((alert: UpcomingAlert) => {
           const eventTime = new Date(alert.event_start_date);
-          const now = new Date();
           const timeDiff = eventTime.getTime() - now.getTime();
           
-          if (alert.alert_type === "minutes") {
-            return timeDiff <= alert.alert_value * 60 * 1000;
-          }
-          return false;
+          console.log(`🎯 Alert "${alert.event_title}":`, {
+            eventTime: eventTime.toISOString(),
+            alertType: alert.alert_type,
+            alertValue: alert.alert_value,
+            timeDiff: Math.round(timeDiff / 1000 / 60), // minutes
+            shouldTrigger: timeDiff <= 60000 // within 1 minute
+          });
+          
+          // Trigger alert if event is within 1 minute
+          return timeDiff <= 60000 && timeDiff > -300000; // within 1 minute but not more than 5 minutes past
         });
 
-        for (const alert of immediateAlerts) {
+        console.log("🚨 Alerts to trigger now:", triggeredAlerts.length);
+
+        for (const alert of triggeredAlerts) {
+          console.log("🔔 Triggering alert:", alert.event_title);
           showAlert(alert as UpcomingAlert);
         }
+      } else {
+        console.log("📭 No upcoming alerts found");
       }
     } catch (error) {
-      console.error("Error checking alerts:", error);
+      console.error("❌ Error checking alerts:", error);
     }
   }, [user]);
 
   const showAlert = useCallback((alert: UpcomingAlert) => {
+    console.log("🚨 Showing alert:", alert.event_title);
     setActiveAlert(alert);
     
     if (alert.sound_enabled) {
+      console.log("🔊 Playing sound:", alert.sound_type);
       playAlertSound(alert.sound_type);
     }
 
@@ -94,15 +131,24 @@ export function useCalendarAlerts() {
   };
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      console.log("❌ No user, skipping alert setup");
+      return;
+    }
+
+    console.log("🚀 Setting up calendar alerts for user:", user.id);
 
     // Check alerts immediately
     checkUpcomingAlerts();
 
-    // Set up interval to check every minute
-    const interval = setInterval(checkUpcomingAlerts, 60000);
+    // Set up interval to check every 30 seconds for better responsiveness
+    console.log("⏱️ Setting up 30-second alert check interval");
+    const interval = setInterval(checkUpcomingAlerts, 30000);
 
-    return () => clearInterval(interval);
+    return () => {
+      console.log("🛑 Cleaning up alert interval");
+      clearInterval(interval);
+    };
   }, [user, checkUpcomingAlerts]);
 
   return {
