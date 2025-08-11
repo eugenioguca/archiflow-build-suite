@@ -39,7 +39,7 @@ export const useCRMCalendarIntegration = () => {
         alert_type: "minutes" | "hours" | "days";
         alert_value: number;
         sound_enabled: boolean;
-        sound_type: "professional" | "soft" | "loud";
+        sound_type: "professional" | "soft" | "loud" | "uh-oh";
       }>;
     }
   ) => {
