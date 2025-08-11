@@ -1,5 +1,5 @@
 // Audio generator for unique alert sounds
-export const generateAlertSound = (type: 'soft' | 'professional' | 'loud' | 'uh-oh'): Promise<void> => {
+export const generateAlertSound = (type: 'soft' | 'professional' | 'loud' | 'uh-oh' | 'airport'): Promise<void> => {
   return new Promise((resolve, reject) => {
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -55,10 +55,34 @@ export const generateAlertSound = (type: 'soft' | 'professional' | 'loud' | 'uh-
           oscillator2.start(audioContext.currentTime + 0.18);
           oscillator2.stop(audioContext.currentTime + 0.35);
           break;
+          
+        case 'airport':
+          // Create classic airport announcement chime (ding-dong)
+          const oscillator3 = audioContext.createOscillator();
+          const gainNode3 = audioContext.createGain();
+          
+          oscillator3.connect(gainNode3);
+          gainNode3.connect(audioContext.destination);
+          
+          // First chime "ding" - higher pitch, clear tone
+          oscillator.frequency.setValueAtTime(880, audioContext.currentTime); // A5 note
+          oscillator.type = 'sine';
+          gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.8);
+          
+          // Second chime "dong" - lower pitch with slight delay
+          oscillator3.frequency.setValueAtTime(659, audioContext.currentTime + 0.5); // E5 note
+          oscillator3.type = 'sine';
+          gainNode3.gain.setValueAtTime(0.5, audioContext.currentTime + 0.5);
+          gainNode3.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1.3);
+          
+          oscillator3.start(audioContext.currentTime + 0.5);
+          oscillator3.stop(audioContext.currentTime + 1.3);
+          break;
       }
       
       oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.5);
+      oscillator.stop(audioContext.currentTime + (type === 'airport' ? 1.3 : 0.5));
       
       oscillator.onended = () => {
         audioContext.close();

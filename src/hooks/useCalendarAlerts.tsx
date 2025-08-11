@@ -12,7 +12,7 @@ interface UpcomingAlert {
   alert_type: "minutes" | "hours" | "days";
   alert_value: number;
   sound_enabled: boolean;
-  sound_type: "soft" | "professional" | "loud" | "uh-oh";
+  sound_type: "soft" | "professional" | "loud" | "uh-oh" | "airport";
 }
 
 export function useCalendarAlerts() {
@@ -24,7 +24,7 @@ export function useCalendarAlerts() {
 
   const playAlertSound = useCallback((soundType: string) => {
     console.log(`Playing generated sound: ${soundType}`);
-    generateAlertSound(soundType as 'soft' | 'professional' | 'loud' | 'uh-oh')
+    generateAlertSound(soundType as 'soft' | 'professional' | 'loud' | 'uh-oh' | 'airport')
       .catch((error) => {
         console.error(`Error playing generated sound ${soundType}:`, error);
         // Fallback to browser notification

@@ -20,7 +20,7 @@ export interface EventAlert {
   alert_type: "minutes" | "hours" | "days";
   alert_value: number;
   sound_enabled: boolean;
-  sound_type: "soft" | "professional" | "loud" | "uh-oh";
+  sound_type: "soft" | "professional" | "loud" | "uh-oh" | "airport";
   is_triggered?: boolean;
 }
 
