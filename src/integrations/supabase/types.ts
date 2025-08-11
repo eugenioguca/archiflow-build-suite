@@ -2831,6 +2831,50 @@ export type Database = {
         }
         Relationships: []
       }
+      event_alerts: {
+        Row: {
+          alert_type: string
+          alert_value: number
+          created_at: string
+          event_id: string
+          id: string
+          is_triggered: boolean | null
+          sound_enabled: boolean | null
+          sound_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          alert_type: string
+          alert_value: number
+          created_at?: string
+          event_id: string
+          id?: string
+          is_triggered?: boolean | null
+          sound_enabled?: boolean | null
+          sound_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alert_type?: string
+          alert_value?: number
+          created_at?: string
+          event_id?: string
+          id?: string
+          is_triggered?: boolean | null
+          sound_enabled?: boolean | null
+          sound_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_alerts_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "personal_calendar_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expenses: {
         Row: {
           amount: number
@@ -4091,6 +4135,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      personal_calendar_events: {
+        Row: {
+          all_day: boolean | null
+          color: string | null
+          created_at: string
+          description: string | null
+          end_date: string
+          id: string
+          location: string | null
+          start_date: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          all_day?: boolean | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          end_date: string
+          id?: string
+          location?: string | null
+          start_date: string
+          title: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          all_day?: boolean | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string
+          id?: string
+          location?: string | null
+          start_date?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       platform_settings: {
         Row: {
@@ -6213,6 +6299,19 @@ export type Database = {
           created_at: string
           category_name: string
           phase_name: string
+        }[]
+      }
+      get_upcoming_alerts: {
+        Args: { user_uuid: string }
+        Returns: {
+          event_id: string
+          event_title: string
+          event_start_date: string
+          alert_id: string
+          alert_type: string
+          alert_value: number
+          sound_enabled: boolean
+          sound_type: string
         }[]
       }
       get_user_branch_offices: {

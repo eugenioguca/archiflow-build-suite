@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import ClientsNew from "./pages/ClientsNew";
+import Calendar from "./pages/Calendar";
 
 
 import FinancesNew from "./pages/FinancesNew";
@@ -103,6 +104,14 @@ const App = () => (
                   <Layout>
                     <Dashboard />
                   </Layout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/calendar" 
+              element={
+                <ProtectedRoute>
+                  <Calendar />
                 </ProtectedRoute>
               } 
             />
