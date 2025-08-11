@@ -81,24 +81,24 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
   useEffect(() => {
     if (watchedDepartamento) {
       loadMayores(watchedDepartamento);
-      form.setValue("mayor_id", "");
-      form.setValue("partida_id", "");
-      form.setValue("subpartida_id", "");
+      form.setValue("mayor_id", undefined);
+      form.setValue("partida_id", undefined);
+      form.setValue("subpartida_id", undefined);
     }
   }, [watchedDepartamento]);
 
   useEffect(() => {
     if (watchedMayorId) {
       loadPartidas(watchedMayorId);
-      form.setValue("partida_id", "");
-      form.setValue("subpartida_id", "");
+      form.setValue("partida_id", undefined);
+      form.setValue("subpartida_id", undefined);
     }
   }, [watchedMayorId]);
 
   useEffect(() => {
     if (watchedPartidaId) {
       loadSubpartidas(watchedPartidaId);
-      form.setValue("subpartida_id", "");
+      form.setValue("subpartida_id", undefined);
     }
   }, [watchedPartidaId]);
 
@@ -109,7 +109,9 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
       .eq("active", true);
     
     if (data) {
-      setSucursales(data.map(item => ({ id: item.id, nombre: item.name })));
+      const filteredData = data.filter(item => item.id && item.id.trim() !== '');
+      console.log("Sucursales data:", filteredData);
+      setSucursales(filteredData.map(item => ({ id: item.id, nombre: item.name })));
     }
   };
 
@@ -120,13 +122,16 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
       .order("project_name");
     
     if (data) {
-      const proyectosFormateados = data.map(item => ({
-        id: item.id,
-        nombre: `${item.project_name} - ${item.clients?.full_name || 'Sin cliente'}`,
-      }));
+      const proyectosFormateados = data
+        .filter(item => item.id && item.id.trim() !== '')
+        .map(item => ({
+          id: item.id,
+          nombre: `${item.project_name} - ${item.clients?.full_name || 'Sin cliente'}`,
+        }));
       
       // Add "Solo Empresa" option
       proyectosFormateados.unshift({ id: "empresa", nombre: "Solo Empresa (Sin Proyecto)" });
+      console.log("Proyectos data:", proyectosFormateados);
       setProyectos(proyectosFormateados);
     }
   };
@@ -140,7 +145,9 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
       .order("codigo");
     
     if (data) {
-      setMayores(data.map(item => ({ 
+      const filteredData = data.filter(item => item.id && item.id.trim() !== '');
+      console.log("Mayores data:", filteredData);
+      setMayores(filteredData.map(item => ({ 
         id: item.id, 
         nombre: `${item.codigo} - ${item.nombre}`,
         codigo: item.codigo 
@@ -157,7 +164,9 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
       .order("codigo");
     
     if (data) {
-      setPartidas(data.map(item => ({ 
+      const filteredData = data.filter(item => item.id && item.id.trim() !== '');
+      console.log("Partidas data:", filteredData);
+      setPartidas(filteredData.map(item => ({ 
         id: item.id, 
         nombre: `${item.codigo} - ${item.nombre}`,
         codigo: item.codigo 
@@ -174,7 +183,9 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
       .order("codigo");
     
     if (data) {
-      setSubpartidas(data.map(item => ({ 
+      const filteredData = data.filter(item => item.id && item.id.trim() !== '');
+      console.log("Subpartidas data:", filteredData);
+      setSubpartidas(filteredData.map(item => ({ 
         id: item.id, 
         nombre: `${item.codigo} - ${item.nombre}`,
         codigo: item.codigo 
@@ -198,7 +209,8 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
     const combined: (Option & { tipo: "cliente" | "proveedor" })[] = [];
     
     if (clients) {
-      combined.push(...clients.map(item => ({ 
+      const filteredClients = clients.filter(item => item.id && item.id.trim() !== '');
+      combined.push(...filteredClients.map(item => ({ 
         id: item.id, 
         nombre: `Cliente: ${item.full_name}`,
         tipo: "cliente" as const
@@ -206,13 +218,15 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
     }
     
     if (suppliers) {
-      combined.push(...suppliers.map(item => ({ 
+      const filteredSuppliers = suppliers.filter(item => item.id && item.id.trim() !== '');
+      combined.push(...filteredSuppliers.map(item => ({ 
         id: item.id, 
         nombre: `Proveedor: ${item.company_name}`,
         tipo: "proveedor" as const
       })));
     }
 
+    console.log("Clientes/Proveedores data:", combined);
     setClientesProveedores(combined);
   };
 
