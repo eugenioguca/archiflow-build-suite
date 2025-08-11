@@ -145,23 +145,24 @@ export function QuickEventCreator({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-lg w-[95vw] h-[95vh] flex flex-col p-0">
+        <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
           <DialogTitle>
             {event ? "Editar Evento" : "Nuevo Evento"}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="title">Título *</Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              required
-            />
-          </div>
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="title">Título *</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                required
+              />
+            </div>
 
           <div>
             <Label htmlFor="description">Descripción</Label>
@@ -320,6 +321,7 @@ export function QuickEventCreator({
             </Button>
           </div>
         </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
