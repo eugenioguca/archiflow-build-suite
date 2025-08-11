@@ -83,6 +83,8 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
 
   const fetchMessages = async () => {
     try {
+      console.log('Fetching messages for:', { projectId, clientId, userId: user?.id });
+      
       const { data, error } = await supabase
         .from('client_portal_chat')
         .select(`
@@ -100,7 +102,10 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
         .eq('client_id', clientId)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('RLS Error en fetchMessages:', error);
+        throw error;
+      }
 
       // Enhance messages with sender names
       const enhancedMessages = await Promise.all(
@@ -332,6 +337,16 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
       }
 
       // Send message
+      console.log('Sending message with data:', {
+        project_id: projectId,
+        client_id: clientId,
+        sender_id: senderId,
+        message: newMessage.trim(),
+        is_client_message: isClientMessage,
+        user_id: user?.id,
+        user_role: userProfile?.role
+      });
+
       const { error } = await supabase
         .from('client_portal_chat')
         .insert({
@@ -343,7 +358,10 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
           attachments: messageAttachments.length > 0 ? messageAttachments : null,
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Insert error details:', error);
+        throw error;
+      }
 
       // Clear inputs
       setNewMessage('');
