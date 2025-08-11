@@ -5,8 +5,9 @@ import { CalendarGrid } from "@/components/calendar/CalendarGrid";
 import { EventDetailsModal } from "@/components/calendar/EventDetailsModal";
 import { QuickEventCreator } from "@/components/calendar/QuickEventCreator";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Bug } from "lucide-react";
 import { usePersonalCalendar } from "@/hooks/usePersonalCalendar";
+import { CalendarDebugPanel } from "@/components/calendar/CalendarDebugPanel";
 
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -14,6 +15,7 @@ export default function Calendar() {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
   
   const { events, loading, createEvent, updateEvent, deleteEvent } = usePersonalCalendar();
 
@@ -47,11 +49,25 @@ export default function Calendar() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold text-foreground">Calendario</h1>
-          <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Nuevo Evento
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowDebug(!showDebug)} 
+              className="flex items-center gap-2"
+            >
+              <Bug className="h-4 w-4" />
+              Debug
+            </Button>
+            <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Nuevo Evento
+            </Button>
+          </div>
         </div>
+
+        {showDebug && (
+          <CalendarDebugPanel />
+        )}
 
         <CalendarHeader
           currentDate={currentDate}
