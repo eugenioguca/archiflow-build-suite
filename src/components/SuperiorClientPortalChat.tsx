@@ -592,14 +592,19 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
             <Users className="h-4 w-4" />
             <Badge variant="outline">
               {(() => {
-                const totalParticipants = teamMembers.length + (clientInfo ? 1 : 0);
-                console.log('Participant count calculation:', {
+                const teamCount = teamMembers.length;
+                const clientCount = clientInfo ? 1 : 0;
+                const totalParticipants = teamCount + clientCount;
+                console.log('🔍 Participant count debug:', {
                   teamMembers: teamMembers.length,
-                  clientInfo: clientInfo ? 1 : 0,
-                  total: totalParticipants
+                  teamMembersList: teamMembers,
+                  clientInfo: clientInfo,
+                  clientCount,
+                  totalParticipants,
+                  currentUserRole: currentUserProfile?.role
                 });
-                return totalParticipants;
-              })()} participantes
+                return `${totalParticipants} participante${totalParticipants !== 1 ? 's' : ''}`;
+              })()}
             </Badge>
           </div>
         </CardTitle>
@@ -608,14 +613,19 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
         <div className="flex gap-2 flex-wrap">
           {clientInfo && (
             <Badge key={clientInfo.id} variant="default" className="text-xs">
-              {clientInfo.display_name} (Cliente)
+              👤 {clientInfo.display_name} (Cliente)
             </Badge>
           )}
           {teamMembers.map((member) => (
             <Badge key={member.id} variant="secondary" className="text-xs">
-              {member.display_name} ({member.department_enum || member.position_enum || member.role})
+              👥 {member.display_name} ({member.department_enum || member.position_enum || member.role})
             </Badge>
           ))}
+          {teamMembers.length === 0 && !clientInfo && (
+            <Badge variant="outline" className="text-xs text-muted-foreground">
+              No hay participantes disponibles
+            </Badge>
+          )}
         </div>
       </CardHeader>
 
