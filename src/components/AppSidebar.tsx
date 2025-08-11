@@ -51,7 +51,7 @@ const allMenuItems = [
   { title: "Proveedores", url: "/suppliers", icon: Truck, color: "text-orange", module: "suppliers" },
   { title: "Finanzas", url: "/finances", icon: DollarSign, color: "text-primary", module: "finances" },
   { title: "Contabilidad", url: "/accounting", icon: Calculator, color: "text-primary", module: "accounting" },
-  { title: "Transacciones Unificadas", url: "/unified-transactions", icon: Settings, color: "text-warning", module: "development" },
+  { title: "Transacciones Unificadas", url: "/unified-transactions", icon: Settings, color: "text-warning", module: "accounting" },
   { title: "Preview Portal Cliente", url: "/client-portal-preview", icon: Eye, color: "text-info", module: "client_portal_preview" },
   { title: "Herramientas", url: "/user-management", icon: UserCheck, color: "text-primary", module: "tools" },
 ];

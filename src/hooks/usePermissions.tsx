@@ -75,6 +75,10 @@ export const usePermissions = (): UserPermissions => {
   const hasModuleAccess = (module: string): boolean => {
     // Calendar should be accessible to all authenticated users
     if (module === 'calendar') return true;
+    // Development tools should be accessible to admins
+    if (module === 'development') {
+      return modulePermissions['tools'] || false;
+    }
     return modulePermissions[module] || false;
   };
 
