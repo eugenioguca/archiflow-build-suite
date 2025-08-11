@@ -44,7 +44,7 @@ import { ClientDocumentHub } from './ClientDocumentHub';
 import { downloadDocument } from '@/lib/documentUtils';
 import { ProgressPhotosCarousel } from './ProgressPhotosCarousel';
 import { SuperiorClientPortalChat } from './SuperiorClientPortalChat';
-
+import { ClientProjectCalendarViewer } from './ClientProjectCalendarViewer';
 
 import { PaymentPlanManager } from './PaymentPlanManager';
 
@@ -451,6 +451,10 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
               <TrendingUp className="h-4 w-4 mb-1" />
               Resumen
             </TabsTrigger>
+            <TabsTrigger value="calendar" className="text-xs">
+              <Calendar className="h-4 w-4 mb-1" />
+              Calendario
+            </TabsTrigger>
             <TabsTrigger value="documents" className="text-xs">
               <FileText className="h-4 w-4 mb-1" />
               Docs
@@ -486,6 +490,29 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="calendar">
+            <div className="space-y-4">
+              {selectedProject ? (
+                <ClientProjectCalendarViewer
+                  projectId={selectedProject.id}
+                  projectName={selectedProject.project_name}
+                />
+              ) : (
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle>Calendario del Proyecto</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center text-muted-foreground p-8">
+                      <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No hay proyecto seleccionado</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </TabsContent>
 
 

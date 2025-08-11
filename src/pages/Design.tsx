@@ -21,6 +21,7 @@ import { DesignDocumentManager } from "@/components/DesignDocumentManager";
 import { TeamClientChat } from "@/components/TeamClientChat";
 import { ModuleNotifications } from "@/components/ModuleNotifications";
 import { PaymentPlanManager } from "@/components/PaymentPlanManager";
+import { DesignClientCalendar } from "@/components/DesignClientCalendar";
 import { 
   Clock, 
   User, 
@@ -627,7 +628,7 @@ export default function Design() {
 
       {/* Main Content with Tabs */}
       <Tabs defaultValue="phases" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-7 bg-muted h-9">
+        <TabsList className="grid w-full grid-cols-8 bg-muted h-9">
           <TabsTrigger value="phases" className="text-xs">
             <Layers className="h-3 w-3 mr-1" />
             Fases
@@ -643,6 +644,10 @@ export default function Design() {
           <TabsTrigger value="payments" className="text-xs">
             <DollarSign className="h-3 w-3 mr-1" />
             Pagos
+          </TabsTrigger>
+          <TabsTrigger value="calendar" className="text-xs">
+            <CalendarIcon className="h-3 w-3 mr-1" />
+            Calendario
           </TabsTrigger>
           <TabsTrigger value="documents" className="text-xs">
             <FileText className="h-3 w-3 mr-1" />
@@ -767,6 +772,19 @@ export default function Design() {
               clientProjectId={projectId}
               planType="construction_payment"
               compact={true}
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="calendar">
+          <div className="bg-card rounded-lg p-4 border">
+            <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+              <CalendarIcon className="h-5 w-5" />
+              Calendario del Proyecto
+            </h3>
+            <DesignClientCalendar
+              projectId={projectId}
+              projectName={project?.project_name || ''}
             />
           </div>
         </TabsContent>

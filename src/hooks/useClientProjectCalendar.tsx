@@ -143,6 +143,31 @@ export const useClientProjectCalendar = (projectId: string | null) => {
 
   useEffect(() => {
     fetchEvents();
+
+    // Set up real-time subscription for calendar events
+    if (projectId) {
+      const channel = supabase
+        .channel(`client_project_calendar_events:${projectId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'client_project_calendar_events',
+            filter: `client_project_id=eq.${projectId}`
+          },
+          (payload) => {
+            console.log('Calendar event change:', payload);
+            // Refresh events when changes occur
+            fetchEvents();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [projectId]);
 
   return {

@@ -18,6 +18,7 @@ import { PaymentPlanManager } from "./PaymentPlanManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QuickCalendarActions } from "./QuickCalendarActions";
 import { SmartReminderPlugin } from "./SmartReminderPlugin";
+import { CRMClientCalendar } from "./CRMClientCalendar";
 
 interface CRMReminder {
   id: string;
@@ -457,6 +458,25 @@ export function SmartCRM({ clientId, clientName, lastContactDate, leadScore = 0,
         projectId={clientProject?.id}
         projectName={clientProject?.project_name}
       />
+
+      {/* Calendario Compartido Cliente-Proyecto - CRM */}
+      {clientProject && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Calendario del Proyecto
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CRMClientCalendar
+              clientId={clientId}
+              projectId={clientProject.id}
+              projectName={clientProject.project_name}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Project Management */}
       {clientProject && (
