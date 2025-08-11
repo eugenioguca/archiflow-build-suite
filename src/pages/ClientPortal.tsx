@@ -37,8 +37,6 @@ import { es } from 'date-fns/locale';
 import { ProjectProgressCard } from '@/components/ProjectProgressCard';
 import { DocumentsPanel } from '@/components/DocumentsPanel';
 import { ProgressPhotosCarousel } from '@/components/ProgressPhotosCarousel';
-import { ClientPortalChat } from '@/components/ClientPortalChat';
-import { SuperiorClientPortalChat } from '@/components/SuperiorClientPortalChat';
 import { RealtimeNotificationSystem } from '@/components/RealtimeNotificationSystem';
 import { ClientDocumentUploader } from '@/components/ClientDocumentUploader';
 import { ClientFiscalDocuments } from '@/components/ClientFiscalDocuments';

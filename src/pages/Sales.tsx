@@ -15,9 +15,7 @@ import { ClientProjectManager } from "@/components/ClientProjectManager";
 import { RequiredDocumentsManager } from "@/components/RequiredDocumentsManager";
 import { SalesExecutiveDashboard } from "@/components/SalesExecutiveDashboard";
 import { ContractTemplateManager } from "@/components/ContractTemplateManager";
-import { TeamClientChat } from "@/components/TeamClientChat";
 import { ModuleNotifications } from "@/components/ModuleNotifications";
-import { SalesChatProjectSelector } from "@/components/SalesChatProjectSelector";
 import { SalesProjectFileManager } from "@/components/SalesProjectFileManager";
 import { PaymentPlanManager } from "@/components/PaymentPlanManager";
 import { CRMClientCalendar } from "@/components/CRMClientCalendar";
@@ -108,7 +106,7 @@ export default function Sales() {
   const [selectedPlanType, setSelectedPlanType] = useState<'all' | 'design_payment' | 'construction_payment'>('all');
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<ClientProject | null>(null);
-  const [selectedChatProject, setSelectedChatProject] = useState<string | null>(null);
+  
   const [activeTab, setActiveTab] = useState("list");
   const { toast } = useToast();
   const { user } = useAuth();
@@ -419,12 +417,11 @@ export default function Sales() {
 
       {/* Tabs principales */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-5 w-full">
+        <TabsList className="grid grid-cols-4 w-full">
           <TabsTrigger value="list">Smart View</TabsTrigger>
           <TabsTrigger value="pipeline">Pipeline Kanban</TabsTrigger>
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="contracts">Contratos</TabsTrigger>
-          <TabsTrigger value="chat">Chat Cliente</TabsTrigger>
         </TabsList>
 
         {/* Pipeline Kanban */}
@@ -680,36 +677,6 @@ export default function Sales() {
           <ContractTemplateManager />
         </TabsContent>
 
-        {/* Chat Cliente */}
-        <TabsContent value="chat">
-          {selectedChatProject ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5 text-primary" />
-                  <h2 className="text-lg font-semibold">Chat con Cliente</h2>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedChatProject(null)}
-                >
-                  Cambiar Proyecto
-                </Button>
-              </div>
-              <TeamClientChat
-                projectId={selectedChatProject}
-                module="sales"
-                className="h-[600px]"
-              />
-            </div>
-          ) : (
-            <SalesChatProjectSelector
-              onProjectSelect={setSelectedChatProject}
-              selectedProjectId={selectedChatProject}
-            />
-          )}
-        </TabsContent>
       </Tabs>
 
       {/* Dialog CRM completo */}
@@ -724,7 +691,7 @@ export default function Sales() {
           
           {selectedProject && (
             <Tabs defaultValue="crm" className="w-full flex flex-col flex-1 overflow-hidden">
-              <TabsList className="grid grid-cols-7 w-full flex-shrink-0 mx-6">
+              <TabsList className="grid grid-cols-6 w-full flex-shrink-0 mx-6">
                 <TabsTrigger value="crm">CRM & Información</TabsTrigger>
                 <TabsTrigger 
                   value="required-docs"
@@ -749,7 +716,6 @@ export default function Sales() {
                 </TabsTrigger>
                 <TabsTrigger value="projects">Gestión de Proyectos</TabsTrigger>
                 <TabsTrigger value="calendar">Calendario Cliente</TabsTrigger>
-                <TabsTrigger value="chat">Chat Cliente</TabsTrigger>
               </TabsList>
 
               <TabsContent value="crm" className="space-y-6 px-6 pb-6 overflow-y-auto flex-1">
@@ -923,13 +889,6 @@ export default function Sales() {
                 />
               </TabsContent>
 
-              <TabsContent value="chat" className="px-6 pb-6 overflow-y-auto flex-1">
-                <TeamClientChat
-                  projectId={selectedProject.id}
-                  module="sales"
-                  className="h-[600px]"
-                />
-              </TabsContent>
             </Tabs>
           )}
         </DialogContent>

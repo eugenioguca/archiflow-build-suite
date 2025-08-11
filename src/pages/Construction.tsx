@@ -26,7 +26,7 @@ import { ConstructionAnalytics } from "@/components/ConstructionAnalytics";
 import { ConstructionTeamManager } from "@/components/ConstructionTeamManager";
 import { ProjectDatesManager } from "@/components/ProjectDatesManager";
 import { ModuleNotifications } from "@/components/ModuleNotifications";
-import { TeamClientChat } from "@/components/TeamClientChat";
+
 
 interface ConstructionProject {
   id: string;
@@ -51,7 +51,7 @@ export function Construction() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<"principal" | "gestion" | "documentacion" | "chat">("principal");
+  const [activeCategory, setActiveCategory] = useState<"principal" | "gestion" | "documentacion">("principal");
 
   useEffect(() => {
     if (user) {
@@ -64,13 +64,12 @@ export function Construction() {
     const navigationCategories = {
       principal: ["dashboard", "budget", "timeline"],
       gestion: ["equipment", "materials", "team", "teams", "quality"],
-      documentacion: ["photos", "reports", "analytics"],
-      chat: ["chat"]
+      documentacion: ["photos", "reports", "analytics"]
     };
     
     const categoryKey = Object.keys(navigationCategories).find(key => 
       navigationCategories[key as keyof typeof navigationCategories].includes(activeTab)
-    ) as "principal" | "gestion" | "documentacion" | "chat";
+    ) as "principal" | "gestion" | "documentacion";
     
     if (categoryKey) {
       setActiveCategory(categoryKey);
@@ -223,12 +222,6 @@ export function Construction() {
         { value: "analytics", label: "Análisis", icon: BarChart3 },
       ]
     },
-    chat: {
-      label: "Chat",
-      tabs: [
-        { value: "chat", label: "Chat Cliente", icon: Users },
-      ]
-    }
   };
 
   // Flat array for mobile dropdown
@@ -506,13 +499,6 @@ export function Construction() {
                   <ConstructionAnalytics projectId={selectedProject.id} />
                 </TabsContent>
 
-                <TabsContent value="chat" className="mt-6">
-                  <TeamClientChat 
-                    projectId={selectedProject.id} 
-                    module="construction"
-                    className="h-[600px]"
-                  />
-                </TabsContent>
               </Tabs>
             </div>
           )}

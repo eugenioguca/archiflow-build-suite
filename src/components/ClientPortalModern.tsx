@@ -45,7 +45,7 @@ import dovitaLogo from '@/assets/dovita-logo.png';
 import { ClientDocumentHub } from './ClientDocumentHub';
 import { downloadDocument } from '@/lib/documentUtils';
 import { ProgressPhotosCarousel } from './ProgressPhotosCarousel';
-import { SuperiorClientPortalChat } from './SuperiorClientPortalChat';
+
 import { ClientProjectCalendarViewer } from './ClientProjectCalendarViewer';
 
 import { PaymentPlanManager } from './PaymentPlanManager';
@@ -511,7 +511,7 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
 
         {/* Navigation Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-6">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
             <TabsTrigger value="calendar" className="text-xs">
               <Calendar className="h-4 w-4 mb-1" />
               Calendario
@@ -527,10 +527,6 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
             <TabsTrigger value="payments" className="text-xs">
               <DollarSign className="h-4 w-4 mb-1" />
               Pagos
-            </TabsTrigger>
-            <TabsTrigger value="chat" className="text-xs">
-              <MessageCircle className="h-4 w-4 mb-1" />
-              Chat
             </TabsTrigger>
           </TabsList>
 
@@ -653,28 +649,6 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
           </TabsContent>
 
 
-          <TabsContent value="chat">
-            <div className="space-y-4">
-              {isPreview ? (
-                <Card className="glass-card">
-                  <CardHeader>
-                    <CardTitle>Chat del Proyecto</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-center text-muted-foreground p-8">
-                      <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>Vista previa del chat - Funcionalidad disponible para el cliente</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : selectedProject ? (
-                <SuperiorClientPortalChat 
-                  clientId={selectedProject.client_id} 
-                  projectId={selectedProject.id} 
-                />
-              ) : null}
-            </div>
-          </TabsContent>
         </Tabs>
       </div>
     </div>

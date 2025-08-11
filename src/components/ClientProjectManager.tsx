@@ -164,15 +164,6 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
       console.log(`Iniciando eliminación del proyecto: ${projectName} (${projectId})`);
 
 
-      // Eliminar client_portal_chat del proyecto
-      const { error: portalChatError } = await supabase
-        .from('client_portal_chat')
-        .delete()
-        .eq('project_id', projectId);
-
-      if (portalChatError) {
-        console.warn('Error eliminando chat del portal:', portalChatError);
-      }
 
       // Eliminar client_portal_notifications del proyecto
       const { error: portalNotificationsError } = await supabase

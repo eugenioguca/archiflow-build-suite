@@ -11,7 +11,7 @@ import { ProjectProgressCard } from '@/components/ProjectProgressCard';
 import { DocumentsPanel } from '@/components/DocumentsPanel';
 import { ProgressPhotosCarousel } from '@/components/ProgressPhotosCarousel';
 import { ClientDocumentHub } from '@/components/ClientDocumentHub';
-import { SuperiorClientPortalChat } from '@/components/SuperiorClientPortalChat';
+
 import { RealtimeNotificationSystem } from '@/components/RealtimeNotificationSystem';
 import { ClientPortalFeaturesSummary } from '@/components/ClientPortalFeaturesSummary';
 import { useProjectProgress } from '@/hooks/useProjectProgress';

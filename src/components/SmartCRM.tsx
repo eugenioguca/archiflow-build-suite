@@ -121,14 +121,8 @@ export function SmartCRM({ clientId, clientName, lastContactDate, leadScore = 0,
   };
 
   const analyzeCommunication = async (projectId: string) => {
-    const { data: chatMessages } = await supabase
-      .from("client_portal_chat")
-      .select("*")
-      .eq("project_id", projectId)
-      .order("created_at", { ascending: false })
-      .limit(10);
-
-    return chatMessages || [];
+    // Chat system removed - no communication data to analyze
+    return [];
   };
 
   const analyzeDocumentation = async (projectId: string) => {
@@ -361,29 +355,7 @@ export function SmartCRM({ clientId, clientName, lastContactDate, leadScore = 0,
           }
         }
 
-        // Analizar comunicación para clientes cerrados
-        const recentMessages = await analyzeCommunication(projectData.id);
-        if (recentMessages.length > 0) {
-          const lastClientMessage = recentMessages.find(m => m.is_client_message);
-          if (lastClientMessage) {
-            const messageDate = new Date(lastClientMessage.created_at);
-            const daysSinceMessage = Math.floor((now.getTime() - messageDate.getTime()) / (1000 * 60 * 60 * 24));
-            
-            if (daysSinceMessage > 2) {
-              generatedInsights.push({
-                type: "follow_up",
-                title: "Responder Mensaje del Cliente",
-                description: `Cliente escribió hace ${daysSinceMessage} días sin respuesta.`,
-                priority: daysSinceMessage > 5 ? "high" : "medium",
-                suggested_actions: [
-                  "Revisar mensaje en portal del cliente",
-                  "Responder consulta del cliente",
-                  "Programar llamada si es necesario"
-                ]
-              });
-            }
-          }
-        }
+        // Chat system removed - no communication analysis needed
 
       } else {
         // 2. ANÁLISIS PARA LEADS (nuevo_lead, en_contacto)
