@@ -20,7 +20,7 @@ import UserManagement from "./pages/UserManagement";
 import Design from "./pages/Design";
 import { Construction } from "./pages/Construction";
 import ClientPortalPreview from "./pages/ClientPortalPreview";
-import Calendar from "./pages/Calendar";
+
 
 import SuppliersNew from "./pages/SuppliersNew";
 import ClientPortal from "./pages/ClientPortal";
@@ -182,16 +182,6 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <Construction />
-                </Layout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/calendar" 
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Calendar />
                 </Layout>
               </ProtectedRoute>
             } 
