@@ -69,10 +69,10 @@ export function UnifiedTransactionsTable() {
       transaction.folio_factura?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesDepartamento = 
-      !filterDepartamento || transaction.departamento === filterDepartamento;
+      !filterDepartamento || filterDepartamento === "all" || transaction.departamento === filterDepartamento;
     
     const matchesTipoMovimiento = 
-      !filterTipoMovimiento || transaction.tipo_movimiento === filterTipoMovimiento;
+      !filterTipoMovimiento || filterTipoMovimiento === "all" || transaction.tipo_movimiento === filterTipoMovimiento;
 
     return matchesSearch && matchesDepartamento && matchesTipoMovimiento;
   });
@@ -109,7 +109,7 @@ export function UnifiedTransactionsTable() {
             <SelectValue placeholder="Departamento" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos los departamentos</SelectItem>
+            <SelectItem value="all">Todos los departamentos</SelectItem>
             {departamentos.map((dept) => (
               <SelectItem key={dept.value} value={dept.value}>
                 {dept.label}
@@ -122,7 +122,7 @@ export function UnifiedTransactionsTable() {
             <SelectValue placeholder="Movimiento" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos</SelectItem>
+            <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="ingreso">Ingreso</SelectItem>
             <SelectItem value="egreso">Egreso</SelectItem>
           </SelectContent>
