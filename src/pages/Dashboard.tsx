@@ -450,7 +450,22 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        
+        <Card className="card-hover border-0 shadow-lg glassmorphic-bg enhanced-hover">
+          <CardHeader className="bg-gradient-to-r from-info/5 to-primary/5 rounded-t-lg">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 bg-info/20 rounded-lg">
+                <Calendar className="h-6 w-6 text-info" />
+              </div>
+              Calendario Personal
+            </CardTitle>
+            <CardDescription className="text-base">
+              Tus próximos eventos y recordatorios
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            <CalendarWidgetDashboard />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
