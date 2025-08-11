@@ -880,6 +880,50 @@ export type Database = {
           },
         ]
       }
+      client_project_calendar_event_alerts: {
+        Row: {
+          alert_type: string
+          alert_value: number
+          created_at: string
+          event_id: string
+          id: string
+          is_triggered: boolean
+          sound_enabled: boolean
+          sound_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          alert_type: string
+          alert_value: number
+          created_at?: string
+          event_id: string
+          id?: string
+          is_triggered?: boolean
+          sound_enabled?: boolean
+          sound_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alert_type?: string
+          alert_value?: number
+          created_at?: string
+          event_id?: string
+          id?: string
+          is_triggered?: boolean
+          sound_enabled?: boolean
+          sound_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_project_calendar_event_alerts_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "client_project_calendar_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_project_calendar_events: {
         Row: {
           all_day: boolean
@@ -6382,6 +6426,22 @@ export type Database = {
           alert_value: number
           sound_enabled: boolean
           sound_type: string
+        }[]
+      }
+      get_upcoming_client_project_alerts: {
+        Args: { user_uuid: string }
+        Returns: {
+          event_id: string
+          event_title: string
+          event_start_date: string
+          alert_id: string
+          alert_type: string
+          alert_value: number
+          sound_enabled: boolean
+          sound_type: string
+          project_id: string
+          project_name: string
+          client_name: string
         }[]
       }
       get_user_branch_offices: {

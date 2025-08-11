@@ -192,6 +192,7 @@ export const ClientProjectCalendar: React.FC<ClientProjectCalendarProps> = ({
           onClose={() => setShowCreateModal(false)}
           prePopulatedData={getPrePopulatedEventData()}
           onSubmit={handleCreateEvent}
+          calendarType="client-project"
         />
       )}
     </div>

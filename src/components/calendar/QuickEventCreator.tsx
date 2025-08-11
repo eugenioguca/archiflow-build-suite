@@ -8,16 +8,40 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CalendarEvent, EventAlert } from "@/hooks/usePersonalCalendar";
+import { ClientProjectCalendarEvent, ClientProjectCalendarEventAlert } from "@/hooks/useClientProjectCalendar";
 import { format, addHours } from "date-fns";
 import { Plus, Trash2 } from "lucide-react";
+
+// Generic alert interface that works with both calendar types
+interface GenericAlert {
+  alert_type: string;
+  alert_value: number;
+  sound_enabled: boolean;
+  sound_type: string;
+}
+
+// Generic event interface that works with both calendar types  
+interface GenericEvent {
+  title: string;
+  description?: string;
+  start_date: string;
+  end_date: string;
+  all_day: boolean;
+  color?: string;
+  location?: string;
+  alerts?: GenericAlert[];
+}
+
+type CalendarType = 'personal' | 'client-project';
 
 interface QuickEventCreatorProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (eventData: Partial<CalendarEvent> & { alerts?: Partial<EventAlert>[] }) => void;
+  onSubmit: (eventData: GenericEvent) => void;
   initialDate?: Date | null;
-  event?: CalendarEvent | null;
-  prePopulatedData?: Partial<CalendarEvent> & { alerts?: Partial<EventAlert>[] };
+  event?: (CalendarEvent | ClientProjectCalendarEvent) | null;
+  prePopulatedData?: GenericEvent;
+  calendarType?: CalendarType;
 }
 
 export function QuickEventCreator({ 
@@ -26,7 +50,8 @@ export function QuickEventCreator({
   onSubmit, 
   initialDate, 
   event,
-  prePopulatedData 
+  prePopulatedData,
+  calendarType = 'personal'
 }: QuickEventCreatorProps) {
   const [formData, setFormData] = useState({
     title: "",
@@ -38,7 +63,17 @@ export function QuickEventCreator({
     location: "",
   });
 
-  const [alerts, setAlerts] = useState<Partial<EventAlert>[]>([]);
+  const [alerts, setAlerts] = useState<GenericAlert[]>([]);
+
+  // Helper function to convert alerts to generic format
+  const convertToGenericAlerts = (alerts: any[]): GenericAlert[] => {
+    return alerts.map(alert => ({
+      alert_type: alert.alert_type || 'minutes',
+      alert_value: alert.alert_value || 15,
+      sound_enabled: alert.sound_enabled || false,
+      sound_type: alert.sound_type || (calendarType === 'personal' ? 'soft' : 'soft-alert')
+    }));
+  };
 
   useEffect(() => {
     if (event) {
@@ -49,10 +84,10 @@ export function QuickEventCreator({
         start_date: format(new Date(event.start_date), "yyyy-MM-dd'T'HH:mm"),
         end_date: format(new Date(event.end_date), "yyyy-MM-dd'T'HH:mm"),
         all_day: event.all_day,
-        color: event.color,
+        color: event.color || "#3b82f6",
         location: event.location || "",
       });
-      setAlerts((event.alerts || []) as Partial<EventAlert>[]);
+      setAlerts(convertToGenericAlerts(event.alerts || []));
     } else if (prePopulatedData) {
       // Pre-populated mode (from CRM)
       setFormData({
@@ -64,7 +99,7 @@ export function QuickEventCreator({
         color: prePopulatedData.color || "#3b82f6",
         location: prePopulatedData.location || "",
       });
-      setAlerts((prePopulatedData.alerts || []) as Partial<EventAlert>[]);
+      setAlerts(convertToGenericAlerts(prePopulatedData.alerts || []));
     } else if (initialDate) {
       // Create mode with initial date
       const start = format(initialDate, "yyyy-MM-dd'T'HH:mm");
@@ -95,7 +130,7 @@ export function QuickEventCreator({
       });
       setAlerts([]);
     }
-  }, [event, initialDate, prePopulatedData, open]);
+  }, [event, initialDate, prePopulatedData, open, calendarType]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,16 +147,17 @@ export function QuickEventCreator({
       ...formData,
       start_date: startDate.toISOString(),
       end_date: endDate.toISOString(),
-      alerts: alerts.filter(alert => alert.alert_type && alert.alert_value) as EventAlert[],
+      alerts: alerts.filter(alert => alert.alert_type && alert.alert_value),
     });
   };
 
   const addAlert = () => {
+    const defaultSoundType = calendarType === 'personal' ? 'soft' : 'soft-alert';
     setAlerts([...alerts, {
       alert_type: "minutes",
       alert_value: 15,
       sound_enabled: false,
-      sound_type: "soft",
+      sound_type: defaultSoundType,
     }]);
   };
 
@@ -297,16 +333,27 @@ export function QuickEventCreator({
 
                 {alert.sound_enabled && (
                   <Select 
-                    value={alert.sound_type || "soft"} 
+                    value={alert.sound_type || (calendarType === 'personal' ? 'soft' : 'soft-alert')} 
                     onValueChange={(value) => updateAlert(index, "sound_type", value)}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="soft">Suave</SelectItem>
-                      <SelectItem value="professional">Profesional</SelectItem>
-                      <SelectItem value="loud">Fuerte</SelectItem>
+                      {calendarType === 'personal' ? (
+                        <>
+                          <SelectItem value="soft">Suave</SelectItem>
+                          <SelectItem value="professional">Profesional</SelectItem>
+                          <SelectItem value="loud">Fuerte</SelectItem>
+                        </>
+                      ) : (
+                        <>
+                          <SelectItem value="soft-alert">Suave</SelectItem>
+                          <SelectItem value="professional-alert">Profesional</SelectItem>
+                          <SelectItem value="loud-alert">Fuerte</SelectItem>
+                          <SelectItem value="icq-message">ICQ</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 )}
