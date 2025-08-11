@@ -33,7 +33,7 @@ export const usePersonalCalendar = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Obtener eventos del usuario
+  // Obtener eventos del usuario con manejo de errores optimizado
   const {
     data: events = [],
     isLoading,
@@ -43,20 +43,32 @@ export const usePersonalCalendar = () => {
     queryFn: async () => {
       if (!user?.id) return [];
 
-      const { data, error } = await supabase
-        .from('personal_events')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('start_date', { ascending: true });
+      try {
+        const { data, error } = await supabase
+          .from('personal_events')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('start_date', { ascending: true });
 
-      if (error) throw error;
-      return data as PersonalEvent[];
+        if (error) {
+          console.error('Error fetching personal events:', error);
+          throw error;
+        }
+        
+        return data as PersonalEvent[];
+      } catch (err) {
+        console.error('Failed to fetch personal events:', err);
+        throw err;
+      }
     },
     enabled: !!user?.id,
+    retry: 3,
+    retryDelay: 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
 
-  // Crear evento personal simplificado
+  // Crear evento personal optimizado
   const createEventMutation = useMutation({
     mutationFn: async (eventData: Omit<PersonalEvent, 'id' | 'created_at' | 'updated_at' | 'user_id' | 'created_by'> & {
       alerts?: Array<{
@@ -67,43 +79,54 @@ export const usePersonalCalendar = () => {
     }) => {
       if (!user?.id) throw new Error('Usuario no autenticado');
       
-      // Crear el evento directamente sin invitaciones
-      const { data: event, error: eventError } = await supabase
-        .from('personal_events')
-        .insert([{
-          title: eventData.title,
-          description: eventData.description,
-          location: eventData.location,
-          start_date: eventData.start_date,
-          end_date: eventData.end_date,
-          is_all_day: eventData.is_all_day,
-          event_type: eventData.event_type,
-          user_id: user.id
-        }])
-        .select()
-        .single();
+      try {
+        // Crear el evento personal sin referencias a invitaciones
+        const { data: event, error: eventError } = await supabase
+          .from('personal_events')
+          .insert([{
+            title: eventData.title,
+            description: eventData.description,
+            location: eventData.location,
+            start_date: eventData.start_date,
+            end_date: eventData.end_date,
+            is_all_day: eventData.is_all_day,
+            event_type: eventData.event_type,
+            user_id: user.id
+          }])
+          .select()
+          .single();
 
-      if (eventError) throw eventError;
+        if (eventError) {
+          console.error('Error creating event:', eventError);
+          throw eventError;
+        }
 
-      // Crear alertas si hay alertas configuradas
-      if (eventData.alerts && eventData.alerts.length > 0) {
-        const alerts = eventData.alerts.map(alert => ({
-          event_id: event.id,
-          user_id: user.id,
-          alert_minutes_before: alert.minutes_before,
-          alert_type: alert.alert_type,
-          sound_type: alert.sound_type,
-          is_active: true
-        }));
+        // Crear alertas si están configuradas
+        if (eventData.alerts && eventData.alerts.length > 0) {
+          const alerts = eventData.alerts.map(alert => ({
+            event_id: event.id,
+            user_id: user.id,
+            alert_minutes_before: alert.minutes_before,
+            alert_type: alert.alert_type,
+            sound_type: alert.sound_type,
+            is_active: true
+          }));
 
-        const { error: alertError } = await supabase
-          .from('event_alerts')
-          .insert(alerts);
+          const { error: alertError } = await supabase
+            .from('event_alerts')
+            .insert(alerts);
 
-        if (alertError) console.error('Error creating alerts:', alertError);
+          if (alertError) {
+            console.error('Error creating alerts:', alertError);
+            // No throw error for alerts, event was created successfully
+          }
+        }
+
+        return event;
+      } catch (err) {
+        console.error('Failed to create event:', err);
+        throw err;
       }
-
-      return event;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['personal-events'] });
@@ -122,19 +145,30 @@ export const usePersonalCalendar = () => {
     },
   });
 
-  // Actualizar evento
+  // Actualizar evento con validación mejorada
   const updateEventMutation = useMutation({
     mutationFn: async ({ id, ...eventData }: Partial<PersonalEvent> & { id: string }) => {
-      const { data, error } = await supabase
-        .from('personal_events')
-        .update(eventData)
-        .eq('id', id)
-        .eq('user_id', user?.id) // Solo permitir actualizar propios eventos
-        .select()
-        .single();
+      if (!user?.id) throw new Error('Usuario no autenticado');
+      
+      try {
+        const { data, error } = await supabase
+          .from('personal_events')
+          .update(eventData)
+          .eq('id', id)
+          .eq('user_id', user.id) // Solo permitir actualizar propios eventos
+          .select()
+          .single();
 
-      if (error) throw error;
-      return data;
+        if (error) {
+          console.error('Error updating event:', error);
+          throw error;
+        }
+        
+        return data;
+      } catch (err) {
+        console.error('Failed to update event:', err);
+        throw err;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['personal-events'] });
@@ -143,24 +177,58 @@ export const usePersonalCalendar = () => {
         description: "El evento se ha actualizado correctamente.",
       });
     },
+    onError: (error) => {
+      console.error('Error updating event:', error);
+      toast({
+        title: "Error al actualizar evento",
+        description: error instanceof Error ? error.message : "No se pudo actualizar el evento.",
+        variant: "destructive",
+      });
+    },
   });
 
-  // Eliminar evento
+  // Eliminar evento con validación mejorada
   const deleteEventMutation = useMutation({
     mutationFn: async (eventId: string) => {
-      const { error } = await supabase
-        .from('personal_events')
-        .delete()
-        .eq('id', eventId)
-        .eq('user_id', user?.id); // Solo permitir eliminar propios eventos
+      if (!user?.id) throw new Error('Usuario no autenticado');
+      
+      try {
+        // Primero eliminar alertas relacionadas
+        await supabase
+          .from('event_alerts')
+          .delete()
+          .eq('event_id', eventId)
+          .eq('user_id', user.id);
 
-      if (error) throw error;
+        // Luego eliminar el evento
+        const { error } = await supabase
+          .from('personal_events')
+          .delete()
+          .eq('id', eventId)
+          .eq('user_id', user.id); // Solo permitir eliminar propios eventos
+
+        if (error) {
+          console.error('Error deleting event:', error);
+          throw error;
+        }
+      } catch (err) {
+        console.error('Failed to delete event:', err);
+        throw err;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['personal-events'] });
       toast({
         title: "Evento eliminado",
         description: "El evento se ha eliminado correctamente.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error deleting event:', error);
+      toast({
+        title: "Error al eliminar evento",
+        description: error instanceof Error ? error.message : "No se pudo eliminar el evento.",
+        variant: "destructive",
       });
     },
   });
