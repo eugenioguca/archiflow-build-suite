@@ -23,13 +23,13 @@ export function useCalendarAlerts() {
   const checkAlertsRef = useRef<(() => Promise<void>) | null>(null);
 
   const playAlertSound = useCallback((soundType: string) => {
-    console.log(`Playing generated sound: ${soundType}`);
+    console.log(`Playing generated personal calendar sound: ${soundType}`);
     generateAlertSound(soundType as 'soft' | 'professional' | 'loud' | 'uh-oh' | 'airport')
       .catch((error) => {
         console.error(`Error playing generated sound ${soundType}:`, error);
         // Fallback to browser notification
         if (Notification.permission === 'granted') {
-          new Notification('Recordatorio de Calendario', {
+          new Notification('Recordatorio de Calendario Personal', {
             body: 'Tienes un evento próximo',
             icon: '/favicon.ico'
           });
@@ -74,13 +74,29 @@ export function useCalendarAlerts() {
         const now = new Date();
         const triggeredAlerts = data.filter((alert: UpcomingAlert) => {
           const eventTime = new Date(alert.event_start_date);
-          const timeDiff = eventTime.getTime() - now.getTime();
+          const alertTime = new Date(eventTime);
           
-          // Trigger alert if event is within 1 minute
-          return timeDiff <= 60000 && timeDiff > -300000;
+          // Calculate when the alert should trigger based on alert type and value
+          switch (alert.alert_type) {
+            case "minutes":
+              alertTime.setMinutes(alertTime.getMinutes() - alert.alert_value);
+              break;
+            case "hours":
+              alertTime.setHours(alertTime.getHours() - alert.alert_value);
+              break;
+            case "days":
+              alertTime.setDate(alertTime.getDate() - alert.alert_value);
+              break;
+          }
+          
+          // Trigger if we're within 1 minute of the alert time
+          const timeDiff = Math.abs(now.getTime() - alertTime.getTime());
+          console.log(`Personal calendar alert check: Event "${alert.event_title}" alert time: ${alertTime.toISOString()}, now: ${now.toISOString()}, diff: ${timeDiff}ms`);
+          return timeDiff <= 60000; // 1 minute tolerance
         });
 
         for (const alert of triggeredAlerts) {
+          console.log(`Triggering personal calendar alert: ${alert.event_title}`);
           showAlert(alert as UpcomingAlert);
         }
       }

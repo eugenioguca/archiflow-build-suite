@@ -27,7 +27,7 @@ export const useClientProjectCalendarAlerts = () => {
 
   const playAlertSound = (soundType: string) => {
     console.log(`Playing generated client project sound: ${soundType}`);
-    generateAlertSound(soundType as 'soft' | 'professional' | 'loud' | 'uh-oh')
+    generateAlertSound(soundType as 'soft' | 'professional' | 'loud' | 'uh-oh' | 'airport')
       .catch((error) => {
         console.error(`Error playing generated sound ${soundType}:`, error);
         // Fallback to browser notification
@@ -95,11 +95,15 @@ export const useClientProjectCalendarAlerts = () => {
 
         // Trigger if we're within 1 minute of the alert time
         const timeDiff = Math.abs(now.getTime() - alertTime.getTime());
+        console.log(`Project calendar alert check: Event "${alert.event_title}" (Project: ${alert.project_name}) alert time: ${alertTime.toISOString()}, now: ${now.toISOString()}, diff: ${timeDiff}ms`);
         return timeDiff <= 60000; // 1 minute in milliseconds
       });
 
       // Show alerts that need to be triggered
-      alertsToTrigger.forEach(showAlert);
+      alertsToTrigger.forEach(alert => {
+        console.log(`Triggering project calendar alert: ${alert.event_title} for project ${alert.project_name}`);
+        showAlert(alert);
+      });
 
     } catch (error) {
       console.error('Error in checkAlerts:', error);
