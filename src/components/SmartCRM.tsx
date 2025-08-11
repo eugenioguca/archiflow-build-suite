@@ -16,6 +16,8 @@ import { es } from "date-fns/locale";
 
 import { PaymentPlanManager } from "./PaymentPlanManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { QuickCalendarActions } from "./QuickCalendarActions";
+import { SmartReminderPlugin } from "./SmartReminderPlugin";
 
 interface CRMReminder {
   id: string;
@@ -429,61 +431,52 @@ export function SmartCRM({ clientId, clientName, lastContactDate, leadScore = 0,
         </CardContent>
       </Card>
 
-      {/* Quick Actions */}
+      {/* Quick Calendar Actions - Integración con Calendario */}
       <Card>
         <CardHeader>
-          <CardTitle>Acciones Rápidas</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Acciones Rápidas de Calendario
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => createQuickReminder(1, "Seguimiento 24h")}
-              >
-                Recordar en 1 día
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => createQuickReminder(3, "Seguimiento 3 días")}
-              >
-                Recordar en 3 días
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => createQuickReminder(7, "Seguimiento semanal")}
-              >
-                Recordar en 1 semana
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => createQuickReminder(30, "Seguimiento mensual")}
-              >
-                Recordar en 1 mes
-              </Button>
-            </div>
-            
-            {/* Project Management */}
-            {clientProject && (
-              <div className="border-t pt-4">
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Planes de Pago</h4>
-                  <PaymentPlanManager 
-                    clientProjectId={clientProject.id}
-                    planType="design_payment"
-                    readOnly={false}
-                    compact={true}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
+          <QuickCalendarActions
+            clientId={clientId}
+            clientName={clientName}
+            projectId={clientProject?.id}
+            projectName={clientProject?.project_name}
+            salesStage={status}
+          />
         </CardContent>
       </Card>
+
+      {/* Smart Reminder Plugin - Recordatorios del Calendario */}
+      <SmartReminderPlugin 
+        clientId={clientId}
+        clientName={clientName}
+        projectId={clientProject?.id}
+        projectName={clientProject?.project_name}
+      />
+
+      {/* Project Management */}
+      {clientProject && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Gestión de Proyectos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Planes de Pago</h4>
+              <PaymentPlanManager 
+                clientProjectId={clientProject.id}
+                planType="design_payment"
+                readOnly={false}
+                compact={true}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Reminders */}
       <Card>

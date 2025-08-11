@@ -16,6 +16,7 @@ interface QuickEventCreatorProps {
   onSubmit: (eventData: Partial<CalendarEvent> & { alerts?: Partial<EventAlert>[] }) => void;
   initialDate?: Date | null;
   event?: CalendarEvent | null;
+  prePopulatedData?: Partial<CalendarEvent> & { alerts?: Partial<EventAlert>[] };
 }
 
 export function QuickEventCreator({ 
@@ -23,7 +24,8 @@ export function QuickEventCreator({
   onClose, 
   onSubmit, 
   initialDate, 
-  event 
+  event,
+  prePopulatedData 
 }: QuickEventCreatorProps) {
   const [formData, setFormData] = useState({
     title: "",
@@ -50,6 +52,18 @@ export function QuickEventCreator({
         location: event.location || "",
       });
       setAlerts((event.alerts || []) as Partial<EventAlert>[]);
+    } else if (prePopulatedData) {
+      // Pre-populated mode (from CRM)
+      setFormData({
+        title: prePopulatedData.title || "",
+        description: prePopulatedData.description || "",
+        start_date: prePopulatedData.start_date || format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+        end_date: prePopulatedData.end_date || format(addHours(new Date(), 1), "yyyy-MM-dd'T'HH:mm"),
+        all_day: prePopulatedData.all_day || false,
+        color: prePopulatedData.color || "#3b82f6",
+        location: prePopulatedData.location || "",
+      });
+      setAlerts((prePopulatedData.alerts || []) as Partial<EventAlert>[]);
     } else if (initialDate) {
       // Create mode with initial date
       const start = format(initialDate, "yyyy-MM-dd'T'HH:mm");
@@ -80,7 +94,7 @@ export function QuickEventCreator({
       });
       setAlerts([]);
     }
-  }, [event, initialDate, open]);
+  }, [event, initialDate, prePopulatedData, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
