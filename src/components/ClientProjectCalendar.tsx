@@ -7,6 +7,7 @@ import { EventDetailsModal } from "@/components/calendar/EventDetailsModal";
 import { QuickEventCreator } from "@/components/calendar/QuickEventCreator";
 import { ClientProjectCalendarEvent, useClientProjectCalendar } from "@/hooks/useClientProjectCalendar";
 import { Plus } from "lucide-react";
+import { format, addHours } from "date-fns";
 
 interface ClientProjectCalendarProps {
   projectId: string | null;
@@ -99,8 +100,8 @@ export const ClientProjectCalendar: React.FC<ClientProjectCalendarProps> = ({
       description: userRole === 'sales' 
         ? 'Reunión comercial con el cliente'
         : 'Revisión de avances de diseño',
-      start_date: now.toISOString().slice(0, 16),
-      end_date: oneHourLater.toISOString().slice(0, 16),
+      start_date: format(now, "yyyy-MM-dd'T'HH:mm"),
+      end_date: format(oneHourLater, "yyyy-MM-dd'T'HH:mm"),
       all_day: false,
       color: userRole === 'sales' ? '#3b82f6' : '#10b981',
       event_type: getEventTypeByRole(userRole)
