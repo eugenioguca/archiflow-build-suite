@@ -293,7 +293,7 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
         .insert({
           project_id: projectId,
           client_id: clientId,
-          sender_id: user?.id,
+          sender_id: userProfile?.id || user?.id,
           message: newMessage.trim(),
           is_client_message: userProfile?.role === 'client',
           attachments: messageAttachments.length > 0 ? messageAttachments : null,
@@ -495,20 +495,6 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
         {/* Input area */}
         <div className="border-t p-4">
           <div className="space-y-3">
-            {/* Drag and drop for attachments */}
-            <DragDropUploader
-              onFilesSelected={(files) => setAttachments(prev => [...prev, ...files])}
-              accept={{
-                'image/*': ['.png', '.jpg', '.jpeg', '.gif'],
-                'application/pdf': ['.pdf'],
-                'application/msword': ['.doc'],
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-                'text/*': ['.txt']
-              }}
-              multiple={true}
-              maxSize={10 * 1024 * 1024} // 10MB
-              showPreview={false}
-            />
             
             <div className="flex gap-2">
               <Input

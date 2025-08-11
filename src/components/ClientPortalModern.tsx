@@ -83,14 +83,16 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
   const [clientProjects, setClientProjects] = useState<ClientProject[]>([]);
   const [selectedProject, setSelectedProject] = useState<ClientProject | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('calendar');
   const [paidAmount, setPaidAmount] = useState(0);
+  const [progressPhotos, setProgressPhotos] = useState([]);
 
   useEffect(() => {
     if (isPreview && previewData) {
       // Use preview data
       setClientProjects([previewData.project]);
       setSelectedProject(previewData.project);
+      setProgressPhotos(previewData.progressPhotos || []);
       setLoading(false);
       // Fetch paid amount for preview
       if (previewData.project.id) {
@@ -104,6 +106,7 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
   useEffect(() => {
     if (selectedProject && !isPreview) {
       fetchProjectDetails(selectedProject.id);
+      fetchProgressPhotos(selectedProject.id);
     }
   }, [selectedProject, isPreview]);
 
@@ -148,6 +151,39 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
   const fetchProjectDetails = async (projectId: string) => {
     // Simplified for demo - just sets empty arrays
     console.log('Fetching details for project:', projectId);
+  };
+
+  const fetchProgressPhotos = async (projectId: string) => {
+    try {
+      const { data: photos, error } = await supabase
+        .from('progress_photos')
+        .select(`
+          id,
+          photo_url,
+          description,
+          title,
+          taken_at,
+          photographer_name,
+          phase_id
+        `)
+        .eq('project_id', projectId)
+        .order('taken_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedPhotos = photos?.map(photo => ({
+        id: photo.id,
+        photo_url: photo.photo_url,
+        description: photo.description || photo.title,
+        phase_name: null, // Will be populated if we have phase info
+        created_at: photo.taken_at,
+        photographer_name: photo.photographer_name
+      })) || [];
+
+      setProgressPhotos(formattedPhotos);
+    } catch (error) {
+      console.error('Error fetching progress photos:', error);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -446,11 +482,7 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
 
         {/* Navigation Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6 mb-6">
-            <TabsTrigger value="overview" className="text-xs">
-              <TrendingUp className="h-4 w-4 mb-1" />
-              Resumen
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5 mb-6">
             <TabsTrigger value="calendar" className="text-xs">
               <Calendar className="h-4 w-4 mb-1" />
               Calendario
@@ -473,24 +505,6 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-6">
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle>Actividad Reciente</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3 p-3 bg-muted/30 rounded-lg">
-                    <CheckCircle2 className="h-5 w-5 text-success" />
-                    <div>
-                      <p className="font-medium">Proyecto actualizado</p>
-                      <p className="text-sm text-muted-foreground">Fechas de construcción configuradas</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="calendar">
             <div className="space-y-4">
@@ -549,7 +563,7 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
                   )
                 ) : selectedProject ? (
                   <ProgressPhotosCarousel 
-                    photos={[]} 
+                    photos={progressPhotos} 
                     onPhotoDownload={handlePhotoDownload}
                   />
                 ) : (

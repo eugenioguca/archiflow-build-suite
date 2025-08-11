@@ -22,8 +22,8 @@ interface EventDetailsModalProps {
   event: CalendarEvent | null;
   open: boolean;
   onClose: () => void;
-  onUpdate: (eventData: any) => void;
-  onDelete: () => void;
+  onUpdate?: (eventData: any) => void;
+  onDelete?: () => void;
 }
 
 export function EventDetailsModal({ 
@@ -125,52 +125,60 @@ export function EventDetailsModal({
               )}
             </div>
 
-            <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleEdit}
-              >
-                <Edit className="h-4 w-4 mr-1" />
-                Editar
-              </Button>
-              
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Eliminar
+            {(onUpdate || onDelete) && (
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                {onUpdate && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleEdit}
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Editar
                   </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>¿Eliminar evento?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Esta acción no se puede deshacer. El evento "{event.title}" será eliminado permanentemente.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction 
-                      onClick={onDelete}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      Eliminar
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
+                )}
+                
+                {onDelete && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="sm">
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Eliminar
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Eliminar evento?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta acción no se puede deshacer. El evento "{event.title}" será eliminado permanentemente.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={onDelete}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Eliminar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
 
-      <QuickEventCreator
-        open={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        onSubmit={handleUpdate}
-        event={event}
-      />
+      {onUpdate && (
+        <QuickEventCreator
+          open={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onSubmit={handleUpdate}
+          event={event}
+        />
+      )}
     </>
   );
 }
