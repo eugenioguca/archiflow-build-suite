@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "./use-toast";
+import { useAuth } from "./useAuth";
 
 export interface ClientProjectCalendarEventAlert {
   id: string;
@@ -33,6 +34,7 @@ export const useClientProjectCalendar = (projectId: string | null) => {
   const [events, setEvents] = useState<ClientProjectCalendarEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const fetchEvents = async () => {
     if (!projectId) {
@@ -78,9 +80,18 @@ export const useClientProjectCalendar = (projectId: string | null) => {
   };
 
   const createEvent = async (eventData: Omit<ClientProjectCalendarEvent, 'id' | 'created_at' | 'updated_at'>) => {
-    if (!projectId) return false;
+    if (!projectId || !user) return false;
 
     try {
+      // Get current user's profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError) throw profileError;
+
       // Separate alerts from event data
       const { alerts, ...eventDataWithoutAlerts } = eventData;
 
@@ -89,7 +100,8 @@ export const useClientProjectCalendar = (projectId: string | null) => {
         .from('client_project_calendar_events')
         .insert([{
           ...eventDataWithoutAlerts,
-          client_project_id: projectId
+          client_project_id: projectId,
+          created_by: profile.id
         }])
         .select()
         .single();

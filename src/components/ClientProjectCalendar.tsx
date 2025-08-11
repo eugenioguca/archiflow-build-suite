@@ -46,7 +46,7 @@ export const ClientProjectCalendar: React.FC<ClientProjectCalendarProps> = ({
     const success = await createEvent({
       ...eventData,
       event_type: getEventTypeByRole(userRole),
-      created_by: '', // Will be set by the backend
+      // created_by will be set automatically by the backend
     });
     
     if (success) {
