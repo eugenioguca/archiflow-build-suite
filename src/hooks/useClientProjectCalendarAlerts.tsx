@@ -26,9 +26,36 @@ export const useClientProjectCalendarAlerts = () => {
 
   const playAlertSound = (soundType: string) => {
     try {
+      console.log(`Attempting to play sound: ${soundType}`);
       const audio = new Audio(`/sounds/${soundType}.mp3`);
       audio.volume = 0.7;
-      audio.play().catch(() => {
+      
+      // Add event listeners for better debugging
+      audio.addEventListener('canplaythrough', () => {
+        console.log(`Sound ${soundType} loaded successfully`);
+      });
+      
+      audio.addEventListener('error', (e) => {
+        console.error(`Error loading sound ${soundType}:`, e);
+        // Try fallback to soft-alert if available
+        if (soundType !== 'soft-alert') {
+          console.log('Falling back to soft-alert sound');
+          const fallbackAudio = new Audio('/sounds/soft-alert.mp3');
+          fallbackAudio.volume = 0.7;
+          fallbackAudio.play().catch(() => {
+            // Final fallback to browser notification
+            if (Notification.permission === 'granted') {
+              new Notification('Recordatorio de Proyecto', {
+                body: 'Tienes una cita programada próximamente',
+                icon: '/favicon.ico'
+              });
+            }
+          });
+        }
+      });
+      
+      audio.play().catch((playError) => {
+        console.error(`Error playing sound ${soundType}:`, playError);
         // Fallback to browser notification if audio fails
         if (Notification.permission === 'granted') {
           new Notification('Recordatorio de Proyecto', {
@@ -38,7 +65,14 @@ export const useClientProjectCalendarAlerts = () => {
         }
       });
     } catch (error) {
-      console.warn('Could not play alert sound:', error);
+      console.warn('Could not create audio element:', error);
+      // Fallback to browser notification
+      if (Notification.permission === 'granted') {
+        new Notification('Recordatorio de Proyecto', {
+          body: 'Tienes una cita programada próximamente',
+          icon: '/favicon.ico'
+        });
+      }
     }
   };
 
