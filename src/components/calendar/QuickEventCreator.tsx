@@ -11,6 +11,7 @@ import { CalendarEvent, EventAlert } from "@/hooks/usePersonalCalendar";
 import { ClientProjectCalendarEvent, ClientProjectCalendarEventAlert } from "@/hooks/useClientProjectCalendar";
 import { format, addHours } from "date-fns";
 import { Plus, Trash2, Play } from "lucide-react";
+import { generateAlertSound } from "@/utils/audioGenerator";
 
 // Generic alert interface that works with both calendar types
 interface GenericAlert {
@@ -390,21 +391,8 @@ export function QuickEventCreator({
                       className="h-8 w-8 p-0"
                       onClick={() => {
                         const currentSoundType = alert.sound_type || (calendarType === 'personal' ? 'soft' : 'soft');
-                        let soundFile = '';
-                        
-                        if (calendarType === 'personal') {
-                          soundFile = `/sounds/${currentSoundType}-alert.mp3`;
-                        } else {
-                          if (currentSoundType === 'icq-message') {
-                            soundFile = `/sounds/icq-message.mp3`;
-                          } else {
-                            soundFile = `/sounds/${currentSoundType}-alert.mp3`;
-                          }
-                        }
-                        
-                        const audio = new Audio(soundFile);
-                        audio.volume = 0.7;
-                        audio.play().catch(console.error);
+                        generateAlertSound(currentSoundType as 'soft' | 'professional' | 'loud' | 'icq-message')
+                          .catch(console.error);
                       }}
                     >
                       <Play className="h-3 w-3" />

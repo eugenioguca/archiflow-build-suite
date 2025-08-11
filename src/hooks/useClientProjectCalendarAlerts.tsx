@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "./use-toast";
 import { useAuth } from "./useAuth";
+import { generateAlertSound } from "@/utils/audioGenerator";
 
 export interface ClientProjectUpcomingAlert {
   event_id: string;
@@ -25,55 +26,18 @@ export const useClientProjectCalendarAlerts = () => {
   const checkAlertsRef = useRef<() => Promise<void>>();
 
   const playAlertSound = (soundType: string) => {
-    try {
-      console.log(`Attempting to play sound: ${soundType}`);
-      const audio = new Audio(`/sounds/${soundType}.mp3`);
-      audio.volume = 0.7;
-      
-      // Add event listeners for better debugging
-      audio.addEventListener('canplaythrough', () => {
-        console.log(`Sound ${soundType} loaded successfully`);
-      });
-      
-      audio.addEventListener('error', (e) => {
-        console.error(`Error loading sound ${soundType}:`, e);
-        // Try fallback to soft-alert if available
-        if (soundType !== 'soft-alert') {
-          console.log('Falling back to soft-alert sound');
-          const fallbackAudio = new Audio('/sounds/soft-alert.mp3');
-          fallbackAudio.volume = 0.7;
-          fallbackAudio.play().catch(() => {
-            // Final fallback to browser notification
-            if (Notification.permission === 'granted') {
-              new Notification('Recordatorio de Proyecto', {
-                body: 'Tienes una cita programada próximamente',
-                icon: '/favicon.ico'
-              });
-            }
-          });
-        }
-      });
-      
-      audio.play().catch((playError) => {
-        console.error(`Error playing sound ${soundType}:`, playError);
-        // Fallback to browser notification if audio fails
+    console.log(`Playing generated client project sound: ${soundType}`);
+    generateAlertSound(soundType as 'soft' | 'professional' | 'loud' | 'icq-message')
+      .catch((error) => {
+        console.error(`Error playing generated sound ${soundType}:`, error);
+        // Fallback to browser notification
         if (Notification.permission === 'granted') {
           new Notification('Recordatorio de Proyecto', {
-            body: 'Tienes una cita programada próximamente',
+            body: 'Tienes un evento de proyecto próximo',
             icon: '/favicon.ico'
           });
         }
       });
-    } catch (error) {
-      console.warn('Could not create audio element:', error);
-      // Fallback to browser notification
-      if (Notification.permission === 'granted') {
-        new Notification('Recordatorio de Proyecto', {
-          body: 'Tienes una cita programada próximamente',
-          icon: '/favicon.ico'
-        });
-      }
-    }
   };
 
   const showAlert = (alert: ClientProjectUpcomingAlert) => {

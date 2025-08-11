@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { generateAlertSound } from "@/utils/audioGenerator";
 
 interface UpcomingAlert {
   event_id: string;
@@ -22,38 +23,11 @@ export function useCalendarAlerts() {
   const checkAlertsRef = useRef<(() => Promise<void>) | null>(null);
 
   const playAlertSound = useCallback((soundType: string) => {
-    try {
-      console.log(`Attempting to play sound: ${soundType}-alert`);
-      const audio = new Audio(`/sounds/${soundType}-alert.mp3`);
-      audio.volume = 0.7;
-      
-      // Add event listeners for better debugging
-      audio.addEventListener('canplaythrough', () => {
-        console.log(`Sound ${soundType}-alert loaded successfully`);
-      });
-      
-      audio.addEventListener('error', (e) => {
-        console.error(`Error loading sound ${soundType}-alert:`, e);
-        // Try fallback to soft-alert if available
-        if (soundType !== 'soft') {
-          console.log('Falling back to soft-alert sound');
-          const fallbackAudio = new Audio('/sounds/soft-alert.mp3');
-          fallbackAudio.volume = 0.7;
-          fallbackAudio.play().catch(() => {
-            // Final fallback to browser notification
-            if (Notification.permission === 'granted') {
-              new Notification('Recordatorio de Calendario', {
-                body: 'Tienes un evento próximo',
-                icon: '/favicon.ico'
-              });
-            }
-          });
-        }
-      });
-      
-      audio.play().catch((playError) => {
-        console.error(`Error playing sound ${soundType}-alert:`, playError);
-        // Fallback to browser notification if audio fails
+    console.log(`Playing generated sound: ${soundType}`);
+    generateAlertSound(soundType as 'soft' | 'professional' | 'loud' | 'icq-message')
+      .catch((error) => {
+        console.error(`Error playing generated sound ${soundType}:`, error);
+        // Fallback to browser notification
         if (Notification.permission === 'granted') {
           new Notification('Recordatorio de Calendario', {
             body: 'Tienes un evento próximo',
@@ -61,16 +35,6 @@ export function useCalendarAlerts() {
           });
         }
       });
-    } catch (error) {
-      console.warn('Could not create audio element:', error);
-      // Fallback to browser notification
-      if (Notification.permission === 'granted') {
-        new Notification('Recordatorio de Calendario', {
-          body: 'Tienes un evento próximo',
-          icon: '/favicon.ico'
-        });
-      }
-    }
   }, []);
 
   const showAlert = useCallback((alert: UpcomingAlert) => {
