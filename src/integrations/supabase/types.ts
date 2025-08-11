@@ -2831,133 +2831,6 @@ export type Database = {
         }
         Relationships: []
       }
-      event_alerts: {
-        Row: {
-          alert_minutes_before: number
-          alert_type: string | null
-          created_at: string | null
-          event_id: string
-          id: string
-          is_active: boolean | null
-          sound_type: string | null
-        }
-        Insert: {
-          alert_minutes_before: number
-          alert_type?: string | null
-          created_at?: string | null
-          event_id: string
-          id?: string
-          is_active?: boolean | null
-          sound_type?: string | null
-        }
-        Update: {
-          alert_minutes_before?: number
-          alert_type?: string | null
-          created_at?: string | null
-          event_id?: string
-          id?: string
-          is_active?: boolean | null
-          sound_type?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "event_alerts_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "personal_events"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      event_invitations: {
-        Row: {
-          created_at: string | null
-          event_id: string
-          id: string
-          invitee_id: string
-          invitee_user_id: string | null
-          inviter_id: string
-          inviter_user_id: string | null
-          response_date: string | null
-          response_message: string | null
-          status: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          event_id: string
-          id?: string
-          invitee_id: string
-          invitee_user_id?: string | null
-          inviter_id: string
-          inviter_user_id?: string | null
-          response_date?: string | null
-          response_message?: string | null
-          status?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          event_id?: string
-          id?: string
-          invitee_id?: string
-          invitee_user_id?: string | null
-          inviter_id?: string
-          inviter_user_id?: string | null
-          response_date?: string | null
-          response_message?: string | null
-          status?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "event_invitations_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "personal_events"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      event_participants: {
-        Row: {
-          added_at: string | null
-          event_id: string
-          id: string
-          participant_user_id: string | null
-          participation_status: string | null
-          user_id: string
-        }
-        Insert: {
-          added_at?: string | null
-          event_id: string
-          id?: string
-          participant_user_id?: string | null
-          participation_status?: string | null
-          user_id: string
-        }
-        Update: {
-          added_at?: string | null
-          event_id?: string
-          id?: string
-          participant_user_id?: string | null
-          participation_status?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "event_participants_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "personal_events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_participants_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       expenses: {
         Row: {
           amount: number
@@ -4218,51 +4091,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      personal_events: {
-        Row: {
-          created_at: string | null
-          created_by: string | null
-          description: string | null
-          end_date: string
-          event_type: string | null
-          id: string
-          is_all_day: boolean | null
-          location: string | null
-          start_date: string
-          title: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          end_date: string
-          event_type?: string | null
-          id?: string
-          is_all_day?: boolean | null
-          location?: string | null
-          start_date: string
-          title: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          end_date?: string
-          event_type?: string | null
-          id?: string
-          is_all_day?: boolean | null
-          location?: string | null
-          start_date?: string
-          title?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
       }
       platform_settings: {
         Row: {
@@ -6250,10 +6078,6 @@ export type Database = {
       }
     }
     Functions: {
-      accept_event_invitation: {
-        Args: { invitation_id: string }
-        Returns: undefined
-      }
       calculate_complement_due_date: {
         Args: { payment_date: string }
         Returns: string
@@ -6264,10 +6088,6 @@ export type Database = {
       }
       create_default_design_phases: {
         Args: { project_id_param: string }
-        Returns: undefined
-      }
-      decline_event_invitation: {
-        Args: { invitation_id: string }
         Returns: undefined
       }
       delete_client_cascade: {
@@ -6456,30 +6276,6 @@ export type Database = {
       refresh_financial_summary: {
         Args: Record<PropertyKey, never>
         Returns: undefined
-      }
-      search_users_and_clients_for_invitation: {
-        Args: { search_text?: string; limit_results?: number }
-        Returns: {
-          user_id: string
-          profile_id: string
-          full_name: string
-          email: string
-          user_role: string
-          user_position: string
-          department: string
-        }[]
-      }
-      search_users_for_invitation: {
-        Args: { search_text?: string; limit_results?: number }
-        Returns: {
-          user_id: string
-          profile_id: string
-          full_name: string
-          email: string
-          user_role: string
-          user_position: string
-          department: string
-        }[]
       }
       update_design_phase_days_elapsed: {
         Args: Record<PropertyKey, never>
