@@ -22,16 +22,55 @@ export function useCalendarAlerts() {
   const checkAlertsRef = useRef<(() => Promise<void>) | null>(null);
 
   const playAlertSound = useCallback((soundType: string) => {
-    const audio = new Audio(`/sounds/${soundType}-alert.mp3`);
-    audio.play().catch(() => {
-      // Fallback to system notification if available
-      if ('Notification' in window) {
+    try {
+      console.log(`Attempting to play sound: ${soundType}-alert`);
+      const audio = new Audio(`/sounds/${soundType}-alert.mp3`);
+      audio.volume = 0.7;
+      
+      // Add event listeners for better debugging
+      audio.addEventListener('canplaythrough', () => {
+        console.log(`Sound ${soundType}-alert loaded successfully`);
+      });
+      
+      audio.addEventListener('error', (e) => {
+        console.error(`Error loading sound ${soundType}-alert:`, e);
+        // Try fallback to soft-alert if available
+        if (soundType !== 'soft') {
+          console.log('Falling back to soft-alert sound');
+          const fallbackAudio = new Audio('/sounds/soft-alert.mp3');
+          fallbackAudio.volume = 0.7;
+          fallbackAudio.play().catch(() => {
+            // Final fallback to browser notification
+            if (Notification.permission === 'granted') {
+              new Notification('Recordatorio de Calendario', {
+                body: 'Tienes un evento próximo',
+                icon: '/favicon.ico'
+              });
+            }
+          });
+        }
+      });
+      
+      audio.play().catch((playError) => {
+        console.error(`Error playing sound ${soundType}-alert:`, playError);
+        // Fallback to browser notification if audio fails
+        if (Notification.permission === 'granted') {
+          new Notification('Recordatorio de Calendario', {
+            body: 'Tienes un evento próximo',
+            icon: '/favicon.ico'
+          });
+        }
+      });
+    } catch (error) {
+      console.warn('Could not create audio element:', error);
+      // Fallback to browser notification
+      if (Notification.permission === 'granted') {
         new Notification('Recordatorio de Calendario', {
           body: 'Tienes un evento próximo',
           icon: '/favicon.ico'
         });
       }
-    });
+    }
   }, []);
 
   const showAlert = useCallback((alert: UpcomingAlert) => {
