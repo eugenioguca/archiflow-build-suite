@@ -115,7 +115,7 @@ export function QuickEventCreator({
       });
       setAlerts([]);
     } else {
-      // Reset form
+      // Reset form - use current date and time by default
       const now = new Date();
       const start = format(now, "yyyy-MM-dd'T'HH:mm");
       const end = format(addHours(now, 1), "yyyy-MM-dd'T'HH:mm");
@@ -171,6 +171,28 @@ export function QuickEventCreator({
     setAlerts(updatedAlerts);
   };
 
+  // Function to handle start date change and automatically update end date
+  const handleStartDateChange = (newStartDate: string) => {
+    setFormData(prevData => {
+      const startDate = new Date(newStartDate);
+      const endDate = new Date(startDate);
+      
+      // If all-day is enabled, just change the date part and keep it as all-day
+      if (prevData.all_day) {
+        endDate.setDate(endDate.getDate());
+      } else {
+        // Add 1 hour for regular events
+        endDate.setHours(endDate.getHours() + 1);
+      }
+      
+      return {
+        ...prevData,
+        start_date: newStartDate,
+        end_date: format(endDate, "yyyy-MM-dd'T'HH:mm")
+      };
+    });
+  };
+
   const colors = [
     { value: "#3b82f6", label: "Azul" },
     { value: "#ef4444", label: "Rojo" },
@@ -219,7 +241,7 @@ export function QuickEventCreator({
                 id="start_date"
                 type="datetime-local"
                 value={formData.start_date}
-                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                onChange={(e) => handleStartDateChange(e.target.value)}
                 required
               />
             </div>
