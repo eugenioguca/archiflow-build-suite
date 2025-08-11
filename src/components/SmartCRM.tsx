@@ -68,7 +68,7 @@ export function SmartCRM({ clientId, clientName, lastContactDate, leadScore = 0,
 
   useEffect(() => {
     fetchReminders();
-    generateAIInsights();
+    generateIntelligentInsights();
   }, [clientId]);
 
   const fetchReminders = async () => {
@@ -87,205 +87,367 @@ export function SmartCRM({ clientId, clientName, lastContactDate, leadScore = 0,
     }
   };
 
-  const generateAIInsights = async () => {
+  // Funciones de análisis específicas
+  const analyzePaymentStatus = async (projectId: string) => {
+    const { data: paymentPlans } = await supabase
+      .from("payment_plans")
+      .select(`
+        *,
+        payment_installments (*)
+      `)
+      .eq("client_project_id", projectId)
+      .eq("is_current_plan", true);
+
+    return paymentPlans || [];
+  };
+
+  const analyzeProjectProgress = async (projectId: string, projectStatus: string) => {
+    if (projectStatus === "design") {
+      const { data: designPhases } = await supabase
+        .from("design_phases")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("phase_order");
+      return designPhases || [];
+    } else if (projectStatus === "construction") {
+      const { data: constructionPhases } = await supabase
+        .from("construction_phases")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("phase_order");
+      return constructionPhases || [];
+    }
+    return [];
+  };
+
+  const analyzeCommunication = async (projectId: string) => {
+    const { data: chatMessages } = await supabase
+      .from("client_portal_chat")
+      .select("*")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    return chatMessages || [];
+  };
+
+  const analyzeDocumentation = async (projectId: string) => {
+    const { data: documents } = await supabase
+      .from("documents")
+      .select("*")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: false });
+
+    return documents || [];
+  };
+
+  const analyzeCalendarActivity = async (projectId: string) => {
+    const { data: events } = await supabase
+      .from("client_project_calendar_events")
+      .select("*")
+      .eq("client_project_id", projectId)
+      .order("start_date", { ascending: false })
+      .limit(5);
+
+    return events || [];
+  };
+
+  const generateIntelligentInsights = async () => {
     const generatedInsights: AIInsight[] = [];
 
     try {
-      // Get project data for this client
+      // Get complete project data
       const { data: projectData } = await supabase
         .from("client_projects")
-        .select("created_at, last_contact_date, last_activity_date, sales_pipeline_stage")
+        .select("*")
         .eq("client_id", clientId)
-        .single();
+        .maybeSingle();
 
-      // Get CRM activities for this client
-      const { data: activitiesData } = await supabase
-        .from("crm_activities")
-        .select("created_at, is_completed, activity_type, scheduled_date")
-        .eq("client_id", clientId)
-        .order("created_at", { ascending: false })
-        .limit(10);
+      if (!projectData) {
+        generatedInsights.push({
+          type: "risk",
+          title: "Sin Proyecto Asignado",
+          description: "Este cliente no tiene un proyecto asociado.",
+          priority: "high",
+          suggested_actions: [
+            "Crear proyecto para el cliente",
+            "Definir alcance del servicio requerido",
+            "Asignar asesor comercial"
+          ]
+        });
+        setInsights(generatedInsights);
+        return;
+      }
 
       const now = new Date();
-      const projectCreated = projectData?.created_at ? new Date(projectData.created_at) : null;
-      const lastContact = projectData?.last_contact_date ? new Date(projectData.last_contact_date) : null;
-      const lastActivity = projectData?.last_activity_date ? new Date(projectData.last_activity_date) : null;
-      
-      // Calculate time metrics
-      const hoursSinceCreation = projectCreated ? Math.floor((now.getTime() - projectCreated.getTime()) / (1000 * 60 * 60)) : 0;
-      const daysSinceCreation = Math.floor(hoursSinceCreation / 24);
-      const daysSinceLastContact = lastContact ? Math.floor((now.getTime() - lastContact.getTime()) / (1000 * 60 * 60 * 24)) : 999;
-      const daysSinceLastActivity = lastActivity ? Math.floor((now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24)) : 999;
+      const projectCreated = new Date(projectData.created_at);
+      const daysSinceCreation = Math.floor((now.getTime() - projectCreated.getTime()) / (1000 * 60 * 60 * 24));
 
-      // Check for activities and completion rates
-      const totalActivities = activitiesData?.length || 0;
-      const completedActivities = activitiesData?.filter(a => a.is_completed).length || 0;
-      const pendingActivities = activitiesData?.filter(a => !a.is_completed && a.scheduled_date && new Date(a.scheduled_date) < now).length || 0;
+      // Analizar según la etapa actual del cliente
+      const stage = projectData.sales_pipeline_stage;
+      const projectStatus = projectData.status;
 
-      // 1. LEAD ABANDONMENT INSIGHTS
-      if (hoursSinceCreation > 24 && !lastContact) {
-        generatedInsights.push({
-          type: "risk",
-          title: "Lead Sin Contacto Inicial",
-          description: `Han pasado ${hoursSinceCreation} horas desde que se generó el lead y no se ha realizado contacto inicial.`,
-          priority: hoursSinceCreation > 48 ? "high" : "medium",
-          suggested_actions: [
-            "Realizar llamada de bienvenida inmediatamente",
-            "Enviar email de presentación con portfolio",
-            "Programar primera cita de consulta",
-            "Asignar asesor específico para seguimiento"
-          ]
-        });
-      }
-
-      if (daysSinceLastContact > 3 && projectData?.sales_pipeline_stage !== "cliente_cerrado") {
-        const priority = daysSinceLastContact > 7 ? "high" : daysSinceLastContact > 5 ? "medium" : "low";
-        const severity = daysSinceLastContact > 14 ? "ABANDONADO" : 
-                        daysSinceLastContact > 7 ? "FRÍO" : "TIBIO";
+      // 1. ANÁLISIS PARA CLIENTES CERRADOS
+      if (stage === "cliente_cerrado") {
+        // Analizar pagos
+        const paymentPlans = await analyzePaymentStatus(projectData.id);
         
-        generatedInsights.push({
-          type: "follow_up",
-          title: `Lead ${severity}`,
-          description: `${daysSinceLastContact} días sin contacto. Riesgo de pérdida de oportunidad comercial.`,
-          priority,
-          suggested_actions: [
-            daysSinceLastContact > 14 ? "Campaña de reactivación urgente" : "Llamada de seguimiento prioritaria",
-            "Revisar historial de interacciones previas",
-            "Enviar propuesta actualizada con ofertas especiales",
-            "Programar reunión presencial si es posible"
-          ]
-        });
+        if (projectStatus === "potential") {
+          // Cliente cerrado pero sin iniciar
+          if (paymentPlans.length === 0) {
+            generatedInsights.push({
+              type: "milestone",
+              title: "Crear Plan de Pago de Diseño",
+              description: "Cliente cerrado sin plan de pago configurado.",
+              priority: "high",
+              suggested_actions: [
+                "Configurar plan de pago de diseño",
+                "Definir montos y fechas de exhibiciones",
+                "Enviar plan de pago al cliente"
+              ]
+            });
+          } else {
+            // Verificar pagos de diseño
+            const designPlan = paymentPlans.find(p => p.plan_type === "design_payment");
+            if (designPlan) {
+              const firstInstallment = designPlan.payment_installments?.find(i => i.installment_number === 1);
+              if (firstInstallment?.status !== "paid") {
+                const dueDate = new Date(firstInstallment?.due_date || "");
+                const daysPastDue = Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+                
+                generatedInsights.push({
+                  type: daysPastDue > 0 ? "risk" : "follow_up",
+                  title: daysPastDue > 0 ? "Anticipo de Diseño Vencido" : "Pendiente Anticipo de Diseño",
+                  description: `Primer anticipo de diseño ${daysPastDue > 0 ? `vencido hace ${daysPastDue} días` : "pendiente de pago"}.`,
+                  priority: daysPastDue > 7 ? "high" : "medium",
+                  suggested_actions: [
+                    "Verificar comprobante de pago subido",
+                    "Contactar cliente para seguimiento de pago",
+                    "Enviar recordatorio de vencimiento"
+                  ]
+                });
+              } else {
+                generatedInsights.push({
+                  type: "opportunity",
+                  title: "Listo para Iniciar Diseño",
+                  description: "Anticipo pagado. Cliente listo para comenzar etapa de diseño.",
+                  priority: "high",
+                  suggested_actions: [
+                    "Programar reunión de inicio de diseño",
+                    "Asignar project manager",
+                    "Crear fases de diseño en sistema"
+                  ]
+                });
+              }
+            }
+          }
+        } else if (projectStatus === "design") {
+          // Cliente en etapa de diseño
+          const designPhases = await analyzeProjectProgress(projectData.id, "design");
+          const paymentPlans = await analyzePaymentStatus(projectData.id);
+          
+          if (designPhases.length === 0) {
+            generatedInsights.push({
+              type: "milestone",
+              title: "Crear Fases de Diseño",
+              description: "Proyecto en diseño sin fases definidas.",
+              priority: "high",
+              suggested_actions: [
+                "Crear fases de diseño (Zonificación, Volumetría, Acabados, Renders)",
+                "Asignar tiempos estimados a cada fase",
+                "Definir entregables por fase"
+              ]
+            });
+          } else {
+            // Analizar progreso de fases
+            const pendingPhases = designPhases.filter(p => p.status === "pending");
+            const inProgressPhases = designPhases.filter(p => p.status === "in_progress");
+            // Check for delayed phases (simplified approach)
+            const delayedPhases = designPhases.filter(p => {
+              if (p.status === "in_progress") {
+                const phaseCreated = new Date(p.created_at);
+                const daysSinceCreated = Math.floor((now.getTime() - phaseCreated.getTime()) / (1000 * 60 * 60 * 24));
+                return daysSinceCreated > 7; // Consider delayed if in progress for more than 7 days
+              }
+              return false;
+            });
+
+            if (delayedPhases.length > 0) {
+              generatedInsights.push({
+                type: "risk",
+                title: `Fase de Diseño Retrasada`,
+                description: `Fase "${delayedPhases[0].phase_name}" tiene retraso.`,
+                priority: "high",
+                suggested_actions: [
+                  "Revisar progreso de la fase retrasada",
+                  "Contactar project manager asignado",
+                  "Informar al cliente sobre el status"
+                ]
+              });
+            }
+
+            if (inProgressPhases.length === 0 && pendingPhases.length > 0) {
+              generatedInsights.push({
+                type: "follow_up",
+                title: "Iniciar Siguiente Fase de Diseño",
+                description: `Fase "${pendingPhases[0].phase_name}" lista para iniciar.`,
+                priority: "medium",
+                suggested_actions: [
+                  "Marcar fase como en progreso",
+                  "Notificar al equipo de diseño",
+                  "Programar reunión de kickoff"
+                ]
+              });
+            }
+          }
+
+          // Verificar si hay plan de construcción listo
+          const constructionPlan = paymentPlans.find(p => p.plan_type === "construction_payment");
+          const completedDesignPhases = designPhases.filter(p => p.status === "completed");
+          
+          if (completedDesignPhases.length === designPhases.length && designPhases.length > 0) {
+            if (!constructionPlan && projectData.construction_budget > 0) {
+              generatedInsights.push({
+                type: "opportunity",
+                title: "Crear Plan de Pago de Construcción",
+                description: "Diseño completado. Listo para configurar plan de construcción.",
+                priority: "high",
+                suggested_actions: [
+                  "Configurar plan de pago de construcción",
+                  "Definir calendario de exhibiciones",
+                  "Presentar plan al cliente"
+                ]
+              });
+            }
+          }
+
+        } else if (projectStatus === "construction") {
+          // Cliente en construcción
+          const constructionPhases = await analyzeProjectProgress(projectData.id, "construction");
+          
+          if (constructionPhases.length === 0) {
+            generatedInsights.push({
+              type: "milestone",
+              title: "Definir Fases de Construcción",
+              description: "Proyecto en construcción sin fases definidas.",
+              priority: "high",
+              suggested_actions: [
+                "Crear cronograma de construcción",
+                "Definir fases principales (Cimentación, Estructura, etc.)",
+                "Asignar supervisor de obra"
+              ]
+            });
+          } else {
+            // Analizar progreso de construcción - analisis simplificado
+            const recentlyCreatedPhases = constructionPhases.filter(p => {
+              const phaseCreated = new Date(p.created_at);
+              const daysSinceCreated = Math.floor((now.getTime() - phaseCreated.getTime()) / (1000 * 60 * 60 * 24));
+              return daysSinceCreated > 14 && p.status === "pending";
+            });
+            
+            if (recentlyCreatedPhases.length > 0 && daysSinceCreation > 30) {
+              generatedInsights.push({
+                type: "risk",
+                title: "Fases de Construcción Pendientes",
+                description: `${recentlyCreatedPhases.length} fase(s) de construcción sin iniciar después de 14+ días.`,
+                priority: "high",
+                suggested_actions: [
+                  "Reunión urgente con supervisor de obra",
+                  "Revisar cronograma y recursos",
+                  "Comunicar status al cliente"
+                ]
+              });
+            }
+          }
+        }
+
+        // Analizar comunicación para clientes cerrados
+        const recentMessages = await analyzeCommunication(projectData.id);
+        if (recentMessages.length > 0) {
+          const lastClientMessage = recentMessages.find(m => m.is_client_message);
+          if (lastClientMessage) {
+            const messageDate = new Date(lastClientMessage.created_at);
+            const daysSinceMessage = Math.floor((now.getTime() - messageDate.getTime()) / (1000 * 60 * 60 * 24));
+            
+            if (daysSinceMessage > 2) {
+              generatedInsights.push({
+                type: "follow_up",
+                title: "Responder Mensaje del Cliente",
+                description: `Cliente escribió hace ${daysSinceMessage} días sin respuesta.`,
+                priority: daysSinceMessage > 5 ? "high" : "medium",
+                suggested_actions: [
+                  "Revisar mensaje en portal del cliente",
+                  "Responder consulta del cliente",
+                  "Programar llamada si es necesario"
+                ]
+              });
+            }
+          }
+        }
+
+      } else {
+        // 2. ANÁLISIS PARA LEADS (nuevo_lead, en_contacto)
+        if (stage === "nuevo_lead" && daysSinceCreation > 1) {
+          generatedInsights.push({
+            type: "risk",
+            title: "Lead Sin Seguimiento",
+            description: `Lead creado hace ${daysSinceCreation} días sin avanzar.`,
+            priority: daysSinceCreation > 3 ? "high" : "medium",
+            suggested_actions: [
+              "Contactar lead inmediatamente",
+              "Programar primera cita",
+              "Enviar presentación de servicios"
+            ]
+          });
+        }
+
+        if (stage === "en_contacto" && daysSinceCreation > 7) {
+          generatedInsights.push({
+            type: "follow_up",
+            title: "Cerrar Proceso Comercial",
+            description: `Cliente en contacto hace ${daysSinceCreation} días. Momento de cerrar.`,
+            priority: daysSinceCreation > 14 ? "high" : "medium",
+            suggested_actions: [
+              "Presentar propuesta final",
+              "Programar reunión de cierre",
+              "Enviar contrato para firma"
+            ]
+          });
+        }
       }
 
-      // 2. ACTIVITY-BASED INSIGHTS
-      if (totalActivities === 0 && daysSinceCreation > 1) {
-        generatedInsights.push({
-          type: "risk",
-          title: "Sin Actividades CRM Registradas",
-          description: "No se han registrado actividades de seguimiento para este cliente.",
-          priority: "high",
-          suggested_actions: [
-            "Crear plan de seguimiento estructurado",
-            "Registrar primera actividad de contacto",
-            "Establecer calendario de seguimientos",
-            "Definir objetivos específicos del cliente"
-          ]
-        });
-      }
+      // Analizar eventos de calendario pendientes
+      const upcomingEvents = await analyzeCalendarActivity(projectData.id);
+      const todayEvents = upcomingEvents.filter(e => {
+        const eventDate = new Date(e.start_date);
+        const today = new Date();
+        return eventDate.toDateString() === today.toDateString();
+      });
 
-      if (pendingActivities > 0) {
-        generatedInsights.push({
-          type: "follow_up",
-          title: "Actividades Vencidas",
-          description: `${pendingActivities} actividades programadas están vencidas y requieren atención.`,
-          priority: "high",
-          suggested_actions: [
-            "Completar actividades pendientes inmediatamente",
-            "Reprogramar actividades vencidas",
-            "Contactar al cliente para explicar el retraso",
-            "Actualizar cronograma de seguimiento"
-          ]
-        });
-      }
-
-      if (totalActivities > 0 && completedActivities / totalActivities < 0.5) {
-        generatedInsights.push({
-          type: "risk",
-          title: "Baja Tasa de Completación",
-          description: `Solo ${Math.round((completedActivities / totalActivities) * 100)}% de las actividades han sido completadas.`,
-          priority: "medium",
-          suggested_actions: [
-            "Revisar carga de trabajo del asesor",
-            "Simplificar procesos de seguimiento",
-            "Establecer recordatorios automáticos",
-            "Capacitación en gestión de tiempo"
-          ]
-        });
-      }
-
-      // 3. PIPELINE STAGNATION INSIGHTS
-      const stageMap = {
-        "nuevo_lead": { maxDays: 2, nextStage: "en_contacto" },
-        "en_contacto": { maxDays: 7, nextStage: "cliente_cerrado" }
-      };
-
-      const currentStage = projectData?.sales_pipeline_stage;
-      const stageInfo = currentStage ? stageMap[currentStage as keyof typeof stageMap] : null;
-      
-      if (stageInfo && daysSinceCreation > stageInfo.maxDays) {
+      if (todayEvents.length > 0) {
         generatedInsights.push({
           type: "milestone",
-          title: "Estancamiento en Pipeline",
-          description: `El cliente lleva ${daysSinceCreation} días en la etapa "${currentStage}". Tiempo recomendado: ${stageInfo.maxDays} días.`,
-          priority: daysSinceCreation > stageInfo.maxDays * 2 ? "high" : "medium",
-          suggested_actions: [
-            `Evaluar requisitos para avanzar a "${stageInfo.nextStage}"`,
-            "Identificar obstáculos específicos",
-            "Programar reunión de definición de siguiente paso",
-            "Revisar propuesta de valor actual"
-          ]
-        });
-      }
-
-      // 4. OPPORTUNITY INSIGHTS
-      if (currentStage === "en_contacto" && daysSinceLastContact <= 2 && totalActivities > 2) {
-        generatedInsights.push({
-          type: "opportunity",
-          title: "Cliente Comprometido",
-          description: "Cliente en contacto activo con múltiples interacciones. Buen momento para avanzar.",
-          priority: "high",
-          suggested_actions: [
-            "Preparar propuesta detallada",
-            "Programar reunión para presentar servicios",
-            "Enviar portfolio de proyectos similares",
-            "Solicitar reunión presencial o virtual"
-          ]
-        });
-      }
-
-      if (totalActivities > 3 && completedActivities / totalActivities > 0.8) {
-        generatedInsights.push({
-          type: "opportunity",
-          title: "Cliente Bien Atendido",
-          description: "Excelente seguimiento registrado. Cliente con alta probabilidad de conversión.",
+          title: "Eventos de Hoy",
+          description: `${todayEvents.length} evento(s) programado(s) para hoy.`,
           priority: "medium",
           suggested_actions: [
-            "Mantener el nivel de atención actual",
-            "Presentar propuesta premium",
-            "Solicitar referencias a otros potenciales clientes",
-            "Documenta las mejores prácticas aplicadas"
-          ]
-        });
-      }
-
-      // 5. TIME-CRITICAL INSIGHTS
-      if (daysSinceCreation === 0) {
-        generatedInsights.push({
-          type: "milestone",
-          title: "Lead Nuevo - Acción Inmediata",
-          description: "Lead creado hoy. Primera impresión es crucial para el éxito.",
-          priority: "high",
-          suggested_actions: [
-            "Contactar en las próximas 2 horas",
-            "Enviar mensaje de bienvenida personalizado",
-            "Hacer seguimiento inicial dentro de 24-48h",
-            "Registrar fuente del lead y expectativas"
+            "Revisar agenda del día",
+            "Confirmar asistencia con cliente",
+            "Preparar materiales necesarios"
           ]
         });
       }
 
     } catch (error) {
-      console.error("Error generating insights:", error);
-      // Fallback insight if there's an error
+      console.error("Error generating intelligent insights:", error);
       generatedInsights.push({
         type: "follow_up",
         title: "Revisar Cliente",
-        description: "Se recomienda revisar el estado actual de este cliente y planificar próximos pasos.",
+        description: "Error al analizar datos. Revisar información manualmente.",
         priority: "medium",
         suggested_actions: [
-          "Revisar historial de interacciones",
-          "Contactar al cliente para actualizar información",
-          "Planificar estrategia de seguimiento"
+          "Verificar datos del proyecto",
+          "Contactar soporte técnico si persiste"
         ]
       });
     }
