@@ -27,6 +27,7 @@ import ClientPortalPreview from "./pages/ClientPortalPreview";
 
 import SuppliersNew from "./pages/SuppliersNew";
 import ClientPortal from "./pages/ClientPortal";
+import UnifiedTransactions from "./pages/UnifiedTransactions";
 
 import PendingApproval from "./components/PendingApproval";
 import { UserOnboarding } from "./components/UserOnboarding";
@@ -211,6 +212,16 @@ const App = () => (
                  <ProtectedRoute>
                    <Layout>
                      <ClientPortalPreview />
+                   </Layout>
+                 </ProtectedRoute>
+               } 
+             />
+             <Route 
+               path="/unified-transactions" 
+               element={
+                 <ProtectedRoute>
+                   <Layout>
+                     <UnifiedTransactions />
                    </Layout>
                  </ProtectedRoute>
                } 

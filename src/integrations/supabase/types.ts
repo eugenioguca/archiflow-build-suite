@@ -526,6 +526,121 @@ export type Database = {
           },
         ]
       }
+      chart_of_accounts_mayor: {
+        Row: {
+          activo: boolean
+          codigo: string
+          created_at: string
+          created_by: string
+          departamento: string
+          id: string
+          nombre: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          codigo: string
+          created_at?: string
+          created_by: string
+          departamento: string
+          id?: string
+          nombre: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          codigo?: string
+          created_at?: string
+          created_by?: string
+          departamento?: string
+          id?: string
+          nombre?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      chart_of_accounts_partidas: {
+        Row: {
+          activo: boolean
+          codigo: string
+          created_at: string
+          created_by: string
+          id: string
+          mayor_id: string
+          nombre: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          codigo: string
+          created_at?: string
+          created_by: string
+          id?: string
+          mayor_id: string
+          nombre: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          codigo?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          mayor_id?: string
+          nombre?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chart_of_accounts_partidas_mayor_id_fkey"
+            columns: ["mayor_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts_mayor"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chart_of_accounts_subpartidas: {
+        Row: {
+          activo: boolean
+          codigo: string
+          created_at: string
+          created_by: string
+          id: string
+          nombre: string
+          partida_id: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          codigo: string
+          created_at?: string
+          created_by: string
+          id?: string
+          nombre: string
+          partida_id: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          codigo?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          nombre?: string
+          partida_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chart_of_accounts_subpartidas_partida_id_fkey"
+            columns: ["partida_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts_partidas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_documents_deprecated_backup: {
         Row: {
           client_id: string
@@ -6033,6 +6148,115 @@ export type Database = {
           },
         ]
       }
+      unified_financial_transactions: {
+        Row: {
+          cliente_proveedor_id: string | null
+          created_at: string
+          created_by: string
+          departamento: string
+          descripcion: string | null
+          empresa_proyecto_id: string | null
+          fecha: string
+          folio_factura: string | null
+          id: string
+          mayor_id: string | null
+          monto: number
+          partida_id: string | null
+          referencia_unica: string
+          subpartida_id: string | null
+          sucursal_id: string | null
+          tiene_factura: boolean
+          tipo_entidad: string | null
+          tipo_movimiento: string
+          updated_at: string
+        }
+        Insert: {
+          cliente_proveedor_id?: string | null
+          created_at?: string
+          created_by: string
+          departamento: string
+          descripcion?: string | null
+          empresa_proyecto_id?: string | null
+          fecha?: string
+          folio_factura?: string | null
+          id?: string
+          mayor_id?: string | null
+          monto?: number
+          partida_id?: string | null
+          referencia_unica: string
+          subpartida_id?: string | null
+          sucursal_id?: string | null
+          tiene_factura?: boolean
+          tipo_entidad?: string | null
+          tipo_movimiento: string
+          updated_at?: string
+        }
+        Update: {
+          cliente_proveedor_id?: string | null
+          created_at?: string
+          created_by?: string
+          departamento?: string
+          descripcion?: string | null
+          empresa_proyecto_id?: string | null
+          fecha?: string
+          folio_factura?: string | null
+          id?: string
+          mayor_id?: string | null
+          monto?: number
+          partida_id?: string | null
+          referencia_unica?: string
+          subpartida_id?: string | null
+          sucursal_id?: string | null
+          tiene_factura?: boolean
+          tipo_entidad?: string | null
+          tipo_movimiento?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unified_financial_transactions_empresa_proyecto_id_fkey"
+            columns: ["empresa_proyecto_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unified_financial_transactions_empresa_proyecto_id_fkey"
+            columns: ["empresa_proyecto_id"]
+            isOneToOne: false
+            referencedRelation: "financial_summary_by_client_project"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "unified_financial_transactions_mayor_id_fkey"
+            columns: ["mayor_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts_mayor"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unified_financial_transactions_partida_id_fkey"
+            columns: ["partida_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts_partidas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unified_financial_transactions_subpartida_id_fkey"
+            columns: ["subpartida_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts_subpartidas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "unified_financial_transactions_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "branch_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_branch_assignments: {
         Row: {
           branch_office_id: string
@@ -6307,6 +6531,10 @@ export type Database = {
         Returns: string
       }
       generate_payment_reference: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_unified_transaction_reference: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
