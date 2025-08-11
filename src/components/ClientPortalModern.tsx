@@ -326,7 +326,7 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
       {/* Mobile Header - Style App */}
-      <div className="sticky top-0 z-50 bg-background/98 backdrop-blur-xl border-b border-border/50 shadow-sm">
+      <div className="bg-background/98 backdrop-blur-xl border-b border-border/50 shadow-sm">
         <div className="p-4 space-y-2">
           {/* Top row - Logout button */}
           <div className="flex justify-end">
