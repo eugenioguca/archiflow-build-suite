@@ -115,10 +115,12 @@ export function QuickEventCreator({
       });
       setAlerts([]);
     } else {
-      // Reset form - use current date and time by default
+      // Reset form - use current local date and time by default
       const now = new Date();
-      const start = format(now, "yyyy-MM-dd'T'HH:mm");
-      const end = format(addHours(now, 1), "yyyy-MM-dd'T'HH:mm");
+      // Adjust for local timezone to avoid UTC conversion issues
+      const localNow = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+      const start = format(localNow, "yyyy-MM-dd'T'HH:mm");
+      const end = format(addHours(localNow, 1), "yyyy-MM-dd'T'HH:mm");
       setFormData({
         title: "",
         description: "",
