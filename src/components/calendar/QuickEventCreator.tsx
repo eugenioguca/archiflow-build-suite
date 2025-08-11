@@ -10,7 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { CalendarEvent, EventAlert } from "@/hooks/usePersonalCalendar";
 import { ClientProjectCalendarEvent, ClientProjectCalendarEventAlert } from "@/hooks/useClientProjectCalendar";
 import { format, addHours } from "date-fns";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Play } from "lucide-react";
 
 // Generic alert interface that works with both calendar types
 interface GenericAlert {
@@ -358,30 +358,158 @@ export function QuickEventCreator({
                 </div>
 
                 {alert.sound_enabled && (
-                  <Select 
-                    value={alert.sound_type || (calendarType === 'personal' ? 'soft' : 'soft-alert')} 
-                    onValueChange={(value) => updateAlert(index, "sound_type", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {calendarType === 'personal' ? (
-                        <>
-                          <SelectItem value="soft">Suave</SelectItem>
-                          <SelectItem value="professional">Profesional</SelectItem>
-                          <SelectItem value="loud">Fuerte</SelectItem>
-                        </>
-                      ) : (
-                        <>
-                          <SelectItem value="soft-alert">Suave</SelectItem>
-                          <SelectItem value="professional-alert">Profesional</SelectItem>
-                          <SelectItem value="loud-alert">Fuerte</SelectItem>
-                          <SelectItem value="icq-message">ICQ</SelectItem>
-                        </>
-                      )}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-2">
+                    <Select 
+                      value={alert.sound_type || (calendarType === 'personal' ? 'soft' : 'soft')} 
+                      onValueChange={(value) => updateAlert(index, "sound_type", value)}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {calendarType === 'personal' ? (
+                          <>
+                            <SelectItem value="soft">
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-5 w-5 p-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const audio = new Audio('/sounds/soft-alert.mp3');
+                                    audio.volume = 0.7;
+                                    audio.play().catch(console.error);
+                                  }}
+                                >
+                                  <Play className="h-3 w-3" />
+                                </Button>
+                                Suave
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="professional">
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-5 w-5 p-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const audio = new Audio('/sounds/professional-alert.mp3');
+                                    audio.volume = 0.7;
+                                    audio.play().catch(console.error);
+                                  }}
+                                >
+                                  <Play className="h-3 w-3" />
+                                </Button>
+                                Profesional
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="loud">
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-5 w-5 p-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const audio = new Audio('/sounds/loud-alert.mp3');
+                                    audio.volume = 0.7;
+                                    audio.play().catch(console.error);
+                                  }}
+                                >
+                                  <Play className="h-3 w-3" />
+                                </Button>
+                                Fuerte
+                              </div>
+                            </SelectItem>
+                          </>
+                        ) : (
+                          <>
+                            <SelectItem value="soft">
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-5 w-5 p-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const audio = new Audio('/sounds/soft-alert.mp3');
+                                    audio.volume = 0.7;
+                                    audio.play().catch(console.error);
+                                  }}
+                                >
+                                  <Play className="h-3 w-3" />
+                                </Button>
+                                Suave
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="professional">
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-5 w-5 p-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const audio = new Audio('/sounds/professional-alert.mp3');
+                                    audio.volume = 0.7;
+                                    audio.play().catch(console.error);
+                                  }}
+                                >
+                                  <Play className="h-3 w-3" />
+                                </Button>
+                                Profesional
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="loud">
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-5 w-5 p-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const audio = new Audio('/sounds/loud-alert.mp3');
+                                    audio.volume = 0.7;
+                                    audio.play().catch(console.error);
+                                  }}
+                                >
+                                  <Play className="h-3 w-3" />
+                                </Button>
+                                Fuerte
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="icq-message">
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-5 w-5 p-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const audio = new Audio('/sounds/icq-message.mp3');
+                                    audio.volume = 0.7;
+                                    audio.play().catch(console.error);
+                                  }}
+                                >
+                                  <Play className="h-3 w-3" />
+                                </Button>
+                                ICQ
+                              </div>
+                            </SelectItem>
+                          </>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 )}
               </div>
             ))}
