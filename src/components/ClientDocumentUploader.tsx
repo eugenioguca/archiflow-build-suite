@@ -139,6 +139,7 @@ export const ClientDocumentUploader: React.FC<ClientDocumentUploaderProps> = ({
           client_id: clientId,
           project_id: projectId,
           name: fileUpload.file.name,
+          description: fileUpload.description,
           category: fileUpload.category,
           department: 'general',
           file_path: filePath,
