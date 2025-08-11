@@ -373,6 +373,8 @@ export function QuickEventCreator({
                             <SelectItem value="soft">Suave</SelectItem>
                             <SelectItem value="professional">Profesional</SelectItem>
                             <SelectItem value="loud">Fuerte</SelectItem>
+                            <SelectItem value="uh-oh">Uh-Oh</SelectItem>
+                            <SelectItem value="airport">Aeropuerto</SelectItem>
                           </>
                         ) : (
                           <>
