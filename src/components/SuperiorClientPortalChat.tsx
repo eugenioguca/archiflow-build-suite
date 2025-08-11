@@ -186,43 +186,53 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
         throw error;
       }
 
-      // Enhance messages with sender names
+      // Enhance messages with sender names - versión más robusta
       const enhancedMessages = await Promise.all(
         (data || []).map(async (msg) => {
           let sender_name = 'Usuario';
           let sender_role = 'unknown';
           
-          if (msg.is_client_message) {
-            // Para mensajes de cliente, sender_id es el profile_id, obtener info del cliente
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('id')
-              .eq('id', msg.sender_id)
-              .single();
-            
-            if (profile) {
-              // Ahora buscar el cliente asociado a este profile
-              const { data: client } = await supabase
-                .from('clients')
-                .select('full_name')
-                .eq('profile_id', profile.id)
-                .single();
+          try {
+            if (msg.is_client_message) {
+              // Para mensajes de cliente, sender_id es el profile_id
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('id', msg.sender_id)
+                .maybeSingle(); // Usar maybeSingle
               
-              sender_name = client?.full_name || 'Cliente';
+              if (profile) {
+                // Buscar el cliente asociado a este profile
+                const { data: client } = await supabase
+                  .from('clients')
+                  .select('full_name')
+                  .eq('profile_id', profile.id)
+                  .maybeSingle(); // Usar maybeSingle
+                
+                sender_name = client?.full_name || 'Cliente';
+              } else {
+                sender_name = 'Cliente';
+              }
+              sender_role = 'client';
             } else {
-              sender_name = 'Cliente';
+              // Para mensajes del equipo, sender_id es el profile_id
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('full_name, role')
+                .eq('id', msg.sender_id)
+                .maybeSingle(); // Usar maybeSingle
+              
+              if (profile) {
+                sender_name = profile.full_name || 'Equipo';
+                sender_role = profile.role || 'team';
+              } else {
+                sender_name = 'Equipo';
+                sender_role = 'team';
+              }
             }
-            sender_role = 'client';
-          } else {
-            // Para mensajes del equipo, sender_id es el profile_id
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('full_name, role')
-              .eq('id', msg.sender_id)
-              .single();
-            
-            sender_name = profile?.full_name || 'Equipo';
-            sender_role = profile?.role || 'team';
+          } catch (senderError) {
+            console.error('Error fetching sender info for message:', msg.id, senderError);
+            // Continuar con valores por defecto
           }
 
           return {
@@ -268,7 +278,7 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
 
       console.log('Project team assignments:', project);
 
-      // Fetch individual team member profiles
+      // Fetch individual team member profiles - usando query más robusta
       const memberIds = [
         project?.assigned_advisor_id,
         project?.project_manager_id,
@@ -278,19 +288,32 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
       console.log('Team member IDs:', memberIds);
 
       if (memberIds.length > 0) {
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, full_name, role, department_enum, position_enum')
-          .in('id', memberIds);
+        // Query más simple para evitar problemas de RLS
+        const profilePromises = memberIds.map(async (memberId) => {
+          try {
+            const { data: profile, error: profileError } = await supabase
+              .from('profiles')
+              .select('id, full_name, role, department_enum, position_enum')
+              .eq('id', memberId)
+              .maybeSingle(); // Usar maybeSingle para evitar errores 406
 
-        if (profilesError) {
-          console.error('Error fetching team member profiles:', profilesError);
-          throw profilesError;
-        }
+            if (profileError) {
+              console.error(`Error fetching profile ${memberId}:`, profileError);
+              return null;
+            }
 
-        console.log('Team member profiles:', profiles);
+            return profile;
+          } catch (error) {
+            console.error(`Error in profile query for ${memberId}:`, error);
+            return null;
+          }
+        });
 
-        if (profiles) {
+        const profiles = (await Promise.all(profilePromises)).filter(Boolean);
+        
+        console.log('Team member profiles fetched:', profiles);
+
+        if (profiles.length > 0) {
           const teamMembersData = profiles.map(profile => ({
             id: profile.id,
             display_name: profile.full_name || 'Sin nombre',
@@ -301,6 +324,9 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
           
           console.log('Team members data processed:', teamMembersData);
           setTeamMembers(teamMembersData);
+        } else {
+          console.log('No team member profiles found');
+          setTeamMembers([]);
         }
       } else {
         console.log('No team members assigned to project');
@@ -308,6 +334,8 @@ export const SuperiorClientPortalChat = ({ projectId, clientId }: SuperiorClient
       }
     } catch (error) {
       console.error('Error fetching team members:', error);
+      // En caso de error, continuar con array vacío
+      setTeamMembers([]);
     }
   };
 
