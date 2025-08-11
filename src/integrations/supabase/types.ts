@@ -6718,6 +6718,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      is_client_of_project: {
+        Args: { project_uuid: string }
+        Returns: boolean
+      }
       log_security_event: {
         Args: { p_event_type: string; p_event_data?: Json; p_user_id?: string }
         Returns: undefined
