@@ -11,7 +11,8 @@ import { UserFilters } from '@/components/UserFilters';
 import { UserStatsCards } from '@/components/UserStatsCards';
 import { UserManagementTable } from '@/components/UserManagementTable';
 import { UserProfile } from '@/types/user';
-import { Loader2, Users, Building, Handshake, Link } from 'lucide-react';
+import { Loader2, Users, Building, Handshake, Link, Settings } from 'lucide-react';
+import { CorporateContentManager } from '@/components/CorporateContentManager';
 
 const UserManagement = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -223,7 +224,7 @@ const UserManagement = () => {
       </div>
 
       <Tabs defaultValue="users" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-5">
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Usuarios
@@ -239,6 +240,10 @@ const UserManagement = () => {
           <TabsTrigger value="alliances" className="flex items-center gap-2">
             <Handshake className="h-4 w-4" />
             Alianzas
+          </TabsTrigger>
+          <TabsTrigger value="content" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Contenido Corporativo
           </TabsTrigger>
         </TabsList>
 
@@ -302,6 +307,22 @@ const UserManagement = () => {
 
         <TabsContent value="alliances">
           <CommercialAlliancesManager />
+        </TabsContent>
+
+        <TabsContent value="content">
+          {canManageUsers ? (
+            <CorporateContentManager />
+          ) : (
+            <div className="text-center py-12">
+              <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-muted-foreground">
+                Acceso Restringido
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Solo los administradores pueden acceder a la gestión de contenido corporativo
+              </p>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
