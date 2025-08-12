@@ -24,6 +24,8 @@ import { SalesProjectFileManager } from "@/components/SalesProjectFileManager";
 import { PaymentPlanManager } from "@/components/PaymentPlanManager";
 import { CRMClientCalendar } from "@/components/CRMClientCalendar";
 import { ProjectChat } from "@/components/ProjectChat";
+import { MobileCRMTabs } from "@/components/mobile/MobileCRMTabs";
+import { DesktopCRMTabs } from "@/components/mobile/DesktopCRMTabs";
 import {
   Users, 
   TrendingUp, 
@@ -661,46 +663,12 @@ export default function Sales() {
           
           {selectedProject && (
             <Tabs defaultValue="crm" className="w-full flex flex-col flex-1 overflow-hidden">
-              {/* Primera fila de tabs */}
-              <div className="flex-shrink-0 mx-6 space-y-2">
-                <TabsList className="grid grid-cols-5 w-full">
-                  <TabsTrigger value="crm">CRM & Información</TabsTrigger>
-                  <TabsTrigger 
-                    value="required-docs"
-                    disabled={selectedProject.sales_pipeline_stage === 'nuevo_lead'}
-                    className={selectedProject.sales_pipeline_stage === 'nuevo_lead' ? 'opacity-50' : ''}
-                  >
-                    Documentos Obligatorios
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="documents"
-                    disabled={selectedProject.sales_pipeline_stage === 'nuevo_lead'}
-                    className={selectedProject.sales_pipeline_stage === 'nuevo_lead' ? 'opacity-50' : ''}
-                  >
-                    Expediente del Proyecto
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="payments"
-                    disabled={selectedProject.sales_pipeline_stage === 'nuevo_lead'}
-                    className={selectedProject.sales_pipeline_stage === 'nuevo_lead' ? 'opacity-50' : ''}
-                  >
-                    Planes de Pago
-                  </TabsTrigger>
-                  <TabsTrigger value="projects">Gestión de Proyectos</TabsTrigger>
-                </TabsList>
-                
-                {/* Segunda fila con Chat y Calendario */}
-                <TabsList className="grid grid-cols-2 w-full">
-                  <TabsTrigger value="calendar">
-                    <CalendarLucide className="h-4 w-4 mr-2" />
-                    Calendario Cliente
-                  </TabsTrigger>
-                  <TabsTrigger value="chat">
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Chat Cliente
-                  </TabsTrigger>
-                </TabsList>
-              </div>
+              {/* Responsive tabs navigation */}
+              {isMobile ? (
+                <MobileCRMTabs selectedProject={selectedProject} />
+              ) : (
+                <DesktopCRMTabs selectedProject={selectedProject} />
+              )}
 
               <TabsContent value="crm" className="space-y-6 px-6 pb-6 overflow-y-auto flex-1">
                 {/* Información básica y SmartCRM */}
