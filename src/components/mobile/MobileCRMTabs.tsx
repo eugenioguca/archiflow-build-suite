@@ -76,29 +76,31 @@ export const MobileCRMTabs: React.FC<MobileCRMTabsProps> = ({
 
   return (
     <div className="flex-shrink-0 mx-2 sm:mx-6">
-      <ScrollArea className="w-full">
-        <TabsList className="w-max inline-flex h-12 items-center justify-start space-x-1 p-1 bg-muted">
-          {tabItems.map((tab) => (
-            <TabsTrigger
-              key={tab.value}
-              value={tab.value}
-              disabled={disabled || tab.disabled}
-              className={`
-                flex flex-col items-center justify-center
-                min-w-[60px] h-10 px-2 py-1 
-                text-xs font-medium
-                data-[state=active]:bg-background 
-                data-[state=active]:text-foreground
-                data-[state=active]:shadow-sm
-                ${(disabled || tab.disabled) ? 'opacity-50' : 'hover:bg-muted/50'}
-              `}
-              title={tab.fullLabel}
-            >
-              <tab.icon className="h-4 w-4 mb-0.5" />
-              <span className="leading-none">{tab.label}</span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      <ScrollArea className="w-full whitespace-nowrap">
+        <div className="w-max">
+          <TabsList className="inline-flex h-12 items-center justify-start space-x-1 p-1 bg-muted w-max">
+            {tabItems.map((tab) => (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                disabled={disabled || tab.disabled}
+                className={`
+                  flex flex-col items-center justify-center
+                  min-w-[60px] w-[60px] h-10 px-2 py-1 
+                  text-xs font-medium shrink-0
+                  data-[state=active]:bg-background 
+                  data-[state=active]:text-foreground
+                  data-[state=active]:shadow-sm
+                  ${(disabled || tab.disabled) ? 'opacity-50' : 'hover:bg-muted/50'}
+                `}
+                title={tab.fullLabel}
+              >
+                <tab.icon className="h-4 w-4 mb-0.5" />
+                <span className="leading-none">{tab.label}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
       </ScrollArea>
     </div>
   );
