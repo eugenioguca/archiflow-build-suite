@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Menu,
   BarChart3,
@@ -487,15 +488,17 @@ export function UnifiedMobileFAB() {
             </p>
           </SheetHeader>
 
-          <div 
-            ref={containerRef}
-            className="transition-transform duration-200"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-          >
-            {navigationLevel === 'modules' ? renderModulesView() : renderSubmenuView()}
-          </div>
+          <ScrollArea className="h-[calc(85vh-140px)]">
+            <div 
+              ref={containerRef}
+              className="transition-transform duration-200 px-1"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              {navigationLevel === 'modules' ? renderModulesView() : renderSubmenuView()}
+            </div>
+          </ScrollArea>
         </SheetContent>
       </Sheet>
     </div>
