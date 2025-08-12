@@ -35,6 +35,18 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({
     volume: 0.7
   });
 
+  // Validar que el projectId esté presente
+  if (!projectId) {
+    return (
+      <div className={`flex items-center justify-center bg-background border border-border rounded-lg ${height} ${className}`}>
+        <div className="text-center text-muted-foreground">
+          <MessageCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+          <p>ID de proyecto no válido</p>
+        </div>
+      </div>
+    );
+  }
+
   const {
     messages,
     loading,

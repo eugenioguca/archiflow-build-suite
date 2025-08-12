@@ -43,19 +43,40 @@ export const useProjectChat = ({
   const [unreadCount, setUnreadCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Validar autenticación antes de cualquier operación
+  const validateAuth = useCallback((): boolean => {
+    if (!user || !user.id) {
+      console.error('Chat: Usuario no autenticado');
+      return false;
+    }
+    if (!profile || !profile.id) {
+      console.error('Chat: Perfil de usuario no disponible');
+      return false;
+    }
+    return true;
+  }, [user, profile]);
+
   // Determinar el tipo de usuario y su ID de forma simple
   const getUserInfo = useCallback(async () => {
-    if (!user || !profile) return null;
+    if (!validateAuth()) return null;
 
     if (profile.role === 'client') {
       // Para clientes, obtener el client_id - las políticas RLS esperan client.id
-      const { data: clientData } = await supabase
+      const { data: clientData, error } = await supabase
         .from('clients')
         .select('id')
         .eq('profile_id', profile.id)
         .maybeSingle();
       
-      if (!clientData) return null;
+      if (error) {
+        console.error('Chat: Error obteniendo datos del cliente:', error);
+        return null;
+      }
+      
+      if (!clientData) {
+        console.error('Chat: No se encontró cliente para el perfil:', profile.id);
+        return null;
+      }
       
       return {
         userId: clientData.id, // Este es el client.id que espera la RLS
@@ -72,77 +93,94 @@ export const useProjectChat = ({
         userAvatar: profile.avatar_url
       };
     }
-  }, [user, profile]);
+  }, [user, profile, validateAuth]);
 
-  // Cargar mensajes del chat
+  // Cargar mensajes del proyecto
   const loadMessages = useCallback(async () => {
-    if (!projectId) return;
-
-    setLoading(true);
+    if (!projectId || !validateAuth()) return;
+    
     try {
-      const { data: messagesData, error } = await supabase
+      setLoading(true);
+      
+      const { data, error } = await supabase
         .from('project_chat')
-        .select('*')
+        .select(`
+          id,
+          project_id,
+          sender_id,
+          sender_type,
+          message,
+          created_at,
+          is_read
+        `)
         .eq('project_id', projectId)
         .order('created_at', { ascending: true });
 
       if (error) {
+        console.error('Chat: Error loading messages:', error);
         return;
       }
 
-      // Procesar mensajes y obtener información del remitente
-      const formattedMessages: ChatMessage[] = [];
-      
-      for (const msg of messagesData || []) {
-        let senderName = '';
-        let senderAvatar = '';
-        
-        if (msg.sender_type === 'employee') {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('full_name, avatar_url')
-            .eq('id', msg.sender_id)
-            .single();
-          
-          senderName = profileData?.full_name || 'Empleado';
-          senderAvatar = profileData?.avatar_url || '';
-        } else {
-          const { data: clientData } = await supabase
-            .from('clients')
-            .select('full_name')
-            .eq('id', msg.sender_id)
-            .single();
-          
-          senderName = clientData?.full_name || 'Cliente';
-        }
+      // Formatear mensajes con información del remitente
+      const formattedMessages = await Promise.all(
+        (data || []).map(async (msg) => {
+          let senderName = 'Usuario Desconocido';
+          let senderAvatar = null;
 
-        formattedMessages.push({
-          ...msg,
-          sender_type: msg.sender_type as 'employee' | 'client',
-          sender_name: senderName,
-          sender_avatar: senderAvatar
-        });
-      }
+          if (msg.sender_type === 'client') {
+            const { data: clientData } = await supabase
+              .from('clients')
+              .select('full_name, profile_id')
+              .eq('id', msg.sender_id)
+              .single();
+            
+            if (clientData) {
+              senderName = clientData.full_name || 'Cliente';
+              // Obtener avatar del perfil
+              const { data: profileData } = await supabase
+                .from('profiles')
+                .select('avatar_url')
+                .eq('id', clientData.profile_id)
+                .single();
+              senderAvatar = profileData?.avatar_url;
+            }
+          } else {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('full_name, avatar_url')
+              .eq('id', msg.sender_id)
+              .single();
+            
+            if (profileData) {
+              senderName = profileData.full_name || 'Empleado';
+              senderAvatar = profileData.avatar_url;
+            }
+          }
+
+          return {
+            ...msg,
+            sender_name: senderName,
+            sender_avatar: senderAvatar
+          } as ChatMessage;
+        })
+      );
 
       setMessages(formattedMessages);
-      
-      // Marcar mensajes como leídos
-      await markMessagesAsRead();
-      
     } catch (error) {
-      // Silently handle loading errors
+      console.error('Chat: Error loading messages:', error);
     } finally {
       setLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, validateAuth]);
 
   // Marcar mensajes como leídos
   const markMessagesAsRead = useCallback(async () => {
+    if (!projectId || !validateAuth()) return;
+    
     const userInfo = await getUserInfo();
-    if (!userInfo || !projectId) return;
+    if (!userInfo) return;
 
     try {
-      // Marcar notificaciones como leídas
       const { error } = await supabase
         .from('chat_notifications')
         .update({ is_read: true })
@@ -152,21 +190,39 @@ export const useProjectChat = ({
         .eq('is_read', false);
 
       if (error) {
-        // Silently handle notification update errors
+        console.error('Chat: Error marking messages as read:', error);
+      } else {
+        setUnreadCount(0);
       }
-
-      setUnreadCount(0);
     } catch (error) {
-      // Silently handle mark as read errors
+      console.error('Chat: Error marking messages as read:', error);
     }
-  }, [projectId, getUserInfo]);
+  }, [projectId, getUserInfo, validateAuth]);
 
-  // Enviar mensaje - simplificado para confiar en las políticas RLS
+  // Enviar mensaje - con validaciones completas
   const sendMessage = useCallback(async (messageText: string) => {
-    if (!projectId || !messageText.trim()) return false;
+    if (!projectId || !messageText.trim()) {
+      console.error('Chat: Falta projectId o mensaje vacío');
+      return false;
+    }
+
+    if (!validateAuth()) {
+      console.error('Chat: Usuario no autenticado para enviar mensaje');
+      return false;
+    }
 
     const userInfo = await getUserInfo();
-    if (!userInfo) return false;
+    if (!userInfo) {
+      console.error('Chat: No se pudo obtener información del usuario');
+      return false;
+    }
+
+    console.log('Chat: Enviando mensaje', {
+      projectId,
+      senderId: userInfo.userId,
+      senderType: userInfo.userType,
+      messageLength: messageText.trim().length
+    });
 
     setSending(true);
     try {
@@ -180,51 +236,53 @@ export const useProjectChat = ({
         });
 
       if (error) {
-        console.error('Chat: Error sending message:', error);
+        console.error('Chat: Error enviando mensaje:', error);
+        if (error.message.includes('row-level security')) {
+          console.error('Chat: Error de seguridad RLS - el usuario no tiene acceso al proyecto');
+        }
         return false;
       }
 
+      console.log('Chat: Mensaje enviado correctamente');
       return true;
     } catch (error) {
-      console.error('Chat: Error sending message:', error);
+      console.error('Chat: Excepción enviando mensaje:', error);
       return false;
     } finally {
       setSending(false);
     }
-  }, [projectId, getUserInfo]);
+  }, [projectId, getUserInfo, validateAuth]);
 
   // Scroll al final
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
-  // Cargar contador de mensajes no leídos
+  // Cargar cantidad de mensajes no leídos
   const loadUnreadCount = useCallback(async () => {
+    if (!projectId || !validateAuth()) return;
+    
     const userInfo = await getUserInfo();
-    if (!userInfo || !projectId) return;
+    if (!userInfo) return;
 
     try {
-      const { data, error } = await supabase
+      const { count } = await supabase
         .from('chat_notifications')
-        .select('id')
+        .select('*', { count: 'exact', head: true })
         .eq('project_id', projectId)
         .eq('recipient_id', userInfo.userId)
         .eq('recipient_type', userInfo.userType)
         .eq('is_read', false);
 
-      if (error) {
-        return;
-      }
-
-      setUnreadCount(data?.length || 0);
+      setUnreadCount(count || 0);
     } catch (error) {
-      // Silently handle unread count errors
+      console.error('Chat: Error loading unread count:', error);
     }
-  }, [projectId, getUserInfo]);
+  }, [projectId, getUserInfo, validateAuth]);
 
-  // Configurar subscripciones en tiempo real
+  // Configurar realtime subscriptions
   useEffect(() => {
-    if (!projectId) return;
+    if (!projectId || !validateAuth()) return;
 
     // Suscripción a nuevos mensajes
     const messagesChannel = supabase
@@ -314,13 +372,13 @@ export const useProjectChat = ({
     };
   }, [projectId, onNewMessage, onNotification, getUserInfo, scrollToBottom]);
 
-  // Cargar datos iniciales
+  // Cargar mensajes iniciales y contador cuando cambie el proyecto o usuario
   useEffect(() => {
-    if (projectId && user) {
+    if (projectId && validateAuth()) {
       loadMessages();
       loadUnreadCount();
     }
-  }, [projectId, user, loadMessages, loadUnreadCount]);
+  }, [projectId, user, profile, loadMessages, loadUnreadCount, validateAuth]);
 
   // Auto-scroll al final cuando hay nuevos mensajes
   useEffect(() => {
