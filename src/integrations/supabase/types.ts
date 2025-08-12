@@ -6790,6 +6790,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      test_chat_access: {
+        Args: { test_project_id: string }
+        Returns: {
+          user_role: string
+          profile_id: string
+          can_view_chat: boolean
+          can_send_message: boolean
+        }[]
+      }
       update_design_phase_days_elapsed: {
         Args: Record<PropertyKey, never>
         Returns: undefined
