@@ -267,7 +267,7 @@ export function ImprovedCalendarWidget() {
       {showQuickCreator && (
         <QuickEventCreator
           open={showQuickCreator}
-          onOpenChange={setShowQuickCreator}
+          onClose={() => setShowQuickCreator(false)}
           onSubmit={(eventData) => createEvent(eventData as any)}
         />
       )}
