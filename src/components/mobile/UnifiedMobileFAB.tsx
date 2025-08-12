@@ -284,13 +284,6 @@ export function UnifiedMobileFAB() {
   };
 
   const handleSwipeLeft = () => {
-    if (navigationLevel === 'submenu') {
-      triggerSelection();
-      setNavigationLevel('modules');
-    }
-  };
-
-  const handleSwipeRight = () => {
     if (navigationLevel === 'modules') {
       const detectedModule = getCurrentModule(location.pathname);
       if (moduleConfigs[detectedModule]) {
@@ -298,6 +291,13 @@ export function UnifiedMobileFAB() {
         setCurrentModule(detectedModule);
         setNavigationLevel('submenu');
       }
+    }
+  };
+
+  const handleSwipeRight = () => {
+    if (navigationLevel === 'submenu') {
+      triggerSelection();
+      setNavigationLevel('modules');
     }
   };
 
@@ -469,8 +469,8 @@ export function UnifiedMobileFAB() {
             {/* Swipe hint */}
             <p className="text-xs text-muted-foreground text-center pt-1">
               {navigationLevel === 'modules' 
-                ? "Desliza → para submenús • Toca un módulo para navegar"
-                : "Desliza ← para volver a módulos"
+                ? "Desliza ← para submenús • Toca un módulo para navegar"
+                : "Desliza → para volver a módulos"
               }
             </p>
           </SheetHeader>
