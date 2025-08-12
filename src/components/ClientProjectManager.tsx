@@ -163,129 +163,25 @@ export const ClientProjectManager: React.FC<ClientProjectManagerProps> = ({
       setDeletingProjectId(projectId);
       console.log(`Iniciando eliminación del proyecto: ${projectName} (${projectId})`);
 
+      // Usar la función cascade mejorada para eliminación completa
+      const { error } = await supabase.rpc('delete_project_cascade', {
+        project_id_param: projectId
+      });
 
-
-      // Eliminar client_portal_notifications del proyecto
-      const { error: portalNotificationsError } = await supabase
-        .from('client_portal_notifications')
-        .delete()
-        .eq('project_id', projectId);
-
-      if (portalNotificationsError) {
-        console.warn('Error eliminando notificaciones del portal:', portalNotificationsError);
-      }
-
-      // Eliminar documentos del proyecto
-      const { error: documentsError } = await supabase
-        .from('documents')
-        .delete()
-        .eq('project_id', projectId);
-
-      if (documentsError) {
-        console.warn('Error eliminando documentos:', documentsError);
-      }
-
-      // Eliminar expenses del proyecto
-      const { error: expensesError } = await supabase
-        .from('expenses')
-        .delete()
-        .eq('project_id', projectId);
-
-      if (expensesError) {
-        console.warn('Error eliminando gastos:', expensesError);
-      }
-
-
-      // Eliminar design_phases del proyecto
-      const { error: designPhasesError } = await supabase
-        .from('design_phases')
-        .delete()
-        .eq('project_id', projectId);
-
-      if (designPhasesError) {
-        console.warn('Error eliminando fases de diseño:', designPhasesError);
-      }
-
-      // Eliminar construction_phases del proyecto
-      const { error: constructionPhasesError } = await supabase
-        .from('construction_phases')
-        .delete()
-        .eq('project_id', projectId);
-
-      if (constructionPhasesError) {
-        console.warn('Error eliminando fases de construcción:', constructionPhasesError);
-      }
-
-      // Eliminar construction_timeline del proyecto
-      const { error: timelineError } = await supabase
-        .from('construction_timeline')
-        .delete()
-        .eq('project_id', projectId);
-
-      if (timelineError) {
-        console.warn('Error eliminando cronograma:', timelineError);
-      }
-
-      // Eliminar construction_budget_items del proyecto
-      const { error: budgetItemsError } = await supabase
-        .from('construction_budget_items')
-        .delete()
-        .eq('project_id', projectId);
-
-      if (budgetItemsError) {
-        console.warn('Error eliminando elementos del presupuesto:', budgetItemsError);
-      }
-
-      // Eliminar construction_equipment del proyecto
-      const { error: equipmentError } = await supabase
-        .from('construction_equipment')
-        .delete()
-        .eq('project_id', projectId);
-
-      if (equipmentError) {
-        console.warn('Error eliminando equipos:', equipmentError);
-      }
-
-      // Eliminar construction_teams del proyecto
-      const { error: teamsError } = await supabase
-        .from('construction_teams')
-        .delete()
-        .eq('project_id', projectId);
-
-      if (teamsError) {
-        console.warn('Error eliminando equipos de trabajo:', teamsError);
-      }
-
-      // Eliminar material_requirements del proyecto
-      const { error: materialsError } = await supabase
-        .from('material_requirements')
-        .delete()
-        .eq('project_id', projectId);
-
-      if (materialsError) {
-        console.warn('Error eliminando requerimientos de materiales:', materialsError);
-      }
-
-      // Finalmente, eliminar el proyecto
-      const { error: projectError } = await supabase
-        .from('client_projects')
-        .delete()
-        .eq('id', projectId);
-
-      if (projectError) throw projectError;
+      if (error) throw error;
 
       toast({
         title: "Proyecto eliminado",
-        description: `El proyecto "${projectName}" y todos sus datos relacionados han sido eliminados`,
+        description: `El proyecto "${projectName}" y todos sus datos relacionados han sido eliminados exitosamente.`,
       });
 
       // Recargar la lista de proyectos
       fetchProjects();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error eliminando proyecto:', error);
       toast({
         title: "Error",
-        description: "No se pudo eliminar el proyecto. Inténtalo de nuevo.",
+        description: `No se pudo eliminar el proyecto: ${error.message}`,
         variant: "destructive",
       });
     } finally {
