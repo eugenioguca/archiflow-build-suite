@@ -79,7 +79,7 @@ const clientItems = [
   { title: "Mi Proyecto", url: "/my-project", icon: Building2, color: "text-info", module: "client_portal" },
 ];
 
-// Submenu configs (Level 2)
+  // Submenu configs (Level 2)
 const moduleConfigs: Record<string, ModuleConfig> = {
   dashboard: {
     title: "Dashboard Principal",
@@ -87,6 +87,21 @@ const moduleConfigs: Record<string, ModuleConfig> = {
     categories: {
       "Navegación": [
         { label: "Inicio", icon: Home, path: "/", description: "Página principal" },
+      ]
+    }
+  },
+  calendar: {
+    title: "Calendario",
+    description: "Gestión de eventos y programación",
+    categories: {
+      "Vista": [
+        { label: "Mes", icon: Calendar, path: "/calendar?view=month", description: "Vista mensual" },
+        { label: "Semana", icon: Clock, path: "/calendar?view=week", description: "Vista semanal" },
+        { label: "Día", icon: Eye, path: "/calendar?view=day", description: "Vista diaria" },
+      ],
+      "Gestión": [
+        { label: "Nuevo Evento", icon: Settings, path: "/calendar?action=new", description: "Crear evento" },
+        { label: "Recordatorios", icon: Clock, path: "/calendar?tab=reminders", description: "Gestión de recordatorios" },
       ]
     }
   },
@@ -144,6 +159,24 @@ const moduleConfigs: Record<string, ModuleConfig> = {
       ]
     }
   },
+  suppliers: {
+    title: "Módulo de Proveedores",
+    description: "Gestión de proveedores y cotizaciones",
+    categories: {
+      "Gestión": [
+        { label: "Lista de Proveedores", icon: Truck, path: "/suppliers", description: "Todos los proveedores" },
+        { label: "Nuevo Proveedor", icon: UserCheck, path: "/suppliers?action=new", description: "Registrar proveedor" },
+      ],
+      "Cotizaciones": [
+        { label: "Solicitudes", icon: FileText, path: "/suppliers?tab=quotes", description: "Gestión de cotizaciones" },
+        { label: "Comparativas", icon: BarChart3, path: "/suppliers?tab=compare", description: "Comparar ofertas" },
+      ],
+      "Pagos": [
+        { label: "Facturas", icon: DollarSign, path: "/suppliers?tab=invoices", description: "Facturas pendientes" },
+        { label: "Historial", icon: Clock, path: "/suppliers?tab=history", description: "Historial de pagos" },
+      ]
+    }
+  },
   finances: {
     title: "Módulo Financiero",
     description: "Control financiero y contable",
@@ -159,6 +192,42 @@ const moduleConfigs: Record<string, ModuleConfig> = {
       "Configuración": [
         { label: "Cuentas", icon: Settings, path: "/finances-new?tab=accounts", description: "Plan de cuentas" },
         { label: "Facturación", icon: FileText, path: "/finances-new?tab=invoicing", description: "Gestión de facturas" },
+      ]
+    }
+  },
+  accounting: {
+    title: "Módulo de Contabilidad",
+    description: "Gestión contable y fiscal",
+    categories: {
+      "Operativo": [
+        { label: "Pólizas", icon: FileText, path: "/accounting", description: "Registro de pólizas" },
+        { label: "Auxiliares", icon: Calculator, path: "/accounting?tab=ledger", description: "Libros auxiliares" },
+      ],
+      "Reportes": [
+        { label: "Estado de Resultados", icon: BarChart3, path: "/accounting?tab=income", description: "P&L" },
+        { label: "Balance General", icon: TrendingUp, path: "/accounting?tab=balance", description: "Balance sheet" },
+      ],
+      "Fiscal": [
+        { label: "CFDI", icon: Settings, path: "/accounting?tab=cfdi", description: "Facturación electrónica" },
+        { label: "Declaraciones", icon: FileText, path: "/accounting?tab=tax", description: "Declaraciones fiscales" },
+      ]
+    }
+  },
+  tools: {
+    title: "Herramientas",
+    description: "Administración y configuración del sistema",
+    categories: {
+      "Usuarios": [
+        { label: "Gestión de Usuarios", icon: UserCheck, path: "/user-management", description: "Administrar usuarios" },
+        { label: "Permisos", icon: Settings, path: "/user-management?tab=permissions", description: "Configurar permisos" },
+      ],
+      "Sistema": [
+        { label: "Configuración", icon: Settings, path: "/user-management?tab=settings", description: "Configuración general" },
+        { label: "Respaldos", icon: FolderOpen, path: "/user-management?tab=backups", description: "Gestión de respaldos" },
+      ],
+      "Importación": [
+        { label: "Datos", icon: FileText, path: "/user-management?tab=import", description: "Importar datos" },
+        { label: "Plantillas", icon: Eye, path: "/user-management?tab=templates", description: "Plantillas de importación" },
       ]
     }
   },
@@ -248,13 +317,13 @@ export function UnifiedMobileFAB() {
     const deltaX = currentX - touchStartX.current;
     const deltaY = currentY - touchStartY.current;
     
-    // Calculate which direction is more prominent
-    const isHorizontalGesture = Math.abs(deltaX) > Math.abs(deltaY);
-    const isVerticalGesture = Math.abs(deltaY) > Math.abs(deltaX);
+    // Calculate which direction is more prominent with higher thresholds
+    const isHorizontalGesture = Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 30;
+    const isVerticalGesture = Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 20;
     
-    // Only handle horizontal swipes for navigation, let vertical scroll naturally
-    if (isHorizontalGesture && Math.abs(deltaX) > 50 && Math.abs(deltaY) < 100) {
-      // Prevent default to handle horizontal navigation
+    // Only prevent default for clear horizontal swipes to allow vertical scrolling
+    if (isHorizontalGesture && Math.abs(deltaX) > 60 && Math.abs(deltaY) < 80) {
+      // Prevent default only for horizontal navigation
       e.preventDefault();
       
       const direction = deltaX > 0 ? 'right' : 'left';
@@ -266,7 +335,7 @@ export function UnifiedMobileFAB() {
         containerRef.current.style.transform = `translateX(${translateX}px)`;
       }
     }
-    // For vertical gestures, don't prevent default - allow native scrolling
+    // For vertical gestures or unclear gestures, allow native scrolling
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
@@ -321,7 +390,7 @@ export function UnifiedMobileFAB() {
   };
 
   const renderModulesView = () => (
-    <div className="flex-1 overflow-y-auto space-y-3 pb-6">
+    <div className="space-y-3 pb-8">
       <div className="grid grid-cols-2 gap-3">
         {menuItems.map((item) => (
           <Button
@@ -354,7 +423,7 @@ export function UnifiedMobileFAB() {
     if (!config) return null;
 
     return (
-      <div className="flex-1 overflow-y-auto space-y-6 pb-6">
+      <div className="space-y-6 pb-8">
         {Object.entries(config.categories).map(([categoryName, actions]) => (
           <div key={categoryName} className="space-y-3">
             <div className="flex items-center gap-2">
@@ -488,7 +557,10 @@ export function UnifiedMobileFAB() {
             </p>
           </SheetHeader>
 
-          <ScrollArea className="h-[calc(85vh-140px)]">
+          <ScrollArea 
+            className="max-h-[70vh] min-h-[400px]"
+            scrollHideDelay={600}
+          >
             <div 
               ref={containerRef}
               className="transition-transform duration-200 px-1"
