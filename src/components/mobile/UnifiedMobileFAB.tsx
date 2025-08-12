@@ -245,10 +245,17 @@ export function UnifiedMobileFAB() {
     const currentX = e.touches[0].clientX;
     const currentY = e.touches[0].clientY;
     const deltaX = currentX - touchStartX.current;
-    const deltaY = Math.abs(currentY - touchStartY.current);
+    const deltaY = currentY - touchStartY.current;
     
-    // Only consider horizontal swipes (ignore vertical)
-    if (Math.abs(deltaX) > 50 && deltaY < 100) {
+    // Calculate which direction is more prominent
+    const isHorizontalGesture = Math.abs(deltaX) > Math.abs(deltaY);
+    const isVerticalGesture = Math.abs(deltaY) > Math.abs(deltaX);
+    
+    // Only handle horizontal swipes for navigation, let vertical scroll naturally
+    if (isHorizontalGesture && Math.abs(deltaX) > 50 && Math.abs(deltaY) < 100) {
+      // Prevent default to handle horizontal navigation
+      e.preventDefault();
+      
       const direction = deltaX > 0 ? 'right' : 'left';
       setSwipeDirection(direction);
       
@@ -258,6 +265,7 @@ export function UnifiedMobileFAB() {
         containerRef.current.style.transform = `translateX(${translateX}px)`;
       }
     }
+    // For vertical gestures, don't prevent default - allow native scrolling
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
@@ -267,15 +275,19 @@ export function UnifiedMobileFAB() {
     containerRef.current.style.transform = 'translateX(0px)';
     
     const currentX = e.changedTouches[0].clientX;
+    const currentY = e.changedTouches[0].clientY;
     const deltaX = currentX - touchStartX.current;
+    const deltaY = currentY - touchStartY.current;
     
-    // Threshold for swipe detection
-    if (Math.abs(deltaX) > 80) {
+    // Only trigger navigation for horizontal swipes
+    const isHorizontalGesture = Math.abs(deltaX) > Math.abs(deltaY);
+    
+    if (isHorizontalGesture && Math.abs(deltaX) > 80) {
       if (deltaX > 0) {
-        // Swipe right - go to submenu
+        // Swipe right - go back to modules
         handleSwipeRight();
       } else {
-        // Swipe left - go to modules
+        // Swipe left - go to submenu
         handleSwipeLeft();
       }
     }
@@ -437,20 +449,20 @@ export function UnifiedMobileFAB() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={handleSwipeLeft}
+                    onClick={handleSwipeRight}
                     className="h-8 w-8 p-0"
                   >
-                    <ChevronLeft className="h-4 w-4" />
+                    <ChevronRight className="h-4 w-4" />
                   </Button>
                 )}
                 {navigationLevel === 'modules' && currentModule && moduleConfigs[currentModule] && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={handleSwipeRight}
+                    onClick={handleSwipeLeft}
                     className="h-8 w-8 p-0"
                   >
-                    <ChevronRight className="h-4 w-4" />
+                    <ChevronLeft className="h-4 w-4" />
                   </Button>
                 )}
               </div>
@@ -469,8 +481,8 @@ export function UnifiedMobileFAB() {
             {/* Swipe hint */}
             <p className="text-xs text-muted-foreground text-center pt-1">
               {navigationLevel === 'modules' 
-                ? "Desliza ← para submenús • Toca un módulo para navegar"
-                : "Desliza → para volver a módulos"
+                ? "Desliza ← para submenús • ↕ Scroll vertical • Toca un módulo para navegar"
+                : "Desliza → para volver a módulos • ↕ Scroll vertical"
               }
             </p>
           </SheetHeader>
