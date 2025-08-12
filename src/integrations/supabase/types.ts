@@ -641,6 +641,58 @@ export type Database = {
           },
         ]
       }
+      chat_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message_id: string
+          project_id: string
+          recipient_id: string
+          recipient_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message_id: string
+          project_id: string
+          recipient_id: string
+          recipient_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message_id?: string
+          project_id?: string
+          recipient_id?: string
+          recipient_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_chat_notifications_message"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "project_chat"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_chat_notifications_project"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_chat_notifications_project"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "financial_summary_by_client_project"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
       client_documents_deprecated_backup: {
         Row: {
           client_id: string
@@ -4849,6 +4901,54 @@ export type Database = {
           },
         ]
       }
+      project_chat: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          project_id: string
+          sender_id: string
+          sender_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          project_id: string
+          sender_id: string
+          sender_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          project_id?: string
+          sender_id?: string
+          sender_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_project_chat_project"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_project_chat_project"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "financial_summary_by_client_project"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
       project_files: {
         Row: {
           access_level: string | null
@@ -6442,6 +6542,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      client_has_project_access: {
+        Args: { project_id_param: string }
+        Returns: boolean
+      }
       create_default_design_phases: {
         Args: { project_id_param: string }
         Returns: undefined
@@ -6453,6 +6557,10 @@ export type Database = {
       delete_project_cascade: {
         Args: { project_id_param: string }
         Returns: undefined
+      }
+      employee_has_project_access: {
+        Args: { project_id_param: string }
+        Returns: boolean
       }
       fix_budget_discrepancies: {
         Args: Record<PropertyKey, never>
