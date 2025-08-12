@@ -77,7 +77,7 @@ export const MobileCRMTabs: React.FC<MobileCRMTabsProps> = ({
   return (
     <div className="flex-shrink-0 mx-2 sm:mx-6">
       <ScrollArea className="w-full">
-        <TabsList className="w-full inline-flex h-12 items-center justify-start space-x-1 p-1 bg-muted">
+        <TabsList className="w-max inline-flex h-12 items-center justify-start space-x-1 p-1 bg-muted">
           {tabItems.map((tab) => (
             <TabsTrigger
               key={tab.value}
