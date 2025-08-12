@@ -56,44 +56,17 @@ export const useProjectChat = ({
     return true;
   }, [user, profile]);
 
-  // Determinar el tipo de usuario y su ID usando profiles.id para consistencia
-  const getUserInfo = useCallback(async () => {
+  // ULTRA SIMPLIFICADO: Solo usar profile.id directamente
+  const getUserInfo = useCallback(() => {
     if (!validateAuth()) return null;
 
-    if (profile.role === 'client') {
-      // Para clientes, obtener información adicional pero usar profile.id como sender_id
-      const { data: clientData, error } = await supabase
-        .from('clients')
-        .select('full_name, email')
-        .eq('profile_id', profile.id)
-        .maybeSingle();
-      
-      if (error) {
-        console.error('Chat: Error obteniendo datos del cliente:', error);
-        return null;
-      }
-      
-      if (!clientData) {
-        console.error('Chat: No se encontró cliente para el perfil:', profile.id);
-        return null;
-      }
-      
-      return {
-        userId: profile.id, // Usar profile.id para consistencia con RLS unificada
-        userType: 'client' as const,
-        userName: clientData.full_name || profile.full_name || 'Cliente',
-        userAvatar: profile.avatar_url
-      };
-    } else {
-      // Para empleados, usar profile_id
-      return {
-        userId: profile.id, // Este es el profile.id que espera la RLS
-        userType: 'employee' as const,
-        userName: profile.full_name || 'Empleado',
-        userAvatar: profile.avatar_url
-      };
-    }
-  }, [user, profile, validateAuth]);
+    return {
+      userId: profile.id, // Solo usar profile.id - sin validaciones complejas
+      userType: profile.role === 'client' ? 'client' as const : 'employee' as const,
+      userName: profile.full_name || 'Usuario',
+      userAvatar: profile.avatar_url
+    };
+  }, [profile, validateAuth]);
 
   // Cargar mensajes del proyecto
   const loadMessages = useCallback(async () => {
@@ -138,11 +111,11 @@ export const useProjectChat = ({
     }
   }, [projectId, validateAuth]);
 
-  // Marcar mensajes como leídos
+  // Marcar mensajes como leídos - simplificado
   const markMessagesAsRead = useCallback(async () => {
     if (!projectId || !validateAuth()) return;
     
-    const userInfo = await getUserInfo();
+    const userInfo = getUserInfo();
     if (!userInfo) return;
 
     try {
@@ -151,7 +124,6 @@ export const useProjectChat = ({
         .update({ is_read: true })
         .eq('project_id', projectId)
         .eq('recipient_id', userInfo.userId)
-        .eq('recipient_type', userInfo.userType)
         .eq('is_read', false);
 
       if (error) {
@@ -164,30 +136,16 @@ export const useProjectChat = ({
     }
   }, [projectId, getUserInfo, validateAuth]);
 
-  // Enviar mensaje - con validaciones completas
+  // ENVIAR MENSAJE ULTRA SIMPLIFICADO
   const sendMessage = useCallback(async (messageText: string) => {
-    if (!projectId || !messageText.trim()) {
-      console.error('Chat: Falta projectId o mensaje vacío');
+    if (!projectId || !messageText.trim() || !validateAuth()) {
       return false;
     }
 
-    if (!validateAuth()) {
-      console.error('Chat: Usuario no autenticado para enviar mensaje');
-      return false;
-    }
-
-    const userInfo = await getUserInfo();
+    const userInfo = getUserInfo();
     if (!userInfo) {
-      console.error('Chat: No se pudo obtener información del usuario');
       return false;
     }
-
-    console.log('Chat: Enviando mensaje', {
-      projectId,
-      senderId: userInfo.userId,
-      senderType: userInfo.userType,
-      messageLength: messageText.trim().length
-    });
 
     setSending(true);
     try {
@@ -195,25 +153,21 @@ export const useProjectChat = ({
         .from('project_chat')
         .insert({
           project_id: projectId,
-          sender_id: userInfo.userId,
+          sender_id: userInfo.userId, // Solo profile.id
           sender_type: userInfo.userType,
           sender_name: userInfo.userName,
-          sender_avatar: userInfo.userAvatar || null,
+          sender_avatar: userInfo.userAvatar,
           message: messageText.trim()
         });
 
       if (error) {
-        console.error('Chat: Error enviando mensaje:', error);
-        if (error.message.includes('row-level security')) {
-          console.error('Chat: Error de seguridad RLS - el usuario no tiene acceso al proyecto');
-        }
+        console.error('Chat error:', error);
         return false;
       }
 
-      console.log('Chat: Mensaje enviado correctamente');
       return true;
     } catch (error) {
-      console.error('Chat: Excepción enviando mensaje:', error);
+      console.error('Chat exception:', error);
       return false;
     } finally {
       setSending(false);
@@ -225,11 +179,11 @@ export const useProjectChat = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
-  // Cargar cantidad de mensajes no leídos
+  // Cargar cantidad de mensajes no leídos - simplificado
   const loadUnreadCount = useCallback(async () => {
     if (!projectId || !validateAuth()) return;
     
-    const userInfo = await getUserInfo();
+    const userInfo = getUserInfo();
     if (!userInfo) return;
 
     try {
@@ -238,7 +192,6 @@ export const useProjectChat = ({
         .select('*', { count: 'exact', head: true })
         .eq('project_id', projectId)
         .eq('recipient_id', userInfo.userId)
-        .eq('recipient_type', userInfo.userType)
         .eq('is_read', false);
 
       setUnreadCount(count || 0);
@@ -276,7 +229,7 @@ export const useProjectChat = ({
           onNewMessage?.(formattedMessage);
           
           // Auto-scroll si es mensaje propio
-          const userInfo = await getUserInfo();
+          const userInfo = getUserInfo();
           if (userInfo && newMessage.sender_id === userInfo.userId) {
             setTimeout(scrollToBottom, 100);
           }
@@ -297,13 +250,10 @@ export const useProjectChat = ({
         },
         async (payload) => {
           const notification = payload.new as ChatNotification;
-          const userInfo = await getUserInfo();
+          const userInfo = getUserInfo();
           
           // Solo procesar notificaciones dirigidas al usuario actual
-          if (userInfo && 
-              notification.recipient_id === userInfo.userId && 
-              notification.recipient_type === userInfo.userType) {
-            
+          if (userInfo && notification.recipient_id === userInfo.userId) {
             setUnreadCount(prev => prev + 1);
             onNotification?.(notification);
           }

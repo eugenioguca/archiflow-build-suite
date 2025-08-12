@@ -60,20 +60,19 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({
     projectId,
     onNewMessage: (message: ChatMessage) => {
       // Solo reproducir sonido si no es mensaje propio
-      getUserInfo().then(userInfo => {
-        if (userInfo && message.sender_id !== userInfo.userId) {
-          playNotificationSound();
-          
-          // Mostrar notificación toast
-          toast({
-            title: `💬 Nuevo mensaje de ${message.sender_name}`,
-            description: message.message.length > 50 
-              ? `${message.message.substring(0, 50)}...` 
-              : message.message,
-            duration: 4000,
-          });
-        }
-      });
+      const userInfo = getUserInfo();
+      if (userInfo && message.sender_id !== userInfo.userId) {
+        playNotificationSound();
+        
+        // Mostrar notificación toast
+        toast({
+          title: `💬 Nuevo mensaje de ${message.sender_name}`,
+          description: message.message.length > 50 
+            ? `${message.message.substring(0, 50)}...` 
+            : message.message,
+          duration: 4000,
+        });
+      }
     }
   });
 

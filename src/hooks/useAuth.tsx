@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             const { data: profile, error: profileError } = await supabase
               .from('profiles')
-              .select('approval_status, role, full_name, position_enum, department_enum, phone, profile_completed')
+              .select('id, approval_status, role, full_name, position_enum, department_enum, phone, profile_completed, avatar_url')
               .eq('user_id', session.user.id)
               .single();
             
@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             try {
               const { data: profile, error: profileError } = await supabase
                 .from('profiles')
-                .select('approval_status, role, full_name, position_enum, department_enum, phone, profile_completed')
+                .select('id, approval_status, role, full_name, position_enum, department_enum, phone, profile_completed, avatar_url')
                 .eq('user_id', session.user.id)
                 .single();
               
