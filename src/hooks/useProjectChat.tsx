@@ -56,15 +56,15 @@ export const useProjectChat = ({
     return true;
   }, [user, profile]);
 
-  // Determinar el tipo de usuario y su ID de forma simple
+  // Determinar el tipo de usuario y su ID usando profiles.id para consistencia
   const getUserInfo = useCallback(async () => {
     if (!validateAuth()) return null;
 
     if (profile.role === 'client') {
-      // Para clientes, obtener el client_id - las políticas RLS esperan client.id
+      // Para clientes, obtener información adicional pero usar profile.id como sender_id
       const { data: clientData, error } = await supabase
         .from('clients')
-        .select('id')
+        .select('full_name, email')
         .eq('profile_id', profile.id)
         .maybeSingle();
       
@@ -79,13 +79,13 @@ export const useProjectChat = ({
       }
       
       return {
-        userId: clientData.id, // Este es el client.id que espera la RLS
+        userId: profile.id, // Usar profile.id para consistencia con RLS unificada
         userType: 'client' as const,
-        userName: profile.full_name || 'Cliente',
+        userName: clientData.full_name || profile.full_name || 'Cliente',
         userAvatar: profile.avatar_url
       };
     } else {
-      // Para empleados, usar profile_id - las políticas RLS esperan profile.id
+      // Para empleados, usar profile_id
       return {
         userId: profile.id, // Este es el profile.id que espera la RLS
         userType: 'employee' as const,
@@ -109,6 +109,8 @@ export const useProjectChat = ({
           project_id,
           sender_id,
           sender_type,
+          sender_name,
+          sender_avatar,
           message,
           created_at,
           is_read
@@ -121,49 +123,12 @@ export const useProjectChat = ({
         return;
       }
 
-      // Formatear mensajes con información del remitente
-      const formattedMessages = await Promise.all(
-        (data || []).map(async (msg) => {
-          let senderName = 'Usuario Desconocido';
-          let senderAvatar = null;
-
-          if (msg.sender_type === 'client') {
-            const { data: clientData } = await supabase
-              .from('clients')
-              .select('full_name, profile_id')
-              .eq('id', msg.sender_id)
-              .single();
-            
-            if (clientData) {
-              senderName = clientData.full_name || 'Cliente';
-              // Obtener avatar del perfil
-              const { data: profileData } = await supabase
-                .from('profiles')
-                .select('avatar_url')
-                .eq('id', clientData.profile_id)
-                .single();
-              senderAvatar = profileData?.avatar_url;
-            }
-          } else {
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('full_name, avatar_url')
-              .eq('id', msg.sender_id)
-              .single();
-            
-            if (profileData) {
-              senderName = profileData.full_name || 'Empleado';
-              senderAvatar = profileData.avatar_url;
-            }
-          }
-
-          return {
-            ...msg,
-            sender_name: senderName,
-            sender_avatar: senderAvatar
-          } as ChatMessage;
-        })
-      );
+      // Los mensajes ya vienen con sender_name y sender_avatar de la BD
+      const formattedMessages = (data || []).map(msg => ({
+        ...msg,
+        sender_name: msg.sender_name || (msg.sender_type === 'employee' ? 'Empleado' : 'Cliente'),
+        sender_avatar: msg.sender_avatar
+      })) as ChatMessage[];
 
       setMessages(formattedMessages);
     } catch (error) {
@@ -232,6 +197,8 @@ export const useProjectChat = ({
           project_id: projectId,
           sender_id: userInfo.userId,
           sender_type: userInfo.userType,
+          sender_name: userInfo.userName,
+          sender_avatar: userInfo.userAvatar,
           message: messageText.trim()
         });
 
@@ -298,33 +265,11 @@ export const useProjectChat = ({
         async (payload) => {
           const newMessage = payload.new as any;
           
-          // Obtener información del remitente
-          let senderName = '';
-          let senderAvatar = '';
-          
-          if (newMessage.sender_type === 'employee') {
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('full_name, avatar_url')
-              .eq('id', newMessage.sender_id)
-              .single();
-            
-            senderName = profileData?.full_name || 'Empleado';
-            senderAvatar = profileData?.avatar_url || '';
-          } else {
-            const { data: clientData } = await supabase
-              .from('clients')
-              .select('full_name')
-              .eq('id', newMessage.sender_id)
-              .single();
-            
-            senderName = clientData?.full_name || 'Cliente';
-          }
-
+          // Los mensajes nuevos ya vienen con sender_name y sender_avatar de la BD
           const formattedMessage: ChatMessage = {
             ...newMessage,
-            sender_name: senderName,
-            sender_avatar: senderAvatar
+            sender_name: newMessage.sender_name || (newMessage.sender_type === 'employee' ? 'Empleado' : 'Cliente'),
+            sender_avatar: newMessage.sender_avatar
           };
 
           setMessages(prev => [...prev, formattedMessage]);

@@ -4908,7 +4908,9 @@ export type Database = {
           is_read: boolean
           message: string
           project_id: string
+          sender_avatar: string | null
           sender_id: string
+          sender_name: string | null
           sender_type: string
           updated_at: string
         }
@@ -4918,7 +4920,9 @@ export type Database = {
           is_read?: boolean
           message: string
           project_id: string
+          sender_avatar?: string | null
           sender_id: string
+          sender_name?: string | null
           sender_type: string
           updated_at?: string
         }
@@ -4928,7 +4932,9 @@ export type Database = {
           is_read?: boolean
           message?: string
           project_id?: string
+          sender_avatar?: string | null
           sender_id?: string
+          sender_name?: string | null
           sender_type?: string
           updated_at?: string
         }
@@ -6546,6 +6552,10 @@ export type Database = {
         Args: { project_id_param: string }
         Returns: boolean
       }
+      client_has_project_access_by_profile_id: {
+        Args: { profile_id_param: string; project_id_param: string }
+        Returns: boolean
+      }
       create_default_design_phases: {
         Args: { project_id_param: string }
         Returns: undefined
@@ -6559,7 +6569,9 @@ export type Database = {
         Returns: undefined
       }
       employee_has_project_access: {
-        Args: { project_id_param: string }
+        Args:
+          | { profile_id_param: string; project_id_param: string }
+          | { project_id_param: string }
         Returns: boolean
       }
       fix_budget_discrepancies: {
