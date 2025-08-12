@@ -2,9 +2,12 @@ import React, { ReactNode } from 'react';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Building2, User } from "lucide-react";
+import { LogOut, Building2, User, MessageCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ProjectChat } from "@/components/ProjectChat";
+import { useState } from "react";
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 interface ClientProject {
   id: string;
@@ -30,6 +33,7 @@ export default function ClientLayout({
 }: ClientLayoutProps) {
   const { signOut } = useAuth();
   const isMobile = useIsMobile();
+  const [chatOpen, setChatOpen] = useState(false);
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -75,16 +79,44 @@ export default function ClientLayout({
               </div>
             </div>
             
-            {/* Logout button for mobile */}
+            {/* Mobile action buttons */}
             {isMobile && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={signOut}
-                className="h-8 w-8 p-0"
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                {selectedProjectId && (
+                  <Sheet open={chatOpen} onOpenChange={setChatOpen}>
+                    <SheetTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-8 w-8 p-0"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="bottom" className="h-[80vh]">
+                      <SheetHeader>
+                        <SheetTitle>Chat del Proyecto</SheetTitle>
+                      </SheetHeader>
+                      <div className="mt-4 h-full">
+                        <ProjectChat 
+                          projectId={selectedProjectId} 
+                          projectName={projects.find(p => p.id === selectedProjectId)?.project_name || "Proyecto"}
+                          height="calc(100% - 60px)"
+                          showHeader={false}
+                        />
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                )}
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={signOut}
+                  className="h-8 w-8 p-0"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
             )}
           </div>
 
@@ -127,17 +159,46 @@ export default function ClientLayout({
               </div>
             )}
 
-            {/* Logout button for desktop */}
+            {/* Desktop action buttons */}
             {!isMobile && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={signOut}
-                className="flex items-center gap-2"
-              >
-                <LogOut className="h-4 w-4" />
-                Cerrar Sesión
-              </Button>
+              <div className="flex items-center gap-2">
+                {selectedProjectId && (
+                  <Sheet open={chatOpen} onOpenChange={setChatOpen}>
+                    <SheetTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex items-center gap-2"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                        Chat
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent className="w-[400px] sm:w-[540px]">
+                      <SheetHeader>
+                        <SheetTitle>Chat del Proyecto</SheetTitle>
+                      </SheetHeader>
+                      <div className="mt-4 h-full">
+                        <ProjectChat 
+                          projectId={selectedProjectId} 
+                          projectName={projects.find(p => p.id === selectedProjectId)?.project_name || "Proyecto"}
+                          height="calc(100vh - 120px)"
+                          showHeader={false}
+                        />
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                )}
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={signOut}
+                  className="flex items-center gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Cerrar Sesión
+                </Button>
+              </div>
             )}
           </div>
         </div>

@@ -26,6 +26,8 @@ import { ConstructionAnalytics } from "@/components/ConstructionAnalytics";
 import { ConstructionTeamManager } from "@/components/ConstructionTeamManager";
 import { ProjectDatesManager } from "@/components/ProjectDatesManager";
 import { ModuleNotifications } from "@/components/ModuleNotifications";
+import { ProjectChat } from "@/components/ProjectChat";
+import { ChatNotificationSound } from "@/components/ChatNotificationSound";
 
 
 interface ConstructionProject {
@@ -62,7 +64,7 @@ export function Construction() {
   // Find which category contains the active tab
   useEffect(() => {
     const navigationCategories = {
-      principal: ["dashboard", "budget", "timeline"],
+      principal: ["dashboard", "budget", "timeline", "chat"],
       gestion: ["equipment", "materials", "team", "teams", "quality"],
       documentacion: ["photos", "reports", "analytics"]
     };
@@ -202,6 +204,7 @@ export function Construction() {
         { value: "dashboard", label: "Dashboard", icon: BarChart3 },
         { value: "budget", label: "Presupuesto", icon: FileText },
         { value: "timeline", label: "Cronograma", icon: CalendarDays },
+        { value: "chat", label: "Chat", icon: Users },
       ]
     },
       gestion: {
@@ -499,10 +502,22 @@ export function Construction() {
                   <ConstructionAnalytics projectId={selectedProject.id} />
                 </TabsContent>
 
+                <TabsContent value="chat" className="mt-6">
+                  <ProjectChat 
+                    projectId={selectedProject.id} 
+                    projectName={selectedProject.project_name}
+                    className="max-w-4xl mx-auto"
+                  />
+                </TabsContent>
+
               </Tabs>
             </div>
           )}
         </div>
       </div>
-    );
-  }
+      
+      {/* Chat notification sounds */}
+      <ChatNotificationSound enabled />
+    </div>
+  );
+}
