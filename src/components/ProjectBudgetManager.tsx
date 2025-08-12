@@ -313,7 +313,7 @@ export function ProjectBudgetManager({ projectId, projectName, clientName, onBud
     try {
       setSaving(true);
       
-      // Update budget status to approved (consistent with migration function)
+      // Update budget status to approved
       const { error: budgetError } = await supabase
         .from('project_budgets')
         .update({ status: 'approved' })
@@ -321,44 +321,39 @@ export function ProjectBudgetManager({ projectId, projectName, clientName, onBud
         
       if (budgetError) throw budgetError;
       
-      // Migrate budget to construction and get the real total
-      const migrationResult = await supabase.rpc('migrate_design_budget_to_construction', {
-        p_project_id: projectId
-      });
-      
-      // Get the actual total from construction_budget_items
-      const { data: constructionItems } = await supabase
-        .from('construction_budget_items')
-        .select('total_price')
-        .eq('project_id', projectId);
-      
-      const actualConstructionBudget = constructionItems?.reduce((sum, item) => 
-        sum + (item.total_price || 0), 0) || 0;
-      
-      // Update client_projects construction_budget with the real value
-      const { error: projectError } = await supabase
-        .from('client_projects')
-        .update({ construction_budget: actualConstructionBudget })
-        .eq('id', projectId);
-        
-      if (projectError) throw projectError;
-      
-      // Call migration function directly to ensure it runs even if trigger fails
+      // Migrate budget to construction (but won't cause auto-transition)
       try {
         const { data: migrationResult } = await supabase.rpc('migrate_design_budget_to_construction', {
           p_project_id: projectId
         }) as { data: MigrationResult };
         
+        // Get the actual total from construction_budget_items
+        const { data: constructionItems } = await supabase
+          .from('construction_budget_items')
+          .select('total_price')
+          .eq('project_id', projectId);
+        
+        const actualConstructionBudget = constructionItems?.reduce((sum, item) => 
+          sum + (item.total_price || 0), 0) || 0;
+        
+        // Update client_projects construction_budget (for future use, but won't auto-transition)
+        const { error: projectError } = await supabase
+          .from('client_projects')
+          .update({ construction_budget: actualConstructionBudget })
+          .eq('id', projectId);
+          
+        if (projectError) throw projectError;
+        
         if (migrationResult?.status === 'success' && migrationResult?.items_migrated > 0) {
-          sonnerToast.success(`Presupuesto aprobado y ${migrationResult.items_migrated} partidas migradas a construcción.`);
+          sonnerToast.success(`Presupuesto aprobado y ${migrationResult.items_migrated} partidas preparadas para construcción.`);
         } else if (migrationResult?.status === 'already_exists') {
-          sonnerToast.success('Presupuesto aprobado. Las partidas ya están disponibles en construcción.');
+          sonnerToast.success('Presupuesto aprobado. Las partidas ya están disponibles para construcción.');
         } else {
           sonnerToast.success('Presupuesto aprobado. Ahora se puede crear el plan de pagos de construcción.');
         }
       } catch (migrationError) {
-        console.warn('Migration error (may have been handled by trigger):', migrationError);
-        sonnerToast.success('Presupuesto aprobado. Ahora se puede crear el plan de pagos de construcción.');
+        console.warn('Migration error:', migrationError);
+        sonnerToast.success('Presupuesto aprobado. Se requiere plan de pagos y primer pago para construcción.');
       }
       
       setShowAcceptBudgetDialog(false);
