@@ -1448,6 +1448,53 @@ export type Database = {
         }
         Relationships: []
       }
+      company_promotions: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          end_date: string
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          start_date: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_date: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          start_date: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_date?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          start_date?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_promotions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       construction_budget_items: {
         Row: {
           actual_completion_date: string | null
@@ -3877,6 +3924,100 @@ export type Database = {
           },
         ]
       }
+      monthly_featured_images: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          image_url: string
+          is_active: boolean | null
+          month: number
+          title: string | null
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          image_url: string
+          is_active?: boolean | null
+          month: number
+          title?: string | null
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string
+          is_active?: boolean | null
+          month?: number
+          title?: string | null
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_featured_images_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      operation_manuals: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          file_size: number | null
+          file_url: string
+          id: string
+          mime_type: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          file_size?: number | null
+          file_url: string
+          id?: string
+          mime_type?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          mime_type?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operation_manuals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pac_configurations: {
         Row: {
           activo: boolean | null
@@ -4516,6 +4657,7 @@ export type Database = {
           approval_status: string | null
           availability_status: string | null
           avatar_url: string | null
+          birth_date: string | null
           created_at: string
           department: string | null
           department_enum: Database["public"]["Enums"]["department_type"] | null
@@ -4539,6 +4681,7 @@ export type Database = {
           approval_status?: string | null
           availability_status?: string | null
           avatar_url?: string | null
+          birth_date?: string | null
           created_at?: string
           department?: string | null
           department_enum?:
@@ -4564,6 +4707,7 @@ export type Database = {
           approval_status?: string | null
           availability_status?: string | null
           avatar_url?: string | null
+          birth_date?: string | null
           created_at?: string
           department?: string | null
           department_enum?:
