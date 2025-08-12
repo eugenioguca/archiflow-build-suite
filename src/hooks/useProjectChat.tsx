@@ -43,55 +43,34 @@ export const useProjectChat = ({
   const [unreadCount, setUnreadCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Determinar el tipo de usuario y su ID
+  // Determinar el tipo de usuario y su ID de forma simple
   const getUserInfo = useCallback(async () => {
-    if (!user || !profile) {
-      console.error('Chat: No user or profile available');
-      return null;
-    }
+    if (!user || !profile) return null;
 
-    try {
-      if (profile.role === 'client') {
-        // Para clientes, obtener el client_id
-        const { data: clientData, error } = await supabase
-          .from('clients')
-          .select('id')
-          .eq('profile_id', profile.id)
-          .single();
-        
-        if (error) {
-          console.error('Chat: Error fetching client data:', error);
-          return null;
-        }
-
-        if (!clientData?.id) {
-          console.error('Chat: No client_id found for profile:', profile.id);
-          return null;
-        }
-        
-        return {
-          userId: clientData.id,
-          userType: 'client' as const,
-          userName: profile.full_name || 'Cliente',
-          userAvatar: profile.avatar_url
-        };
-      } else {
-        // Para empleados, usar profile_id
-        if (!profile.id) {
-          console.error('Chat: No profile_id available for employee');
-          return null;
-        }
-
-        return {
-          userId: profile.id,
-          userType: 'employee' as const,
-          userName: profile.full_name || 'Empleado',
-          userAvatar: profile.avatar_url
-        };
-      }
-    } catch (error) {
-      console.error('Chat: Error in getUserInfo:', error);
-      return null;
+    if (profile.role === 'client') {
+      // Para clientes, obtener el client_id - las políticas RLS esperan client.id
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('profile_id', profile.id)
+        .maybeSingle();
+      
+      if (!clientData) return null;
+      
+      return {
+        userId: clientData.id, // Este es el client.id que espera la RLS
+        userType: 'client' as const,
+        userName: profile.full_name || 'Cliente',
+        userAvatar: profile.avatar_url
+      };
+    } else {
+      // Para empleados, usar profile_id - las políticas RLS esperan profile.id
+      return {
+        userId: profile.id, // Este es el profile.id que espera la RLS
+        userType: 'employee' as const,
+        userName: profile.full_name || 'Empleado',
+        userAvatar: profile.avatar_url
+      };
     }
   }, [user, profile]);
 
@@ -182,59 +161,32 @@ export const useProjectChat = ({
     }
   }, [projectId, getUserInfo]);
 
-  // Enviar mensaje
+  // Enviar mensaje - simplificado para confiar en las políticas RLS
   const sendMessage = useCallback(async (messageText: string) => {
-    // Validaciones previas
-    if (!projectId) {
-      console.error('Chat: No project ID provided');
-      return false;
-    }
-
-    if (!messageText.trim()) {
-      console.error('Chat: Empty message');
-      return false;
-    }
+    if (!projectId || !messageText.trim()) return false;
 
     const userInfo = await getUserInfo();
-    if (!userInfo) {
-      console.error('Chat: Cannot get user info');
-      return false;
-    }
-
-    if (!userInfo.userId) {
-      console.error('Chat: No valid user ID found');
-      return false;
-    }
-
-    console.log('Chat: Sending message', {
-      projectId,
-      userId: userInfo.userId,
-      userType: userInfo.userType,
-      messageLength: messageText.trim().length
-    });
+    if (!userInfo) return false;
 
     setSending(true);
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('project_chat')
         .insert({
           project_id: projectId,
           sender_id: userInfo.userId,
           sender_type: userInfo.userType,
           message: messageText.trim()
-        })
-        .select()
-        .single();
+        });
 
       if (error) {
-        console.error('Chat: Error inserting message:', error);
+        console.error('Chat: Error sending message:', error);
         return false;
       }
 
-      console.log('Chat: Message sent successfully:', data);
       return true;
     } catch (error) {
-      console.error('Chat: Exception sending message:', error);
+      console.error('Chat: Error sending message:', error);
       return false;
     } finally {
       setSending(false);
