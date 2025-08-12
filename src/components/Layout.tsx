@@ -3,7 +3,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { ClientRedirect } from "@/components/ClientRedirect";
 import { ReactNode } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { MobileModuleSelector } from "@/components/mobile/MobileModuleSelector";
+import { UnifiedMobileFAB } from "@/components/mobile/UnifiedMobileFAB";
 import { MobileBreadcrumb } from "@/components/mobile/MobileBreadcrumb";
 import { MobileEyeToggle } from "@/components/mobile/MobileEyeToggle";
 import { useMobileSidebar } from "@/hooks/useMobileSidebar";
@@ -99,7 +99,7 @@ export default function Layout({ children }: LayoutProps) {
         />
       )}
       
-      <MobileModuleSelector />
+      <UnifiedMobileFAB />
     </SidebarProvider>
   );
 }
