@@ -3,6 +3,8 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { ClientRedirect } from "@/components/ClientRedirect";
 import { ReactNode } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileModuleNavigation } from "@/components/mobile/MobileModuleNavigation";
+import { MobileBreadcrumb } from "@/components/mobile/MobileBreadcrumb";
 
 interface LayoutProps {
   children: ReactNode;
@@ -22,11 +24,15 @@ export default function Layout({ children }: LayoutProps) {
             <SidebarTrigger />
           </header>
           
+          <MobileBreadcrumb />
+          
           <main className={`flex-1 ${isMobile ? 'p-2 sm:p-4' : 'p-6'} bg-background`}>
             {children}
           </main>
         </div>
       </div>
+      
+      <MobileModuleNavigation />
     </SidebarProvider>
   );
 }
