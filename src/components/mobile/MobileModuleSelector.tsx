@@ -79,7 +79,7 @@ export function MobileModuleSelector() {
         <SheetTrigger asChild>
           <Button 
             size="lg" 
-            className="h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90 border-2 border-background animate-pulse"
+            className="h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90 border-2 border-background"
           >
             <Menu className="h-6 w-6 text-primary-foreground" />
           </Button>
