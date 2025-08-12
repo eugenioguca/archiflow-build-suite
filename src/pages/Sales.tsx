@@ -19,6 +19,7 @@ import { ModuleNotifications } from "@/components/ModuleNotifications";
 import { SalesProjectFileManager } from "@/components/SalesProjectFileManager";
 import { PaymentPlanManager } from "@/components/PaymentPlanManager";
 import { CRMClientCalendar } from "@/components/CRMClientCalendar";
+import { ProjectChat } from "@/components/ProjectChat";
 import {
   Users, 
   TrendingUp, 
@@ -716,6 +717,10 @@ export default function Sales() {
                 </TabsTrigger>
                 <TabsTrigger value="projects">Gestión de Proyectos</TabsTrigger>
                 <TabsTrigger value="calendar">Calendario Cliente</TabsTrigger>
+                <TabsTrigger value="chat">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Chat Cliente
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="crm" className="space-y-6 px-6 pb-6 overflow-y-auto flex-1">
@@ -886,6 +891,16 @@ export default function Sales() {
                   clientId={selectedProject.client_id}
                   projectId={selectedProject.id}
                   projectName={selectedProject.project_name}
+                />
+              </TabsContent>
+
+              <TabsContent value="chat" className="px-6 pb-6 overflow-y-auto flex-1">
+                <ProjectChat
+                  projectId={selectedProject.id}
+                  projectName={selectedProject.project_name}
+                  showHeader={false}
+                  height="h-full"
+                  className="h-full"
                 />
               </TabsContent>
 

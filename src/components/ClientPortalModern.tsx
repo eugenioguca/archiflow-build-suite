@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ProjectChat } from '@/components/ProjectChat';
 import { 
   Calendar, 
   Clock, 
@@ -511,7 +512,7 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
 
         {/* Navigation Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
             <TabsTrigger value="calendar" className="text-xs">
               <Calendar className="h-4 w-4 mb-1" />
               Calendario
@@ -527,6 +528,10 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
             <TabsTrigger value="payments" className="text-xs">
               <DollarSign className="h-4 w-4 mb-1" />
               Pagos
+            </TabsTrigger>
+            <TabsTrigger value="chat" className="text-xs">
+              <MessageCircle className="h-4 w-4 mb-1" />
+              Chat
             </TabsTrigger>
           </TabsList>
 
@@ -643,6 +648,23 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
                       />
                     </CardContent>
                   </Card>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="chat">
+            <div className="space-y-4">
+              {selectedProject ? (
+                <ProjectChat
+                  projectId={selectedProject.id}
+                  projectName={selectedProject.project_name}
+                  height="h-96"
+                />
+              ) : (
+                <div className="text-center text-muted-foreground p-8">
+                  <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>El chat estará disponible cuando tengas un proyecto seleccionado</p>
                 </div>
               )}
             </div>
