@@ -1,0 +1,166 @@
+import { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Edit, Calendar } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { ImageManager } from './AdminPanels/ImageManager';
+import { usePermissions } from '@/hooks/usePermissions';
+
+interface MonthlyImage {
+  id: string;
+  title: string | null;
+  description: string | null;
+  image_url: string;
+  month: number;
+  year: number;
+  is_active: boolean;
+}
+
+export function MonthlyFeaturedImage() {
+  const [currentImage, setCurrentImage] = useState<MonthlyImage | null>(null);
+  const [showManager, setShowManager] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const { hasModuleAccess } = usePermissions();
+  
+  const isAdmin = hasModuleAccess('user_management');
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
+
+  useEffect(() => {
+    fetchCurrentImage();
+  }, [currentMonth, currentYear]);
+
+  const fetchCurrentImage = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('monthly_featured_images')
+        .select('*')
+        .eq('month', currentMonth)
+        .eq('year', currentYear)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching monthly image:', error);
+        return;
+      }
+
+      setCurrentImage(data);
+    } catch (error) {
+      console.error('Error fetching monthly image:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getMonthName = (month: number) => {
+    const months = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    return months[month - 1];
+  };
+
+  if (loading) {
+    return (
+      <Card className="glassmorphic-bg border-0 shadow-lg animate-pulse">
+        <CardContent className="p-0">
+          <div className="relative h-48 sm:h-64 bg-muted/50 rounded-lg"></div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!currentImage) {
+    return (
+      <Card className="glassmorphic-bg border-0 shadow-lg">
+        <CardContent className="p-6 text-center">
+          <div className="flex flex-col items-center justify-center h-32 space-y-4">
+            <Calendar className="h-12 w-12 text-muted-foreground" />
+            <div>
+              <h3 className="text-lg font-semibold text-muted-foreground">
+                No hay imagen para {getMonthName(currentMonth)} {currentYear}
+              </h3>
+              {isAdmin && (
+                <Button
+                  onClick={() => setShowManager(true)}
+                  className="mt-4"
+                  size="sm"
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Agregar imagen
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+        
+        {showManager && (
+          <ImageManager
+            open={showManager}
+            onOpenChange={setShowManager}
+            onImageUpdated={fetchCurrentImage}
+          />
+        )}
+      </Card>
+    );
+  }
+
+  return (
+    <>
+      <Card className="glassmorphic-bg border-0 shadow-lg overflow-hidden group">
+        <CardContent className="p-0 relative">
+          <div className="relative h-48 sm:h-64 overflow-hidden">
+            <img
+              src={currentImage.image_url}
+              alt={currentImage.title || `Imagen de ${getMonthName(currentMonth)}`}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+            
+            {/* Overlay gradient */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            
+            {/* Content overlay */}
+            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 text-white">
+              {currentImage.title && (
+                <h2 className="text-xl sm:text-2xl font-bold mb-2 drop-shadow-lg">
+                  {currentImage.title}
+                </h2>
+              )}
+              {currentImage.description && (
+                <p className="text-sm sm:text-base text-gray-200 drop-shadow-md line-clamp-2">
+                  {currentImage.description}
+                </p>
+              )}
+              <div className="flex items-center justify-between mt-3">
+                <span className="text-sm text-gray-300 font-medium">
+                  {getMonthName(currentMonth)} {currentYear}
+                </span>
+                {isAdmin && (
+                  <Button
+                    onClick={() => setShowManager(true)}
+                    variant="secondary"
+                    size="sm"
+                    className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    Editar
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {showManager && (
+        <ImageManager
+          open={showManager}
+          onOpenChange={setShowManager}
+          onImageUpdated={fetchCurrentImage}
+        />
+      )}
+    </>
+  );
+}

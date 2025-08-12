@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { PaymentNotifications } from '@/components/PaymentNotifications';
+import CorporateDashboard from './CorporateDashboard';
 
 
 interface DashboardStats {
@@ -30,6 +31,8 @@ interface RecentActivity {
   date: string;
   amount?: number;
 }
+
+export { default as CorporateDashboard } from './CorporateDashboard';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -248,6 +251,10 @@ export default function Dashboard() {
     );
   }
 
+  // Use the new corporate dashboard instead
+  return <CorporateDashboard />;
+  
+  /* OLD DASHBOARD - REPLACED WITH CORPORATE VERSION
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -469,4 +476,5 @@ export default function Dashboard() {
       </div>
     </div>
   );
+  */
 }
