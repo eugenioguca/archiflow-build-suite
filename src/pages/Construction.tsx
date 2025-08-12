@@ -254,9 +254,9 @@ export function Construction() {
       </div>
 
       {/* Main Content Area */}
-      <div className="w-full space-y-4">{/* Full width content */}
-          {selectedProject && (
-            <div className="space-y-4 sm:space-y-6">
+      <div className="w-full space-y-4">
+        {selectedProject && (
+          <div className="space-y-4 sm:space-y-6">
             {/* Mobile Project Header */}
             {isMobile && (
               <Card>
@@ -360,8 +360,8 @@ export function Construction() {
               </Card>
             )}
 
-              {/* Adaptive Navigation System */}
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            {/* Adaptive Navigation System */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 {/* Mobile: Dropdown */}
                 {isMobile ? (
                   <div className="space-y-4">
@@ -510,10 +510,9 @@ export function Construction() {
                   />
                 </TabsContent>
 
-              </Tabs>
-            </div>
-          )}
-        </div>
+            </Tabs>
+          </div>
+        )}
       </div>
       
       {/* Chat notification sounds */}
