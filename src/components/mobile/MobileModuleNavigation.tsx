@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   Sheet,
   SheetContent,
@@ -14,24 +16,27 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
   Menu,
-  Eye,
-  Settings,
   BarChart3,
-  Construction,
-  FileText,
+  Calendar,
   Users,
+  TrendingUp,
+  Building,
+  HardHat,
+  Truck,
+  DollarSign,
+  Calculator,
+  Settings,
+  Eye,
+  UserCheck,
+  Building2,
+  Home,
+  Clock,
+  FileText,
   Search,
   Filter,
-  Calculator,
-  TrendingUp,
-  Palette,
-  Clock,
   FolderOpen,
-  Home,
-  DollarSign,
-  Building2,
-  UserCheck,
-  Calendar
+  Construction,
+  Palette
 } from "lucide-react";
 
 interface ModuleAction {

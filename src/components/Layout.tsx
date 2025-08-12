@@ -3,7 +3,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { ClientRedirect } from "@/components/ClientRedirect";
 import { ReactNode } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { MobileModuleNavigation } from "@/components/mobile/MobileModuleNavigation";
+import { MobileModuleSelector } from "@/components/mobile/MobileModuleSelector";
 import { MobileBreadcrumb } from "@/components/mobile/MobileBreadcrumb";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -45,11 +45,11 @@ export default function Layout({ children }: LayoutProps) {
     <SidebarProvider>
       <ClientRedirect />
       <div className="min-h-screen flex w-full">
-        <AppSidebar />
+        {!isMobile && <AppSidebar />}
         
         <div className="flex-1 flex flex-col">
           <header className={`${isMobile ? 'h-12' : 'h-14'} flex items-center justify-between border-b bg-background ${isMobile ? 'px-3' : 'px-6'}`}>
-            <MobileSidebarTrigger />
+            {!isMobile && <MobileSidebarTrigger />}
             {isMobile && (
               <div className="text-sm font-medium text-muted-foreground">
                 ArchiFlow
@@ -65,7 +65,7 @@ export default function Layout({ children }: LayoutProps) {
         </div>
       </div>
       
-      <MobileModuleNavigation />
+      <MobileModuleSelector />
     </SidebarProvider>
   );
 }
