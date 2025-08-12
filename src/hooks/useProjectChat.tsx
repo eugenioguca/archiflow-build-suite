@@ -198,7 +198,7 @@ export const useProjectChat = ({
           sender_id: userInfo.userId,
           sender_type: userInfo.userType,
           sender_name: userInfo.userName,
-          sender_avatar: userInfo.userAvatar,
+          sender_avatar: userInfo.userAvatar || null,
           message: messageText.trim()
         });
 
