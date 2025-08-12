@@ -10,7 +10,9 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { SmartCRM } from "@/components/SmartCRM";
+import { MobileSalesView } from "@/components/mobile/MobileSalesView";
 import { ClientProjectManager } from "@/components/ClientProjectManager";
 import { RequiredDocumentsManager } from "@/components/RequiredDocumentsManager";
 import { SalesExecutiveDashboard } from "@/components/SalesExecutiveDashboard";
@@ -111,6 +113,7 @@ export default function Sales() {
   const [activeTab, setActiveTab] = useState("list");
   const { toast } = useToast();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     fetchData();
@@ -574,96 +577,113 @@ export default function Sales() {
           </div>
         </TabsContent>
 
-        {/* Vista Lista */}
+        {/* Smart View - Lista detallada */}
         <TabsContent value="list">
-          <div className="space-y-4">
-            {filteredProjects.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-medium">No hay proyectos</h3>
-                  <p className="text-muted-foreground">
-                    {searchTerm || statusFilter !== 'all' || advisorFilter !== 'all'
-                      ? 'No se encontraron proyectos con los filtros aplicados'
-                      : 'Los nuevos proyectos aparecerán aquí'
-                    }
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              filteredProjects.map((project) => (
-                <Card key={project.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold">{project.clients?.full_name}</h3>
-                          <Badge className={statusConfig[project.sales_pipeline_stage].color}>
-                            {statusConfig[project.sales_pipeline_stage].label}
-                          </Badge>
-                          {!project.assigned_advisor_id && (
-                            <Badge variant="outline" className="text-orange-600">
-                              Sin asesor asignado
+          {isMobile ? (
+            <MobileSalesView
+              projects={clientProjects}
+              filteredProjects={filteredProjects}
+              employees={employees}
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              statusFilter={statusFilter}
+              onStatusChange={setStatusFilter}
+              advisorFilter={advisorFilter}
+              onAdvisorChange={setAdvisorFilter}
+              onProjectSelect={setSelectedProject}
+              onStageChange={updateProjectStage}
+              loading={loading}
+            />
+          ) : (
+            <div className="space-y-4">
+              {filteredProjects.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-lg font-medium">No hay proyectos</h3>
+                    <p className="text-muted-foreground">
+                      {searchTerm || statusFilter !== 'all' || advisorFilter !== 'all'
+                        ? 'No se encontraron proyectos con los filtros aplicados'
+                        : 'Los nuevos proyectos aparecerán aquí'
+                      }
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                filteredProjects.map((project) => (
+                  <Card key={project.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold">{project.clients?.full_name}</h3>
+                            <Badge className={statusConfig[project.sales_pipeline_stage].color}>
+                              {statusConfig[project.sales_pipeline_stage].label}
                             </Badge>
-                          )}
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                          <div>
-                            <p className="text-sm text-muted-foreground">Proyecto</p>
-                            <p className="font-medium">{project.project_name}</p>
-                            <p className="text-sm text-muted-foreground">{project.service_type}</p>
+                            {!project.assigned_advisor_id && (
+                              <Badge variant="outline" className="text-orange-600">
+                                Sin asesor asignado
+                              </Badge>
+                            )}
                           </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Contacto</p>
-                            <div className="space-y-1">
-                              <p className="text-sm font-medium">{project.clients?.phone}</p>
-                              <p className="text-xs text-muted-foreground break-all leading-tight">
-                                {project.clients?.email}
+
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                            <div>
+                              <p className="text-sm text-muted-foreground">Proyecto</p>
+                              <p className="font-medium">{project.project_name}</p>
+                              <p className="text-sm text-muted-foreground">{project.service_type}</p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Contacto</p>
+                              <div className="space-y-1">
+                                <p className="text-sm font-medium">{project.clients?.phone}</p>
+                                <p className="text-xs text-muted-foreground break-all leading-tight">
+                                  {project.clients?.email}
+                                </p>
+                              </div>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Asesor</p>
+                              <p className="font-medium">
+                                {project.assigned_advisor?.full_name || 'Sin asignar'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Presupuesto</p>
+                              <p className="font-medium">
+                                {project.budget ? `$${project.budget.toLocaleString()}` : 'No definido'}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Prob: {project.probability_percentage || 0}%
                               </p>
                             </div>
                           </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Asesor</p>
-                            <p className="font-medium">
-                              {project.assigned_advisor?.full_name || 'Sin asignar'}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Presupuesto</p>
-                            <p className="font-medium">
-                              {project.budget ? `$${project.budget.toLocaleString()}` : 'No definido'}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              Prob: {project.probability_percentage || 0}%
-                            </p>
-                          </div>
+
+                          {project.project_description && (
+                            <div className="mb-4">
+                              <p className="text-sm text-muted-foreground">Descripción</p>
+                              <p className="text-sm">{project.project_description}</p>
+                            </div>
+                          )}
                         </div>
 
-                        {project.project_description && (
-                          <div className="mb-4">
-                            <p className="text-sm text-muted-foreground">Descripción</p>
-                            <p className="text-sm">{project.project_description}</p>
-                          </div>
-                        )}
+                        <div className="flex gap-2 ml-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedProject(project)}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            Ver CRM
+                          </Button>
+                        </div>
                       </div>
-
-                          <div className="flex gap-2 ml-4">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedProject(project)}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          Ver CRM
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          )}
         </TabsContent>
 
 
