@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { ConstructionRequirementsDialog } from "@/components/ConstructionRequirementsDialog";
 import { 
   User, 
   Phone, 
@@ -69,6 +70,7 @@ export function ClientInfoPanel({ projectId }: ClientInfoPanelProps) {
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [showRequirementsDialog, setShowRequirementsDialog] = useState(false);
 
   useEffect(() => {
     fetchProjectAndClientData();
@@ -109,6 +111,12 @@ export function ClientInfoPanel({ projectId }: ClientInfoPanelProps) {
   const handleExistingDesignToggle = async (checked: boolean) => {
     if (!project) return;
     
+    if (checked && project.status === 'design') {
+      // Show requirements dialog instead of moving automatically
+      setShowRequirementsDialog(true);
+      return;
+    }
+    
     setUpdating(true);
     try {
       const { error } = await supabase
@@ -126,31 +134,47 @@ export function ClientInfoPanel({ projectId }: ClientInfoPanelProps) {
       toast({
         title: "Actualizado",
         description: checked 
-          ? "Proyecto marcado como con diseño existente. Se moverá a construcción automáticamente."
+          ? "Proyecto marcado como con diseño existente"
           : "Proyecto marcado para diseño completo",
       });
-
-      // If marked as existing design and project is in design phase, move to construction
-      if (checked && project.status === 'design') {
-        const { error: statusError } = await supabase
-          .from("client_projects")
-          .update({ 
-            status: 'construction',
-            moved_to_construction_at: new Date().toISOString()
-          })
-          .eq("id", projectId);
-
-        if (statusError) throw statusError;
-        
-        toast({
-          title: "Proyecto Transferido",
-          description: "El proyecto se ha movido automáticamente al módulo de construcción",
-        });
-      }
     } catch (error: any) {
       toast({
         title: "Error",
         description: "No se pudo actualizar el estado del diseño",
+        variant: "destructive"
+      });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleConfirmMoveToConstruction = async () => {
+    if (!project) return;
+    
+    setUpdating(true);
+    try {
+      const { error } = await supabase
+        .from("client_projects")
+        .update({ 
+          has_existing_design: true,
+          status: 'construction',
+          moved_to_construction_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", projectId);
+
+      if (error) throw error;
+
+      setProject({ ...project, has_existing_design: true, status: 'construction' });
+      
+      toast({
+        title: "Proyecto Transferido",
+        description: "El proyecto se ha movido al módulo de construcción",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "No se pudo transferir el proyecto",
         variant: "destructive"
       });
     } finally {
@@ -399,6 +423,14 @@ export function ClientInfoPanel({ projectId }: ClientInfoPanelProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Construction Requirements Dialog */}
+      <ConstructionRequirementsDialog
+        open={showRequirementsDialog}
+        onOpenChange={setShowRequirementsDialog}
+        projectId={projectId}
+        onConfirm={handleConfirmMoveToConstruction}
+      />
     </div>
   );
 }
