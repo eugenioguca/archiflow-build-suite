@@ -45,30 +45,53 @@ export const useProjectChat = ({
 
   // Determinar el tipo de usuario y su ID
   const getUserInfo = useCallback(async () => {
-    if (!user || !profile) return null;
+    if (!user || !profile) {
+      console.error('Chat: No user or profile available');
+      return null;
+    }
 
-    if (profile.role === 'client') {
-      // Para clientes, obtener el client_id
-      const { data: clientData } = await supabase
-        .from('clients')
-        .select('id')
-        .eq('profile_id', profile.id)
-        .single();
-      
-      return {
-        userId: clientData?.id || '',
-        userType: 'client' as const,
-        userName: profile.full_name || 'Cliente',
-        userAvatar: profile.avatar_url
-      };
-    } else {
-      // Para empleados, usar profile_id
-      return {
-        userId: profile.id,
-        userType: 'employee' as const,
-        userName: profile.full_name || 'Empleado',
-        userAvatar: profile.avatar_url
-      };
+    try {
+      if (profile.role === 'client') {
+        // Para clientes, obtener el client_id
+        const { data: clientData, error } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('profile_id', profile.id)
+          .single();
+        
+        if (error) {
+          console.error('Chat: Error fetching client data:', error);
+          return null;
+        }
+
+        if (!clientData?.id) {
+          console.error('Chat: No client_id found for profile:', profile.id);
+          return null;
+        }
+        
+        return {
+          userId: clientData.id,
+          userType: 'client' as const,
+          userName: profile.full_name || 'Cliente',
+          userAvatar: profile.avatar_url
+        };
+      } else {
+        // Para empleados, usar profile_id
+        if (!profile.id) {
+          console.error('Chat: No profile_id available for employee');
+          return null;
+        }
+
+        return {
+          userId: profile.id,
+          userType: 'employee' as const,
+          userName: profile.full_name || 'Empleado',
+          userAvatar: profile.avatar_url
+        };
+      }
+    } catch (error) {
+      console.error('Chat: Error in getUserInfo:', error);
+      return null;
     }
   }, [user, profile]);
 
@@ -161,26 +184,57 @@ export const useProjectChat = ({
 
   // Enviar mensaje
   const sendMessage = useCallback(async (messageText: string) => {
+    // Validaciones previas
+    if (!projectId) {
+      console.error('Chat: No project ID provided');
+      return false;
+    }
+
+    if (!messageText.trim()) {
+      console.error('Chat: Empty message');
+      return false;
+    }
+
     const userInfo = await getUserInfo();
-    if (!userInfo || !projectId || !messageText.trim()) return false;
+    if (!userInfo) {
+      console.error('Chat: Cannot get user info');
+      return false;
+    }
+
+    if (!userInfo.userId) {
+      console.error('Chat: No valid user ID found');
+      return false;
+    }
+
+    console.log('Chat: Sending message', {
+      projectId,
+      userId: userInfo.userId,
+      userType: userInfo.userType,
+      messageLength: messageText.trim().length
+    });
 
     setSending(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('project_chat')
         .insert({
           project_id: projectId,
           sender_id: userInfo.userId,
           sender_type: userInfo.userType,
           message: messageText.trim()
-        });
+        })
+        .select()
+        .single();
 
       if (error) {
+        console.error('Chat: Error inserting message:', error);
         return false;
       }
 
+      console.log('Chat: Message sent successfully:', data);
       return true;
     } catch (error) {
+      console.error('Chat: Exception sending message:', error);
       return false;
     } finally {
       setSending(false);
