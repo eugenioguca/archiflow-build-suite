@@ -85,7 +85,6 @@ export const useProjectChat = ({
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.error('Error loading messages:', error);
         return;
       }
 
@@ -129,7 +128,7 @@ export const useProjectChat = ({
       await markMessagesAsRead();
       
     } catch (error) {
-      console.error('Error loading messages:', error);
+      // Silently handle loading errors
     } finally {
       setLoading(false);
     }
@@ -151,12 +150,12 @@ export const useProjectChat = ({
         .eq('is_read', false);
 
       if (error) {
-        console.error('Error marking notifications as read:', error);
+        // Silently handle notification update errors
       }
 
       setUnreadCount(0);
     } catch (error) {
-      console.error('Error marking messages as read:', error);
+      // Silently handle mark as read errors
     }
   }, [projectId, getUserInfo]);
 
@@ -177,13 +176,11 @@ export const useProjectChat = ({
         });
 
       if (error) {
-        console.error('Error sending message:', error);
         return false;
       }
 
       return true;
     } catch (error) {
-      console.error('Error sending message:', error);
       return false;
     } finally {
       setSending(false);
@@ -210,13 +207,12 @@ export const useProjectChat = ({
         .eq('is_read', false);
 
       if (error) {
-        console.error('Error loading unread count:', error);
         return;
       }
 
       setUnreadCount(data?.length || 0);
     } catch (error) {
-      console.error('Error loading unread count:', error);
+      // Silently handle unread count errors
     }
   }, [projectId, getUserInfo]);
 
