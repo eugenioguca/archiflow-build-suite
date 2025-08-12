@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { usePaymentPlans } from "@/hooks/usePaymentPlans";
 import { usePaymentInstallments } from "@/hooks/usePaymentInstallments";
+import { ConstructionRequirementsDialog } from "@/components/ConstructionRequirementsDialog";
 // Construction module removed - reverting and transition features disabled
 import { 
   CheckCircle, 
@@ -52,6 +53,7 @@ export function DesignCompletionManager({
   const [loading, setLoading] = useState(false);
   const [completionNotes, setCompletionNotes] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [showRequirementsDialog, setShowRequirementsDialog] = useState(false);
   // const [revertDialogOpen, setRevertDialogOpen] = useState(false); // Disabled - construction module removed
   const [projectStatus, setProjectStatus] = useState<string>('');
   const [projectName, setProjectName] = useState<string>('');
@@ -158,11 +160,40 @@ export function DesignCompletionManager({
   };
 
   const handleMoveToConstruction = async () => {
-    toast({
-      title: "Módulo no disponible",
-      description: "El módulo de construcción ha sido deshabilitado",
-      variant: "destructive"
-    });
+    setShowRequirementsDialog(true);
+  };
+
+  const handleConfirmMoveToConstruction = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("client_projects")
+        .update({ 
+          has_existing_design: true,
+          status: 'construction',
+          moved_to_construction_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", projectId);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Proyecto Transferido",
+        description: "El proyecto se ha movido al módulo de construcción",
+      });
+
+      // Refresh to reflect changes
+      window.location.reload();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "No se pudo transferir el proyecto",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCompleteDesignOnly = async () => {
@@ -426,7 +457,15 @@ export function DesignCompletionManager({
           </div>
         )}
 
-        {/* Construction module removed */}
+         {/* Construction module removed */}
+
+         {/* Construction Requirements Dialog */}
+         <ConstructionRequirementsDialog
+           open={showRequirementsDialog}
+           onOpenChange={setShowRequirementsDialog}
+           projectId={projectId}
+           onConfirm={handleConfirmMoveToConstruction}
+         />
       </CardContent>
     </Card>
   );
