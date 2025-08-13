@@ -13,6 +13,7 @@ import { useForm } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus, Edit, Trash2 } from "lucide-react";
+import { ChartOfAccountsExcelManager } from "./ChartOfAccountsExcelManager";
 
 interface Mayor {
   id: string;
@@ -226,10 +227,11 @@ export function ChartOfAccountsManager() {
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="mayores">Mayores</TabsTrigger>
           <TabsTrigger value="partidas">Partidas</TabsTrigger>
           <TabsTrigger value="subpartidas">Subpartidas</TabsTrigger>
+          <TabsTrigger value="excel">Excel</TabsTrigger>
         </TabsList>
 
         <TabsContent value="mayores" className="space-y-4">
@@ -393,6 +395,10 @@ export function ChartOfAccountsManager() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="excel" className="space-y-4">
+          <ChartOfAccountsExcelManager onImportComplete={loadData} />
         </TabsContent>
       </Tabs>
     </div>
