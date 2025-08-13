@@ -484,8 +484,8 @@ export function UserDetailsModal({
                       )}
                     </div>
 
-                    {/* Solo mostrar cumpleaños para empleados */}
-                    {user.role === 'employee' && (
+                    {/* Mostrar cumpleaños para empleados y administradores */}
+                    {(user.role === 'employee' || user.role === 'admin') && (
                       <div className="space-y-2">
                         <Label htmlFor="birth_date">Fecha de Cumpleaños</Label>
                         {isEditing ? (

@@ -30,7 +30,7 @@ export function EmployeeBirthdays() {
         .from('profiles')
         .select('id, full_name, birth_date, email, avatar_url')
         .not('birth_date', 'is', null)
-        .eq('role', 'employee');
+        .in('role', ['employee', 'admin']);
 
       if (error) {
         console.error('Error fetching birthdays:', error);
@@ -125,7 +125,7 @@ export function EmployeeBirthdays() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Cake className="h-5 w-5 text-pink" />
-            Cumpleaños del Mes
+            Cumpleaños del Personal
           </CardTitle>
         </CardHeader>
         
