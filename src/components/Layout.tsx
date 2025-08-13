@@ -102,11 +102,13 @@ export default function Layout({ children }: LayoutProps) {
         </div>
       </div>
       
-      {/* Eye Toggle Button for Mobile */}
-      <MobileEyeToggle 
-        isOpen={mobileSidebar.isOpen}
-        onToggle={mobileSidebar.toggle}
-      />
+      {/* Eye Toggle Button for Mobile Only */}
+      {isMobile && (
+        <MobileEyeToggle 
+          isOpen={mobileSidebar.isOpen}
+          onToggle={mobileSidebar.toggle}
+        />
+      )}
       
       <UnifiedMobileFAB />
       
