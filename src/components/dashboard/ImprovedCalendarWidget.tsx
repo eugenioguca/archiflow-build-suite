@@ -150,7 +150,7 @@ export function ImprovedCalendarWidget() {
         
         <CardContent className="h-[calc(100%-80px)] flex flex-col">
           {viewMode === 'month' ? (
-            /* Enhanced Month Calendar */
+            /* Enhanced Month Calendar with Upcoming Events */
             <div className="flex-1 flex flex-col space-y-4">
               {/* Month navigation */}
               <div className="flex items-center justify-between px-2">
@@ -176,7 +176,7 @@ export function ImprovedCalendarWidget() {
               </div>
 
               {/* Calendar grid */}
-              <div className="flex-1 flex flex-col">
+              <div className="flex-1 flex flex-col min-h-0">
                 <div className="grid grid-cols-7 gap-1 mb-2">
                   {/* Week days */}
                   {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map((day, index) => (
@@ -186,13 +186,13 @@ export function ImprovedCalendarWidget() {
                   ))}
                 </div>
                 
-                <div className="grid grid-cols-7 gap-1 flex-1">
+                <div className="grid grid-cols-7 gap-1 flex-1 min-h-0">
                   {/* Calendar days */}
                   {calendarDays.map((day, index) => (
                     <div
                       key={index}
                       className={`
-                        text-sm p-2 min-h-[50px] flex flex-col items-center justify-start relative border border-muted/30 rounded-lg
+                        text-sm p-2 min-h-[45px] flex flex-col items-center justify-start relative border border-muted/30 rounded-lg
                         ${!day ? 'bg-muted/10' : 
                           day.isToday 
                             ? 'bg-primary text-primary-foreground font-semibold shadow-md' 
@@ -214,9 +214,52 @@ export function ImprovedCalendarWidget() {
                   ))}
                 </div>
               </div>
+
+              {/* Upcoming Events Section - Always visible in month view */}
+              <div className="border-t border-muted/30 pt-3">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-semibold text-foreground">Próximos Eventos</h4>
+                  <Button
+                    onClick={() => setViewMode('upcoming')}
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs h-6 px-2 text-muted-foreground hover:text-foreground"
+                  >
+                    Ver todos
+                  </Button>
+                </div>
+
+                {upcomingEvents.length === 0 ? (
+                  <div className="text-center py-4">
+                    <p className="text-xs text-muted-foreground">No hay eventos próximos</p>
+                  </div>
+                ) : (
+                  <div className="h-[120px] overflow-y-auto space-y-2 pr-1" style={{ scrollbarWidth: 'thin' }}>
+                    {upcomingEvents.slice(0, 10).map((event) => (
+                      <div
+                        key={event.id}
+                        className="flex items-start space-x-2 p-2 rounded-md bg-muted/20 hover:bg-muted/40 transition-colors border border-muted/20"
+                      >
+                        <div className="flex-shrink-0 mt-1">
+                          <div className="w-2 h-2 bg-primary rounded-full"></div>
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate text-foreground">{event.title}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                            <span>{formatEventDate(event.start_date)}</span>
+                            <span>•</span>
+                            <span>{formatEventTime(event)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
-            /* Enhanced Upcoming Events */
+            /* Enhanced Upcoming Events Full View */
             <div className="flex-1 flex flex-col space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-base">Próximos Eventos</h3>
@@ -226,7 +269,7 @@ export function ImprovedCalendarWidget() {
                   size="sm"
                   className="text-xs h-7"
                 >
-                  Ver todos
+                  Ver calendar completo
                 </Button>
               </div>
 
