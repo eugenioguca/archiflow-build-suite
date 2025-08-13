@@ -125,7 +125,7 @@ export function EmployeeBirthdays() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Cake className="h-5 w-5 text-pink" />
-            Cumpleaños del Personal
+            Cumpleaños del Mes
           </CardTitle>
         </CardHeader>
         
