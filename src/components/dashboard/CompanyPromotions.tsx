@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Edit, Star, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { PromotionEditor } from './AdminPanels/PromotionEditor';
+import { PromotionDetailModal } from '@/components/ui/promotion-detail-modal';
 import { usePermissions } from '@/hooks/usePermissions';
 
 interface Promotion {
@@ -21,6 +22,7 @@ export function CompanyPromotions() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showEditor, setShowEditor] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const { hasModuleAccess } = usePermissions();
   
@@ -171,14 +173,17 @@ export function CompanyPromotions() {
         
         <CardContent className="pb-6">
           <div className="relative">
-            {/* Promotion Content */}
-            <div className="space-y-4">
+            {/* Promotion Content - Clickeable */}
+            <div 
+              className="space-y-4 cursor-pointer group hover:bg-muted/30 rounded-lg p-3 transition-colors"
+              onClick={() => setShowDetailModal(true)}
+            >
               {currentPromotion.image_url && (
                 <div className="relative h-40 rounded-lg overflow-hidden">
                   <img
                     src={currentPromotion.image_url}
                     alt={currentPromotion.title}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                 </div>
@@ -186,7 +191,7 @@ export function CompanyPromotions() {
               
               <div className="space-y-3">
                 <div className="flex items-start justify-between">
-                  <h3 className="font-semibold text-lg leading-tight">
+                  <h3 className="font-semibold text-lg leading-tight group-hover:text-primary transition-colors">
                     {currentPromotion.title}
                   </h3>
                   <Badge 
@@ -198,13 +203,19 @@ export function CompanyPromotions() {
                 </div>
                 
                 {currentPromotion.description && (
-                  <p className="text-sm text-muted-foreground line-clamp-3">
-                    {currentPromotion.description}
-                  </p>
+                  <div className="max-h-20 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                    <p className="text-sm text-muted-foreground pr-2">
+                      {currentPromotion.description}
+                    </p>
+                  </div>
                 )}
                 
                 <p className="text-xs text-muted-foreground">
                   {formatDateRange(currentPromotion.start_date, currentPromotion.end_date)}
+                </p>
+                
+                <p className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                  Haz clic para ver más detalles
                 </p>
               </div>
             </div>
@@ -255,6 +266,13 @@ export function CompanyPromotions() {
           onPromotionUpdated={fetchPromotions}
         />
       )}
+
+      {/* Promotion Detail Modal */}
+      <PromotionDetailModal
+        open={showDetailModal}
+        onOpenChange={setShowDetailModal}
+        promotion={currentPromotion}
+      />
     </>
   );
 }
