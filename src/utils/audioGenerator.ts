@@ -1,5 +1,5 @@
 // Audio generator for unique alert sounds
-export const generateAlertSound = (type: 'soft' | 'professional' | 'loud' | 'uh-oh' | 'airport'): Promise<void> => {
+export const generateAlertSound = (type: 'soft' | 'professional' | 'loud' | 'uh-oh' | 'airport' | 'chat'): Promise<void> => {
   return new Promise((resolve, reject) => {
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -79,10 +79,18 @@ export const generateAlertSound = (type: 'soft' | 'professional' | 'loud' | 'uh-
           oscillator3.start(audioContext.currentTime + 0.5);
           oscillator3.stop(audioContext.currentTime + 1.3);
           break;
+          
+        case 'chat':
+          // Create modern chat notification sound - pleasant short blip
+          oscillator.frequency.setValueAtTime(600, audioContext.currentTime); // Pleasant mid-range frequency
+          oscillator.type = 'sine';
+          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+          break;
       }
       
       oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + (type === 'airport' ? 1.3 : 0.5));
+      oscillator.stop(audioContext.currentTime + (type === 'airport' ? 1.3 : type === 'chat' ? 0.15 : 0.5));
       
       oscillator.onended = () => {
         audioContext.close();

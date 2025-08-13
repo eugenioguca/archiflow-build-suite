@@ -3,7 +3,7 @@ import { generateAlertSound } from '@/utils/audioGenerator';
 
 interface ChatNotificationSoundProps {
   enabled?: boolean;
-  soundType?: 'soft' | 'professional' | 'loud' | 'icq';
+  soundType?: 'soft' | 'professional' | 'loud' | 'chat';
   volume?: number;
 }
 
@@ -16,57 +16,23 @@ declare global {
 
 export function ChatNotificationSound({ 
   enabled = true, 
-  soundType = 'professional',
+  soundType = 'chat',
   volume = 0.6
 }: ChatNotificationSoundProps) {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
   useEffect(() => {
     if (!enabled) return;
 
-    // Initialize audio element with programmatically generated sound
-    const initializeAudio = async () => {
-      try {
-        // Create audio element
-        const audio = new Audio();
-        audioRef.current = audio;
-        
-        // Set volume
-        audio.volume = Math.min(Math.max(volume, 0), 1);
-        
-        // Generate sound based on type
-        await generateSound(soundType);
-        
-        // Make sound globally accessible
-        window.playChatNotificationSound = () => {
-          if (audioRef.current && enabled) {
-            audioRef.current.currentTime = 0;
-            audioRef.current.play().catch(console.error);
-          }
-        };
-      } catch (error) {
-        console.error('Error initializing chat notification sound:', error);
+    // Make sound globally accessible without pre-generating audio
+    window.playChatNotificationSound = () => {
+      if (enabled) {
+        generateAlertSound(soundType as any).catch(console.error);
       }
     };
-
-    const generateSound = async (type: string) => {
-      try {
-        await generateAlertSound(type as any);
-      } catch (error) {
-        console.error('Error generating chat notification sound:', error);
-      }
-    };
-
-    initializeAudio();
 
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
       delete window.playChatNotificationSound;
     };
-  }, [enabled, soundType, volume]);
+  }, [enabled, soundType]);
 
   return null; // This component doesn't render anything
 }
@@ -77,8 +43,8 @@ export function useChatNotificationSound() {
     if (window.playChatNotificationSound) {
       window.playChatNotificationSound();
     } else {
-      // Fallback to direct audio generation
-      generateAlertSound('professional').catch(console.error);
+      // Fallback to direct audio generation with chat sound
+      generateAlertSound('chat').catch(console.error);
     }
   };
 

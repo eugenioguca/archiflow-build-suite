@@ -3,7 +3,6 @@ import { X, MessageCircle, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { useChatNotificationSound } from '@/components/ChatNotificationSound';
 
 interface ChatNotificationPopupProps {
   message: {
@@ -21,14 +20,10 @@ interface ChatNotificationPopupProps {
 
 export function ChatNotificationPopup({ message, onDismiss, onNavigate }: ChatNotificationPopupProps) {
   const [isVisible, setIsVisible] = useState(false);
-  const { playNotificationSound } = useChatNotificationSound();
 
   useEffect(() => {
     // Animate in
     setIsVisible(true);
-    
-    // Play notification sound
-    playNotificationSound();
     
     // Auto dismiss after 5 seconds
     const timer = setTimeout(() => {

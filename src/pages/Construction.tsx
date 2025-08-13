@@ -27,7 +27,6 @@ import { ConstructionTeamManager } from "@/components/ConstructionTeamManager";
 import { ProjectDatesManager } from "@/components/ProjectDatesManager";
 import { ModuleNotifications } from "@/components/ModuleNotifications";
 import { ProjectChat } from "@/components/ProjectChat";
-import { ChatNotificationSound } from "@/components/ChatNotificationSound";
 
 
 interface ConstructionProject {
@@ -514,9 +513,6 @@ export function Construction() {
           </div>
         )}
       </div>
-      
-      {/* Chat notification sounds */}
-      <ChatNotificationSound enabled />
     </div>
   );
 }
