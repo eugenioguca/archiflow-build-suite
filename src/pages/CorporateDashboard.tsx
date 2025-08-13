@@ -32,28 +32,24 @@ export default function CorporateDashboard() {
       <div className={`grid gap-6 ${
         isMobile 
           ? 'grid-cols-1' 
-          : 'grid-cols-1 lg:grid-cols-4'
+          : 'grid-cols-1 lg:grid-cols-3'
       }`}>
         
-        {/* Left Column - Operation Manuals */}
+        {/* Left Column - Two rows */}
         <div className={`space-y-6 ${isMobile ? '' : 'lg:col-span-2'}`}>
+          {/* Top Row - Promotions and Birthdays */}
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+            <CompanyPromotions />
+            <EmployeeBirthdays />
+          </div>
+          
+          {/* Bottom Row - Operation Manuals */}
           <OperationManuals />
         </div>
 
-        {/* Right Column - Calendar and Widgets */}
-        <div className={`space-y-6 ${isMobile ? '' : 'lg:col-span-2'}`}>
-          <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
-            {/* Birthdays and Promotions */}
-            <div className="space-y-6">
-              <EmployeeBirthdays />
-              <CompanyPromotions />
-            </div>
-            
-            {/* Calendar */}
-            <div>
-              <ImprovedCalendarWidget />
-            </div>
-          </div>
+        {/* Right Column - Calendar */}
+        <div className={`${isMobile ? '' : 'lg:col-span-1'}`}>
+          <ImprovedCalendarWidget />
         </div>
       </div>
     </div>
