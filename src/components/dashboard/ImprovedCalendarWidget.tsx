@@ -216,7 +216,7 @@ export function ImprovedCalendarWidget() {
               </div>
 
               {/* Upcoming Events Section - Always visible in month view */}
-              <div className="border-t border-muted/30 pt-3">
+              <div className="border-t border-muted/30 pt-3 h-[160px] flex flex-col">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-sm font-semibold text-foreground">Próximos Eventos</h4>
                   <Button
@@ -230,11 +230,11 @@ export function ImprovedCalendarWidget() {
                 </div>
 
                 {upcomingEvents.length === 0 ? (
-                  <div className="text-center py-4">
+                  <div className="flex-1 flex items-center justify-center">
                     <p className="text-xs text-muted-foreground">No hay eventos próximos</p>
                   </div>
                 ) : (
-                  <div className="h-[120px] overflow-y-auto space-y-2 pr-1" style={{ scrollbarWidth: 'thin' }}>
+                  <div className="flex-1 overflow-y-auto space-y-2 pr-1" style={{ scrollbarWidth: 'thin' }}>
                     {upcomingEvents.slice(0, 10).map((event) => (
                       <div
                         key={event.id}
@@ -263,14 +263,24 @@ export function ImprovedCalendarWidget() {
             <div className="flex-1 flex flex-col space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-base">Próximos Eventos</h3>
-                <Button
-                  onClick={() => window.location.href = '/calendar'}
-                  variant="outline"
-                  size="sm"
-                  className="text-xs h-7"
-                >
-                  Ver calendar completo
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => setViewMode('month')}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-7"
+                  >
+                    Volver al mes
+                  </Button>
+                  <Button
+                    onClick={() => window.location.href = '/calendar'}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-7"
+                  >
+                    Ver calendario completo
+                  </Button>
+                </div>
               </div>
 
               {upcomingEvents.length === 0 ? (
