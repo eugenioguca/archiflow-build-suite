@@ -122,7 +122,7 @@ export function ImprovedCalendarWidget() {
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-lg">
               <Calendar className="h-5 w-5 text-primary" />
-              Mi Calendario
+              Calendario
             </CardTitle>
             <div className="flex items-center gap-2">
               <Select value={viewMode} onValueChange={(value: 'upcoming' | 'month') => setViewMode(value)}>
