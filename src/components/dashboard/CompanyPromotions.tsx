@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { PromotionEditor } from './AdminPanels/PromotionEditor';
 import { PromotionDetailModal } from '@/components/ui/promotion-detail-modal';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface Promotion {
   id: string;
@@ -25,8 +26,10 @@ export function CompanyPromotions() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const { hasModuleAccess } = usePermissions();
+  const { isAdmin } = useUserRole();
   
-  const isAdmin = hasModuleAccess('user_management');
+  // Check if user has access to tools module (where user management is located)
+  const canManagePromotions = isAdmin && hasModuleAccess('tools');
 
   useEffect(() => {
     fetchPromotions();
@@ -105,7 +108,7 @@ export function CompanyPromotions() {
             <Star className="h-5 w-5 text-warning" />
             Promociones Corporativas
           </CardTitle>
-          {isAdmin && (
+          {canManagePromotions && (
             <Button
               onClick={() => setShowEditor(true)}
               variant="outline"
@@ -125,7 +128,7 @@ export function CompanyPromotions() {
             <p className="text-sm text-muted-foreground mb-4">
               Las promociones corporativas aparecerán aquí
             </p>
-            {isAdmin && (
+            {canManagePromotions && (
               <Button
                 onClick={() => setShowEditor(true)}
                 variant="outline"
@@ -159,7 +162,7 @@ export function CompanyPromotions() {
             <Star className="h-5 w-5 text-warning" />
             Promociones Corporativas
           </CardTitle>
-          {isAdmin && (
+          {canManagePromotions && (
             <Button
               onClick={() => setShowEditor(true)}
               variant="outline"

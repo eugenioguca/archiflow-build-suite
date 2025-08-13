@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ImageManager } from './AdminPanels/ImageManager';
 import { ImageViewerModal } from '@/components/ui/image-viewer-modal';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface MonthlyImage {
   id: string;
@@ -23,8 +24,10 @@ export function MonthlyFeaturedImage() {
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [loading, setLoading] = useState(true);
   const { hasModuleAccess } = usePermissions();
+  const { isAdmin } = useUserRole();
   
-  const isAdmin = hasModuleAccess('user_management');
+  // Check if user has access to tools module (where user management is located)
+  const canManageImages = isAdmin && hasModuleAccess('tools');
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
 
@@ -84,7 +87,7 @@ export function MonthlyFeaturedImage() {
               <h3 className="text-lg font-semibold text-muted-foreground">
                 No hay imagen para {getMonthName(currentMonth)} {currentYear}
               </h3>
-              {isAdmin && (
+              {canManageImages && (
                 <Button
                   onClick={() => setShowManager(true)}
                   className="mt-4"
@@ -154,7 +157,7 @@ export function MonthlyFeaturedImage() {
                 <span className="text-sm text-gray-300 font-medium">
                   {getMonthName(currentMonth)} {currentYear}
                 </span>
-                {isAdmin && (
+                {canManageImages && (
                   <Button
                     onClick={(e) => {
                       e.stopPropagation();

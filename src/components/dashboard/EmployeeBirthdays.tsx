@@ -7,6 +7,7 @@ import { Cake, Edit, Calendar, Gift } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { BirthdayManager } from './AdminPanels/BirthdayManager';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface EmployeeBirthday {
   id: string;
@@ -23,8 +24,10 @@ export function EmployeeBirthdays() {
   const [showManager, setShowManager] = useState(false);
   const [loading, setLoading] = useState(true);
   const { hasModuleAccess } = usePermissions();
+  const { isAdmin } = useUserRole();
   
-  const isAdmin = hasModuleAccess('user_management');
+  // Check if user has access to tools module (where user management is located)
+  const canManageBirthdays = isAdmin && hasModuleAccess('tools');
 
   useEffect(() => {
     fetchBirthdays();
@@ -134,7 +137,7 @@ export function EmployeeBirthdays() {
             <Cake className="h-5 w-5 text-pink" />
             Cumpleaños del Mes
           </CardTitle>
-          {isAdmin && (
+          {canManageBirthdays && (
             <Button
               onClick={() => setShowManager(true)}
               variant="outline"
@@ -153,7 +156,7 @@ export function EmployeeBirthdays() {
               <p className="text-muted-foreground">
                 No hay cumpleaños próximos
               </p>
-              {isAdmin && (
+              {canManageBirthdays && (
                 <Button
                   onClick={() => setShowManager(true)}
                   variant="outline"
