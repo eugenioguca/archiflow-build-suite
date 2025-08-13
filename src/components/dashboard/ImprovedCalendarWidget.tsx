@@ -117,8 +117,8 @@ export function ImprovedCalendarWidget() {
 
   return (
     <>
-      <Card className="glassmorphic-bg border-0 shadow-lg h-[600px] w-full">
-        <CardHeader className="pb-4">
+      <Card className="glassmorphic-bg border-0 shadow-lg overflow-hidden h-[600px] w-full">
+        <CardHeader className="pb-3 px-4">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-lg">
               <Calendar className="h-5 w-5 text-primary" />
@@ -148,12 +148,12 @@ export function ImprovedCalendarWidget() {
           </div>
         </CardHeader>
         
-        <CardContent className="h-[calc(100%-80px)] flex flex-col">
+        <CardContent className="h-[calc(100%-88px)] flex flex-col px-4 pb-4">
           {viewMode === 'month' ? (
             /* Enhanced Month Calendar with Upcoming Events */
-            <div className="flex-1 flex flex-col space-y-4">
+            <div className="flex-1 flex flex-col min-h-0 space-y-3">
               {/* Month navigation */}
-              <div className="flex items-center justify-between px-2">
+              <div className="flex items-center justify-between px-2 flex-shrink-0">
                 <Button
                   onClick={previousMonth}
                   variant="outline"
@@ -176,11 +176,11 @@ export function ImprovedCalendarWidget() {
               </div>
 
               {/* Calendar grid */}
-              <div className="flex-1 flex flex-col min-h-0">
+              <div className="h-[280px] flex flex-col min-h-0 flex-shrink-0">
                 <div className="grid grid-cols-7 gap-1 mb-2">
                   {/* Week days */}
                   {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map((day, index) => (
-                    <div key={index} className="text-xs font-semibold text-muted-foreground p-2 text-center">
+                    <div key={index} className="text-xs font-semibold text-muted-foreground p-1 text-center">
                       {day}
                     </div>
                   ))}
@@ -192,7 +192,7 @@ export function ImprovedCalendarWidget() {
                     <div
                       key={index}
                       className={`
-                        text-sm p-2 min-h-[45px] flex flex-col items-center justify-start relative border border-muted/30 rounded-lg
+                        text-sm p-1 min-h-[32px] flex flex-col items-center justify-start relative border border-muted/30 rounded-lg
                         ${!day ? 'bg-muted/10' : 
                           day.isToday 
                             ? 'bg-primary text-primary-foreground font-semibold shadow-md' 
@@ -204,8 +204,8 @@ export function ImprovedCalendarWidget() {
                         <>
                           <span className="text-xs font-medium">{day.day}</span>
                           {day.hasEvents && (
-                            <div className="flex flex-wrap gap-0.5 mt-1">
-                              <div className={`w-1.5 h-1.5 rounded-full ${day.isToday ? 'bg-primary-foreground' : 'bg-primary'}`}></div>
+                            <div className="flex flex-wrap gap-0.5 mt-0.5">
+                              <div className={`w-1 h-1 rounded-full ${day.isToday ? 'bg-primary-foreground' : 'bg-primary'}`}></div>
                             </div>
                           )}
                         </>
@@ -216,8 +216,8 @@ export function ImprovedCalendarWidget() {
               </div>
 
               {/* Upcoming Events Section - Always visible in month view */}
-              <div className="border-t border-muted/30 pt-3 h-[160px] flex flex-col">
-                <div className="flex items-center justify-between mb-3">
+              <div className="border-t border-muted/30 pt-3 h-[150px] flex flex-col flex-shrink-0">
+                <div className="flex items-center justify-between mb-2 flex-shrink-0">
                   <h4 className="text-sm font-semibold text-foreground">Próximos Eventos</h4>
                   <Button
                     onClick={() => setViewMode('upcoming')}
@@ -234,11 +234,11 @@ export function ImprovedCalendarWidget() {
                     <p className="text-xs text-muted-foreground">No hay eventos próximos</p>
                   </div>
                 ) : (
-                  <div className="flex-1 overflow-y-auto space-y-2 pr-1" style={{ scrollbarWidth: 'thin' }}>
-                    {upcomingEvents.slice(0, 10).map((event) => (
+                  <div className="flex-1 overflow-y-auto space-y-1 pr-1 min-h-0" style={{ scrollbarWidth: 'thin', scrollbarColor: 'hsl(var(--muted)) transparent' }}>
+                    {upcomingEvents.slice(0, 3).map((event) => (
                       <div
                         key={event.id}
-                        className="flex items-start space-x-2 p-2 rounded-md bg-muted/20 hover:bg-muted/40 transition-colors border border-muted/20"
+                        className="flex items-start space-x-2 p-2 rounded-md bg-muted/20 hover:bg-muted/40 transition-colors border border-muted/20 flex-shrink-0"
                       >
                         <div className="flex-shrink-0 mt-1">
                           <div className="w-2 h-2 bg-primary rounded-full"></div>
@@ -247,9 +247,9 @@ export function ImprovedCalendarWidget() {
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium truncate text-foreground">{event.title}</p>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                            <span>{formatEventDate(event.start_date)}</span>
+                            <span className="truncate">{formatEventDate(event.start_date)}</span>
                             <span>•</span>
-                            <span>{formatEventTime(event)}</span>
+                            <span className="truncate">{formatEventTime(event)}</span>
                           </div>
                         </div>
                       </div>
@@ -260,8 +260,8 @@ export function ImprovedCalendarWidget() {
             </div>
           ) : (
             /* Enhanced Upcoming Events Full View */
-            <div className="flex-1 flex flex-col space-y-4">
-              <div className="flex items-center justify-between">
+            <div className="flex-1 flex flex-col min-h-0 space-y-3">
+              <div className="flex items-center justify-between flex-shrink-0">
                 <h3 className="font-semibold text-base">Próximos Eventos</h3>
                 <div className="flex items-center gap-2">
                   <Button
@@ -290,28 +290,28 @@ export function ImprovedCalendarWidget() {
                   <p className="text-xs text-muted-foreground/70 mt-1">Crea tu primer evento</p>
                 </div>
               ) : (
-                <div className="flex-1 overflow-y-auto space-y-3 pr-2" style={{ scrollbarWidth: 'thin' }}>
+                <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-0" style={{ scrollbarWidth: 'thin', scrollbarColor: 'hsl(var(--muted)) transparent' }}>
                   {upcomingEvents.map((event) => (
                     <div
                       key={event.id}
-                      className="flex items-start space-x-3 p-3 rounded-lg bg-muted/20 hover:bg-muted/40 transition-all duration-200 border border-muted/30 hover:border-muted/50"
+                      className="flex items-start space-x-3 p-3 rounded-lg bg-muted/20 hover:bg-muted/40 transition-all duration-200 border border-muted/30 hover:border-muted/50 flex-shrink-0"
                     >
                       <div className="flex-shrink-0 mt-1">
                         <div className="w-3 h-3 bg-primary rounded-full shadow-sm"></div>
                       </div>
                       
-                      <div className="flex-1 min-w-0 space-y-2">
+                      <div className="flex-1 min-w-0 space-y-1">
                         <p className="text-sm font-semibold truncate text-foreground">{event.title}</p>
                         
-                        <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                        <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3 flex-shrink-0" />
-                            <span>{formatEventDate(event.start_date)}</span>
+                            <span className="truncate">{formatEventDate(event.start_date)}</span>
                           </div>
                           
                           <div className="flex items-center gap-1">
                             <Clock className="h-3 w-3 flex-shrink-0" />
-                            <span>{formatEventTime(event)}</span>
+                            <span className="truncate">{formatEventTime(event)}</span>
                           </div>
                           
                           {event.location && (
