@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Book, Search, Download, ExternalLink, Edit, Plus, FileText } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Book, Search, Download, ExternalLink, Edit, Plus, FileText, Filter } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ManualUploader } from './AdminPanels/ManualUploader';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -176,8 +177,8 @@ export function OperationManuals() {
         
         <CardContent className="space-y-4">
           {/* Search and Filters */}
-          <div className="space-y-3">
-            <div className="relative">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar manuales..."
@@ -187,24 +188,21 @@ export function OperationManuals() {
               />
             </div>
             
-            <div className="flex flex-wrap gap-2">
-              <Button
-                onClick={() => setSelectedCategory(null)}
-                variant={selectedCategory === null ? "default" : "outline"}
-                size="sm"
-              >
-                Todos
-              </Button>
-              {CATEGORIES.map((category) => (
-                <Button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  variant={selectedCategory === category ? "default" : "outline"}
-                  size="sm"
-                >
-                  {category}
-                </Button>
-              ))}
+            <div className="flex gap-2">
+              <Select value={selectedCategory || "all"} onValueChange={(value) => setSelectedCategory(value === "all" ? null : value)}>
+                <SelectTrigger className="w-[180px]">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas las categorías</SelectItem>
+                  {CATEGORIES.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

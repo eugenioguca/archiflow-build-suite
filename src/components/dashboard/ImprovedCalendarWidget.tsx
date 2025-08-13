@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Plus, Clock, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar, Plus, Clock, MapPin, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { usePersonalCalendar } from '@/hooks/usePersonalCalendar';
 import { QuickEventCreator } from '@/components/calendar/QuickEventCreator';
 
@@ -18,6 +19,7 @@ interface CalendarEvent {
 export function ImprovedCalendarWidget() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showQuickCreator, setShowQuickCreator] = useState(false);
+  const [viewMode, setViewMode] = useState<'upcoming' | 'month'>('upcoming');
   const { events, createEvent } = usePersonalCalendar();
 
   // Get current month events and upcoming events
@@ -116,151 +118,159 @@ export function ImprovedCalendarWidget() {
 
   return (
     <>
-      <Card className="glassmorphic-bg border-0 shadow-lg">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" />
-            Mi Calendario
-          </CardTitle>
-          <Button
-            onClick={() => setShowQuickCreator(true)}
-            variant="outline"
-            size="sm"
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Evento
-          </Button>
-        </CardHeader>
-        
-        <CardContent className="space-y-6">
-          {/* Mini Calendar */}
-          <div className="space-y-3">
-            {/* Month navigation */}
-            <div className="flex items-center justify-between">
+      <Card className="glassmorphic-bg border-0 shadow-lg h-fit">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-primary" />
+              Mi Calendario
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Select value={viewMode} onValueChange={(value: 'upcoming' | 'month') => setViewMode(value)}>
+                <SelectTrigger className="w-[120px] h-8">
+                  <Filter className="h-3 w-3 mr-1" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="upcoming">Próximos</SelectItem>
+                  <SelectItem value="month">Mes</SelectItem>
+                </SelectContent>
+              </Select>
               <Button
-                onClick={previousMonth}
+                onClick={() => setShowQuickCreator(true)}
                 variant="outline"
                 size="sm"
-                className="h-8 w-8 p-0"
+                className="h-8"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <Plus className="h-3 w-3 mr-1" />
+                Evento
               </Button>
-              <h3 className="font-semibold text-sm capitalize">
-                {getMonthName(currentDate)}
-              </h3>
-              <Button
-                onClick={nextMonth}
-                variant="outline"
-                size="sm"
-                className="h-8 w-8 p-0"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {/* Calendar grid */}
-            <div className="grid grid-cols-7 gap-1 text-center">
-              {/* Week days */}
-              {['D', 'L', 'M', 'X', 'J', 'V', 'S'].map((day, index) => (
-                <div key={index} className="text-xs font-medium text-muted-foreground p-1">
-                  {day}
-                </div>
-              ))}
-              
-              {/* Calendar days */}
-              {calendarDays.map((day, index) => (
-                <div
-                  key={index}
-                  className={`
-                    text-xs p-1 h-8 flex items-center justify-center relative
-                    ${!day ? '' : 
-                      day.isToday 
-                        ? 'bg-primary text-primary-foreground rounded-md font-semibold' 
-                        : 'hover:bg-muted/50 rounded-md cursor-pointer'
-                    }
-                  `}
-                >
-                  {day && (
-                    <>
-                      {day.day}
-                      {day.hasEvents && !day.isToday && (
-                        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary rounded-full"></div>
-                      )}
-                    </>
-                  )}
-                </div>
-              ))}
             </div>
           </div>
-
-          {/* Upcoming Events */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm">Próximos Eventos</h3>
-              {upcomingEvents.length > 4 && (
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
+          {viewMode === 'month' ? (
+            /* Mini Calendar */
+            <div className="space-y-3">
+              {/* Month navigation */}
+              <div className="flex items-center justify-between">
                 <Button
-                  onClick={() => window.location.href = '/calendar'}
+                  onClick={previousMonth}
                   variant="outline"
                   size="sm"
-                  className="text-xs h-7"
+                  className="h-7 w-7 p-0"
                 >
-                  Ver todos
+                  <ChevronLeft className="h-3 w-3" />
                 </Button>
-              )}
-            </div>
-
-            {upcomingEvents.length === 0 ? (
-              <div className="text-center py-6">
-                <Calendar className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">No hay eventos próximos</p>
+                <h3 className="font-medium text-sm capitalize">
+                  {getMonthName(currentDate)}
+                </h3>
                 <Button
-                  onClick={() => setShowQuickCreator(true)}
+                  onClick={nextMonth}
                   variant="outline"
                   size="sm"
-                  className="mt-2"
+                  className="h-7 w-7 p-0"
                 >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Crear evento
+                  <ChevronRight className="h-3 w-3" />
                 </Button>
               </div>
-            ) : (
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {upcomingEvents.map((event) => (
+
+              {/* Calendar grid */}
+              <div className="grid grid-cols-7 gap-1 text-center">
+                {/* Week days */}
+                {['D', 'L', 'M', 'X', 'J', 'V', 'S'].map((day, index) => (
+                  <div key={index} className="text-xs font-medium text-muted-foreground p-1">
+                    {day}
+                  </div>
+                ))}
+                
+                {/* Calendar days */}
+                {calendarDays.map((day, index) => (
                   <div
-                    key={event.id}
-                    className="flex items-start space-x-3 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                    key={index}
+                    className={`
+                      text-xs p-1 h-7 flex items-center justify-center relative
+                      ${!day ? '' : 
+                        day.isToday 
+                          ? 'bg-primary text-primary-foreground rounded-md font-semibold' 
+                          : 'hover:bg-muted/50 rounded-md cursor-pointer'
+                      }
+                    `}
                   >
-                    <div className="flex-shrink-0 mt-0.5">
-                      <div className="w-2 h-2 bg-primary rounded-full"></div>
-                    </div>
-                    
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <p className="text-sm font-medium truncate">{event.title}</p>
-                      
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          <span>{formatEventDate(event.start_date)}</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          <span>{formatEventTime(event)}</span>
-                        </div>
-                      </div>
-                      
-                      {event.location && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <MapPin className="h-3 w-3" />
-                          <span className="truncate">{event.location}</span>
-                        </div>
-                      )}
-                    </div>
+                    {day && (
+                      <>
+                        {day.day}
+                        {day.hasEvents && !day.isToday && (
+                          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary rounded-full"></div>
+                        )}
+                      </>
+                    )}
                   </div>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            /* Upcoming Events */
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium text-sm">Próximos Eventos</h3>
+                {upcomingEvents.length > 3 && (
+                  <Button
+                    onClick={() => window.location.href = '/calendar'}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-6"
+                  >
+                    Ver todos
+                  </Button>
+                )}
+              </div>
+
+              {upcomingEvents.length === 0 ? (
+                <div className="text-center py-6">
+                  <Calendar className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">No hay eventos próximos</p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {upcomingEvents.slice(0, 3).map((event) => (
+                    <div
+                      key={event.id}
+                      className="flex items-start space-x-3 p-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex-shrink-0 mt-0.5">
+                        <div className="w-2 h-2 bg-primary rounded-full"></div>
+                      </div>
+                      
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <p className="text-sm font-medium truncate">{event.title}</p>
+                        
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            <span>{formatEventDate(event.start_date)}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            <span>{formatEventTime(event)}</span>
+                          </div>
+                        </div>
+                        
+                        {event.location && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <MapPin className="h-3 w-3" />
+                            <span className="truncate">{event.location}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
