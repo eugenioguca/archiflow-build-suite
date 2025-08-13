@@ -42,6 +42,14 @@ interface Subpartida {
   chart_of_accounts_partidas?: { codigo: string; nombre: string };
 }
 
+interface Departamento {
+  id: string;
+  codigo: string;
+  nombre: string;
+  descripcion?: string;
+  activo: boolean;
+}
+
 interface DeleteResult {
   success: boolean;
   message?: string;
@@ -49,23 +57,26 @@ interface DeleteResult {
 }
 
 export function ChartOfAccountsManager() {
-  const [activeTab, setActiveTab] = useState("mayores");
+  const [activeTab, setActiveTab] = useState("departamentos");
+  const [departamentos, setDepartamentos] = useState<Departamento[]>([]);
   const [mayores, setMayores] = useState<Mayor[]>([]);
   const [partidas, setPartidas] = useState<Partida[]>([]);
   const [subpartidas, setSubpartidas] = useState<Subpartida[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Dialog states
+  const [departamentoDialog, setDepartamentoDialog] = useState(false);
   const [mayorDialog, setMayorDialog] = useState(false);
   const [partidaDialog, setPartidaDialog] = useState(false);
   const [subpartidaDialog, setSubpartidaDialog] = useState(false);
   
   // Edit states
+  const [editingDepartamento, setEditingDepartamento] = useState<Departamento | null>(null);
   const [editingMayor, setEditingMayor] = useState<Mayor | null>(null);
   const [editingPartida, setEditingPartida] = useState<Partida | null>(null);
   const [editingSubpartida, setEditingSubpartida] = useState<Subpartida | null>(null);
 
-  const departamentos = [
+  const departamentosOptions = [
     { value: "ventas", label: "Ventas" },
     { value: "diseño", label: "Diseño" },
     { value: "construccion", label: "Construcción" },
@@ -82,12 +93,21 @@ export function ChartOfAccountsManager() {
   const loadData = async () => {
     setLoading(true);
     try {
-      await Promise.all([loadMayores(), loadPartidas(), loadSubpartidas()]);
+      await Promise.all([loadDepartamentos(), loadMayores(), loadPartidas(), loadSubpartidas()]);
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadDepartamentos = async () => {
+    const { data } = await supabase
+      .from("chart_of_accounts_departamentos")
+      .select("*")
+      .order("codigo");
+    
+    if (data) setDepartamentos(data);
   };
 
   const loadMayores = async () => {
@@ -118,6 +138,28 @@ export function ChartOfAccountsManager() {
   };
 
   // Delete functions with validation
+  const deleteDepartamento = async (id: string) => {
+    try {
+      const { data: result, error } = await supabase.rpc(
+        'safe_delete_chart_account',
+        { table_name: 'chart_of_accounts_departamentos', record_id: id }
+      );
+
+      if (error) throw error;
+
+      const typedResult = result as unknown as DeleteResult;
+      if (typedResult?.success) {
+        toast.success(typedResult.message || "Departamento eliminado exitosamente");
+        loadDepartamentos();
+      } else {
+        toast.error(typedResult?.error || "Error al eliminar departamento");
+      }
+    } catch (error: any) {
+      console.error('Error deleting departamento:', error);
+      toast.error("Error al eliminar departamento: " + error.message);
+    }
+  };
+
   const deleteMayor = async (id: string) => {
     try {
       const { data: result, error } = await supabase.rpc(
@@ -184,6 +226,126 @@ export function ChartOfAccountsManager() {
     }
   };
 
+  // Departamento Form Component
+  const DepartamentoForm = ({ departamento }: { departamento?: Departamento }) => {
+    const form = useForm({
+      defaultValues: {
+        codigo: departamento?.codigo || "",
+        nombre: departamento?.nombre || "",
+        descripcion: departamento?.descripcion || "",
+        activo: departamento?.activo ?? true,
+      },
+    });
+
+    const onSubmit = async (data: any) => {
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
+          .single();
+
+        if (departamento) {
+          // Update existing
+          const { error } = await supabase
+            .from("chart_of_accounts_departamentos")
+            .update(data)
+            .eq("id", departamento.id);
+
+          if (error) throw error;
+          toast.success("Departamento actualizado exitosamente");
+          setEditingDepartamento(null);
+        } else {
+          // Create new
+          const { error } = await supabase
+            .from("chart_of_accounts_departamentos")
+            .insert([{ ...data, created_by: profile?.id }]);
+
+          if (error) throw error;
+          toast.success("Departamento creado exitosamente");
+        }
+
+        setDepartamentoDialog(false);
+        form.reset();
+        loadDepartamentos();
+      } catch (error: any) {
+        toast.error(`Error al ${departamento ? 'actualizar' : 'crear'} departamento: ` + error.message);
+      }
+    };
+
+    return (
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="codigo"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Código</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Ej: DEPT001" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="nombre"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nombre</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Nombre del departamento" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="descripcion"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Descripción</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Descripción del departamento" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="activo"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">Activo</FormLabel>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => {
+              setDepartamentoDialog(false);
+              setEditingDepartamento(null);
+            }}>
+              Cancelar
+            </Button>
+            <Button type="submit">{departamento ? 'Actualizar' : 'Guardar'}</Button>
+          </div>
+        </form>
+      </Form>
+    );
+  };
+
   // Mayor Form Component
   const MayorForm = ({ mayor }: { mayor?: Mayor }) => {
     const form = useForm({
@@ -247,7 +409,7 @@ export function ChartOfAccountsManager() {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {departamentos.map((dept) => (
+                    {departamentosOptions.map((dept) => (
                       <SelectItem key={dept.value} value={dept.value}>
                         {dept.label}
                       </SelectItem>
@@ -584,12 +746,102 @@ export function ChartOfAccountsManager() {
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="departamentos">Departamentos</TabsTrigger>
           <TabsTrigger value="mayores">Mayores</TabsTrigger>
           <TabsTrigger value="partidas">Partidas</TabsTrigger>
           <TabsTrigger value="subpartidas">Subpartidas</TabsTrigger>
           <TabsTrigger value="excel">Excel</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="departamentos" className="space-y-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Catálogo de Departamentos</CardTitle>
+              <Dialog open={departamentoDialog || !!editingDepartamento} onOpenChange={(open) => {
+                if (!open) {
+                  setDepartamentoDialog(false);
+                  setEditingDepartamento(null);
+                }
+              }}>
+                <DialogTrigger asChild>
+                  <Button onClick={() => setDepartamentoDialog(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nuevo Departamento
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{editingDepartamento ? 'Editar Departamento' : 'Crear Nuevo Departamento'}</DialogTitle>
+                  </DialogHeader>
+                  <DepartamentoForm departamento={editingDepartamento || undefined} />
+                </DialogContent>
+              </Dialog>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Código</TableHead>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Descripción</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead className="w-[100px]">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {departamentos.map((departamento) => (
+                    <TableRow key={departamento.id}>
+                      <TableCell className="font-mono">{departamento.codigo}</TableCell>
+                      <TableCell>{departamento.nombre}</TableCell>
+                      <TableCell>{departamento.descripcion || "-"}</TableCell>
+                      <TableCell>
+                        <Badge variant={departamento.activo ? "default" : "secondary"}>
+                          {departamento.activo ? "Activo" : "Inactivo"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => setEditingDepartamento(departamento)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="outline">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>¿Eliminar Departamento?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  ¿Estás seguro de que deseas eliminar el departamento "{departamento.nombre}"? Esta acción no se puede deshacer.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => deleteDepartamento(departamento.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Eliminar
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="mayores" className="space-y-4">
           <Card>

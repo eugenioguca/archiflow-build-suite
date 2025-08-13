@@ -526,6 +526,39 @@ export type Database = {
           },
         ]
       }
+      chart_of_accounts_departamentos: {
+        Row: {
+          activo: boolean
+          codigo: string
+          created_at: string
+          created_by: string
+          descripcion: string | null
+          id: string
+          nombre: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          codigo: string
+          created_at?: string
+          created_by: string
+          descripcion?: string | null
+          id?: string
+          nombre: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          codigo?: string
+          created_at?: string
+          created_by?: string
+          descripcion?: string | null
+          id?: string
+          nombre?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chart_of_accounts_mayor: {
         Row: {
           activo: boolean
