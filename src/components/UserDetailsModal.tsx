@@ -94,7 +94,7 @@ export function UserDetailsModal({
         approval_status: user.approval_status || '',
         department_enum: user.department_enum || '',
         position_enum: user.position_enum || '',
-        birth_date: (user as any).birth_date || ''
+        birth_date: (user as any).birth_date ? (user as any).birth_date.split('T')[0] : ''
       });
       
       const userBranches = user.user_branch_assignments?.map(
@@ -214,7 +214,7 @@ export function UserDetailsModal({
       approval_status: user.approval_status || '',
       department_enum: user.department_enum || '',
       position_enum: user.position_enum || '',
-      birth_date: (user as any).birth_date || ''
+      birth_date: (user as any).birth_date ? (user as any).birth_date.split('T')[0] : ''
     });
     
     const userBranches = user.user_branch_assignments?.map(
@@ -499,8 +499,8 @@ export function UserDetailsModal({
                           <div className="flex items-center gap-3">
                             <Cake className="h-4 w-4 text-muted-foreground" />
                             <span>
-                              {(user as any).birth_date 
-                                ? format(new Date((user as any).birth_date), 'dd/MM/yyyy', { locale: es })
+              {(user as any).birth_date 
+                ? format(new Date((user as any).birth_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: es })
                                 : 'Sin fecha de cumpleaños'
                               }
                             </span>
