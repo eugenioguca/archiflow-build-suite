@@ -261,7 +261,7 @@ export function ImprovedCalendarWidget() {
           ) : (
             /* Enhanced Upcoming Events Full View */
             <div className="flex-1 flex flex-col min-h-0 space-y-3">
-              <div className="flex items-center justify-between flex-shrink-0">
+              <div className="flex flex-col space-y-2 flex-shrink-0">
                 <h3 className="font-semibold text-base">Próximos Eventos</h3>
                 <div className="flex items-center gap-2">
                   <Button
