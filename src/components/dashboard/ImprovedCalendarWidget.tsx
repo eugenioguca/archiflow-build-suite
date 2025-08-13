@@ -290,7 +290,14 @@ export function ImprovedCalendarWidget() {
                   <p className="text-xs text-muted-foreground/70 mt-1">Crea tu primer evento</p>
                 </div>
               ) : (
-                <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-0" style={{ scrollbarWidth: 'thin', scrollbarColor: 'hsl(var(--muted)) transparent' }}>
+                <div 
+                  className="flex-1 overflow-y-auto space-y-2 pr-2 min-h-0" 
+                  style={{ 
+                    scrollbarWidth: 'thin', 
+                    scrollbarColor: 'hsl(var(--muted)) transparent',
+                    maxHeight: '100%'
+                  }}
+                >
                   {upcomingEvents.map((event) => (
                     <div
                       key={event.id}
