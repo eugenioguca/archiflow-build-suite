@@ -1,13 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Cake, Edit, Calendar, Gift } from 'lucide-react';
+import { Cake, Calendar, Gift } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { BirthdayManager } from './AdminPanels/BirthdayManager';
-import { usePermissions } from '@/hooks/usePermissions';
-import { useUserRole } from '@/hooks/useUserRole';
 
 interface EmployeeBirthday {
   id: string;
@@ -21,13 +17,7 @@ interface EmployeeBirthday {
 
 export function EmployeeBirthdays() {
   const [birthdays, setBirthdays] = useState<EmployeeBirthday[]>([]);
-  const [showManager, setShowManager] = useState(false);
   const [loading, setLoading] = useState(true);
-  const { hasModuleAccess } = usePermissions();
-  const { isAdmin } = useUserRole();
-  
-  // Check if user has access to tools module (where user management is located)
-  const canManageBirthdays = isAdmin && hasModuleAccess('tools');
 
   useEffect(() => {
     fetchBirthdays();
@@ -132,21 +122,11 @@ export function EmployeeBirthdays() {
   return (
     <>
       <Card className="glassmorphic-bg border-0 shadow-lg">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Cake className="h-5 w-5 text-pink" />
             Cumpleaños del Mes
           </CardTitle>
-          {canManageBirthdays && (
-            <Button
-              onClick={() => setShowManager(true)}
-              variant="outline"
-              size="sm"
-            >
-              <Edit className="h-4 w-4 mr-1" />
-              Gestionar
-            </Button>
-          )}
         </CardHeader>
         
         <CardContent>
@@ -156,16 +136,6 @@ export function EmployeeBirthdays() {
               <p className="text-muted-foreground">
                 No hay cumpleaños próximos
               </p>
-              {canManageBirthdays && (
-                <Button
-                  onClick={() => setShowManager(true)}
-                  variant="outline"
-                  size="sm"
-                  className="mt-4"
-                >
-                  Agregar fechas de cumpleaños
-                </Button>
-              )}
             </div>
           ) : (
             <div className="space-y-4">
@@ -215,13 +185,6 @@ export function EmployeeBirthdays() {
         </CardContent>
       </Card>
 
-      {showManager && (
-        <BirthdayManager
-          open={showManager}
-          onOpenChange={setShowManager}
-          onBirthdaysUpdated={fetchBirthdays}
-        />
-      )}
     </>
   );
 }

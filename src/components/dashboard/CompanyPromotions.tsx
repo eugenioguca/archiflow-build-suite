@@ -2,12 +2,9 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Star, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { Star, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { PromotionEditor } from './AdminPanels/PromotionEditor';
 import { PromotionDetailModal } from '@/components/ui/promotion-detail-modal';
-import { usePermissions } from '@/hooks/usePermissions';
-import { useUserRole } from '@/hooks/useUserRole';
 
 interface Promotion {
   id: string;
@@ -22,14 +19,8 @@ interface Promotion {
 export function CompanyPromotions() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [showEditor, setShowEditor] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [loading, setLoading] = useState(true);
-  const { hasModuleAccess } = usePermissions();
-  const { isAdmin } = useUserRole();
-  
-  // Check if user has access to tools module (where user management is located)
-  const canManagePromotions = isAdmin && hasModuleAccess('tools');
 
   useEffect(() => {
     fetchPromotions();
@@ -103,21 +94,11 @@ export function CompanyPromotions() {
   if (promotions.length === 0) {
     return (
       <Card className="glassmorphic-bg border-0 shadow-lg">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Star className="h-5 w-5 text-warning" />
             Promociones Corporativas
           </CardTitle>
-          {canManagePromotions && (
-            <Button
-              onClick={() => setShowEditor(true)}
-              variant="outline"
-              size="sm"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Crear
-            </Button>
-          )}
         </CardHeader>
         <CardContent>
           <div className="text-center py-12">
@@ -128,26 +109,8 @@ export function CompanyPromotions() {
             <p className="text-sm text-muted-foreground mb-4">
               Las promociones corporativas aparecerán aquí
             </p>
-            {canManagePromotions && (
-              <Button
-                onClick={() => setShowEditor(true)}
-                variant="outline"
-                size="sm"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Crear primera promoción
-              </Button>
-            )}
           </div>
         </CardContent>
-
-        {showEditor && (
-          <PromotionEditor
-            open={showEditor}
-            onOpenChange={setShowEditor}
-            onPromotionUpdated={fetchPromotions}
-          />
-        )}
       </Card>
     );
   }
@@ -157,21 +120,11 @@ export function CompanyPromotions() {
   return (
     <>
       <Card className="glassmorphic-bg border-0 shadow-lg overflow-hidden">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Star className="h-5 w-5 text-warning" />
             Promociones Corporativas
           </CardTitle>
-          {canManagePromotions && (
-            <Button
-              onClick={() => setShowEditor(true)}
-              variant="outline"
-              size="sm"
-            >
-              <Edit className="h-4 w-4 mr-1" />
-              Gestionar
-            </Button>
-          )}
         </CardHeader>
         
         <CardContent className="pb-6">
@@ -262,13 +215,6 @@ export function CompanyPromotions() {
         </CardContent>
       </Card>
 
-      {showEditor && (
-        <PromotionEditor
-          open={showEditor}
-          onOpenChange={setShowEditor}
-          onPromotionUpdated={fetchPromotions}
-        />
-      )}
 
       {/* Promotion Detail Modal */}
       <PromotionDetailModal

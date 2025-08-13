@@ -178,13 +178,6 @@ export function MonthlyFeaturedImage() {
       </Card>
 
       {/* Image Manager Modal */}
-      {showManager && (
-        <ImageManager
-          open={showManager}
-          onOpenChange={setShowManager}
-          onImageUpdated={fetchCurrentImage}
-        />
-      )}
 
       {/* Image Viewer Modal */}
       {showImageViewer && (

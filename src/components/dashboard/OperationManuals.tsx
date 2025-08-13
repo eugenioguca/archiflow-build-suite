@@ -4,10 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Book, Search, Download, ExternalLink, Edit, Plus, FileText, Filter, Trash2 } from 'lucide-react';
+import { Book, Search, Download, ExternalLink, FileText, Filter, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { ManualUploader } from './AdminPanels/ManualUploader';
-import { usePermissions } from '@/hooks/usePermissions';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
@@ -37,13 +35,11 @@ export function OperationManuals() {
   const [filteredManuals, setFilteredManuals] = useState<Manual[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [showUploader, setShowUploader] = useState(false);
   const [loading, setLoading] = useState(true);
-  const { hasModuleAccess } = usePermissions();
   const { toast } = useToast();
   
-  // If user can access this module, they are admin
-  const isAdmin = true;
+  // Read-only mode for dashboard display
+  const isAdmin = false;
 
   useEffect(() => {
     fetchManuals();
@@ -206,21 +202,11 @@ export function OperationManuals() {
   return (
     <>
       <Card className="glassmorphic-bg border-0 shadow-lg">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Book className="h-5 w-5 text-info" />
             Manuales de Operación
           </CardTitle>
-          {isAdmin && (
-            <Button
-              onClick={() => setShowUploader(true)}
-              variant="outline"
-              size="sm"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Subir Manual
-            </Button>
-          )}
         </CardHeader>
         
         <CardContent className="space-y-4">
@@ -267,16 +253,6 @@ export function OperationManuals() {
                   : 'Intenta ajustar los filtros de búsqueda'
                 }
               </p>
-              {isAdmin && manuals.length === 0 && (
-                <Button
-                  onClick={() => setShowUploader(true)}
-                  variant="outline"
-                  size="sm"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Subir primer manual
-                </Button>
-              )}
             </div>
           ) : (
             <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -389,13 +365,6 @@ export function OperationManuals() {
         </CardContent>
       </Card>
 
-      {showUploader && (
-        <ManualUploader
-          open={showUploader}
-          onOpenChange={setShowUploader}
-          onManualUploaded={fetchManuals}
-        />
-      )}
     </>
   );
 }
