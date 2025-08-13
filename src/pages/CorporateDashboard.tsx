@@ -13,7 +13,7 @@ export default function CorporateDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Hub Corporativo
+            Dovita Hub
           </h1>
           <p className="text-muted-foreground text-lg mt-2">
             Tu espacio de información y recursos empresariales
