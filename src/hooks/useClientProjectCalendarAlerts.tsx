@@ -128,19 +128,47 @@ export const useClientProjectCalendarAlerts = () => {
   useEffect(() => {
     if (!user) return;
 
-    // Check alerts immediately
+    // Initial check only - no intervals
     if (checkAlertsRef.current) {
       checkAlertsRef.current();
     }
 
-    // Set up interval to check for alerts every 30 seconds
-    const interval = setInterval(() => {
-      if (checkAlertsRef.current) {
-        checkAlertsRef.current();
-      }
-    }, 30000);
+    // Set up realtime subscription for project event changes
+    const channel = supabase
+      .channel('client-project-alerts-subscription')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'client_project_calendar_events'
+        },
+        () => {
+          // Trigger alert check when project events change
+          if (checkAlertsRef.current) {
+            checkAlertsRef.current();
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'client_project_calendar_event_alerts'
+        },
+        () => {
+          // Trigger alert check when project alerts change
+          if (checkAlertsRef.current) {
+            checkAlertsRef.current();
+          }
+        }
+      )
+      .subscribe();
 
-    return () => clearInterval(interval);
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   return {

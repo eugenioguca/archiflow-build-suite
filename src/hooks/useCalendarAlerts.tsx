@@ -123,27 +123,48 @@ export function useCalendarAlerts() {
   useEffect(() => {
     if (!user?.id) return;
 
-    let interval: NodeJS.Timeout | null = null;
+    // Initial check only - no intervals
+    if (checkAlertsRef.current) {
+      checkAlertsRef.current();
+    }
 
-    // Use ref to access current function without dependencies
-    const checkAlerts = () => {
-      if (checkAlertsRef.current) {
-        checkAlertsRef.current();
-      }
-    };
-
-    // Start checking alerts immediately
-    checkAlerts();
-
-    // Set up interval
-    interval = setInterval(checkAlerts, 30000);
+    // Set up realtime subscription for event changes
+    const channel = supabase
+      .channel('calendar-alerts-subscription')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'calendar_events'
+        },
+        () => {
+          // Trigger alert check when events change
+          if (checkAlertsRef.current) {
+            checkAlertsRef.current();
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'event_alerts'
+        },
+        () => {
+          // Trigger alert check when alerts change
+          if (checkAlertsRef.current) {
+            checkAlertsRef.current();
+          }
+        }
+      )
+      .subscribe();
 
     return () => {
-      if (interval) {
-        clearInterval(interval);
-      }
+      supabase.removeChannel(channel);
     };
-  }, [user?.id]); // Only depend on user.id
+  }, [user?.id]);
 
   return {
     upcomingAlerts,

@@ -97,7 +97,6 @@ export function DesignCompletionManager({
 
   const handleRevertSuccess = () => {
     fetchProjectStatus(); // Refresh project status
-    window.location.reload(); // Refresh the entire view
   };
 
   const handleCompleteDesign = async () => {
@@ -183,8 +182,8 @@ export function DesignCompletionManager({
         description: "El proyecto se ha movido al módulo de construcción",
       });
 
-      // Refresh to reflect changes
-      window.location.reload();
+      // Update local state instead of reload
+      setProjectStatus('construction');
     } catch (error: any) {
       toast({
         title: "Error",
@@ -259,8 +258,8 @@ export function DesignCompletionManager({
         description: "El presupuesto ha sido marcado como aceptado",
       });
 
-      // Refresh to reflect changes
-      window.location.reload();
+      // Update local state instead of reload
+      fetchProjectStatus();
     } catch (error: any) {
       toast({
         title: "Error",

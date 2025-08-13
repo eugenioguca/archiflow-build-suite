@@ -52,7 +52,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   // Show onboarding if user needs to complete profile
   if (needsOnboarding) {
-    return <UserOnboarding user={user} profile={profile} onComplete={() => window.location.reload()} />;
+    return <UserOnboarding user={user} profile={profile} onComplete={() => {
+      // Use navigation instead of reload
+      window.location.href = '/dashboard';
+    }} />;
   }
 
   // Show pending approval screen for non-approved users
@@ -80,7 +83,10 @@ function ClientProtectedRoute({ children }: { children: React.ReactNode }) {
 
   // Show onboarding if user needs to complete profile
   if (needsOnboarding) {
-    return <UserOnboarding user={user} profile={profile} onComplete={() => window.location.reload()} />;
+    return <UserOnboarding user={user} profile={profile} onComplete={() => {
+      // Use navigation instead of reload
+      window.location.href = '/dashboard';
+    }} />;
   }
 
   if (!isApproved) {
