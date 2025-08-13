@@ -44,9 +44,7 @@ interface Subpartida {
 
 interface Departamento {
   id: string;
-  codigo: string;
-  nombre: string;
-  descripcion?: string;
+  departamento: string;
   activo: boolean;
 }
 
@@ -105,7 +103,7 @@ export function ChartOfAccountsManager() {
     const { data } = await supabase
       .from("chart_of_accounts_departamentos")
       .select("*")
-      .order("codigo");
+      .order("departamento");
     
     if (data) setDepartamentos(data);
   };
@@ -230,9 +228,7 @@ export function ChartOfAccountsManager() {
   const DepartamentoForm = ({ departamento }: { departamento?: Departamento }) => {
     const form = useForm({
       defaultValues: {
-        codigo: departamento?.codigo || "",
-        nombre: departamento?.nombre || "",
-        descripcion: departamento?.descripcion || "",
+        departamento: departamento?.departamento || "",
         activo: departamento?.activo ?? true,
       },
     });
@@ -278,38 +274,12 @@ export function ChartOfAccountsManager() {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
             control={form.control}
-            name="codigo"
+            name="departamento"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Código</FormLabel>
-                <FormControl>
-                  <Input {...field} placeholder="Ej: DEPT001" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="nombre"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nombre</FormLabel>
+                <FormLabel>Departamento</FormLabel>
                 <FormControl>
                   <Input {...field} placeholder="Nombre del departamento" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="descripcion"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Descripción</FormLabel>
-                <FormControl>
-                  <Input {...field} placeholder="Descripción del departamento" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -782,9 +752,7 @@ export function ChartOfAccountsManager() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Código</TableHead>
-                    <TableHead>Nombre</TableHead>
-                    <TableHead>Descripción</TableHead>
+                    <TableHead>Departamento</TableHead>
                     <TableHead>Estado</TableHead>
                     <TableHead className="w-[100px]">Acciones</TableHead>
                   </TableRow>
@@ -792,9 +760,7 @@ export function ChartOfAccountsManager() {
                 <TableBody>
                   {departamentos.map((departamento) => (
                     <TableRow key={departamento.id}>
-                      <TableCell className="font-mono">{departamento.codigo}</TableCell>
-                      <TableCell>{departamento.nombre}</TableCell>
-                      <TableCell>{departamento.descripcion || "-"}</TableCell>
+                      <TableCell>{departamento.departamento}</TableCell>
                       <TableCell>
                         <Badge variant={departamento.activo ? "default" : "secondary"}>
                           {departamento.activo ? "Activo" : "Inactivo"}
@@ -819,7 +785,7 @@ export function ChartOfAccountsManager() {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>¿Eliminar Departamento?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  ¿Estás seguro de que deseas eliminar el departamento "{departamento.nombre}"? Esta acción no se puede deshacer.
+                                  ¿Estás seguro de que deseas eliminar el departamento "{departamento.departamento}"? Esta acción no se puede deshacer.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
