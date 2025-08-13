@@ -43,6 +43,9 @@ export function OperationManuals() {
   const { toast } = useToast();
   
   const isAdmin = hasModuleAccess('user_management');
+  
+  // Debug: Check permissions
+  console.log('Admin access:', isAdmin, 'Module access function:', hasModuleAccess);
 
   useEffect(() => {
     fetchManuals();
