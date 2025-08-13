@@ -42,6 +42,12 @@ interface Subpartida {
   chart_of_accounts_partidas?: { codigo: string; nombre: string };
 }
 
+interface DeleteResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
 export function ChartOfAccountsManager() {
   const [activeTab, setActiveTab] = useState("mayores");
   const [mayores, setMayores] = useState<Mayor[]>([]);
@@ -111,51 +117,69 @@ export function ChartOfAccountsManager() {
     if (data) setSubpartidas(data);
   };
 
-  // Delete functions
+  // Delete functions with validation
   const deleteMayor = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from("chart_of_accounts_mayor")
-        .delete()
-        .eq("id", id);
+      const { data: result, error } = await supabase.rpc(
+        'safe_delete_chart_account',
+        { table_name: 'chart_of_accounts_mayor', record_id: id }
+      );
 
       if (error) throw error;
 
-      toast.success("Mayor eliminado exitosamente");
-      loadMayores();
+      const typedResult = result as unknown as DeleteResult;
+      if (typedResult?.success) {
+        toast.success(typedResult.message || "Mayor eliminado exitosamente");
+        loadMayores();
+      } else {
+        toast.error(typedResult?.error || "Error al eliminar mayor");
+      }
     } catch (error: any) {
+      console.error('Error deleting mayor:', error);
       toast.error("Error al eliminar mayor: " + error.message);
     }
   };
 
   const deletePartida = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from("chart_of_accounts_partidas")
-        .delete()
-        .eq("id", id);
+      const { data: result, error } = await supabase.rpc(
+        'safe_delete_chart_account',
+        { table_name: 'chart_of_accounts_partidas', record_id: id }
+      );
 
       if (error) throw error;
 
-      toast.success("Partida eliminada exitosamente");
-      loadPartidas();
+      const typedResult = result as unknown as DeleteResult;
+      if (typedResult?.success) {
+        toast.success(typedResult.message || "Partida eliminada exitosamente");
+        loadPartidas();
+      } else {
+        toast.error(typedResult?.error || "Error al eliminar partida");
+      }
     } catch (error: any) {
+      console.error('Error deleting partida:', error);
       toast.error("Error al eliminar partida: " + error.message);
     }
   };
 
   const deleteSubpartida = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from("chart_of_accounts_subpartidas")
-        .delete()
-        .eq("id", id);
+      const { data: result, error } = await supabase.rpc(
+        'safe_delete_chart_account',
+        { table_name: 'chart_of_accounts_subpartidas', record_id: id }
+      );
 
       if (error) throw error;
 
-      toast.success("Subpartida eliminada exitosamente");
-      loadSubpartidas();
+      const typedResult = result as unknown as DeleteResult;
+      if (typedResult?.success) {
+        toast.success(typedResult.message || "Subpartida eliminada exitosamente");
+        loadSubpartidas();
+      } else {
+        toast.error(typedResult?.error || "Error al eliminar subpartida");
+      }
     } catch (error: any) {
+      console.error('Error deleting subpartida:', error);
       toast.error("Error al eliminar subpartida: " + error.message);
     }
   };

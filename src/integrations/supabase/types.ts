@@ -6684,6 +6684,10 @@ export type Database = {
       }
     }
     Functions: {
+      bulk_delete_unified_transactions: {
+        Args: { transaction_ids: string[] }
+        Returns: Json
+      }
       calculate_complement_due_date: {
         Args: { payment_date: string }
         Returns: string
@@ -6933,6 +6937,10 @@ export type Database = {
       refresh_financial_summary: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      safe_delete_chart_account: {
+        Args: { table_name: string; record_id: string }
+        Returns: Json
       }
       test_chat_access: {
         Args: { test_project_id: string }

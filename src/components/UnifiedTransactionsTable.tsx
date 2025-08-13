@@ -29,6 +29,13 @@ interface Transaction {
   chart_of_accounts_subpartidas?: { nombre: string; codigo: string };
 }
 
+interface BulkDeleteResult {
+  success: boolean;
+  deleted_count?: number;
+  message?: string;
+  error?: string;
+}
+
 export function UnifiedTransactionsTable() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,20 +129,26 @@ export function UnifiedTransactionsTable() {
     setIsDeleting(true);
     
     try {
-      const { error } = await supabase
-        .from('unified_financial_transactions')
-        .delete()
-        .in('id', selectedTransactions);
+      // Usar la nueva función segura de eliminación masiva
+      const { data: result, error } = await supabase.rpc(
+        'bulk_delete_unified_transactions',
+        { transaction_ids: selectedTransactions }
+      );
 
       if (error) throw error;
 
-      toast.success(`${selectedTransactions.length} transacciones eliminadas exitosamente`);
-      setSelectedTransactions([]);
-      setIsDeleteMode(false);
-      loadTransactions(); // Refresh the data
-    } catch (error) {
+      const typedResult = result as unknown as BulkDeleteResult;
+      if (typedResult?.success) {
+        toast.success(typedResult.message || `${typedResult.deleted_count} transacciones eliminadas exitosamente`);
+        setSelectedTransactions([]);
+        setIsDeleteMode(false);
+        loadTransactions(); // Refresh the data
+      } else {
+        toast.error(typedResult?.error || "Error al eliminar las transacciones");
+      }
+    } catch (error: any) {
       console.error('Error deleting transactions:', error);
-      toast.error("Error al eliminar las transacciones");
+      toast.error(error.message || "Error al eliminar las transacciones");
     } finally {
       setIsDeleting(false);
     }
