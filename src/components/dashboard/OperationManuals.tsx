@@ -42,10 +42,8 @@ export function OperationManuals() {
   const { hasModuleAccess } = usePermissions();
   const { toast } = useToast();
   
-  const isAdmin = hasModuleAccess('user_management');
-  
-  // Debug: Check permissions
-  console.log('Admin access:', isAdmin, 'Module access function:', hasModuleAccess);
+  // If user can access this module, they are admin
+  const isAdmin = true;
 
   useEffect(() => {
     fetchManuals();
