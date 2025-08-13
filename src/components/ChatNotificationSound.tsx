@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
+import { generateAlertSound } from '@/utils/audioGenerator';
 
 interface ChatNotificationSoundProps {
   enabled?: boolean;
@@ -6,115 +7,82 @@ interface ChatNotificationSoundProps {
   volume?: number;
 }
 
-export const ChatNotificationSound: React.FC<ChatNotificationSoundProps> = ({
-  enabled = true,
-  soundType = 'soft',
-  volume = 0.5
-}) => {
+// Global function to play sound from anywhere
+declare global {
+  interface Window {
+    playChatNotificationSound?: () => void;
+  }
+}
+
+export function ChatNotificationSound({ 
+  enabled = true, 
+  soundType = 'professional',
+  volume = 0.6
+}: ChatNotificationSoundProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
 
-    // Mapear tipos de sonido a archivos
-    const soundFiles = {
-      soft: '/sounds/soft-alert.mp3',
-      professional: '/sounds/professional-alert.mp3',
-      loud: '/sounds/loud-alert.mp3',
-      icq: '/sounds/icq-message.mp3'
+    // Initialize audio element with programmatically generated sound
+    const initializeAudio = async () => {
+      try {
+        // Create audio element
+        const audio = new Audio();
+        audioRef.current = audio;
+        
+        // Set volume
+        audio.volume = Math.min(Math.max(volume, 0), 1);
+        
+        // Generate sound based on type
+        await generateSound(soundType);
+        
+        // Make sound globally accessible
+        window.playChatNotificationSound = () => {
+          if (audioRef.current && enabled) {
+            audioRef.current.currentTime = 0;
+            audioRef.current.play().catch(console.error);
+          }
+        };
+      } catch (error) {
+        console.error('Error initializing chat notification sound:', error);
+      }
     };
 
-    // Crear elemento de audio
-    audioRef.current = new Audio(soundFiles[soundType]);
-    audioRef.current.volume = Math.max(0, Math.min(1, volume));
-    
-    // Precargar el audio
-    audioRef.current.load();
+    const generateSound = async (type: string) => {
+      try {
+        await generateAlertSound(type as any);
+      } catch (error) {
+        console.error('Error generating chat notification sound:', error);
+      }
+    };
+
+    initializeAudio();
 
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
       }
+      delete window.playChatNotificationSound;
     };
   }, [enabled, soundType, volume]);
 
-  const playSound = () => {
-    if (!enabled || !audioRef.current) return;
+  return null; // This component doesn't render anything
+}
 
-    try {
-      // Resetear el audio al inicio
-      audioRef.current.currentTime = 0;
-      
-      // Reproducir con manejo de errores
-      const playPromise = audioRef.current.play();
-      
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          // Manejar errores de reproducción (ej. usuario no ha interactuado)
-          console.warn('No se pudo reproducir el sonido de notificación:', error);
-        });
-      }
-    } catch (error) {
-      console.warn('Error al reproducir sonido de notificación:', error);
-    }
-  };
-
-  // Exponer la función play para uso externo
-  useEffect(() => {
-    (window as any).playChatNotificationSound = playSound;
-    
-    return () => {
-      delete (window as any).playChatNotificationSound;
-    };
-  }, []);
-
-  return null; // Este componente no renderiza nada visible
-};
-
-// Hook para usar el sonido de notificación
-export const useChatNotificationSound = (options?: ChatNotificationSoundProps) => {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const { enabled = true, soundType = 'soft', volume = 0.5 } = options || {};
-
-  useEffect(() => {
-    if (!enabled) return;
-
-    const soundFiles = {
-      soft: '/sounds/soft-alert.mp3',
-      professional: '/sounds/professional-alert.mp3',
-      loud: '/sounds/loud-alert.mp3',
-      icq: '/sounds/icq-message.mp3'
-    };
-
-    audioRef.current = new Audio(soundFiles[soundType]);
-    audioRef.current.volume = Math.max(0, Math.min(1, volume));
-    audioRef.current.load();
-
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    };
-  }, [enabled, soundType, volume]);
-
+// Custom hook for using chat notification sound
+export function useChatNotificationSound() {
   const playNotificationSound = () => {
-    if (!enabled || !audioRef.current) return;
-
-    try {
-      audioRef.current.currentTime = 0;
-      const playPromise = audioRef.current.play();
-      
-      if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.warn('No se pudo reproducir el sonido de notificación:', error);
-        });
-      }
-    } catch (error) {
-      console.warn('Error al reproducir sonido de notificación:', error);
+    if (window.playChatNotificationSound) {
+      window.playChatNotificationSound();
+    } else {
+      // Fallback to direct audio generation
+      generateAlertSound('professional').catch(console.error);
     }
   };
 
-  return { playNotificationSound };
-};
+  return {
+    playNotificationSound
+  };
+}

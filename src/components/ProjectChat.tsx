@@ -29,11 +29,7 @@ export const ProjectChat: React.FC<ProjectChatProps> = ({
 }) => {
   const { toast } = useToast();
   const [messageText, setMessageText] = useState('');
-  const { playNotificationSound } = useChatNotificationSound({
-    enabled: true,
-    soundType: 'soft',
-    volume: 0.7
-  });
+  const { playNotificationSound } = useChatNotificationSound();
 
   // Validar que el projectId esté presente
   if (!projectId) {

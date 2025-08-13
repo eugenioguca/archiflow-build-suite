@@ -7,6 +7,10 @@ import { UnifiedMobileFAB } from "@/components/mobile/UnifiedMobileFAB";
 import { MobileBreadcrumb } from "@/components/mobile/MobileBreadcrumb";
 import { MobileEyeToggle } from "@/components/mobile/MobileEyeToggle";
 import { useMobileSidebar } from "@/hooks/useMobileSidebar";
+import { ChatNotificationBell } from "@/components/notifications/ChatNotificationBell";
+import { ChatNotificationManager } from "@/components/notifications/ChatNotificationManager";
+import { ChatNotificationSound } from "@/components/ChatNotificationSound";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -75,12 +79,19 @@ export default function Layout({ children }: LayoutProps) {
         
         <div className="flex-1 flex flex-col">
           <header className={`${isMobile ? 'h-12' : 'h-14'} flex items-center justify-between border-b bg-background ${isMobile ? 'px-3' : 'px-6'}`}>
-            {!isMobile && <MobileSidebarTrigger />}
-            {isMobile && (
-              <div className="text-sm font-medium text-muted-foreground ml-12">
-                ArchiFlow
-              </div>
-            )}
+            <div className="flex items-center gap-4">
+              {!isMobile && <MobileSidebarTrigger />}
+              {isMobile && (
+                <div className="text-sm font-medium text-muted-foreground ml-12">
+                  ArchiFlow
+                </div>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <ChatNotificationBell />
+              <UserAvatar user={{ full_name: "Usuario" }} />
+            </div>
           </header>
           
           <MobileBreadcrumb />
@@ -92,14 +103,16 @@ export default function Layout({ children }: LayoutProps) {
       </div>
       
       {/* Eye Toggle Button for Mobile */}
-      {isMobile && (
-        <MobileEyeToggle 
-          isOpen={mobileSidebar.isOpen}
-          onToggle={mobileSidebar.toggle}
-        />
-      )}
+      <MobileEyeToggle 
+        isOpen={mobileSidebar.isOpen}
+        onToggle={mobileSidebar.toggle}
+      />
       
       <UnifiedMobileFAB />
+      
+      {/* Chat Notification System */}
+      <ChatNotificationManager />
+      <ChatNotificationSound enabled={true} soundType="professional" volume={0.6} />
     </SidebarProvider>
   );
 }

@@ -29,6 +29,7 @@ interface UseProjectChatProps {
   projectId: string;
   onNewMessage?: (message: ChatMessage) => void;
   onNotification?: (notification: ChatNotification) => void;
+  enablePopupNotifications?: boolean;
 }
 
 export const useProjectChat = ({ 
