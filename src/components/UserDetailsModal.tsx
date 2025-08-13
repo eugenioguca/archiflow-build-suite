@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar, Mail, Phone, Building, MapPin, Clock, Edit, Settings, UserCheck, UserX, Trash2, Save, X } from 'lucide-react';
+import { Calendar, Mail, Phone, Building, MapPin, Clock, Edit, Settings, UserCheck, UserX, Trash2, Save, X, Cake } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -76,7 +76,8 @@ export function UserDetailsModal({
     role: '',
     approval_status: '',
     department_enum: '',
-    position_enum: ''
+    position_enum: '',
+    birth_date: ''
   });
   const [selectedBranches, setSelectedBranches] = useState<string[]>([]);
   
@@ -92,7 +93,8 @@ export function UserDetailsModal({
         role: user.role || '',
         approval_status: user.approval_status || '',
         department_enum: user.department_enum || '',
-        position_enum: user.position_enum || ''
+        position_enum: user.position_enum || '',
+        birth_date: (user as any).birth_date || ''
       });
       
       const userBranches = user.user_branch_assignments?.map(
@@ -153,7 +155,8 @@ export function UserDetailsModal({
           role: formData.role as any,
           approval_status: formData.approval_status,
           department_enum: formData.department_enum as any || null,
-          position_enum: formData.position_enum as any || null
+          position_enum: formData.position_enum as any || null,
+          birth_date: formData.birth_date || null
         })
         .eq('user_id', user.user_id);
 
@@ -210,7 +213,8 @@ export function UserDetailsModal({
       role: user.role || '',
       approval_status: user.approval_status || '',
       department_enum: user.department_enum || '',
-      position_enum: user.position_enum || ''
+      position_enum: user.position_enum || '',
+      birth_date: (user as any).birth_date || ''
     });
     
     const userBranches = user.user_branch_assignments?.map(
@@ -479,6 +483,31 @@ export function UserDetailsModal({
                         </div>
                       )}
                     </div>
+
+                    {/* Solo mostrar cumpleaños para empleados */}
+                    {user.role === 'employee' && (
+                      <div className="space-y-2">
+                        <Label htmlFor="birth_date">Fecha de Cumpleaños</Label>
+                        {isEditing ? (
+                          <Input
+                            id="birth_date"
+                            type="date"
+                            value={formData.birth_date}
+                            onChange={(e) => handleInputChange('birth_date', e.target.value)}
+                          />
+                        ) : (
+                          <div className="flex items-center gap-3">
+                            <Cake className="h-4 w-4 text-muted-foreground" />
+                            <span>
+                              {(user as any).birth_date 
+                                ? format(new Date((user as any).birth_date), 'dd/MM/yyyy', { locale: es })
+                                : 'Sin fecha de cumpleaños'
+                              }
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     <div className="flex items-center gap-3">
                       <Calendar className="h-4 w-4 text-muted-foreground" />

@@ -38,7 +38,7 @@ export function EmployeeBirthdays() {
       setLoading(true);
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, birth_date, email')
+        .select('id, full_name, birth_date, email, avatar_url')
         .not('birth_date', 'is', null)
         .eq('role', 'employee');
 

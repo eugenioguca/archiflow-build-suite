@@ -9,6 +9,7 @@ export interface UserProfile {
   created_at: string;
   department_enum?: string;
   position_enum?: string;
+  birth_date?: string;
   user_branch_assignments?: Array<{
     branch_office_id: string;
     branch_offices: { name: string };
