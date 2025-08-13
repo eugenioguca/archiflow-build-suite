@@ -3,6 +3,7 @@ import { EmployeeBirthdays } from '@/components/dashboard/EmployeeBirthdays';
 import { CompanyPromotions } from '@/components/dashboard/CompanyPromotions';
 import { OperationManuals } from '@/components/dashboard/OperationManuals';
 import { ImprovedCalendarWidget } from '@/components/dashboard/ImprovedCalendarWidget';
+import { SmartDashboardStats } from '@/components/SmartDashboardStats';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function CorporateDashboard() {
@@ -24,6 +25,9 @@ export default function CorporateDashboard() {
           Sistema operativo
         </div>
       </div>
+
+      {/* Smart Dashboard Stats */}
+      <SmartDashboardStats />
 
       {/* Monthly Featured Image - Full Width */}
       <MonthlyFeaturedImage />

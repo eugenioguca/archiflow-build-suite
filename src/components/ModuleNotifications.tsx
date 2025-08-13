@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Bell, MessageSquare, CheckCircle2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useNotificationManager } from "@/hooks/useNotificationManager";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -33,62 +34,12 @@ interface ModuleNotificationsProps {
 
 export function ModuleNotifications({ module, className }: ModuleNotificationsProps) {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState<ModuleNotification[]>([]);
+  const { moduleNotifications } = useNotificationManager();
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      fetchNotifications();
-      
-      // Set up real-time subscription for new notifications
-      const channel = supabase
-        .channel('module-notifications')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'module_notifications',
-            filter: `target_module=eq.${module}`
-          },
-          (payload) => {
-            fetchNotifications();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [user, module]);
-
-  const fetchNotifications = async () => {
-    if (!user) return;
-    
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('module_notifications')
-        .select(`
-          *,
-          client:clients(full_name)
-        `)
-        .eq('target_module', module)
-        .eq('user_id', user.id)
-        .eq('is_read', false)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
-      setNotifications(data || []);
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Get notifications for this module from the centralized manager
+  const notifications = moduleNotifications[module] || [];
 
   const markAsRead = async (notificationId: string) => {
     try {
@@ -99,7 +50,7 @@ export function ModuleNotifications({ module, className }: ModuleNotificationsPr
 
       if (error) throw error;
 
-      setNotifications(notifications.filter(n => n.id !== notificationId));
+      // The notification manager will update the state automatically via subscriptions
       toast.success("Notificación marcada como leída");
     } catch (error) {
       console.error('Error marking notification as read:', error);
@@ -120,7 +71,7 @@ export function ModuleNotifications({ module, className }: ModuleNotificationsPr
 
       if (error) throw error;
 
-      setNotifications([]);
+      // The notification manager will update the state automatically via subscriptions
       toast.success("Todas las notificaciones marcadas como leídas");
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
