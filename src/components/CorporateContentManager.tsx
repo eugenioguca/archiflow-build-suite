@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PromotionEditor } from '@/components/dashboard/AdminPanels/PromotionEditor';
 import { ManualUploader } from '@/components/dashboard/AdminPanels/ManualUploader';
 import { ImageManager } from '@/components/dashboard/AdminPanels/ImageManager';
+import { MonthlyImagesGrid } from '@/components/dashboard/AdminPanels/MonthlyImagesGrid';
 import { OperationManuals } from '@/components/dashboard/OperationManuals';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -109,6 +110,13 @@ export const CorporateContentManager = () => {
               </div>
             </CardContent>
           </Card>
+
+          <div key={refreshKey}>
+            <MonthlyImagesGrid 
+              refreshKey={refreshKey} 
+              onImageDeleted={handleContentUpdated}
+            />
+          </div>
         </TabsContent>
       </Tabs>
 
