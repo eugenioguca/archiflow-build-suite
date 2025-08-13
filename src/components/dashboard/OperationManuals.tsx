@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Book, Search, Download, ExternalLink, Edit, Plus, FileText, Filter } from 'lucide-react';
+import { Book, Search, Download, ExternalLink, Edit, Plus, FileText, Filter, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ManualUploader } from './AdminPanels/ManualUploader';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useToast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface Manual {
   id: string;
@@ -38,6 +40,7 @@ export function OperationManuals() {
   const [showUploader, setShowUploader] = useState(false);
   const [loading, setLoading] = useState(true);
   const { hasModuleAccess } = usePermissions();
+  const { toast } = useToast();
   
   const isAdmin = hasModuleAccess('user_management');
 
@@ -127,6 +130,50 @@ export function OperationManuals() {
       'General': 'bg-indigo-100 text-indigo-800'
     };
     return colors[category || 'General'] || 'bg-gray-100 text-gray-800';
+  };
+
+  const deleteManual = async (manual: Manual) => {
+    try {
+      // First, delete the file from storage if it exists
+      if (manual.file_url) {
+        const fileName = manual.file_url.split('/').pop();
+        if (fileName) {
+          const { error: storageError } = await supabase.storage
+            .from('operation-manuals')
+            .remove([`manuals/${fileName}`]);
+          
+          if (storageError) {
+            console.error('Error deleting file from storage:', storageError);
+            // Continue with database deletion even if storage deletion fails
+          }
+        }
+      }
+
+      // Delete the manual record from the database
+      const { error: dbError } = await supabase
+        .from('operation_manuals')
+        .delete()
+        .eq('id', manual.id);
+
+      if (dbError) {
+        throw dbError;
+      }
+
+      toast({
+        title: "Manual eliminado",
+        description: `El manual "${manual.title}" ha sido eliminado exitosamente.`,
+      });
+
+      // Refresh the manuals list
+      await fetchManuals();
+    } catch (error) {
+      console.error('Error deleting manual:', error);
+      toast({
+        title: "Error al eliminar manual",
+        description: "No se pudo eliminar el manual. Por favor, intenta de nuevo.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -287,6 +334,37 @@ export function OperationManuals() {
                           >
                             <Download className="h-3 w-3" />
                           </Button>
+                          {isAdmin && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>¿Eliminar manual?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Esta acción eliminará permanentemente el manual "{manual.title}" 
+                                    y no se podrá recuperar. ¿Estás seguro de que deseas continuar?
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteManual(manual)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    Eliminar
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
                         </div>
                       </div>
                     </div>
