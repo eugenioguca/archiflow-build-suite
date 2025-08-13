@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, Calendar } from 'lucide-react';
+import { Edit, Calendar, Expand } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ImageManager } from './AdminPanels/ImageManager';
+import { ImageViewerModal } from '@/components/ui/image-viewer-modal';
 import { usePermissions } from '@/hooks/usePermissions';
 
 interface MonthlyImage {
@@ -19,6 +20,7 @@ interface MonthlyImage {
 export function MonthlyFeaturedImage() {
   const [currentImage, setCurrentImage] = useState<MonthlyImage | null>(null);
   const [showManager, setShowManager] = useState(false);
+  const [showImageViewer, setShowImageViewer] = useState(false);
   const [loading, setLoading] = useState(true);
   const { hasModuleAccess } = usePermissions();
   
@@ -111,18 +113,33 @@ export function MonthlyFeaturedImage() {
     <>
       <Card className="glassmorphic-bg border-0 shadow-lg overflow-hidden group">
         <CardContent className="p-0 relative">
-          <div className="relative h-48 sm:h-64 overflow-hidden">
+          <div className="relative h-48 sm:h-64 overflow-hidden cursor-pointer" onClick={() => setShowImageViewer(true)}>
             <img
               src={currentImage.image_url}
               alt={currentImage.title || `Imagen de ${getMonthName(currentMonth)}`}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
             />
             
+            {/* Expand button overlay */}
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowImageViewer(true);
+                }}
+                variant="secondary"
+                size="sm"
+                className="bg-black/50 hover:bg-black/70 text-white border-white/30"
+              >
+                <Expand className="h-4 w-4" />
+              </Button>
+            </div>
+            
             {/* Overlay gradient */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
             
             {/* Content overlay */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 text-white">
+            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 text-white pointer-events-none">
               {currentImage.title && (
                 <h2 className="text-xl sm:text-2xl font-bold mb-2 drop-shadow-lg">
                   {currentImage.title}
@@ -133,13 +150,16 @@ export function MonthlyFeaturedImage() {
                   {currentImage.description}
                 </p>
               )}
-              <div className="flex items-center justify-between mt-3">
+              <div className="flex items-center justify-between mt-3 pointer-events-auto">
                 <span className="text-sm text-gray-300 font-medium">
                   {getMonthName(currentMonth)} {currentYear}
                 </span>
                 {isAdmin && (
                   <Button
-                    onClick={() => setShowManager(true)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowManager(true);
+                    }}
                     variant="secondary"
                     size="sm"
                     className="bg-white/20 hover:bg-white/30 text-white border-white/30"
@@ -154,11 +174,23 @@ export function MonthlyFeaturedImage() {
         </CardContent>
       </Card>
 
+      {/* Image Manager Modal */}
       {showManager && (
         <ImageManager
           open={showManager}
           onOpenChange={setShowManager}
           onImageUpdated={fetchCurrentImage}
+        />
+      )}
+
+      {/* Image Viewer Modal */}
+      {showImageViewer && (
+        <ImageViewerModal
+          open={showImageViewer}
+          onOpenChange={setShowImageViewer}
+          imageUrl={currentImage.image_url}
+          title={currentImage.title}
+          description={currentImage.description}
         />
       )}
     </>
