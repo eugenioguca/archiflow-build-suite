@@ -26,8 +26,6 @@ export default function CorporateDashboard() {
         </div>
       </div>
 
-      {/* Smart Dashboard Stats */}
-      <SmartDashboardStats />
 
       {/* Monthly Featured Image - Full Width */}
       <MonthlyFeaturedImage />
