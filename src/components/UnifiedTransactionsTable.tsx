@@ -4,8 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, ArrowUpDown } from "lucide-react";
+import { Search, ArrowUpDown, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -33,6 +35,9 @@ export function UnifiedTransactionsTable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDepartamento, setFilterDepartamento] = useState("");
   const [filterTipoMovimiento, setFilterTipoMovimiento] = useState("");
+  const [isDeleteMode, setIsDeleteMode] = useState(false);
+  const [selectedTransactions, setSelectedTransactions] = useState<string[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadTransactions();
@@ -87,6 +92,55 @@ export function UnifiedTransactionsTable() {
     { value: "direccion_general", label: "Dirección General" },
   ];
 
+  const handleDeleteModeToggle = () => {
+    setIsDeleteMode(!isDeleteMode);
+    setSelectedTransactions([]);
+  };
+
+  const handleTransactionSelect = (transactionId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedTransactions([...selectedTransactions, transactionId]);
+    } else {
+      setSelectedTransactions(selectedTransactions.filter(id => id !== transactionId));
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedTransactions(filteredTransactions.map(t => t.id));
+    } else {
+      setSelectedTransactions([]);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (selectedTransactions.length === 0) {
+      toast.error("Selecciona al menos una transacción para borrar");
+      return;
+    }
+
+    setIsDeleting(true);
+    
+    try {
+      const { error } = await supabase
+        .from('unified_financial_transactions')
+        .delete()
+        .in('id', selectedTransactions);
+
+      if (error) throw error;
+
+      toast.success(`${selectedTransactions.length} transacciones eliminadas exitosamente`);
+      setSelectedTransactions([]);
+      setIsDeleteMode(false);
+      loadTransactions(); // Refresh the data
+    } catch (error) {
+      console.error('Error deleting transactions:', error);
+      toast.error("Error al eliminar las transacciones");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-8">Cargando transacciones...</div>;
   }
@@ -94,39 +148,60 @@ export function UnifiedTransactionsTable() {
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Buscar por referencia, descripción o folio..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+      <div className="flex flex-col sm:flex-row gap-4 items-start">
+        <div className="flex flex-col sm:flex-row gap-4 flex-1">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Buscar por referencia, descripción o folio..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={filterDepartamento} onValueChange={setFilterDepartamento}>
+            <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectValue placeholder="Departamento" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos los departamentos</SelectItem>
+              {departamentos.map((dept) => (
+                <SelectItem key={dept.value} value={dept.value}>
+                  {dept.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={filterTipoMovimiento} onValueChange={setFilterTipoMovimiento}>
+            <SelectTrigger className="w-full sm:w-[150px]">
+              <SelectValue placeholder="Movimiento" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="ingreso">Ingreso</SelectItem>
+              <SelectItem value="egreso">Egreso</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <Select value={filterDepartamento} onValueChange={setFilterDepartamento}>
-          <SelectTrigger className="w-full sm:w-[200px]">
-            <SelectValue placeholder="Departamento" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos los departamentos</SelectItem>
-            {departamentos.map((dept) => (
-              <SelectItem key={dept.value} value={dept.value}>
-                {dept.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={filterTipoMovimiento} onValueChange={setFilterTipoMovimiento}>
-          <SelectTrigger className="w-full sm:w-[150px]">
-            <SelectValue placeholder="Movimiento" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="ingreso">Ingreso</SelectItem>
-            <SelectItem value="egreso">Egreso</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2">
+          <Button
+            variant={isDeleteMode ? "destructive" : "outline"}
+            onClick={handleDeleteModeToggle}
+            size="sm"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+          {isDeleteMode && (
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={selectedTransactions.length === 0 || isDeleting}
+              size="sm"
+            >
+              {isDeleting ? "Eliminando..." : `Confirmar (${selectedTransactions.length})`}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Table */}
@@ -134,6 +209,14 @@ export function UnifiedTransactionsTable() {
         <Table>
           <TableHeader>
             <TableRow>
+              {isDeleteMode && (
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={selectedTransactions.length === filteredTransactions.length && filteredTransactions.length > 0}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
+              )}
               <TableHead>Fecha</TableHead>
               <TableHead>Referencia</TableHead>
               <TableHead>Sucursal</TableHead>
@@ -151,13 +234,21 @@ export function UnifiedTransactionsTable() {
           <TableBody>
             {filteredTransactions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={isDeleteMode ? 13 : 12} className="text-center py-8 text-muted-foreground">
                   No se encontraron transacciones
                 </TableCell>
               </TableRow>
             ) : (
               filteredTransactions.map((transaction) => (
                 <TableRow key={transaction.id}>
+                  {isDeleteMode && (
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedTransactions.includes(transaction.id)}
+                        onCheckedChange={(checked) => handleTransactionSelect(transaction.id, checked as boolean)}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell>
                     {format(new Date(transaction.fecha), "dd/MM/yyyy", { locale: es })}
                   </TableCell>

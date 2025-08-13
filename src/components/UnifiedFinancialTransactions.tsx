@@ -119,10 +119,12 @@ export function UnifiedFinancialTransactions() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Transacciones Financieras Unificadas</CardTitle>
-              <Button onClick={() => setShowForm(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Nueva Transacción
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={() => setShowForm(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nueva Transacción
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <UnifiedTransactionsTable />
