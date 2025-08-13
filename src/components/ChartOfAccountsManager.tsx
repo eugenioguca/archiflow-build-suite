@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -52,6 +53,11 @@ export function ChartOfAccountsManager() {
   const [mayorDialog, setMayorDialog] = useState(false);
   const [partidaDialog, setPartidaDialog] = useState(false);
   const [subpartidaDialog, setSubpartidaDialog] = useState(false);
+  
+  // Edit states
+  const [editingMayor, setEditingMayor] = useState<Mayor | null>(null);
+  const [editingPartida, setEditingPartida] = useState<Partida | null>(null);
+  const [editingSubpartida, setEditingSubpartida] = useState<Subpartida | null>(null);
 
   const departamentos = [
     { value: "ventas", label: "Ventas" },
@@ -105,14 +111,63 @@ export function ChartOfAccountsManager() {
     if (data) setSubpartidas(data);
   };
 
+  // Delete functions
+  const deleteMayor = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("chart_of_accounts_mayor")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast.success("Mayor eliminado exitosamente");
+      loadMayores();
+    } catch (error: any) {
+      toast.error("Error al eliminar mayor: " + error.message);
+    }
+  };
+
+  const deletePartida = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("chart_of_accounts_partidas")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast.success("Partida eliminada exitosamente");
+      loadPartidas();
+    } catch (error: any) {
+      toast.error("Error al eliminar partida: " + error.message);
+    }
+  };
+
+  const deleteSubpartida = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("chart_of_accounts_subpartidas")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast.success("Subpartida eliminada exitosamente");
+      loadSubpartidas();
+    } catch (error: any) {
+      toast.error("Error al eliminar subpartida: " + error.message);
+    }
+  };
+
   // Mayor Form Component
-  const MayorForm = () => {
+  const MayorForm = ({ mayor }: { mayor?: Mayor }) => {
     const form = useForm({
       defaultValues: {
-        departamento: "",
-        codigo: "",
-        nombre: "",
-        activo: true,
+        departamento: mayor?.departamento || "",
+        codigo: mayor?.codigo || "",
+        nombre: mayor?.nombre || "",
+        activo: mayor?.activo ?? true,
       },
     });
 
@@ -124,18 +179,31 @@ export function ChartOfAccountsManager() {
           .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
           .single();
 
-        const { error } = await supabase
-          .from("chart_of_accounts_mayor")
-          .insert([{ ...data, created_by: profile?.id }]);
+        if (mayor) {
+          // Update existing
+          const { error } = await supabase
+            .from("chart_of_accounts_mayor")
+            .update(data)
+            .eq("id", mayor.id);
 
-        if (error) throw error;
+          if (error) throw error;
+          toast.success("Mayor actualizado exitosamente");
+          setEditingMayor(null);
+        } else {
+          // Create new
+          const { error } = await supabase
+            .from("chart_of_accounts_mayor")
+            .insert([{ ...data, created_by: profile?.id }]);
 
-        toast.success("Mayor creado exitosamente");
+          if (error) throw error;
+          toast.success("Mayor creado exitosamente");
+        }
+
         setMayorDialog(false);
         form.reset();
         loadMayores();
       } catch (error: any) {
-        toast.error("Error al crear mayor: " + error.message);
+        toast.error(`Error al ${mayor ? 'actualizar' : 'crear'} mayor: ` + error.message);
       }
     };
 
@@ -210,10 +278,275 @@ export function ChartOfAccountsManager() {
             )}
           />
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setMayorDialog(false)}>
+            <Button type="button" variant="outline" onClick={() => {
+              setMayorDialog(false);
+              setEditingMayor(null);
+            }}>
               Cancelar
             </Button>
-            <Button type="submit">Guardar</Button>
+            <Button type="submit">{mayor ? 'Actualizar' : 'Guardar'}</Button>
+          </div>
+        </form>
+      </Form>
+    );
+  };
+
+  // Partida Form Component
+  const PartidaForm = ({ partida }: { partida?: Partida }) => {
+    const form = useForm({
+      defaultValues: {
+        mayor_id: partida?.mayor_id || "",
+        codigo: partida?.codigo || "",
+        nombre: partida?.nombre || "",
+        activo: partida?.activo ?? true,
+      },
+    });
+
+    const onSubmit = async (data: any) => {
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
+          .single();
+
+        if (partida) {
+          // Update existing
+          const { error } = await supabase
+            .from("chart_of_accounts_partidas")
+            .update(data)
+            .eq("id", partida.id);
+
+          if (error) throw error;
+          toast.success("Partida actualizada exitosamente");
+          setEditingPartida(null);
+        } else {
+          // Create new
+          const { error } = await supabase
+            .from("chart_of_accounts_partidas")
+            .insert([{ ...data, created_by: profile?.id }]);
+
+          if (error) throw error;
+          toast.success("Partida creada exitosamente");
+        }
+
+        setPartidaDialog(false);
+        form.reset();
+        loadPartidas();
+      } catch (error: any) {
+        toast.error(`Error al ${partida ? 'actualizar' : 'crear'} partida: ` + error.message);
+      }
+    };
+
+    return (
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="mayor_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Mayor</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar mayor" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {mayores.filter(m => m.activo).map((mayor) => (
+                      <SelectItem key={mayor.id} value={mayor.id}>
+                        {mayor.codigo} - {mayor.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="codigo"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Código</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Ej: VEN001-001" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="nombre"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nombre</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Nombre de la partida" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="activo"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">Activo</FormLabel>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => {
+              setPartidaDialog(false);
+              setEditingPartida(null);
+            }}>
+              Cancelar
+            </Button>
+            <Button type="submit">{partida ? 'Actualizar' : 'Guardar'}</Button>
+          </div>
+        </form>
+      </Form>
+    );
+  };
+
+  // Subpartida Form Component
+  const SubpartidaForm = ({ subpartida }: { subpartida?: Subpartida }) => {
+    const form = useForm({
+      defaultValues: {
+        partida_id: subpartida?.partida_id || "",
+        codigo: subpartida?.codigo || "",
+        nombre: subpartida?.nombre || "",
+        activo: subpartida?.activo ?? true,
+      },
+    });
+
+    const onSubmit = async (data: any) => {
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
+          .single();
+
+        if (subpartida) {
+          // Update existing
+          const { error } = await supabase
+            .from("chart_of_accounts_subpartidas")
+            .update(data)
+            .eq("id", subpartida.id);
+
+          if (error) throw error;
+          toast.success("Subpartida actualizada exitosamente");
+          setEditingSubpartida(null);
+        } else {
+          // Create new
+          const { error } = await supabase
+            .from("chart_of_accounts_subpartidas")
+            .insert([{ ...data, created_by: profile?.id }]);
+
+          if (error) throw error;
+          toast.success("Subpartida creada exitosamente");
+        }
+
+        setSubpartidaDialog(false);
+        form.reset();
+        loadSubpartidas();
+      } catch (error: any) {
+        toast.error(`Error al ${subpartida ? 'actualizar' : 'crear'} subpartida: ` + error.message);
+      }
+    };
+
+    return (
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="partida_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Partida</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar partida" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {partidas.filter(p => p.activo).map((partida) => (
+                      <SelectItem key={partida.id} value={partida.id}>
+                        {partida.codigo} - {partida.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="codigo"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Código</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Ej: VEN001-001-001" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="nombre"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nombre</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="Nombre de la subpartida" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="activo"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">Activo</FormLabel>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => {
+              setSubpartidaDialog(false);
+              setEditingSubpartida(null);
+            }}>
+              Cancelar
+            </Button>
+            <Button type="submit">{subpartida ? 'Actualizar' : 'Guardar'}</Button>
           </div>
         </form>
       </Form>
@@ -238,18 +571,23 @@ export function ChartOfAccountsManager() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Catálogo de Mayores</CardTitle>
-              <Dialog open={mayorDialog} onOpenChange={setMayorDialog}>
+              <Dialog open={mayorDialog || !!editingMayor} onOpenChange={(open) => {
+                if (!open) {
+                  setMayorDialog(false);
+                  setEditingMayor(null);
+                }
+              }}>
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button onClick={() => setMayorDialog(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Nuevo Mayor
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Crear Nuevo Mayor</DialogTitle>
+                    <DialogTitle>{editingMayor ? 'Editar Mayor' : 'Crear Nuevo Mayor'}</DialogTitle>
                   </DialogHeader>
-                  <MayorForm />
+                  <MayorForm mayor={editingMayor || undefined} />
                 </DialogContent>
               </Dialog>
             </CardHeader>
@@ -279,12 +617,37 @@ export function ChartOfAccountsManager() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => setEditingMayor(mayor)}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="outline">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="outline">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>¿Eliminar Mayor?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  ¿Estás seguro de que deseas eliminar el mayor "{mayor.nombre}"? Esta acción no se puede deshacer.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => deleteMayor(mayor.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Eliminar
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -299,10 +662,25 @@ export function ChartOfAccountsManager() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Catálogo de Partidas</CardTitle>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Nueva Partida
-              </Button>
+              <Dialog open={partidaDialog || !!editingPartida} onOpenChange={(open) => {
+                if (!open) {
+                  setPartidaDialog(false);
+                  setEditingPartida(null);
+                }
+              }}>
+                <DialogTrigger asChild>
+                  <Button onClick={() => setPartidaDialog(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nueva Partida
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{editingPartida ? 'Editar Partida' : 'Crear Nueva Partida'}</DialogTitle>
+                  </DialogHeader>
+                  <PartidaForm partida={editingPartida || undefined} />
+                </DialogContent>
+              </Dialog>
             </CardHeader>
             <CardContent>
               <Table>
@@ -330,12 +708,37 @@ export function ChartOfAccountsManager() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => setEditingPartida(partida)}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="outline">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="outline">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>¿Eliminar Partida?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  ¿Estás seguro de que deseas eliminar la partida "{partida.nombre}"? Esta acción no se puede deshacer.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => deletePartida(partida.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Eliminar
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -350,10 +753,25 @@ export function ChartOfAccountsManager() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Catálogo de Subpartidas</CardTitle>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Nueva Subpartida
-              </Button>
+              <Dialog open={subpartidaDialog || !!editingSubpartida} onOpenChange={(open) => {
+                if (!open) {
+                  setSubpartidaDialog(false);
+                  setEditingSubpartida(null);
+                }
+              }}>
+                <DialogTrigger asChild>
+                  <Button onClick={() => setSubpartidaDialog(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nueva Subpartida
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{editingSubpartida ? 'Editar Subpartida' : 'Crear Nueva Subpartida'}</DialogTitle>
+                  </DialogHeader>
+                  <SubpartidaForm subpartida={editingSubpartida || undefined} />
+                </DialogContent>
+              </Dialog>
             </CardHeader>
             <CardContent>
               <Table>
@@ -381,12 +799,37 @@ export function ChartOfAccountsManager() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => setEditingSubpartida(subpartida)}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="outline">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="outline">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>¿Eliminar Subpartida?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  ¿Estás seguro de que deseas eliminar la subpartida "{subpartida.nombre}"? Esta acción no se puede deshacer.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => deleteSubpartida(subpartida.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Eliminar
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </TableCell>
                     </TableRow>
