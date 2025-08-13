@@ -114,7 +114,7 @@ export default function Layout({ children }: LayoutProps) {
       
       {/* Chat Notification System */}
       <ChatNotificationManager />
-      <ChatNotificationSound enabled={true} soundType="professional" volume={0.6} />
+      <ChatNotificationSound enabled={true} soundType="chat" volume={0.6} />
     </SidebarProvider>
   );
 }
