@@ -6962,6 +6962,10 @@ export type Database = {
         Args: { project_id_param: string }
         Returns: boolean
       }
+      validate_bulk_delete_permissions: {
+        Args: { table_name: string; record_ids: string[] }
+        Returns: boolean
+      }
     }
     Enums: {
       activity_type:
