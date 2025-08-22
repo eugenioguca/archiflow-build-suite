@@ -7059,6 +7059,10 @@ export type Database = {
         Args: { record_id: string; table_name: string }
         Returns: Json
       }
+      safe_mass_delete_chart_accounts: {
+        Args: { record_ids: string[]; table_name: string }
+        Returns: Json
+      }
       test_chat_access: {
         Args: { test_project_id: string }
         Returns: {

@@ -281,38 +281,48 @@ export const ChartOfAccountsManager = forwardRef<{ refreshData: () => void }, {}
     
     setIsDeleting(true);
     try {
-      // Direct table deletion based on type
-      let deletePromise;
-      let ids: string[] = [];
+      let tableName = '';
+      let recordIds: string[] = [];
       
       switch (showMassDeleteDialog.type) {
         case 'departamentos':
-          ids = departamentos.map(d => d.id);
-          deletePromise = supabase.from('chart_of_accounts_departamentos').delete().in('id', ids);
+          tableName = 'chart_of_accounts_departamentos';
+          recordIds = departamentos.map(d => d.id);
           break;
         case 'mayores':
-          ids = mayores.map(m => m.id);
-          deletePromise = supabase.from('chart_of_accounts_mayor').delete().in('id', ids);
+          tableName = 'chart_of_accounts_mayor';
+          recordIds = mayores.map(m => m.id);
           break;
         case 'partidas':
-          ids = partidas.map(p => p.id);
-          deletePromise = supabase.from('chart_of_accounts_partidas').delete().in('id', ids);
+          tableName = 'chart_of_accounts_partidas';
+          recordIds = partidas.map(p => p.id);
           break;
         case 'subpartidas':
-          ids = subpartidas.map(s => s.id);
-          deletePromise = supabase.from('chart_of_accounts_subpartidas').delete().in('id', ids);
+          tableName = 'chart_of_accounts_subpartidas';
+          recordIds = subpartidas.map(s => s.id);
           break;
-        default:
-          throw new Error('Tipo de eliminación no válido');
       }
 
-      const { error } = await deletePromise;
+      if (recordIds.length === 0) {
+        toast.success(`No hay ${showMassDeleteDialog.type} para eliminar.`);
+        setShowMassDeleteDialog({ show: false, type: null, count: 0 });
+        return;
+      }
+
+      // Use the new RPC function for safe mass deletion
+      const { data, error } = await supabase.rpc('safe_mass_delete_chart_accounts', {
+        table_name: tableName,
+        record_ids: recordIds
+      });
+
       if (error) throw error;
 
-      toast.success(`Se eliminaron ${ids.length} registros de ${showMassDeleteDialog.type}`);
-      
-      // Reload data
-      await loadData();
+      if (data?.success) {
+        toast.success(data.message || `Se eliminaron ${data.deleted_count} ${showMassDeleteDialog.type} exitosamente.`);
+        await loadData(); // Reload all data
+      } else {
+        throw new Error(data?.error || 'Error desconocido durante la eliminación');
+      }
       
     } catch (error: any) {
       console.error('Error in mass delete:', error);
