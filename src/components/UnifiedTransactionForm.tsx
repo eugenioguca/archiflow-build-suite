@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -11,7 +11,9 @@ import { DatePicker } from "@/components/DatePicker";
 import { CurrencyInput } from "@/components/CurrencyInput";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useDebounce } from "@/hooks/use-debounce";
 
 interface UnifiedTransactionFormProps {
   open: boolean;
@@ -44,8 +46,19 @@ interface Option {
 export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactionFormProps) {
   const [loading, setLoading] = useState(false);
   const [showDescription, setShowDescription] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   
-  // Data states
+  // Data states with loading indicators
+  const [dataLoading, setDataLoading] = useState({
+    sucursales: false,
+    proyectos: false,
+    mayores: false,
+    partidas: false,
+    subpartidas: false,
+    clientes: false,
+    departamentos: false
+  });
+  
   const [sucursales, setSucursales] = useState<Option[]>([]);
   const [proyectos, setProyectos] = useState<Option[]>([]);
   const [mayores, setMayores] = useState<Option[]>([]);
@@ -68,94 +81,168 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
   const watchedMayorId = form.watch("mayor_id");
   const watchedPartidaId = form.watch("partida_id");
   const watchedTieneFactura = form.watch("tiene_factura");
+  const watchedMonto = form.watch("monto");
+  
+  // Debounced values for performance
+  const debouncedDepartamento = useDebounce(watchedDepartamento, 300);
+  const debouncedMayorId = useDebounce(watchedMayorId, 300);
+  const debouncedPartidaId = useDebounce(watchedPartidaId, 300);
 
-  // Load initial data
+  // Validation function
+  const validateForm = useCallback(() => {
+    const errors: string[] = [];
+    
+    if (!form.getValues("sucursal_id")) {
+      errors.push("Sucursal es requerida");
+    }
+    if (!form.getValues("departamento")) {
+      errors.push("Departamento es requerido");
+    }
+    if (!form.getValues("monto") || form.getValues("monto") <= 0) {
+      errors.push("Monto debe ser mayor a 0");
+    }
+    if (form.getValues("tiene_factura") && !form.getValues("folio_factura")?.trim()) {
+      errors.push("Folio de factura es requerido cuando se marca 'Tiene factura'");
+    }
+    
+    setValidationErrors(errors);
+    return errors.length === 0;
+  }, [form]);
+
+  // Load initial data with error handling
   useEffect(() => {
     if (open) {
-      loadSucursales();
-      loadProyectos();
-      loadClientesProveedores();
-      loadDepartamentos();
+      const loadInitialData = async () => {
+        try {
+          await Promise.all([
+            loadSucursales(),
+            loadProyectos(),
+            loadClientesProveedores(),
+            loadDepartamentos()
+          ]);
+        } catch (error) {
+          console.error("Error loading initial data:", error);
+          toast.error("Error al cargar datos iniciales");
+        }
+      };
+      loadInitialData();
     }
   }, [open]);
 
-  // Load dependent data
+  // Load dependent data with debouncing
   useEffect(() => {
-    if (watchedDepartamento) {
-      loadMayores(watchedDepartamento);
+    if (debouncedDepartamento) {
+      loadMayores(debouncedDepartamento);
       form.setValue("mayor_id", undefined);
       form.setValue("partida_id", undefined);
       form.setValue("subpartida_id", undefined);
     }
-  }, [watchedDepartamento]);
+  }, [debouncedDepartamento, form]);
 
   useEffect(() => {
-    if (watchedMayorId) {
-      loadPartidas(watchedMayorId);
+    if (debouncedMayorId) {
+      loadPartidas(debouncedMayorId);
       form.setValue("partida_id", undefined);
       form.setValue("subpartida_id", undefined);
     }
-  }, [watchedMayorId]);
+  }, [debouncedMayorId, form]);
 
   useEffect(() => {
-    if (watchedPartidaId) {
-      loadSubpartidas(watchedPartidaId);
+    if (debouncedPartidaId) {
+      loadSubpartidas(debouncedPartidaId);
       form.setValue("subpartida_id", undefined);
     }
-  }, [watchedPartidaId]);
+  }, [debouncedPartidaId, form]);
 
-  const loadSucursales = async () => {
-    const { data } = await supabase
-      .from("branch_offices")
-      .select("id, name")
-      .eq("active", true);
-    
-    if (data) {
-      const filteredData = data.filter(item => item.id && item.id.trim() !== '');
-      console.log("Sucursales data:", filteredData);
-      setSucursales(filteredData.map(item => ({ id: item.id, nombre: item.name })));
+  // Real-time validation
+  useEffect(() => {
+    if (open) {
+      validateForm();
     }
-  };
+  }, [open, watchedMonto, watchedTieneFactura, validateForm]);
 
-  const loadProyectos = async () => {
-    const { data } = await supabase
-      .from("client_projects")
-      .select("id, project_name, client_id, clients(full_name)")
-      .order("project_name");
-    
-    if (data) {
-      const proyectosFormateados = data
-        .filter(item => item.id && item.id.trim() !== '')
-        .map(item => ({
-          id: item.id,
-          nombre: `${item.project_name} - ${item.clients?.full_name || 'Sin cliente'}`,
-        }));
+  const loadSucursales = useCallback(async () => {
+    setDataLoading(prev => ({ ...prev, sucursales: true }));
+    try {
+      const { data, error } = await supabase
+        .from("branch_offices")
+        .select("id, name")
+        .eq("active", true);
       
-      // Add "Solo Empresa" option
-      proyectosFormateados.unshift({ id: "empresa", nombre: "Solo Empresa (Sin Proyecto)" });
-      console.log("Proyectos data:", proyectosFormateados);
-      setProyectos(proyectosFormateados);
+      if (error) throw error;
+      
+      if (data) {
+        const filteredData = data.filter(item => item.id && item.id.trim() !== '');
+        console.log("Sucursales data:", filteredData);
+        setSucursales(filteredData.map(item => ({ id: item.id, nombre: item.name })));
+      }
+    } catch (error) {
+      console.error("Error loading sucursales:", error);
+      toast.error("Error al cargar sucursales");
+    } finally {
+      setDataLoading(prev => ({ ...prev, sucursales: false }));
     }
-  };
+  }, []);
 
-  const loadMayores = async (departamento: string) => {
-    const { data } = await supabase
-      .from("chart_of_accounts_mayor")
-      .select("id, nombre, codigo")
-      .eq("departamento", departamento)
-      .eq("activo", true)
-      .order("codigo");
-    
-    if (data) {
-      const filteredData = data.filter(item => item.id && item.id.trim() !== '');
-      console.log("Mayores data:", filteredData);
-      setMayores(filteredData.map(item => ({ 
-        id: item.id, 
-        nombre: `${item.codigo} - ${item.nombre}`,
-        codigo: item.codigo 
-      })));
+  const loadProyectos = useCallback(async () => {
+    setDataLoading(prev => ({ ...prev, proyectos: true }));
+    try {
+      const { data, error } = await supabase
+        .from("client_projects")
+        .select("id, project_name, client_id, clients(full_name)")
+        .order("project_name");
+      
+      if (error) throw error;
+      
+      if (data) {
+        const proyectosFormateados = data
+          .filter(item => item.id && item.id.trim() !== '')
+          .map(item => ({
+            id: item.id,
+            nombre: `${item.project_name} - ${item.clients?.full_name || 'Sin cliente'}`,
+          }));
+        
+        // Add "Solo Empresa" option
+        proyectosFormateados.unshift({ id: "empresa", nombre: "Solo Empresa (Sin Proyecto)" });
+        console.log("Proyectos data:", proyectosFormateados);
+        setProyectos(proyectosFormateados);
+      }
+    } catch (error) {
+      console.error("Error loading proyectos:", error);
+      toast.error("Error al cargar proyectos");
+    } finally {
+      setDataLoading(prev => ({ ...prev, proyectos: false }));
     }
-  };
+  }, []);
+
+  const loadMayores = useCallback(async (departamento: string) => {
+    setDataLoading(prev => ({ ...prev, mayores: true }));
+    try {
+      const { data, error } = await supabase
+        .from("chart_of_accounts_mayor")
+        .select("id, nombre, codigo")
+        .eq("departamento", departamento)
+        .eq("activo", true)
+        .order("codigo");
+      
+      if (error) throw error;
+      
+      if (data) {
+        const filteredData = data.filter(item => item.id && item.id.trim() !== '');
+        console.log("Mayores data:", filteredData);
+        setMayores(filteredData.map(item => ({ 
+          id: item.id, 
+          nombre: `${item.codigo} - ${item.nombre}`,
+          codigo: item.codigo 
+        })));
+      }
+    } catch (error) {
+      console.error("Error loading mayores:", error);
+      toast.error("Error al cargar mayores");
+    } finally {
+      setDataLoading(prev => ({ ...prev, mayores: false }));
+    }
+  }, []);
 
   const loadPartidas = async (mayorId: string) => {
     const { data } = await supabase
@@ -279,18 +366,28 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
   };
 
   const onSubmit = async (data: FormData) => {
+    // Validate form before submission
+    if (!validateForm()) {
+      toast.error("Por favor corrige los errores antes de continuar");
+      return;
+    }
+
     setLoading(true);
     try {
-      // Get current user profile
-      const { data: profile } = await supabase
+      // Get current user profile with error handling
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) {
+        throw new Error("Usuario no autenticado");
+      }
+
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("id")
-        .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
+        .eq("user_id", user.user.id)
         .single();
 
-      if (!profile) {
-        toast.error("Error al obtener perfil de usuario");
-        return;
+      if (profileError || !profile) {
+        throw new Error("Error al obtener perfil de usuario");
       }
 
       // Determine tipo_entidad based on selected client/supplier
@@ -321,17 +418,29 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
         created_by: profile.id,
       };
 
-      const { error } = await supabase
+      const { error, data: insertedData } = await supabase
         .from("unified_financial_transactions")
-        .insert(transactionData);
+        .insert(transactionData)
+        .select()
+        .single();
 
       if (error) throw error;
 
-      toast.success("Transacción creada exitosamente");
+      toast.success(`Transacción creada exitosamente (Ref: ${insertedData?.referencia_unica || 'N/A'})`);
       onOpenChange(false);
       form.reset();
+      setValidationErrors([]);
     } catch (error: any) {
-      toast.error("Error al crear transacción: " + error.message);
+      console.error("Error creating transaction:", error);
+      const errorMessage = error.message || "Error desconocido al crear transacción";
+      toast.error(`Error al crear transacción: ${errorMessage}`);
+      
+      // Handle specific error types
+      if (error.code === '23505') {
+        toast.error("Error: Referencia duplicada detectada");
+      } else if (error.code === '23503') {
+        toast.error("Error: Referencia a datos inexistentes");
+      }
     } finally {
       setLoading(false);
     }
@@ -345,6 +454,21 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
         <DialogHeader>
           <DialogTitle>Nueva Transacción Financiera Unificada</DialogTitle>
         </DialogHeader>
+
+        {/* Validation Alerts */}
+        {validationErrors.length > 0 && (
+          <Alert className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <div className="font-medium mb-2">Errores de validación:</div>
+              <ul className="list-disc list-inside text-sm space-y-1">
+                {validationErrors.map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -381,11 +505,20 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {sucursales.filter(item => item.id && item.id.trim() !== '').map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.nombre}
+                        {dataLoading.sucursales ? (
+                          <SelectItem value="loading" disabled>
+                            <div className="flex items-center">
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              Cargando sucursales...
+                            </div>
                           </SelectItem>
-                        ))}
+                        ) : (
+                          sucursales.filter(item => item.id && item.id.trim() !== '').map((item) => (
+                            <SelectItem key={item.id} value={item.id}>
+                              {item.nombre}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -679,11 +812,23 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                disabled={loading}
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? "Guardando..." : "Guardar Transacción"}
+              <Button 
+                type="submit" 
+                disabled={loading || validationErrors.length > 0}
+                className="min-w-[140px]"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Guardando...
+                  </>
+                ) : (
+                  "Guardar Transacción"
+                )}
               </Button>
             </div>
           </form>

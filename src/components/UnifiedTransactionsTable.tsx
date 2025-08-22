@@ -1,4 +1,4 @@
-import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
+import { useState, useEffect, forwardRef, useImperativeHandle, useCallback, useMemo } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, ArrowUpDown, Trash2 } from "lucide-react";
+import { Search, ArrowUpDown, Trash2, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -46,18 +48,26 @@ export const UnifiedTransactionsTable = forwardRef<{ refreshData: () => void }, 
   const [selectedTransactions, setSelectedTransactions] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [departamentos, setDepartamentos] = useState<{value: string, label: string}[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
   useEffect(() => {
     loadTransactions();
     loadDepartamentos();
   }, []);
 
+  const refreshData = useCallback(async () => {
+    await loadTransactions();
+    setLastRefresh(new Date());
+  }, []);
+
   useImperativeHandle(ref, () => ({
-    refreshData: loadTransactions,
+    refreshData,
   }));
 
-  const loadTransactions = async () => {
+  const loadTransactions = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const { data, error } = await supabase
         .from("unified_financial_transactions")
@@ -72,13 +82,20 @@ export const UnifiedTransactionsTable = forwardRef<{ refreshData: () => void }, 
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+      
       setTransactions(data || []);
-    } catch (error) {
+      
+      if (data && data.length === 0) {
+        setError("No se encontraron transacciones");
+      }
+    } catch (error: any) {
       console.error("Error loading transactions:", error);
+      setError(error.message || "Error al cargar transacciones");
+      toast.error("Error al cargar transacciones");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const loadDepartamentos = async () => {
     try {
@@ -100,20 +117,23 @@ export const UnifiedTransactionsTable = forwardRef<{ refreshData: () => void }, 
     }
   };
 
-  const filteredTransactions = transactions.filter((transaction) => {
-    const matchesSearch = 
-      transaction.referencia_unica.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transaction.descripcion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transaction.folio_factura?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesDepartamento = 
-      !filterDepartamento || filterDepartamento === "all" || transaction.departamento === filterDepartamento;
-    
-    const matchesTipoMovimiento = 
-      !filterTipoMovimiento || filterTipoMovimiento === "all" || transaction.tipo_movimiento === filterTipoMovimiento;
+  // Memoized filtered transactions for performance
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter((transaction) => {
+      const matchesSearch = 
+        transaction.referencia_unica.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        transaction.descripcion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        transaction.folio_factura?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesDepartamento = 
+        !filterDepartamento || filterDepartamento === "all" || transaction.departamento === filterDepartamento;
+      
+      const matchesTipoMovimiento = 
+        !filterTipoMovimiento || filterTipoMovimiento === "all" || transaction.tipo_movimiento === filterTipoMovimiento;
 
-    return matchesSearch && matchesDepartamento && matchesTipoMovimiento;
-  });
+      return matchesSearch && matchesDepartamento && matchesTipoMovimiento;
+    });
+  }, [transactions, searchTerm, filterDepartamento, filterTipoMovimiento]);
 
   // departamentos now loaded dynamically from state
 
@@ -173,11 +193,47 @@ export const UnifiedTransactionsTable = forwardRef<{ refreshData: () => void }, 
   };
 
   if (loading) {
-    return <div className="text-center py-8">Cargando transacciones...</div>;
+    return (
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Skeleton className="h-10 flex-1" />
+          <Skeleton className="h-10 w-[200px]" />
+          <Skeleton className="h-10 w-[150px]" />
+        </div>
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error && transactions.length === 0) {
+    return (
+      <Alert>
+        <AlertDescription className="flex items-center justify-between">
+          <span>{error}</span>
+          <Button variant="outline" size="sm" onClick={refreshData}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Reintentar
+          </Button>
+        </AlertDescription>
+      </Alert>
+    );
   }
 
   return (
     <div className="space-y-4">
+      {/* Status Bar */}
+      <div className="flex items-center justify-between text-sm text-muted-foreground">
+        <span>
+          {filteredTransactions.length} de {transactions.length} transacciones
+          {filteredTransactions.length !== transactions.length && " (filtradas)"}
+        </span>
+        <span>Última actualización: {format(lastRefresh, "HH:mm:ss", { locale: es })}</span>
+      </div>
+
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4 items-start">
         <div className="flex flex-col sm:flex-row gap-4 flex-1">
@@ -229,7 +285,14 @@ export const UnifiedTransactionsTable = forwardRef<{ refreshData: () => void }, 
               disabled={selectedTransactions.length === 0 || isDeleting}
               size="sm"
             >
-              {isDeleting ? "Eliminando..." : `Confirmar (${selectedTransactions.length})`}
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Eliminando...
+                </>
+              ) : (
+                `Confirmar (${selectedTransactions.length})`
+              )}
             </Button>
           )}
         </div>

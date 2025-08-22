@@ -1,19 +1,99 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import { UnifiedTransactionForm } from "./UnifiedTransactionForm";
 import { UnifiedTransactionsTable } from "./UnifiedTransactionsTable";
 import { ChartOfAccountsManager } from "./ChartOfAccountsManager";
 import { ChartOfAccountsExcelManager } from "./ChartOfAccountsExcelManager";
 import { ImportReportsDashboard } from "./ImportReportsDashboard";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-export function UnifiedFinancialTransactions() {
+export const UnifiedFinancialTransactions = memo(() => {
   const [activeTab, setActiveTab] = useState("transactions");
   const [showForm, setShowForm] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'error'>('connected');
   const tableRef = useRef<{ refreshData: () => void }>(null);
   const chartRef = useRef<{ refreshData: () => void }>(null);
+
+  // Real-time subscription for data changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('unified-financial-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'unified_financial_transactions'
+        },
+        (payload) => {
+          console.log('Real-time transaction change:', payload);
+          // Refresh on any change (INSERT, UPDATE, DELETE)
+          tableRef.current?.refreshData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'chart_of_accounts_departamentos'
+        },
+        (payload) => {
+          console.log('Real-time chart change:', payload);
+          // Refresh on any change (INSERT, UPDATE, DELETE)
+          chartRef.current?.refreshData();
+          tableRef.current?.refreshData(); // Refresh transactions too in case department filtering is affected
+        }
+      )
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+        setConnectionStatus(status === 'SUBSCRIBED' ? 'connected' : 'error');
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Global refresh handler
+  const handleGlobalRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        tableRef.current?.refreshData(),
+        chartRef.current?.refreshData()
+      ]);
+      toast.success("Datos actualizados correctamente");
+    } catch (error) {
+      toast.error("Error al actualizar datos");
+      console.error("Refresh error:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, []);
+
+  // Form handlers with optimization
+  const handleFormOpen = useCallback(() => {
+    setShowForm(true);
+  }, []);
+
+  const handleFormClose = useCallback((open: boolean) => {
+    setShowForm(open);
+    if (!open) {
+      // Optimized refresh - only refresh if form was likely successful
+      tableRef.current?.refreshData();
+    }
+  }, []);
+
+  const handleImportComplete = useCallback(() => {
+    chartRef.current?.refreshData();
+    tableRef.current?.refreshData();
+  }, []);
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -23,7 +103,26 @@ export function UnifiedFinancialTransactions() {
           <p className="text-muted-foreground">
             Módulo temporal para desarrollo del sistema unificado de transacciones financieras
           </p>
+          <div className="flex items-center gap-2 mt-2">
+            <div className={`w-2 h-2 rounded-full ${
+              connectionStatus === 'connected' ? 'bg-green-500' : 
+              connectionStatus === 'disconnected' ? 'bg-yellow-500' : 'bg-red-500'
+            }`} />
+            <span className="text-xs text-muted-foreground">
+              {connectionStatus === 'connected' ? 'Conectado (Tiempo Real)' : 
+               connectionStatus === 'disconnected' ? 'Conectando...' : 'Sin conexión'}
+            </span>
+          </div>
         </div>
+        <Button 
+          variant="outline" 
+          onClick={handleGlobalRefresh}
+          disabled={isRefreshing}
+          size="sm"
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+          {isRefreshing ? 'Actualizando...' : 'Actualizar'}
+        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -38,7 +137,7 @@ export function UnifiedFinancialTransactions() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Transacciones Financieras Unificadas</CardTitle>
               <div className="flex gap-2">
-                <Button onClick={() => setShowForm(true)}>
+                <Button onClick={handleFormOpen}>
                   <Plus className="h-4 w-4 mr-2" />
                   Nueva Transacción
                 </Button>
@@ -52,10 +151,7 @@ export function UnifiedFinancialTransactions() {
 
         <TabsContent value="chart-accounts" className="space-y-6">
           <ChartOfAccountsExcelManager 
-            onImportComplete={() => {
-              chartRef.current?.refreshData();
-              tableRef.current?.refreshData(); // Also refresh transactions table in case departments changed
-            }} 
+            onImportComplete={handleImportComplete} 
           />
           <ChartOfAccountsManager ref={chartRef} />
         </TabsContent>
@@ -68,15 +164,11 @@ export function UnifiedFinancialTransactions() {
       {showForm && (
         <UnifiedTransactionForm 
           open={showForm} 
-          onOpenChange={(open) => {
-            setShowForm(open);
-            if (!open) {
-              // Refresh table when form is closed (usually after successful submission)
-              tableRef.current?.refreshData();
-            }
-          }}
+          onOpenChange={handleFormClose}
         />
       )}
     </div>
   );
-}
+});
+
+UnifiedFinancialTransactions.displayName = "UnifiedFinancialTransactions";
