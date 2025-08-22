@@ -48,53 +48,137 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
     try {
       const wb = XLSX.utils.book_new()
 
-      // Mayores template
+      // Instructions sheet - FIRST
+      const instructionsData = [
+        ["INSTRUCCIONES PARA IMPORTAR CATÁLOGO DE CUENTAS"],
+        [""],
+        ["ORDEN DE LLENADO OBLIGATORIO:"],
+        ["1. Departamentos (si son nuevos)"],
+        ["2. Mayores"],
+        ["3. Partidas"],
+        ["4. Subpartidas"],
+        [""],
+        ["REGLAS IMPORTANTES:"],
+        ["• Campo Estado: Solo usar ACTIVO o INACTIVO"],
+        ["• Los códigos deben ser únicos"],
+        ["• Respetar las dependencias entre niveles"],
+        ["• No dejar celdas vacías en campos obligatorios"],
+        [""],
+        ["DEPARTAMENTOS VÁLIDOS:"],
+        ["ventas, diseño, construccion, finanzas, contabilidad, recursos_humanos, direccion_general"],
+        [""],
+        ["EJEMPLOS DE CÓDIGOS:"],
+        ["Mayor: VEN001, DIS001, CON001"],
+        ["Partida: VEN001-001, DIS001-001"],
+        ["Subpartida: VEN001-001-001 o GLOBAL-001"],
+        [""],
+        ["SUBPARTIDAS GLOBALES:"],
+        ["• Es Global = SI: Se aplica a todos los departamentos"],
+        ["• Es Global = NO: Solo al departamento específico"],
+        ["• Si Es Global = SI, no llenar Departamento Aplicable"],
+        [""],
+        ["VALIDACIONES ANTES DE IMPORTAR:"],
+        ["✓ Verificar que todos los códigos padre existan"],
+        ["✓ No duplicar códigos en el mismo archivo"],
+        ["✓ Usar solo valores ACTIVO/INACTIVO"],
+        [""],
+        ["TROUBLESHOOTING COMÚN:"],
+        ["Error 'Mayor no encontrado' → Verificar Código Mayor en hoja Partidas"],
+        ["Error 'Partida no encontrada' → Verificar Código Partida en hoja Subpartidas"],
+        ["Error 'Departamento inválido' → Usar solo departamentos de la lista"],
+      ]
+      const instructionsWs = XLSX.utils.aoa_to_sheet(instructionsData)
+      XLSX.utils.book_append_sheet(wb, instructionsWs, "INSTRUCCIONES")
+
+      // Departamentos template (NEW - explicit department creation)
+      const departamentosData = [
+        ["Departamento", "Estado"],
+        ["ventas", "ACTIVO"],
+        ["diseño", "ACTIVO"],
+        ["construccion", "ACTIVO"],
+        ["finanzas", "ACTIVO"],
+        ["contabilidad", "ACTIVO"],
+        ["recursos_humanos", "ACTIVO"],
+        ["direccion_general", "ACTIVO"],
+      ]
+      const departamentosWs = XLSX.utils.aoa_to_sheet(departamentosData)
+      XLSX.utils.book_append_sheet(wb, departamentosWs, "Departamentos")
+
+      // Mayores template - IMPROVED
       const mayoresData = [
-        ["Departamento", "Código", "Nombre", "Activo"],
-        ["ventas", "VEN001", "Ejemplo Mayor Ventas", "true"],
-        ["diseño", "DIS001", "Ejemplo Mayor Diseño", "true"],
-        ["construccion", "CON001", "Ejemplo Mayor Construcción", "true"]
+        ["Departamento", "Código", "Nombre", "Estado"],
+        ["ventas", "VEN001", "Ingresos por Ventas", "ACTIVO"],
+        ["ventas", "VEN002", "Comisiones de Ventas", "ACTIVO"],
+        ["diseño", "DIS001", "Servicios de Diseño", "ACTIVO"],
+        ["diseño", "DIS002", "Materiales de Diseño", "ACTIVO"],
+        ["construccion", "CON001", "Materiales de Construcción", "ACTIVO"],
+        ["construccion", "CON002", "Mano de Obra", "ACTIVO"],
+        ["finanzas", "FIN001", "Gastos Financieros", "ACTIVO"],
+        ["contabilidad", "CONT001", "Gastos de Contabilidad", "ACTIVO"]
       ]
       const mayoresWs = XLSX.utils.aoa_to_sheet(mayoresData)
       XLSX.utils.book_append_sheet(wb, mayoresWs, "Mayores")
 
-      // Partidas template
+      // Partidas template - IMPROVED
       const partidasData = [
-        ["Código Mayor", "Código", "Nombre", "Activo"],
-        ["VEN001", "VEN001-001", "Ejemplo Partida Ventas", "true"],
-        ["DIS001", "DIS001-001", "Ejemplo Partida Diseño", "true"],
-        ["CON001", "CON001-001", "Ejemplo Partida Construcción", "true"]
+        ["Código Mayor", "Código", "Nombre", "Estado"],
+        ["VEN001", "VEN001-001", "Ventas Residenciales", "ACTIVO"],
+        ["VEN001", "VEN001-002", "Ventas Comerciales", "ACTIVO"],
+        ["VEN002", "VEN002-001", "Comisiones Internas", "ACTIVO"],
+        ["DIS001", "DIS001-001", "Diseño Arquitectónico", "ACTIVO"],
+        ["DIS001", "DIS001-002", "Diseño de Interiores", "ACTIVO"],
+        ["DIS002", "DIS002-001", "Software de Diseño", "ACTIVO"],
+        ["CON001", "CON001-001", "Cemento y Concreto", "ACTIVO"],
+        ["CON001", "CON001-002", "Acero y Varillas", "ACTIVO"],
+        ["CON002", "CON002-001", "Albañilería", "ACTIVO"],
+        ["FIN001", "FIN001-001", "Intereses Bancarios", "ACTIVO"],
+        ["CONT001", "CONT001-001", "Auditorías Externas", "ACTIVO"]
       ]
       const partidasWs = XLSX.utils.aoa_to_sheet(partidasData)
       XLSX.utils.book_append_sheet(wb, partidasWs, "Partidas")
 
-      // Subpartidas template
+      // Subpartidas template - UNIFIED (NO MORE SEPARATE GLOBAL SHEET)
       const subpartidasData = [
-        ["Código Partida", "Código", "Nombre", "Es Global", "Departamento Aplicable", "Activo"],
-        ["VEN001-001", "VEN001-001-001", "Ejemplo Subpartida Ventas", "false", "", "true"],
-        ["DIS001-001", "DIS001-001-001", "Ejemplo Subpartida Diseño", "false", "", "true"],
-        ["CON001-001", "CON001-001-001", "Ejemplo Subpartida Construcción", "false", "", "true"]
+        ["Código Partida", "Código", "Nombre", "Es Global", "Departamento Aplicable", "Estado"],
+        // Regular subpartidas
+        ["VEN001-001", "VEN001-001-001", "Casas Unifamiliares", "NO", "", "ACTIVO"],
+        ["VEN001-001", "VEN001-001-002", "Condominios", "NO", "", "ACTIVO"],
+        ["VEN001-002", "VEN001-002-001", "Oficinas", "NO", "", "ACTIVO"],
+        ["DIS001-001", "DIS001-001-001", "Planos Arquitectónicos", "NO", "", "ACTIVO"],
+        ["DIS001-002", "DIS001-002-001", "Decoración", "NO", "", "ACTIVO"],
+        ["CON001-001", "CON001-001-001", "Cemento Premium", "NO", "", "ACTIVO"],
+        // Global subpartidas examples
+        ["", "GLOBAL-001", "Transporte de Materiales", "SI", "construccion", "ACTIVO"],
+        ["", "GLOBAL-002", "Supervisión de Obra", "SI", "construccion", "ACTIVO"],
+        ["", "GLOBAL-003", "Herramientas Menores", "SI", "construccion", "ACTIVO"],
+        ["", "GLOBAL-004", "Gastos Administrativos", "SI", "finanzas", "ACTIVO"],
       ]
       const subpartidasWs = XLSX.utils.aoa_to_sheet(subpartidasData)
       XLSX.utils.book_append_sheet(wb, subpartidasWs, "Subpartidas")
 
-      // Global Construction Subpartidas template
-      const globalSubpartidasData = [
-        ["Código", "Nombre", "Departamento Aplicable", "Activo"],
-        ["CON-GLOBAL-001", "Material de Construcción", "construccion", "true"],
-        ["CON-GLOBAL-002", "Mano de Obra", "construccion", "true"],
-        ["CON-GLOBAL-003", "Equipo y Herramientas", "construccion", "true"]
+      // Reference sheet for validation
+      const referenciaData = [
+        ["VALORES VÁLIDOS PARA CAMPOS"],
+        [""],
+        ["ESTADO:"],
+        ["ACTIVO"],
+        ["INACTIVO"],
+        [""],
+        ["ES GLOBAL:"],
+        ["SI"],
+        ["NO"],
+        [""],
+        ["DEPARTAMENTOS VÁLIDOS:"],
+        ...departamentos.map(dept => [dept.value]),
+        [""],
+        ["NOTAS:"],
+        ["• Los códigos deben ser únicos en cada nivel"],
+        ["• Para subpartidas globales, dejar vacío 'Código Partida'"],
+        ["• Es Global = SI requiere 'Departamento Aplicable'"],
+        ["• Es Global = NO no debe tener 'Departamento Aplicable'"]
       ]
-      const globalSubpartidasWs = XLSX.utils.aoa_to_sheet(globalSubpartidasData)
-      XLSX.utils.book_append_sheet(wb, globalSubpartidasWs, "Globales Construcción")
-
-      // Departamentos reference
-      const departamentosData = [
-        ["Departamentos Disponibles"],
-        ...departamentos.map(dept => [dept.value])
-      ]
-      const departamentosWs = XLSX.utils.aoa_to_sheet(departamentosData)
-      XLSX.utils.book_append_sheet(wb, departamentosWs, "Referencia Departamentos")
+      const referenciaWs = XLSX.utils.aoa_to_sheet(referenciaData)
+      XLSX.utils.book_append_sheet(wb, referenciaWs, "REFERENCIA")
 
       const fileName = `Template_Catalogo_Cuentas_${new Date().toISOString().split('T')[0]}.xlsx`
       XLSX.writeFile(wb, fileName)
@@ -118,6 +202,11 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
     setExportingTemplateWithData(true)
     try {
       // Fetch existing data
+      const { data: departamentos } = await supabase
+        .from('chart_of_accounts_departamentos')
+        .select('*')
+        .order('departamento')
+
       const { data: mayores } = await supabase
         .from('chart_of_accounts_mayor')
         .select('*')
@@ -135,73 +224,109 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
 
       const wb = XLSX.utils.book_new()
 
-      // Mayores with data
+      // Instructions sheet - FIRST
+      const instructionsData = [
+        ["INSTRUCCIONES PARA IMPORTAR CATÁLOGO DE CUENTAS"],
+        [""],
+        ["ESTE ARCHIVO CONTIENE INFORMACIÓN EXISTENTE"],
+        ["Puedes modificar los datos y volver a importar"],
+        [""],
+        ["ORDEN DE LLENADO OBLIGATORIO:"],
+        ["1. Departamentos (si son nuevos)"],
+        ["2. Mayores"],
+        ["3. Partidas"],
+        ["4. Subpartidas"],
+        [""],
+        ["REGLAS IMPORTANTES:"],
+        ["• Campo Estado: Solo usar ACTIVO o INACTIVO"],
+        ["• Los códigos deben ser únicos"],
+        ["• Respetar las dependencias entre niveles"],
+        ["• No dejar celdas vacías en campos obligatorios"],
+        [""],
+        ["SUBPARTIDAS GLOBALES:"],
+        ["• Es Global = SI: Se aplica a todos los departamentos"],
+        ["• Es Global = NO: Solo al departamento específico"],
+        ["• Si Es Global = SI, llenar 'Departamento Aplicable'"],
+        ["• Si Es Global = NO, llenar 'Código Partida'"],
+      ]
+      const instructionsWs = XLSX.utils.aoa_to_sheet(instructionsData)
+      XLSX.utils.book_append_sheet(wb, instructionsWs, "INSTRUCCIONES")
+
+      // Departamentos with data - NEW FORMAT
+      const departamentosData = [
+        ["Departamento", "Estado"],
+        ...(departamentos?.map(dept => [
+          dept.departamento,
+          dept.activo ? "ACTIVO" : "INACTIVO"
+        ]) || [])
+      ]
+      const departamentosWs = XLSX.utils.aoa_to_sheet(departamentosData)
+      XLSX.utils.book_append_sheet(wb, departamentosWs, "Departamentos")
+
+      // Mayores with data - NEW FORMAT
       const mayoresData = [
-        ["Departamento", "Código", "Nombre", "Activo"],
+        ["Departamento", "Código", "Nombre", "Estado"],
         ...(mayores?.map(mayor => [
           mayor.departamento,
           mayor.codigo,
           mayor.nombre,
-          mayor.activo.toString()
+          mayor.activo ? "ACTIVO" : "INACTIVO"
         ]) || [])
       ]
       const mayoresWs = XLSX.utils.aoa_to_sheet(mayoresData)
       XLSX.utils.book_append_sheet(wb, mayoresWs, "Mayores")
 
-      // Partidas with data
+      // Partidas with data - NEW FORMAT
       const partidasData = [
-        ["Código Mayor", "Código", "Nombre", "Activo"],
+        ["Código Mayor", "Código", "Nombre", "Estado"],
         ...(partidas?.map(partida => [
           partida.chart_of_accounts_mayor?.codigo || "",
           partida.codigo,
           partida.nombre,
-          partida.activo.toString()
+          partida.activo ? "ACTIVO" : "INACTIVO"
         ]) || [])
       ]
       const partidasWs = XLSX.utils.aoa_to_sheet(partidasData)
       XLSX.utils.book_append_sheet(wb, partidasWs, "Partidas")
 
-      // Subpartidas with data
+      // Subpartidas with data - UNIFIED FORMAT
       const subpartidasData = [
-        ["Código Partida", "Código", "Nombre", "Es Global", "Departamento Aplicable", "Activo"],
+        ["Código Partida", "Código", "Nombre", "Es Global", "Departamento Aplicable", "Estado"],
         ...(subpartidas?.map(subpartida => [
-          subpartida.chart_of_accounts_partidas?.codigo || "",
+          (subpartida as any).es_global ? "" : (subpartida.chart_of_accounts_partidas?.codigo || ""),
           subpartida.codigo,
           subpartida.nombre,
-          (subpartida as any).es_global?.toString() || "false",
+          (subpartida as any).es_global ? "SI" : "NO",
           (subpartida as any).departamento_aplicable || "",
-          subpartida.activo.toString()
+          subpartida.activo ? "ACTIVO" : "INACTIVO"
         ]) || [])
       ]
       const subpartidasWs = XLSX.utils.aoa_to_sheet(subpartidasData)
       XLSX.utils.book_append_sheet(wb, subpartidasWs, "Subpartidas")
 
-      // Global subpartidas with data
-      const { data: globalSubpartidas } = await supabase
-        .from('chart_of_accounts_subpartidas')
-        .select('*')
-        .eq('es_global', true)
-        .order('codigo')
-
-      const globalSubpartidasData = [
-        ["Código", "Nombre", "Departamento Aplicable", "Activo"],
-        ...(globalSubpartidas?.map(subpartida => [
-          subpartida.codigo,
-          subpartida.nombre,
-          subpartida.departamento_aplicable || "",
-          subpartida.activo.toString()
-        ]) || [])
+      // Reference sheet for validation
+      const referenciaData = [
+        ["VALORES VÁLIDOS PARA CAMPOS"],
+        [""],
+        ["ESTADO:"],
+        ["ACTIVO"],
+        ["INACTIVO"],
+        [""],
+        ["ES GLOBAL:"],
+        ["SI"],
+        ["NO"],
+        [""],
+        ["DEPARTAMENTOS VÁLIDOS:"],
+        ...(departamentos?.map(dept => [dept.departamento]) || []),
+        [""],
+        ["NOTAS:"],
+        ["• Los códigos deben ser únicos en cada nivel"],
+        ["• Para subpartidas globales, dejar vacío 'Código Partida'"],
+        ["• Es Global = SI requiere 'Departamento Aplicable'"],
+        ["• Es Global = NO debe tener 'Código Partida' válido"]
       ]
-      const globalSubpartidasWs = XLSX.utils.aoa_to_sheet(globalSubpartidasData)
-      XLSX.utils.book_append_sheet(wb, globalSubpartidasWs, "Globales Construcción")
-
-      // Departamentos reference
-      const departamentosData = [
-        ["Departamentos Disponibles"],
-        ...departamentos.map(dept => [dept.value])
-      ]
-      const departamentosWs = XLSX.utils.aoa_to_sheet(departamentosData)
-      XLSX.utils.book_append_sheet(wb, departamentosWs, "Referencia Departamentos")
+      const referenciaWs = XLSX.utils.aoa_to_sheet(referenciaData)
+      XLSX.utils.book_append_sheet(wb, referenciaWs, "REFERENCIA")
 
       const fileName = `Catalogo_Cuentas_Con_Datos_${new Date().toISOString().split('T')[0]}.xlsx`
       XLSX.writeFile(wb, fileName)
@@ -323,9 +448,152 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
         throw new Error("No se pudo obtener el perfil del usuario")
       }
 
-      // Process Mayores sheet with department auto-creation
+      // Normalize "Estado" field values
+      const normalizeEstado = (value: any): boolean => {
+        if (typeof value === 'boolean') return value
+        const strVal = value?.toString().toLowerCase().trim()
+        return strVal === 'activo' || strVal === 'true' || strVal === '1'
+      }
+
+      // Normalize "Es Global" field values  
+      const normalizeEsGlobal = (value: any): boolean => {
+        if (typeof value === 'boolean') return value
+        const strVal = value?.toString().toLowerCase().trim()
+        return strVal === 'si' || strVal === 'sí' || strVal === 'true' || strVal === '1'
+      }
+
+      // PRE-VALIDATION: Check all dependencies before processing
+      console.log("🔍 Realizando pre-validación del archivo...")
+      const validationErrors: string[] = []
+      const allMayoresCodes: Set<string> = new Set()
+      const allPartidasCodes: Set<string> = new Set()
+
+      // Collect all Mayor codes first
+      if (workbook.SheetNames.includes('Mayores')) {
+        const mayoresSheet = workbook.Sheets['Mayores']
+        const mayoresJsonData = XLSX.utils.sheet_to_json(mayoresSheet, { header: 1 })
+        
+        for (let i = 1; i < mayoresJsonData.length; i++) {
+          const row = mayoresJsonData[i] as any[]
+          if (row.length >= 4 && row[1]) {
+            allMayoresCodes.add(row[1].toString().trim())
+          }
+        }
+      }
+
+      // Collect all Partida codes and validate Mayor references
+      if (workbook.SheetNames.includes('Partidas')) {
+        const partidasSheet = workbook.Sheets['Partidas']
+        const partidasJsonData = XLSX.utils.sheet_to_json(partidasSheet, { header: 1 })
+        
+        for (let i = 1; i < partidasJsonData.length; i++) {
+          const row = partidasJsonData[i] as any[]
+          if (row.length >= 4 && row[0] && row[1]) {
+            const mayorCode = row[0].toString().trim()
+            const partidaCode = row[1].toString().trim()
+            
+            // Check if Mayor exists
+            if (!allMayoresCodes.has(mayorCode)) {
+              validationErrors.push(`Partida fila ${i + 1}: No se encontró Mayor '${mayorCode}' en el archivo`)
+            }
+            
+            allPartidasCodes.add(partidaCode)
+          }
+        }
+      }
+
+      // Validate Subpartida references
+      if (workbook.SheetNames.includes('Subpartidas')) {
+        const subpartidasSheet = workbook.Sheets['Subpartidas']
+        const subpartidasJsonData = XLSX.utils.sheet_to_json(subpartidasSheet, { header: 1 })
+        
+        for (let i = 1; i < subpartidasJsonData.length; i++) {
+          const row = subpartidasJsonData[i] as any[]
+          if (row.length >= 6 && row[1]) {
+            const esGlobal = normalizeEsGlobal(row[3])
+            const partidaCode = row[0]?.toString().trim()
+            const deptAplicable = row[4]?.toString().trim()
+
+            if (!esGlobal) {
+              // Regular subpartida needs valid Partida reference
+              if (!partidaCode || !allPartidasCodes.has(partidaCode)) {
+                validationErrors.push(`Subpartida fila ${i + 1}: No se encontró Partida '${partidaCode}' en el archivo`)
+              }
+              if (deptAplicable) {
+                validationErrors.push(`Subpartida fila ${i + 1}: Subpartida regular no debe tener 'Departamento Aplicable'`)
+              }
+            } else {
+              // Global subpartida shouldn't have Partida reference
+              if (partidaCode) {
+                validationErrors.push(`Subpartida fila ${i + 1}: Subpartida global no debe tener 'Código Partida'`)
+              }
+              if (!deptAplicable) {
+                validationErrors.push(`Subpartida fila ${i + 1}: Subpartida global requiere 'Departamento Aplicable'`)
+              }
+            }
+          }
+        }
+      }
+
+      // If validation errors found, show them and abort
+      if (validationErrors.length > 0) {
+        console.error("❌ Errores de pre-validación:", validationErrors)
+        setImportResult({
+          success: false,
+          errors: validationErrors,
+          mayores_inserted: 0,
+          partidas_inserted: 0,
+          subpartidas_inserted: 0,
+          total_rows: 0
+        })
+        toast({
+          title: "Errores de validación",
+          description: `Se encontraron ${validationErrors.length} errores en el archivo. Revisa los resultados.`,
+          variant: "destructive",
+        })
+        return
+      }
+
+      console.log("✅ Pre-validación completada exitosamente")
+
+      // PROCESS IN CORRECT ORDER: Departamentos → Mayores → Partidas → Subpartidas
+      console.log("📊 Iniciando procesamiento en orden correcto...")
+
+      // Process Departamentos sheet first (NEW)
+      if (workbook.SheetNames.includes('Departamentos')) {
+        processedSheets.push('Departamentos')
+        console.log("🏢 Procesando hoja Departamentos...")
+        
+        const deptSheet = workbook.Sheets['Departamentos']
+        const deptJsonData = XLSX.utils.sheet_to_json(deptSheet, { header: 1 })
+
+        if (deptJsonData.length > 1) {
+          for (let i = 1; i < deptJsonData.length; i++) {
+            const row = deptJsonData[i] as any[]
+            if (row.length >= 2 && row[0]) {
+              try {
+                const { data: normalizedDept, error: deptError } = await supabase
+                  .rpc('ensure_department_exists', { dept_name: row[0].toString().trim() })
+
+                if (deptError) {
+                  errors.push(`Error creando departamento fila ${i + 1}: ${deptError.message}`)
+                } else {
+                  departamentosInserted++
+                }
+              } catch (error: any) {
+                errors.push(`Error en Departamento fila ${i + 1}: ${error.message}`)
+              }
+            }
+          }
+        }
+        console.log(`✅ Departamentos procesados: ${departamentosInserted} insertados`)
+      }
+
+      // Process Mayores sheet with NEW format
       if (workbook.SheetNames.includes('Mayores')) {
         processedSheets.push('Mayores')
+        console.log("📋 Procesando hoja Mayores...")
+        
         const mayoresSheet = workbook.Sheets['Mayores']
         const mayoresJsonData = XLSX.utils.sheet_to_json(mayoresSheet, { header: 1 })
 
@@ -334,21 +602,8 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
             const row = mayoresJsonData[i] as any[]
             if (row.length >= 4 && row[0] && row[1] && row[2]) {
               try {
-                // Use the ensure_department_exists function to auto-create departments
-                const { data: normalizedDept, error: deptError } = await supabase
-                  .rpc('ensure_department_exists', { dept_name: row[0].toString().trim() })
-
-                if (deptError) {
-                  errors.push(`Error creando departamento en Mayor fila ${i + 1}: ${deptError.message}`)
-                  continue
-                } else {
-                  // Count if this created a new department (simple check)
-                  const deptName = row[0].toString().trim().toLowerCase()
-                  const existingDepts = ['ventas', 'diseño', 'construccion', 'finanzas', 'contabilidad', 'recursos_humanos', 'direccion_general']
-                  if (!existingDepts.includes(deptName)) {
-                    departamentosInserted++
-                  }
-                }
+                // Auto-create department if needed
+                await supabase.rpc('ensure_department_exists', { dept_name: row[0].toString().trim() })
 
                 const { error } = await supabase
                   .from('chart_of_accounts_mayor')
@@ -356,7 +611,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
                     departamento: row[0].toString().trim(),
                     codigo: row[1].toString().trim(),
                     nombre: row[2].toString().trim(),
-                    activo: row[3]?.toString().toLowerCase() === 'true',
+                    activo: normalizeEstado(row[3]),
                     created_by: profile.id
                   })
 
@@ -371,11 +626,14 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
             }
           }
         }
+        console.log(`✅ Mayores procesados: ${mayoresInserted} insertados`)
       }
 
-      // Process Partidas sheet (unchanged)
+      // Process Partidas sheet with NEW format
       if (workbook.SheetNames.includes('Partidas')) {
         processedSheets.push('Partidas')
+        console.log("📄 Procesando hoja Partidas...")
+        
         const partidasSheet = workbook.Sheets['Partidas']
         const partidasJsonData = XLSX.utils.sheet_to_json(partidasSheet, { header: 1 })
 
@@ -401,7 +659,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
                     mayor_id: mayor.id,
                     codigo: row[1].toString().trim(),
                     nombre: row[2].toString().trim(),
-                    activo: row[3]?.toString().toLowerCase() === 'true',
+                    activo: normalizeEstado(row[3]),
                     created_by: profile.id
                   })
 
@@ -416,40 +674,57 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
             }
           }
         }
+        console.log(`✅ Partidas procesadas: ${partidasInserted} insertadas`)
       }
 
-      // Process Subpartidas sheet (unchanged)
+      // Process Subpartidas sheet with UNIFIED format (both regular and global)
       if (workbook.SheetNames.includes('Subpartidas')) {
         processedSheets.push('Subpartidas')
+        console.log("📝 Procesando hoja Subpartidas unificada...")
+        
         const subpartidasSheet = workbook.Sheets['Subpartidas']
         const subpartidasJsonData = XLSX.utils.sheet_to_json(subpartidasSheet, { header: 1 })
 
         if (subpartidasJsonData.length > 1) {
           for (let i = 1; i < subpartidasJsonData.length; i++) {
             const row = subpartidasJsonData[i] as any[]
-            if (row.length >= 4 && row[0] && row[1] && row[2]) {
+            if (row.length >= 6 && row[1] && row[2]) {
               try {
-                const { data: partida } = await supabase
-                  .from('chart_of_accounts_partidas')
-                  .select('id')
-                  .eq('codigo', row[0].toString().trim())
-                  .single()
-
-                if (!partida) {
-                  errors.push(`Error en Subpartida fila ${i + 1}: No se encontró Partida con código ${row[0]}`)
-                  continue
-                }
-
-                const esGlobal = row[3]?.toString().toLowerCase() === 'true'
+                const esGlobal = normalizeEsGlobal(row[3])
+                const partidaCode = row[0]?.toString().trim()
+                const subpartidaCode = row[1].toString().trim()
+                const nombre = row[2].toString().trim()
                 const departamentoAplicable = row[4]?.toString().trim() || null
-                const activo = row[5]?.toString().toLowerCase() === 'true'
+                const activo = normalizeEstado(row[5])
+
+                let partidaId = null
+
+                if (!esGlobal) {
+                  // Regular subpartida - needs Partida reference
+                  const { data: partida } = await supabase
+                    .from('chart_of_accounts_partidas')
+                    .select('id')
+                    .eq('codigo', partidaCode)
+                    .single()
+
+                  if (!partida) {
+                    errors.push(`Error en Subpartida fila ${i + 1}: No se encontró Partida con código ${partidaCode}`)
+                    continue
+                  }
+                  partidaId = partida.id
+                } else {
+                  // Global subpartida - ensure department exists
+                  if (departamentoAplicable) {
+                    await supabase.rpc('ensure_department_exists', { dept_name: departamentoAplicable })
+                  }
+                }
 
                 const { error } = await supabase
                   .from('chart_of_accounts_subpartidas')
                   .insert({
-                    partida_id: partida.id,
-                    codigo: row[1].toString().trim(),
-                    nombre: row[2].toString().trim(),
+                    partida_id: partidaId,
+                    codigo: subpartidaCode,
+                    nombre: nombre,
                     es_global: esGlobal,
                     departamento_aplicable: departamentoAplicable,
                     activo: activo,
@@ -467,45 +742,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
             }
           }
         }
-      }
-
-      // Process Global Construction Subpartidas with department auto-creation
-      if (workbook.SheetNames.includes('Globales Construcción')) {
-        processedSheets.push('Globales Construcción')
-        const globalSheet = workbook.Sheets['Globales Construcción']
-        const globalJsonData = XLSX.utils.sheet_to_json(globalSheet, { header: 1 })
-
-        if (globalJsonData.length > 1) {
-          for (let i = 1; i < globalJsonData.length; i++) {
-            const row = globalJsonData[i] as any[]
-            if (row.length >= 3 && row[0] && row[1] && row[2]) {
-              try {
-                // Ensure department exists for global subpartidas
-                await supabase.rpc('ensure_department_exists', { dept_name: row[2].toString().trim() })
-
-                const { error } = await supabase
-                  .from('chart_of_accounts_subpartidas')
-                  .insert({
-                    partida_id: null,
-                    codigo: row[0].toString().trim(),
-                    nombre: row[1].toString().trim(),
-                    es_global: true,
-                    departamento_aplicable: row[2].toString().trim(),
-                    activo: row[3]?.toString().toLowerCase() === 'true',
-                    created_by: profile.id
-                  })
-
-                if (error) {
-                  errors.push(`Error en Subpartida Global fila ${i + 1}: ${error.message}`)
-                } else {
-                  subpartidasInserted++
-                }
-              } catch (error: any) {
-                errors.push(`Error en Subpartida Global fila ${i + 1}: ${error.message}`)
-              }
-            }
-          }
-        }
+        console.log(`✅ Subpartidas procesadas: ${subpartidasInserted} insertadas`)
       }
 
       const endTime = Date.now()
