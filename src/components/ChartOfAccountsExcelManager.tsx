@@ -80,7 +80,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
         ["CON-GLOBAL-003", "Equipo y Herramientas", "construccion", "true"]
       ]
       const globalSubpartidasWs = XLSX.utils.aoa_to_sheet(globalSubpartidasData)
-      XLSX.utils.book_append_sheet(wb, globalSubpartidasWs, "Subpartidas Globales Construcción")
+      XLSX.utils.book_append_sheet(wb, globalSubpartidasWs, "Globales Construcción")
 
       // Departamentos reference
       const departamentosData = [
@@ -187,7 +187,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
         ]) || [])
       ]
       const globalSubpartidasWs = XLSX.utils.aoa_to_sheet(globalSubpartidasData)
-      XLSX.utils.book_append_sheet(wb, globalSubpartidasWs, "Subpartidas Globales Construcción")
+      XLSX.utils.book_append_sheet(wb, globalSubpartidasWs, "Globales Construcción")
 
       // Departamentos reference
       const departamentosData = [
@@ -372,8 +372,8 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
       }
 
       // Process Global Construction Subpartidas sheet
-      if (workbook.SheetNames.includes('Subpartidas Globales Construcción')) {
-        const globalSheet = workbook.Sheets['Subpartidas Globales Construcción']
+      if (workbook.SheetNames.includes('Globales Construcción')) {
+        const globalSheet = workbook.Sheets['Globales Construcción']
         const globalJsonData = XLSX.utils.sheet_to_json(globalSheet, { header: 1 })
 
         if (globalJsonData.length > 1) {
