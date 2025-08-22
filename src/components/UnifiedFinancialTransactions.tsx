@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ import { ImportReportsDashboard } from "./ImportReportsDashboard";
 export function UnifiedFinancialTransactions() {
   const [activeTab, setActiveTab] = useState("transactions");
   const [showForm, setShowForm] = useState(false);
+  const tableRef = useRef<{ refreshData: () => void }>(null);
+  const chartRef = useRef<{ refreshData: () => void }>(null);
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -43,14 +45,19 @@ export function UnifiedFinancialTransactions() {
               </div>
             </CardHeader>
             <CardContent>
-              <UnifiedTransactionsTable />
+              <UnifiedTransactionsTable ref={tableRef} />
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="chart-accounts" className="space-y-6">
-          <ChartOfAccountsExcelManager />
-          <ChartOfAccountsManager />
+          <ChartOfAccountsExcelManager 
+            onImportComplete={() => {
+              chartRef.current?.refreshData();
+              tableRef.current?.refreshData(); // Also refresh transactions table in case departments changed
+            }} 
+          />
+          <ChartOfAccountsManager ref={chartRef} />
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">
@@ -61,7 +68,13 @@ export function UnifiedFinancialTransactions() {
       {showForm && (
         <UnifiedTransactionForm 
           open={showForm} 
-          onOpenChange={setShowForm}
+          onOpenChange={(open) => {
+            setShowForm(open);
+            if (!open) {
+              // Refresh table when form is closed (usually after successful submission)
+              tableRef.current?.refreshData();
+            }
+          }}
         />
       )}
     </div>

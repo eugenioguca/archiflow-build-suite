@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,7 @@ interface BulkDeleteResult {
   error?: string;
 }
 
-export function UnifiedTransactionsTable() {
+export const UnifiedTransactionsTable = forwardRef<{ refreshData: () => void }, {}>((props, ref) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -45,10 +45,16 @@ export function UnifiedTransactionsTable() {
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [selectedTransactions, setSelectedTransactions] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [departamentos, setDepartamentos] = useState<{value: string, label: string}[]>([]);
 
   useEffect(() => {
     loadTransactions();
+    loadDepartamentos();
   }, []);
+
+  useImperativeHandle(ref, () => ({
+    refreshData: loadTransactions,
+  }));
 
   const loadTransactions = async () => {
     setLoading(true);
@@ -74,6 +80,26 @@ export function UnifiedTransactionsTable() {
     }
   };
 
+  const loadDepartamentos = async () => {
+    try {
+      const { data } = await supabase
+        .from("chart_of_accounts_departamentos")
+        .select("departamento")
+        .eq("activo", true)
+        .order("departamento");
+      
+      if (data) {
+        const formattedDepartamentos = data.map(dept => ({
+          value: dept.departamento,
+          label: dept.departamento.charAt(0).toUpperCase() + dept.departamento.slice(1).replace(/_/g, ' ')
+        }));
+        setDepartamentos(formattedDepartamentos);
+      }
+    } catch (error) {
+      console.error("Error loading departamentos:", error);
+    }
+  };
+
   const filteredTransactions = transactions.filter((transaction) => {
     const matchesSearch = 
       transaction.referencia_unica.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -89,15 +115,7 @@ export function UnifiedTransactionsTable() {
     return matchesSearch && matchesDepartamento && matchesTipoMovimiento;
   });
 
-  const departamentos = [
-    { value: "ventas", label: "Ventas" },
-    { value: "diseño", label: "Diseño" },
-    { value: "construccion", label: "Construcción" },
-    { value: "finanzas", label: "Finanzas" },
-    { value: "contabilidad", label: "Contabilidad" },
-    { value: "recursos_humanos", label: "Recursos Humanos" },
-    { value: "direccion_general", label: "Dirección General" },
-  ];
+  // departamentos now loaded dynamically from state
 
   const handleDeleteModeToggle = () => {
     setIsDeleteMode(!isDeleteMode);
@@ -351,4 +369,6 @@ export function UnifiedTransactionsTable() {
       </div>
     </div>
   );
-}
+});
+
+UnifiedTransactionsTable.displayName = "UnifiedTransactionsTable";

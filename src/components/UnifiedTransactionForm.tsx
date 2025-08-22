@@ -52,6 +52,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
   const [partidas, setPartidas] = useState<Option[]>([]);
   const [subpartidas, setSubpartidas] = useState<Option[]>([]);
   const [clientesProveedores, setClientesProveedores] = useState<Option[]>([]);
+  const [departamentos, setDepartamentos] = useState<{value: string, label: string}[]>([]);
 
   const form = useForm<FormData>({
     defaultValues: {
@@ -74,6 +75,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
       loadSucursales();
       loadProyectos();
       loadClientesProveedores();
+      loadDepartamentos();
     }
   }, [open]);
 
@@ -259,6 +261,23 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
     setClientesProveedores(combined);
   };
 
+  const loadDepartamentos = async () => {
+    const { data } = await supabase
+      .from("chart_of_accounts_departamentos")
+      .select("departamento")
+      .eq("activo", true)
+      .order("departamento");
+    
+    if (data) {
+      const formattedDepartamentos = data.map(dept => ({
+        value: dept.departamento,
+        label: dept.departamento.charAt(0).toUpperCase() + dept.departamento.slice(1).replace(/_/g, ' ')
+      }));
+      console.log("Departamentos data:", formattedDepartamentos);
+      setDepartamentos(formattedDepartamentos);
+    }
+  };
+
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
@@ -318,15 +337,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
     }
   };
 
-  const departamentos = [
-    { value: "ventas", label: "Ventas" },
-    { value: "diseño", label: "Diseño" },
-    { value: "construccion", label: "Construcción" },
-    { value: "finanzas", label: "Finanzas" },
-    { value: "contabilidad", label: "Contabilidad" },
-    { value: "recursos_humanos", label: "Recursos Humanos" },
-    { value: "direccion_general", label: "Dirección General" },
-  ];
+  // departamentos now loaded dynamically from state
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
