@@ -115,20 +115,25 @@ export default function ExcelPreImportValidator() {
     data.forEach((row, index) => {
       const rowNum = index + 2; // Excel rows start at 1, plus header
       
-      // Verificar campos requeridos
-      if (!row.departamento || typeof row.departamento !== 'string') {
+      // Debug logging for problematic rows
+      console.log(`Debug - Row ${rowNum}:`, row);
+      
+      // Verificar campos requeridos with more robust validation
+      const departamentoValue = row.departamento;
+      if (!departamentoValue || String(departamentoValue).trim() === '') {
         errors.push({
           sheet: 'Departamentos',
           row: rowNum,
           column: 'departamento',
           type: 'error',
           code: 'MISSING_DEPARTMENT',
-          message: 'Nombre de departamento requerido',
-          suggestion: 'Agregar un nombre válido para el departamento'
+          message: `Nombre de departamento requerido (valor actual: "${departamentoValue}")`,
+          suggestion: 'Agregar un nombre válido para el departamento',
+          data: row
         });
       } else {
-        // Verificar duplicados por nombre
-        const normalizedName = row.departamento.toLowerCase().trim();
+        // Convert to string and normalize
+        const normalizedName = String(departamentoValue).toLowerCase().trim();
         if (seenNames.has(normalizedName)) {
           errors.push({
             sheet: 'Departamentos',
@@ -136,7 +141,7 @@ export default function ExcelPreImportValidator() {
             column: 'departamento',
             type: 'error',
             code: 'DUPLICATE_DEPARTMENT',
-            message: `Departamento duplicado: "${row.departamento}"`,
+            message: `Departamento duplicado: "${departamentoValue}"`,
             suggestion: 'Eliminar o renombrar el departamento duplicado'
           });
         } else {
@@ -145,16 +150,19 @@ export default function ExcelPreImportValidator() {
       }
 
       // Verificar formato activo
-      if (row.activo !== undefined && typeof row.activo !== 'boolean') {
-        errors.push({
-          sheet: 'Departamentos',
-          row: rowNum,
-          column: 'activo',
-          type: 'warning',
-          code: 'INVALID_BOOLEAN',
-          message: 'El campo "activo" debe ser TRUE/FALSE',
-          suggestion: 'Cambiar a TRUE o FALSE, o dejar vacío para usar TRUE por defecto'
-        });
+      if (row.activo !== undefined) {
+        const activoValue = String(row.activo).toLowerCase();
+        if (!['true', 'false', '1', '0', 'activo', 'inactivo'].includes(activoValue)) {
+          errors.push({
+            sheet: 'Departamentos',
+            row: rowNum,
+            column: 'activo',
+            type: 'warning',
+            code: 'INVALID_BOOLEAN',
+            message: `El campo "activo" debe ser TRUE/FALSE (valor actual: "${row.activo}")`,
+            suggestion: 'Cambiar a TRUE, FALSE, ACTIVO, INACTIVO, 1, 0, o dejar vacío para usar ACTIVO por defecto'
+          });
+        }
       }
     });
 
@@ -387,6 +395,23 @@ export default function ExcelPreImportValidator() {
     return errors;
   }, []);
 
+  // Helper function to normalize Excel data headers to lowercase
+  const normalizeHeaders = (data: any[]): any[] => {
+    return data.map(row => {
+      const normalizedRow: any = {};
+      Object.keys(row).forEach(key => {
+        const normalizedKey = key.toLowerCase().trim();
+        normalizedRow[normalizedKey] = row[key];
+      });
+      return normalizedRow;
+    }).filter(row => {
+      // Filter out completely empty rows
+      return Object.values(row).some(value => 
+        value !== null && value !== undefined && String(value).trim() !== ''
+      );
+    });
+  };
+
   const processExcelFile = useCallback(async (file: File) => {
     setIsValidating(true);
     setFileName(file.name);
@@ -425,10 +450,22 @@ export default function ExcelPreImportValidator() {
       const partidasSheet = workbook.Sheets['Partidas'];
       const subpartidasSheet = workbook.Sheets['Subpartidas'];
 
-      const departamentos = departamentosSheet ? XLSX.utils.sheet_to_json(departamentosSheet) : [];
-      const mayores = mayoresSheet ? XLSX.utils.sheet_to_json(mayoresSheet) : [];
-      const partidas = partidasSheet ? XLSX.utils.sheet_to_json(partidasSheet) : [];
-      const subpartidas = subpartidasSheet ? XLSX.utils.sheet_to_json(subpartidasSheet) : [];
+      // Parse and normalize headers to lowercase
+      const rawDepartamentos = departamentosSheet ? XLSX.utils.sheet_to_json(departamentosSheet) : [];
+      const rawMayores = mayoresSheet ? XLSX.utils.sheet_to_json(mayoresSheet) : [];
+      const rawPartidas = partidasSheet ? XLSX.utils.sheet_to_json(partidasSheet) : [];
+      const rawSubpartidas = subpartidasSheet ? XLSX.utils.sheet_to_json(subpartidasSheet) : [];
+
+      // Normalize headers and filter empty rows
+      const departamentos = normalizeHeaders(rawDepartamentos);
+      const mayores = normalizeHeaders(rawMayores);
+      const partidas = normalizeHeaders(rawPartidas);
+      const subpartidas = normalizeHeaders(rawSubpartidas);
+
+      // Debug logging
+      console.log('Debug - Excel Parser Results:');
+      console.log('Departamentos sample:', departamentos.slice(0, 2));
+      console.log('Departamentos headers:', departamentos.length > 0 ? Object.keys(departamentos[0]) : 'No data');
 
       // Validar contenido de cada hoja
       const departamentosErrors = validateDepartamentos(departamentos);

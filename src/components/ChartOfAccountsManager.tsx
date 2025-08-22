@@ -317,11 +317,12 @@ export const ChartOfAccountsManager = forwardRef<{ refreshData: () => void }, {}
 
       if (error) throw error;
 
-      if (data?.success) {
-        toast.success(data.message || `Se eliminaron ${data.deleted_count} ${showMassDeleteDialog.type} exitosamente.`);
+      const result = data as { success?: boolean; message?: string; deleted_count?: number; error?: string };
+      if (result?.success) {
+        toast.success(result.message || `Se eliminaron ${result.deleted_count} ${showMassDeleteDialog.type} exitosamente.`);
         await loadData(); // Reload all data
       } else {
-        throw new Error(data?.error || 'Error desconocido durante la eliminación');
+        throw new Error(result?.error || 'Error desconocido durante la eliminación');
       }
       
     } catch (error: any) {
