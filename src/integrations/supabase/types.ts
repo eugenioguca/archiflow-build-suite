@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -6768,57 +6768,57 @@ export type Database = {
       get_financial_summary_by_client: {
         Args: { client_filter?: string }
         Returns: {
+          active_projects: number
           client_id: string
           client_name: string
-          total_projects: number
-          total_income: number
-          total_expenses: number
           net_profit: number
           profit_margin: number
-          active_projects: number
+          total_expenses: number
+          total_income: number
+          total_projects: number
         }[]
       }
       get_financial_summary_by_client_project: {
         Args: Record<PropertyKey, never>
         Returns: {
-          project_id: string
           client_id: string
-          project_name: string
           client_name: string
-          total_income: number
-          total_expenses: number
+          construction_budget: number
+          estimated_budget: number
           net_profit: number
           profit_margin: number
+          project_id: string
+          project_name: string
           project_status: string
           sales_pipeline_stage: string
-          estimated_budget: number
-          construction_budget: number
+          total_expenses: number
+          total_income: number
         }[]
       }
       get_migration_statistics: {
         Args: Record<PropertyKey, never>
         Returns: {
-          metric: string
           count: number
           details: string
+          metric: string
         }[]
       }
       get_profitability_analysis: {
         Args: {
           analysis_type?: string
-          period_start?: string
-          period_end?: string
           limit_results?: number
+          period_end?: string
+          period_start?: string
         }
         Returns: {
+          additional_data: Json
+          costs: number
+          gross_margin: number
+          gross_profit: number
           id: string
           name: string
           revenue: number
-          costs: number
-          gross_profit: number
-          gross_margin: number
           transaction_count: number
-          additional_data: Json
         }[]
       }
       get_project_cumulative_documents: {
@@ -6826,59 +6826,59 @@ export type Database = {
           | { project_id_param: string }
           | { project_id_param: string; user_department?: string }
         Returns: {
+          created_at: string
+          department: string
+          description: string
+          file_path: string
+          file_size: number
+          file_type: string
           id: string
           name: string
-          file_path: string
-          department: string
           uploaded_by: string
-          created_at: string
-          file_type: string
-          file_size: number
-          description: string
           uploader_name: string
         }[]
       }
       get_project_team_members: {
         Args: { project_id_param: string }
         Returns: {
-          user_id: string
-          profile_id: string
-          full_name: string
-          email: string
-          user_role: string
-          user_position: string
           department: string
+          email: string
+          full_name: string
+          profile_id: string
+          user_id: string
+          user_position: string
+          user_role: string
         }[]
       }
       get_unified_project_documents: {
         Args: { project_id_param: string }
         Returns: {
-          id: string
-          project_id: string
+          category_name: string
           client_id: string
+          created_at: string
+          department: string
+          description: string
+          document_type: string
           file_name: string
           file_path: string
-          file_type: string
           file_size: number
-          department: string
-          document_type: string
-          description: string
+          file_type: string
+          id: string
+          phase_name: string
+          project_id: string
           uploaded_by: string
           uploader_name: string
-          created_at: string
-          category_name: string
-          phase_name: string
         }[]
       }
       get_upcoming_alerts: {
         Args: { user_uuid: string }
         Returns: {
-          event_id: string
-          event_title: string
-          event_start_date: string
           alert_id: string
           alert_type: string
           alert_value: number
+          event_id: string
+          event_start_date: string
+          event_title: string
           sound_enabled: boolean
           sound_type: string
         }[]
@@ -6886,17 +6886,17 @@ export type Database = {
       get_upcoming_client_project_alerts: {
         Args: { user_uuid: string }
         Returns: {
-          event_id: string
-          event_title: string
-          event_start_date: string
           alert_id: string
           alert_type: string
           alert_value: number
-          sound_enabled: boolean
-          sound_type: string
+          client_name: string
+          event_id: string
+          event_start_date: string
+          event_title: string
           project_id: string
           project_name: string
-          client_name: string
+          sound_enabled: boolean
+          sound_type: string
         }[]
       }
       get_user_branch_offices: {
@@ -6910,35 +6910,35 @@ export type Database = {
       get_users_by_department: {
         Args: { department_param: string }
         Returns: {
-          user_id: string
-          profile_id: string
-          full_name: string
-          email: string
-          user_role: string
-          user_position: string
           department: string
+          email: string
+          full_name: string
+          profile_id: string
+          user_id: string
+          user_position: string
+          user_role: string
         }[]
       }
       get_users_by_position: {
         Args: { position_param: string }
         Returns: {
-          user_id: string
-          profile_id: string
-          full_name: string
-          email: string
-          user_role: string
-          user_position: string
           department: string
+          email: string
+          full_name: string
+          profile_id: string
+          user_id: string
+          user_position: string
+          user_role: string
         }[]
       }
       has_module_permission: {
         Args:
           | {
-              _user_id: string
               _module: Database["public"]["Enums"]["module_name"]
               _permission: string
+              _user_id: string
             }
-          | { _user_id: string; _module: string }
+          | { _module: string; _user_id: string }
         Returns: boolean
       }
       insert_default_budget_items: {
@@ -6950,11 +6950,11 @@ export type Database = {
         Returns: boolean
       }
       log_security_event: {
-        Args: { p_event_type: string; p_event_data?: Json; p_user_id?: string }
+        Args: { p_event_data?: Json; p_event_type: string; p_user_id?: string }
         Returns: undefined
       }
       mask_sensitive_data: {
-        Args: { data_value: string; data_type?: string }
+        Args: { data_type?: string; data_value: string }
         Returns: string
       }
       migrate_design_budget_to_construction: {
@@ -6966,16 +6966,16 @@ export type Database = {
         Returns: undefined
       }
       safe_delete_chart_account: {
-        Args: { table_name: string; record_id: string }
+        Args: { record_id: string; table_name: string }
         Returns: Json
       }
       test_chat_access: {
         Args: { test_project_id: string }
         Returns: {
-          user_role: string
-          profile_id: string
-          can_view_chat: boolean
           can_send_message: boolean
+          can_view_chat: boolean
+          profile_id: string
+          user_role: string
         }[]
       }
       update_design_phase_days_elapsed: {
@@ -6983,13 +6983,13 @@ export type Database = {
         Returns: undefined
       }
       update_user_approval_secure: {
-        Args: { _user_id: string; _approval_status: string }
+        Args: { _approval_status: string; _user_id: string }
         Returns: undefined
       }
       update_user_role_secure: {
         Args: {
-          _user_id: string
           _new_role: Database["public"]["Enums"]["user_role"]
+          _user_id: string
         }
         Returns: undefined
       }
@@ -6998,7 +6998,7 @@ export type Database = {
         Returns: boolean
       }
       validate_bulk_delete_permissions: {
-        Args: { table_name: string; record_ids: string[] }
+        Args: { record_ids: string[]; table_name: string }
         Returns: boolean
       }
     }
