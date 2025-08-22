@@ -64,13 +64,23 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
 
       // Subpartidas template
       const subpartidasData = [
-        ["Código Partida", "Código", "Nombre", "Activo"],
-        ["VEN001-001", "VEN001-001-001", "Ejemplo Subpartida Ventas", "true"],
-        ["DIS001-001", "DIS001-001-001", "Ejemplo Subpartida Diseño", "true"],
-        ["CON001-001", "CON001-001-001", "Ejemplo Subpartida Construcción", "true"]
+        ["Código Partida", "Código", "Nombre", "Es Global", "Departamento Aplicable", "Activo"],
+        ["VEN001-001", "VEN001-001-001", "Ejemplo Subpartida Ventas", "false", "", "true"],
+        ["DIS001-001", "DIS001-001-001", "Ejemplo Subpartida Diseño", "false", "", "true"],
+        ["CON001-001", "CON001-001-001", "Ejemplo Subpartida Construcción", "false", "", "true"]
       ]
       const subpartidasWs = XLSX.utils.aoa_to_sheet(subpartidasData)
       XLSX.utils.book_append_sheet(wb, subpartidasWs, "Subpartidas")
+
+      // Global Construction Subpartidas template
+      const globalSubpartidasData = [
+        ["Código", "Nombre", "Departamento Aplicable", "Activo"],
+        ["CON-GLOBAL-001", "Material de Construcción", "construccion", "true"],
+        ["CON-GLOBAL-002", "Mano de Obra", "construccion", "true"],
+        ["CON-GLOBAL-003", "Equipo y Herramientas", "construccion", "true"]
+      ]
+      const globalSubpartidasWs = XLSX.utils.aoa_to_sheet(globalSubpartidasData)
+      XLSX.utils.book_append_sheet(wb, globalSubpartidasWs, "Subpartidas Globales Construcción")
 
       // Departamentos reference
       const departamentosData = [
@@ -147,16 +157,37 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
 
       // Subpartidas with data
       const subpartidasData = [
-        ["Código Partida", "Código", "Nombre", "Activo"],
+        ["Código Partida", "Código", "Nombre", "Es Global", "Departamento Aplicable", "Activo"],
         ...(subpartidas?.map(subpartida => [
           subpartida.chart_of_accounts_partidas?.codigo || "",
           subpartida.codigo,
           subpartida.nombre,
+          (subpartida as any).es_global?.toString() || "false",
+          (subpartida as any).departamento_aplicable || "",
           subpartida.activo.toString()
         ]) || [])
       ]
       const subpartidasWs = XLSX.utils.aoa_to_sheet(subpartidasData)
       XLSX.utils.book_append_sheet(wb, subpartidasWs, "Subpartidas")
+
+      // Global subpartidas with data
+      const { data: globalSubpartidas } = await supabase
+        .from('chart_of_accounts_subpartidas')
+        .select('*')
+        .eq('es_global', true)
+        .order('codigo')
+
+      const globalSubpartidasData = [
+        ["Código", "Nombre", "Departamento Aplicable", "Activo"],
+        ...(globalSubpartidas?.map(subpartida => [
+          subpartida.codigo,
+          subpartida.nombre,
+          subpartida.departamento_aplicable || "",
+          subpartida.activo.toString()
+        ]) || [])
+      ]
+      const globalSubpartidasWs = XLSX.utils.aoa_to_sheet(globalSubpartidasData)
+      XLSX.utils.book_append_sheet(wb, globalSubpartidasWs, "Subpartidas Globales Construcción")
 
       // Departamentos reference
       const departamentosData = [
@@ -311,13 +342,19 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
                   continue
                 }
 
+                const esGlobal = row[3]?.toString().toLowerCase() === 'true'
+                const departamentoAplicable = row[4]?.toString().trim() || null
+                const activo = row[5]?.toString().toLowerCase() === 'true'
+
                 const { error } = await supabase
                   .from('chart_of_accounts_subpartidas')
                   .insert({
                     partida_id: partida.id,
                     codigo: row[1].toString().trim(),
                     nombre: row[2].toString().trim(),
-                    activo: row[3]?.toString().toLowerCase() === 'true',
+                    es_global: esGlobal,
+                    departamento_aplicable: departamentoAplicable,
+                    activo: activo,
                     created_by: profile.id
                   })
 
@@ -328,6 +365,41 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
                 }
               } catch (error: any) {
                 errors.push(`Error en Subpartida fila ${i + 1}: ${error.message}`)
+              }
+            }
+          }
+        }
+      }
+
+      // Process Global Construction Subpartidas sheet
+      if (workbook.SheetNames.includes('Subpartidas Globales Construcción')) {
+        const globalSheet = workbook.Sheets['Subpartidas Globales Construcción']
+        const globalJsonData = XLSX.utils.sheet_to_json(globalSheet, { header: 1 })
+
+        if (globalJsonData.length > 1) {
+          for (let i = 1; i < globalJsonData.length; i++) {
+            const row = globalJsonData[i] as any[]
+            if (row.length >= 3 && row[0] && row[1] && row[2]) {
+              try {
+                const { error } = await supabase
+                  .from('chart_of_accounts_subpartidas')
+                  .insert({
+                    partida_id: null, // Global subpartidas don't belong to a specific partida
+                    codigo: row[0].toString().trim(),
+                    nombre: row[1].toString().trim(),
+                    es_global: true,
+                    departamento_aplicable: row[2].toString().trim(),
+                    activo: row[3]?.toString().toLowerCase() === 'true',
+                    created_by: profile.id
+                  })
+
+                if (error) {
+                  errors.push(`Error en Subpartida Global fila ${i + 1}: ${error.message}`)
+                } else {
+                  subpartidasInserted++
+                }
+              } catch (error: any) {
+                errors.push(`Error en Subpartida Global fila ${i + 1}: ${error.message}`)
               }
             }
           }

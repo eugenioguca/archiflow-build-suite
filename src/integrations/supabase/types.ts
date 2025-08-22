@@ -633,9 +633,11 @@ export type Database = {
           codigo: string
           created_at: string
           created_by: string
+          departamento_aplicable: string | null
+          es_global: boolean
           id: string
           nombre: string
-          partida_id: string
+          partida_id: string | null
           updated_at: string
         }
         Insert: {
@@ -643,9 +645,11 @@ export type Database = {
           codigo: string
           created_at?: string
           created_by: string
+          departamento_aplicable?: string | null
+          es_global?: boolean
           id?: string
           nombre: string
-          partida_id: string
+          partida_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -653,9 +657,11 @@ export type Database = {
           codigo?: string
           created_at?: string
           created_by?: string
+          departamento_aplicable?: string | null
+          es_global?: boolean
           id?: string
           nombre?: string
-          partida_id?: string
+          partida_id?: string | null
           updated_at?: string
         }
         Relationships: [

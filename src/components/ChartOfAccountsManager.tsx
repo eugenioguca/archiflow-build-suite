@@ -35,10 +35,12 @@ interface Partida {
 
 interface Subpartida {
   id: string;
-  partida_id: string;
+  partida_id: string | null;
   codigo: string;
   nombre: string;
   activo: boolean;
+  es_global?: boolean;
+  departamento_aplicable?: string;
   chart_of_accounts_partidas?: { codigo: string; nombre: string };
 }
 
@@ -130,7 +132,7 @@ export function ChartOfAccountsManager() {
     const { data } = await supabase
       .from("chart_of_accounts_subpartidas")
       .select("*, chart_of_accounts_partidas(codigo, nombre)")
-      .order("codigo");
+      .order("es_global desc, codigo");
     
     if (data) setSubpartidas(data);
   };
@@ -1031,9 +1033,17 @@ export function ChartOfAccountsManager() {
                     <TableRow key={subpartida.id}>
                       <TableCell className="font-mono">{subpartida.codigo}</TableCell>
                       <TableCell>{subpartida.nombre}</TableCell>
-                      <TableCell>
-                        {subpartida.chart_of_accounts_partidas?.codigo} - {subpartida.chart_of_accounts_partidas?.nombre}
-                      </TableCell>
+                       <TableCell>
+                         {subpartida.es_global ? (
+                           <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                             Global - {subpartida.departamento_aplicable}
+                           </Badge>
+                         ) : (
+                           <>
+                             {subpartida.chart_of_accounts_partidas?.codigo} - {subpartida.chart_of_accounts_partidas?.nombre}
+                           </>
+                         )}
+                       </TableCell>
                       <TableCell>
                         <Badge variant={subpartida.activo ? "default" : "secondary"}>
                           {subpartida.activo ? "Activo" : "Inactivo"}

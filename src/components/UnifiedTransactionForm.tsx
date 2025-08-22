@@ -175,22 +175,51 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
   };
 
   const loadSubpartidas = async (partidaId: string) => {
-    const { data } = await supabase
+    // Get the partida to check its department
+    const { data: partida } = await supabase
+      .from("chart_of_accounts_partidas")
+      .select("*, chart_of_accounts_mayor(departamento)")
+      .eq("id", partidaId)
+      .single();
+
+    // Load specific subpartidas for this partida
+    const { data: specificSubpartidas } = await supabase
       .from("chart_of_accounts_subpartidas")
       .select("id, nombre, codigo")
       .eq("partida_id", partidaId)
       .eq("activo", true)
       .order("codigo");
-    
-    if (data) {
-      const filteredData = data.filter(item => item.id && item.id.trim() !== '');
-      console.log("Subpartidas data:", filteredData);
-      setSubpartidas(filteredData.map(item => ({ 
-        id: item.id, 
-        nombre: `${item.codigo} - ${item.nombre}`,
-        codigo: item.codigo 
-      })));
+
+    let allSubpartidas = [...(specificSubpartidas || [])];
+
+    // If this is a construction partida, also load global construction subpartidas
+    if (partida?.chart_of_accounts_mayor?.departamento === 'construccion') {
+      const { data: globalSubpartidas } = await supabase
+        .from("chart_of_accounts_subpartidas")
+        .select("id, nombre, codigo")
+        .eq("es_global", true)
+        .eq("departamento_aplicable", "construccion")
+        .eq("activo", true)
+        .order("codigo");
+
+      if (globalSubpartidas) {
+        allSubpartidas = [
+          ...allSubpartidas,
+          ...globalSubpartidas.map(item => ({
+            ...item,
+            nombre: `${item.nombre} (Global)` // Mark as global for clarity
+          }))
+        ];
+      }
     }
+    
+    const filteredData = allSubpartidas.filter(item => item.id && item.id.trim() !== '');
+    console.log("Subpartidas data:", filteredData);
+    setSubpartidas(filteredData.map(item => ({ 
+      id: item.id, 
+      nombre: `${item.codigo} - ${item.nombre}`,
+      codigo: item.codigo 
+    })));
   };
 
   const loadClientesProveedores = async () => {
