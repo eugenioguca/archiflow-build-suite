@@ -158,9 +158,10 @@ export const ChartOfAccountsManager = forwardRef<{ refreshData: () => void }, {}
       .from("chart_of_accounts_subpartidas")
       .select(`
         *,
-        chart_of_accounts_partidas(codigo, nombre)
+        chart_of_accounts_partidas!left(codigo, nombre)
       `)
-      .order("es_global desc, codigo");
+      .order("es_global", { ascending: false })
+      .order("codigo");
     
     if (data) setSubpartidas(data);
   };
