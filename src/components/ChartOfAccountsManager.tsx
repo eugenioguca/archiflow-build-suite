@@ -156,7 +156,11 @@ export const ChartOfAccountsManager = forwardRef<{ refreshData: () => void }, {}
   const loadSubpartidas = async () => {
     const { data } = await supabase
       .from("chart_of_accounts_subpartidas")
-      .select("*, chart_of_accounts_partidas(codigo, nombre)")
+      .select(`
+        *,
+        chart_of_accounts_partidas(codigo, nombre),
+        chart_of_accounts_departamentos!chart_of_accounts_subpartidas_departamento_aplicable_fkey(departamento)
+      `)
       .order("es_global desc, codigo");
     
     if (data) setSubpartidas(data);
