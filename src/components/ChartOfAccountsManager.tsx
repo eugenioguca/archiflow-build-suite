@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { useForm } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Check, AlertTriangle, Database } from "lucide-react";
 import { ChartOfAccountsExcelManager } from "./ChartOfAccountsExcelManager";
 
 interface Mayor {
@@ -48,6 +48,7 @@ interface Departamento {
   id: string;
   departamento: string;
   activo: boolean;
+  partidas_count?: number;
 }
 
 interface DeleteResult {
@@ -76,6 +77,14 @@ export const ChartOfAccountsManager = forwardRef<{ refreshData: () => void }, {}
   const [editingPartida, setEditingPartida] = useState<Partida | null>(null);
   const [editingSubpartida, setEditingSubpartida] = useState<Subpartida | null>(null);
 
+  // Mass deletion states
+  const [showMassDeleteDialog, setShowMassDeleteDialog] = useState<{
+    show: boolean;
+    type: 'departamentos' | 'mayores' | 'partidas' | 'subpartidas' | null;
+    count: number;
+  }>({ show: false, type: null, count: 0 });
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Dynamic departments loaded from database
   const departamentosOptions = departamentos.map(dept => ({
     value: dept.departamento,
@@ -102,12 +111,28 @@ export const ChartOfAccountsManager = forwardRef<{ refreshData: () => void }, {}
   };
 
   const loadDepartamentos = async () => {
+    // Get departamentos with partidas count for visual indicators
     const { data } = await supabase
       .from("chart_of_accounts_departamentos")
       .select("*")
       .order("departamento");
     
-    if (data) setDepartamentos(data);
+    if (data) {
+      // Get count of mayores for each departamento to show visual indicators
+      const departamentosWithCounts = await Promise.all(data.map(async (dept) => {
+        const { count } = await supabase
+          .from("chart_of_accounts_mayor")
+          .select("*", { count: 'exact' })
+          .eq("departamento", dept.departamento);
+        
+        return {
+          ...dept,
+          partidas_count: count || 0
+        };
+      }));
+      
+      setDepartamentos(departamentosWithCounts);
+    }
   };
 
   const loadMayores = async () => {
@@ -223,6 +248,74 @@ export const ChartOfAccountsManager = forwardRef<{ refreshData: () => void }, {}
     } catch (error: any) {
       console.error('Error deleting subpartida:', error);
       toast.error("Error al eliminar subpartida: " + error.message);
+    }
+  };
+
+  // Mass deletion functions
+  const handleMassDelete = (type: 'departamentos' | 'mayores' | 'partidas' | 'subpartidas') => {
+    let count = 0;
+    switch (type) {
+      case 'departamentos':
+        count = departamentos.length;
+        break;
+      case 'mayores':
+        count = mayores.length;
+        break;
+      case 'partidas':
+        count = partidas.length;
+        break;
+      case 'subpartidas':
+        count = subpartidas.length;
+        break;
+    }
+    
+    setShowMassDeleteDialog({ show: true, type, count });
+  };
+
+  const confirmMassDelete = async () => {
+    if (!showMassDeleteDialog.type) return;
+    
+    setIsDeleting(true);
+    try {
+      // Direct table deletion based on type
+      let deletePromise;
+      let ids: string[] = [];
+      
+      switch (showMassDeleteDialog.type) {
+        case 'departamentos':
+          ids = departamentos.map(d => d.id);
+          deletePromise = supabase.from('chart_of_accounts_departamentos').delete().in('id', ids);
+          break;
+        case 'mayores':
+          ids = mayores.map(m => m.id);
+          deletePromise = supabase.from('chart_of_accounts_mayor').delete().in('id', ids);
+          break;
+        case 'partidas':
+          ids = partidas.map(p => p.id);
+          deletePromise = supabase.from('chart_of_accounts_partidas').delete().in('id', ids);
+          break;
+        case 'subpartidas':
+          ids = subpartidas.map(s => s.id);
+          deletePromise = supabase.from('chart_of_accounts_subpartidas').delete().in('id', ids);
+          break;
+        default:
+          throw new Error('Tipo de eliminación no válido');
+      }
+
+      const { error } = await deletePromise;
+      if (error) throw error;
+
+      toast.success(`Se eliminaron ${ids.length} registros de ${showMassDeleteDialog.type}`);
+      
+      // Reload data
+      await loadData();
+      
+    } catch (error: any) {
+      console.error('Error in mass delete:', error);
+      toast.error("Error al eliminar registros: " + error.message);
+    } finally {
+      setIsDeleting(false);
+      setShowMassDeleteDialog({ show: false, type: null, count: 0 });
     }
   };
 
@@ -729,26 +822,44 @@ export const ChartOfAccountsManager = forwardRef<{ refreshData: () => void }, {}
         <TabsContent value="departamentos" className="space-y-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Catálogo de Departamentos</CardTitle>
-              <Dialog open={departamentoDialog || !!editingDepartamento} onOpenChange={(open) => {
-                if (!open) {
-                  setDepartamentoDialog(false);
-                  setEditingDepartamento(null);
-                }
-              }}>
-                <DialogTrigger asChild>
-                  <Button onClick={() => setDepartamentoDialog(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nuevo Departamento
+              <div className="flex items-center gap-4">
+                <CardTitle>Catálogo de Departamentos</CardTitle>
+                <Badge variant="outline" className="text-sm">
+                  {departamentos.length} registros
+                </Badge>
+              </div>
+              <div className="flex gap-2">
+                <Dialog open={departamentoDialog || !!editingDepartamento} onOpenChange={(open) => {
+                  if (!open) {
+                    setDepartamentoDialog(false);
+                    setEditingDepartamento(null);
+                  }
+                }}>
+                  <DialogTrigger asChild>
+                    <Button onClick={() => setDepartamentoDialog(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nuevo Departamento
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>{editingDepartamento ? 'Editar Departamento' : 'Crear Nuevo Departamento'}</DialogTitle>
+                    </DialogHeader>
+                    <DepartamentoForm departamento={editingDepartamento || undefined} />
+                  </DialogContent>
+                </Dialog>
+                
+                {departamentos.length > 0 && (
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => handleMassDelete('departamentos')}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    <Database className="h-4 w-4 mr-2" />
+                    Borrar Todo ({departamentos.length})
                   </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{editingDepartamento ? 'Editar Departamento' : 'Crear Nuevo Departamento'}</DialogTitle>
-                  </DialogHeader>
-                  <DepartamentoForm departamento={editingDepartamento || undefined} />
-                </DialogContent>
-              </Dialog>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
@@ -756,17 +867,32 @@ export const ChartOfAccountsManager = forwardRef<{ refreshData: () => void }, {}
                   <TableRow>
                     <TableHead>Departamento</TableHead>
                     <TableHead>Estado</TableHead>
+                    <TableHead>Partidas</TableHead>
                     <TableHead className="w-[100px]">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {departamentos.map((departamento) => (
                     <TableRow key={departamento.id}>
-                      <TableCell>{departamento.departamento}</TableCell>
+                      <TableCell className="font-medium">{departamento.departamento}</TableCell>
                       <TableCell>
                         <Badge variant={departamento.activo ? "default" : "secondary"}>
                           {departamento.activo ? "Activo" : "Inactivo"}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {departamento.partidas_count && departamento.partidas_count > 0 ? (
+                            <>
+                              <Check className="h-4 w-4 text-green-600" />
+                              <span className="text-sm text-muted-foreground">
+                                {departamento.partidas_count} partida{departamento.partidas_count !== 1 ? 's' : ''}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">Sin partidas</span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
@@ -814,26 +940,44 @@ export const ChartOfAccountsManager = forwardRef<{ refreshData: () => void }, {}
         <TabsContent value="mayores" className="space-y-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Catálogo de Mayores</CardTitle>
-              <Dialog open={mayorDialog || !!editingMayor} onOpenChange={(open) => {
-                if (!open) {
-                  setMayorDialog(false);
-                  setEditingMayor(null);
-                }
-              }}>
-                <DialogTrigger asChild>
-                  <Button onClick={() => setMayorDialog(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nuevo Mayor
+              <div className="flex items-center gap-4">
+                <CardTitle>Catálogo de Mayores</CardTitle>
+                <Badge variant="outline" className="text-sm">
+                  {mayores.length} registros
+                </Badge>
+              </div>
+              <div className="flex gap-2">
+                <Dialog open={mayorDialog || !!editingMayor} onOpenChange={(open) => {
+                  if (!open) {
+                    setMayorDialog(false);
+                    setEditingMayor(null);
+                  }
+                }}>
+                  <DialogTrigger asChild>
+                    <Button onClick={() => setMayorDialog(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nuevo Mayor
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>{editingMayor ? 'Editar Mayor' : 'Crear Nuevo Mayor'}</DialogTitle>
+                    </DialogHeader>
+                    <MayorForm mayor={editingMayor || undefined} />
+                  </DialogContent>
+                </Dialog>
+                
+                {mayores.length > 0 && (
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => handleMassDelete('mayores')}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    <Database className="h-4 w-4 mr-2" />
+                    Borrar Todo ({mayores.length})
                   </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{editingMayor ? 'Editar Mayor' : 'Crear Nuevo Mayor'}</DialogTitle>
-                  </DialogHeader>
-                  <MayorForm mayor={editingMayor || undefined} />
-                </DialogContent>
-              </Dialog>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
@@ -851,9 +995,7 @@ export const ChartOfAccountsManager = forwardRef<{ refreshData: () => void }, {}
                     <TableRow key={mayor.id}>
                       <TableCell className="font-mono">{mayor.codigo}</TableCell>
                       <TableCell>{mayor.nombre}</TableCell>
-                      <TableCell className="capitalize">
-                        {mayor.departamento.replace("_", " ")}
-                      </TableCell>
+                      <TableCell className="capitalize">{mayor.departamento.replace("_", " ")}</TableCell>
                       <TableCell>
                         <Badge variant={mayor.activo ? "default" : "secondary"}>
                           {mayor.activo ? "Activo" : "Inactivo"}
@@ -905,26 +1047,44 @@ export const ChartOfAccountsManager = forwardRef<{ refreshData: () => void }, {}
         <TabsContent value="partidas" className="space-y-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Catálogo de Partidas</CardTitle>
-              <Dialog open={partidaDialog || !!editingPartida} onOpenChange={(open) => {
-                if (!open) {
-                  setPartidaDialog(false);
-                  setEditingPartida(null);
-                }
-              }}>
-                <DialogTrigger asChild>
-                  <Button onClick={() => setPartidaDialog(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nueva Partida
+              <div className="flex items-center gap-4">
+                <CardTitle>Catálogo de Partidas</CardTitle>
+                <Badge variant="outline" className="text-sm">
+                  {partidas.length} registros
+                </Badge>
+              </div>
+              <div className="flex gap-2">
+                <Dialog open={partidaDialog || !!editingPartida} onOpenChange={(open) => {
+                  if (!open) {
+                    setPartidaDialog(false);
+                    setEditingPartida(null);
+                  }
+                }}>
+                  <DialogTrigger asChild>
+                    <Button onClick={() => setPartidaDialog(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nueva Partida
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>{editingPartida ? 'Editar Partida' : 'Crear Nueva Partida'}</DialogTitle>
+                    </DialogHeader>
+                    <PartidaForm partida={editingPartida || undefined} />
+                  </DialogContent>
+                </Dialog>
+                
+                {partidas.length > 0 && (
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => handleMassDelete('partidas')}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    <Database className="h-4 w-4 mr-2" />
+                    Borrar Todo ({partidas.length})
                   </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{editingPartida ? 'Editar Partida' : 'Crear Nueva Partida'}</DialogTitle>
-                  </DialogHeader>
-                  <PartidaForm partida={editingPartida || undefined} />
-                </DialogContent>
-              </Dialog>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
@@ -996,26 +1156,44 @@ export const ChartOfAccountsManager = forwardRef<{ refreshData: () => void }, {}
         <TabsContent value="subpartidas" className="space-y-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Catálogo de Subpartidas</CardTitle>
-              <Dialog open={subpartidaDialog || !!editingSubpartida} onOpenChange={(open) => {
-                if (!open) {
-                  setSubpartidaDialog(false);
-                  setEditingSubpartida(null);
-                }
-              }}>
-                <DialogTrigger asChild>
-                  <Button onClick={() => setSubpartidaDialog(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nueva Subpartida
+              <div className="flex items-center gap-4">
+                <CardTitle>Catálogo de Subpartidas</CardTitle>
+                <Badge variant="outline" className="text-sm">
+                  {subpartidas.length} registros
+                </Badge>
+              </div>
+              <div className="flex gap-2">
+                <Dialog open={subpartidaDialog || !!editingSubpartida} onOpenChange={(open) => {
+                  if (!open) {
+                    setSubpartidaDialog(false);
+                    setEditingSubpartida(null);
+                  }
+                }}>
+                  <DialogTrigger asChild>
+                    <Button onClick={() => setSubpartidaDialog(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nueva Subpartida
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>{editingSubpartida ? 'Editar Subpartida' : 'Crear Nueva Subpartida'}</DialogTitle>
+                    </DialogHeader>
+                    <SubpartidaForm subpartida={editingSubpartida || undefined} />
+                  </DialogContent>
+                </Dialog>
+                
+                {subpartidas.length > 0 && (
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => handleMassDelete('subpartidas')}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    <Database className="h-4 w-4 mr-2" />
+                    Borrar Todo ({subpartidas.length})
                   </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{editingSubpartida ? 'Editar Subpartida' : 'Crear Nueva Subpartida'}</DialogTitle>
-                  </DialogHeader>
-                  <SubpartidaForm subpartida={editingSubpartida || undefined} />
-                </DialogContent>
-              </Dialog>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
@@ -1096,6 +1274,50 @@ export const ChartOfAccountsManager = forwardRef<{ refreshData: () => void }, {}
           <ChartOfAccountsExcelManager onImportComplete={loadData} />
         </TabsContent>
       </Tabs>
+
+      {/* Mass Delete Confirmation Dialog */}
+      <AlertDialog open={showMassDeleteDialog.show} onOpenChange={(open) => 
+        setShowMassDeleteDialog({ show: open, type: null, count: 0 })
+      }>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              ¿Confirmar Eliminación Masiva?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Esta acción eliminará <strong className="text-red-600">
+                  {showMassDeleteDialog.count} registros
+                </strong> de <strong>{showMassDeleteDialog.type}</strong>.
+              </p>
+              <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                <p className="text-sm text-red-800 font-medium">⚠️ ADVERTENCIA:</p>
+                <ul className="text-sm text-red-700 mt-1 space-y-1">
+                  <li>• Esta acción NO se puede deshacer</li>
+                  <li>• Se eliminarán TODOS los registros de esta tabla</li>
+                  <li>• Los registros dependientes pueden verse afectados</li>
+                </ul>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Solo administradores y directores pueden realizar esta acción.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmMassDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {isDeleting ? "Eliminando..." : `Eliminar ${showMassDeleteDialog.count} Registros`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 });
