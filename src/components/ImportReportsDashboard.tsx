@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import ExcelPreImportValidator from "./ExcelPreImportValidator";
 import { 
   CheckCircle, 
   XCircle, 
@@ -586,32 +587,9 @@ export function ImportReportsDashboard() {
           )}
         </TabsContent>
 
-        {/* Validador Mejorado */}
+        {/* Validador Funcional */}
         <TabsContent value="validador" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Validador Pre-Importación</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 space-y-4">
-                <Upload className="h-12 w-12 mx-auto text-muted-foreground" />
-                <h3 className="text-lg font-semibold">Validador en Desarrollo</h3>
-                <p className="text-muted-foreground max-w-md mx-auto">
-                  Próximamente: análisis previo de archivos Excel para detectar errores antes de importar.
-                </p>
-                <div className="border rounded-lg p-4 text-left max-w-md mx-auto space-y-2">
-                  <p className="font-semibold text-sm">Características planificadas:</p>
-                  <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>• Detección de códigos duplicados</li>
-                    <li>• Validación de referencias padre</li>
-                    <li>• Verificación de formato de datos</li>
-                    <li>• Estimación de éxito de importación</li>
-                    <li>• Sugerencias de corrección automática</li>
-                  </ul>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <ExcelPreImportValidator />
         </TabsContent>
       </Tabs>
 
