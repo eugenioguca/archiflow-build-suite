@@ -24,6 +24,7 @@ interface ImportResult {
 
 export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccountsExcelManagerProps) {
   const [importing, setImporting] = useState(false)
+  const [processingImport, setProcessingImport] = useState(false) // Separate state for modal processing
   const [exportingTemplate, setExportingTemplate] = useState(false)
   const [exportingTemplateWithData, setExportingTemplateWithData] = useState(false)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
@@ -909,14 +910,21 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
     }
     
     console.log("✅ Usuario confirmó creación de departamentos, procediendo con importación")
+    setProcessingImport(true) // Use separate processing state for modal
     setShowDepartmentModal(false)
-    setImporting(true) // Reactivate importing state
+    setImporting(true) // Reactivate importing state for main UI
     
     try {
       await processImport(pendingImportData.file, pendingImportData.workbook)
     } catch (error) {
       console.error("❌ Error en confirmDepartmentCreation:", error)
+      toast({
+        title: "Error en importación",
+        description: "Error durante el proceso de importación. Revisa los logs.",
+        variant: "destructive",
+      })
     } finally {
+      setProcessingImport(false)
       setPendingImportData(null)
       setDepartmentValidation(null)
     }
@@ -1176,15 +1184,15 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
                 <div className="flex gap-2">
                   <Button 
                     onClick={confirmDepartmentCreation}
-                    disabled={importing}
+                    disabled={processingImport}
                     className="flex-1"
                   >
-                    {importing ? "Importando..." : "Continuar Importación"}
+                    {processingImport ? "Procesando..." : "Continuar Importación"}
                   </Button>
                   <Button 
                     variant="outline" 
                     onClick={cancelImport}
-                    disabled={importing}
+                    disabled={processingImport}
                   >
                     Cancelar
                   </Button>
