@@ -41,6 +41,7 @@ export function useImportReports() {
 
   // Fetch import history
   const fetchImportHistory = async (limit: number = 10) => {
+    console.log('📚 Obteniendo historial de importación...');
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -50,7 +51,15 @@ export function useImportReports() {
         .order('created_at', { ascending: false })
         .limit(limit);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error al consultar import_history:', error);
+        throw error;
+      }
+
+      console.log('📊 Datos de historial obtenidos:', { 
+        count: data?.length || 0,
+        records: data?.map(d => ({ id: d.id, fileName: d.file_name, status: d.status })) || []
+      });
 
       // Process and normalize the data
       const processedData = (data || []).map(record => ({
@@ -63,10 +72,16 @@ export function useImportReports() {
 
       setImportHistory(processedData);
       if (processedData && processedData.length > 0) {
+        console.log('📝 Configurando última importación y análisis...');
         setLatestImport(processedData[0]);
         await fetchAnalysis(processedData[0].id);
+      } else {
+        console.log('ℹ️ No se encontraron registros de importación');
+        setLatestImport(null);
+        setAnalysis(null);
       }
     } catch (error: any) {
+      console.error('💥 Error completo al cargar historial:', error);
       toast({
         title: "Error",
         description: "Error al cargar el historial: " + error.message,
@@ -115,21 +130,48 @@ export function useImportReports() {
     duration_seconds?: number;
     status: 'completed' | 'failed' | 'partial';
   }) => {
+    console.log('🔄 Iniciando guardado de historial de importación...', {
+      fileName: importData.file_name,
+      status: importData.status,
+      totalProcessed: importData.total_rows_processed
+    });
+
     try {
       // Get current user profile
-      const { data: profile } = await supabase
+      const { data: userResult } = await supabase.auth.getUser();
+      console.log('👤 Usuario actual obtenido:', userResult.user?.email);
+
+      if (!userResult.user?.id) {
+        throw new Error("Usuario no autenticado");
+      }
+
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('id')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .eq('user_id', userResult.user.id)
         .single();
+
+      if (profileError) {
+        console.error('❌ Error obteniendo perfil:', profileError);
+        throw new Error("Error al obtener el perfil del usuario: " + profileError.message);
+      }
 
       if (!profile) {
         throw new Error("No se pudo obtener el perfil del usuario");
       }
 
+      console.log('✅ Perfil obtenido:', profile.id);
+
       // Categorize errors using database function
-      const { data: errorCategories } = await supabase
+      console.log('🔍 Categorizando errores...', { errorsCount: importData.error_summary.length });
+      const { data: errorCategories, error: categorizeError } = await supabase
         .rpc('categorize_import_errors', { errors: importData.error_summary });
+
+      if (categorizeError) {
+        console.error('⚠️ Error categorizando errores:', categorizeError);
+      }
+
+      console.log('📊 Categorías de errores:', errorCategories);
 
       // Build sheet summaries
       const sheetSummaries = {
@@ -141,37 +183,55 @@ export function useImportReports() {
         })
       };
 
+      console.log('📋 Resumen de hojas procesadas:', sheetSummaries);
+
+      const insertData = {
+        import_type: 'chart_of_accounts',
+        file_name: importData.file_name,
+        file_size: importData.file_size,
+        total_rows_processed: importData.total_rows_processed,
+        total_rows_successful: importData.total_rows_successful,
+        total_rows_failed: importData.total_rows_failed,
+        mayores_inserted: importData.mayores_inserted,
+        partidas_inserted: importData.partidas_inserted,
+        subpartidas_inserted: importData.subpartidas_inserted,
+        departamentos_inserted: importData.departamentos_inserted || 0,
+        error_summary: importData.error_summary,
+        error_categories: errorCategories || {},
+        processed_sheets: importData.processed_sheets,
+        sheet_summaries: sheetSummaries,
+        status: importData.status,
+        duration_seconds: importData.duration_seconds,
+        created_by: profile.id
+      };
+
+      console.log('💾 Insertando en import_history:', insertData);
+
       const { data, error } = await supabase
         .from('import_history')
-        .insert({
-          import_type: 'chart_of_accounts',
-          file_name: importData.file_name,
-          file_size: importData.file_size,
-          total_rows_processed: importData.total_rows_processed,
-          total_rows_successful: importData.total_rows_successful,
-          total_rows_failed: importData.total_rows_failed,
-          mayores_inserted: importData.mayores_inserted,
-          partidas_inserted: importData.partidas_inserted,
-          subpartidas_inserted: importData.subpartidas_inserted,
-          departamentos_inserted: importData.departamentos_inserted || 0,
-          error_summary: importData.error_summary,
-          error_categories: errorCategories || {},
-          processed_sheets: importData.processed_sheets,
-          sheet_summaries: sheetSummaries,
-          status: importData.status,
-          duration_seconds: importData.duration_seconds,
-          created_by: profile.id
-        })
+        .insert(insertData)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error insertando en import_history:', error);
+        throw error;
+      }
+
+      console.log('✅ Historial guardado exitosamente:', data.id);
 
       // Refresh history after saving
+      console.log('🔄 Actualizando historial...');
       await fetchImportHistory();
       
+      toast({
+        title: "Historial actualizado",
+        description: "El reporte de importación ha sido guardado correctamente.",
+      });
+
       return data;
     } catch (error: any) {
+      console.error('💥 Error completo al guardar historial:', error);
       toast({
         title: "Error",
         description: "Error al guardar el historial: " + error.message,

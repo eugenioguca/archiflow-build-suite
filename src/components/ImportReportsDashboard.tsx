@@ -256,14 +256,30 @@ export function ImportReportsDashboard() {
                 </Card>
               )}
             </>
-          ) : (
+           ) : (
             <Card>
-              <CardContent className="p-8 text-center">
-                <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No hay importaciones recientes</h3>
-                <p className="text-muted-foreground">
-                  Importa un archivo Excel en la pestaña "Catálogo de Cuentas" para ver los reportes aquí.
-                </p>
+              <CardContent className="p-8 text-center space-y-4">
+                <div className="flex justify-center">
+                  <div className="bg-muted/50 p-4 rounded-full">
+                    <FileText className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">No hay importaciones recientes</h3>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    Para generar reportes, necesitas realizar una importación de catálogo de cuentas desde un archivo Excel.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                  <Button variant="outline" className="text-sm">
+                    <Upload className="h-4 w-4 mr-2" />
+                    Usar pestaña "Catálogo de Cuentas"
+                  </Button>
+                  <Button variant="ghost" onClick={refresh}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Actualizar
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -303,9 +319,22 @@ export function ImportReportsDashboard() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">No hay historial de importaciones disponible</p>
+                <div className="text-center py-8 space-y-4">
+                  <div className="flex justify-center">
+                    <div className="bg-muted/50 p-4 rounded-full">
+                      <Clock className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-semibold">No hay historial disponible</h3>
+                    <p className="text-muted-foreground max-w-md mx-auto">
+                      El historial se creará automáticamente cuando realices importaciones de archivos Excel.
+                    </p>
+                  </div>
+                  <Button variant="outline" onClick={refresh}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Verificar nuevamente
+                  </Button>
                 </div>
               )}
             </CardContent>
