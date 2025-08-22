@@ -15,6 +15,16 @@ import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useDebounce } from "@/hooks/use-debounce";
 
+// Function to normalize text for internal comparisons only
+const normalizeForComparison = (text: string): string => {
+  return text
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove accents
+    .replace(/_/g, ' ');
+};
+
 interface UnifiedTransactionFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -282,19 +292,24 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
     let allSubpartidas = [...(specificSubpartidas || [])];
 
     // If this is a construction partida, also load global construction subpartidas
-    if (partida?.chart_of_accounts_mayor?.departamento === 'construccion') {
+    const departamentoNormalizado = normalizeForComparison(partida?.chart_of_accounts_mayor?.departamento || '');
+    if (departamentoNormalizado === 'construccion') {
       const { data: globalSubpartidas } = await supabase
         .from("chart_of_accounts_subpartidas")
-        .select("id, nombre, codigo")
+        .select("id, nombre, codigo, departamento_aplicable")
         .eq("es_global", true)
-        .eq("departamento_aplicable", "construccion")
         .eq("activo", true)
         .order("codigo");
 
-      if (globalSubpartidas) {
+      // Filter global subpartidas for construction department
+      const constructionGlobals = globalSubpartidas?.filter(item => 
+        normalizeForComparison(item.departamento_aplicable || '') === 'construccion'
+      ) || [];
+
+      if (constructionGlobals.length > 0) {
         allSubpartidas = [
           ...allSubpartidas,
-          ...globalSubpartidas.map(item => ({
+          ...constructionGlobals.map(item => ({
             ...item,
             nombre: `${item.nombre} (Global)` // Mark as global for clarity
           }))
@@ -358,7 +373,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
     if (data) {
       const formattedDepartamentos = data.map(dept => ({
         value: dept.departamento,
-        label: dept.departamento.charAt(0).toUpperCase() + dept.departamento.slice(1).replace(/_/g, ' ')
+        label: dept.departamento // Preserve original format from database
       }));
       console.log("Departamentos data:", formattedDepartamentos);
       setDepartamentos(formattedDepartamentos);
@@ -504,7 +519,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                           <SelectValue placeholder="Seleccionar sucursal" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                       <SelectContent className="max-h-48 overflow-y-auto">
                         {dataLoading.sucursales ? (
                           <SelectItem value="loading" disabled>
                             <div className="flex items-center">
@@ -539,7 +554,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                           <SelectValue placeholder="Seleccionar proyecto" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                       <SelectContent className="max-h-48 overflow-y-auto">
                         {proyectos.filter(item => item.id && item.id.trim() !== '').map((item) => (
                           <SelectItem key={item.id} value={item.id}>
                             {item.nombre}
@@ -565,7 +580,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                           <SelectValue />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                       <SelectContent className="max-h-48 overflow-y-auto">
                         <SelectItem value="ingreso">Ingreso</SelectItem>
                         <SelectItem value="egreso">Egreso</SelectItem>
                       </SelectContent>
@@ -607,7 +622,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                           <SelectValue placeholder="Seleccionar departamento" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                       <SelectContent className="max-h-48 overflow-y-auto">
                         {departamentos.map((dept) => (
                           <SelectItem key={dept.value} value={dept.value}>
                             {dept.label}
@@ -637,7 +652,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                           <SelectValue placeholder="Seleccionar mayor" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                       <SelectContent className="max-h-48 overflow-y-auto">
                         {mayores.filter(item => item.id && item.id.trim() !== '').map((item) => (
                           <SelectItem key={item.id} value={item.id}>
                             {item.nombre}
@@ -667,7 +682,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                           <SelectValue placeholder="Seleccionar partida" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                       <SelectContent className="max-h-48 overflow-y-auto">
                         {partidas.filter(item => item.id && item.id.trim() !== '').map((item) => (
                           <SelectItem key={item.id} value={item.id}>
                             {item.nombre}
@@ -697,7 +712,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                           <SelectValue placeholder="Seleccionar subpartida" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                       <SelectContent className="max-h-48 overflow-y-auto">
                         {subpartidas.filter(item => item.id && item.id.trim() !== '').map((item) => (
                           <SelectItem key={item.id} value={item.id}>
                             {item.nombre}
@@ -723,7 +738,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                           <SelectValue placeholder="Seleccionar cliente o proveedor" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="max-h-48 overflow-y-auto">
                         {clientesProveedores.filter(item => item.id && item.id.trim() !== '').map((item) => (
                           <SelectItem key={item.id} value={item.id}>
                             {item.nombre}
