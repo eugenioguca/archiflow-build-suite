@@ -33,14 +33,10 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
   const { toast } = useToast()
   const { saveImportResult } = useImportReports()
 
-  const departamentos = [
-    { value: "ventas", label: "Ventas" },
-    { value: "diseño", label: "Diseño" },
-    { value: "construccion", label: "Construcción" },
-    { value: "finanzas", label: "Finanzas" },
-    { value: "contabilidad", label: "Contabilidad" },
-    { value: "recursos_humanos", label: "Recursos Humanos" },
-    { value: "direccion_general", label: "Dirección General" },
+  // Default departments for template examples (users can add their own)
+  const defaultDepartments = [
+    "ventas", "diseño", "construccion", "finanzas", 
+    "contabilidad", "recursos_humanos", "direccion_general"
   ]
 
   const downloadTemplate = async () => {
@@ -53,7 +49,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
         ["INSTRUCCIONES PARA IMPORTAR CATÁLOGO DE CUENTAS"],
         [""],
         ["ORDEN DE LLENADO OBLIGATORIO:"],
-        ["1. Departamentos (si son nuevos)"],
+        ["1. Departamentos (nuevos departamentos si los necesitas)"],
         ["2. Mayores"],
         ["3. Partidas"],
         ["4. Subpartidas"],
@@ -63,9 +59,12 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
         ["• Los códigos deben ser únicos"],
         ["• Respetar las dependencias entre niveles"],
         ["• No dejar celdas vacías en campos obligatorios"],
+        ["• PUEDES AGREGAR CUALQUIER DEPARTAMENTO NUEVO"],
         [""],
-        ["DEPARTAMENTOS VÁLIDOS:"],
-        ["ventas, diseño, construccion, finanzas, contabilidad, recursos_humanos, direccion_general"],
+        ["DEPARTAMENTOS:"],
+        ["Puedes usar los departamentos existentes o crear nuevos"],
+        ["Ejemplos: ventas, diseño, construccion, finanzas, etc."],
+        ["No hay restricciones - agrega los que necesites"],
         [""],
         ["EJEMPLOS DE CÓDIGOS:"],
         ["Mayor: VEN001, DIS001, CON001"],
@@ -73,9 +72,10 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
         ["Subpartida: VEN001-001-001 o GLOBAL-001"],
         [""],
         ["SUBPARTIDAS GLOBALES:"],
-        ["• Es Global = SI: Se aplica a todos los departamentos"],
-        ["• Es Global = NO: Solo al departamento específico"],
-        ["• Si Es Global = SI, no llenar Departamento Aplicable"],
+        ["• Es Global = SI: Se aplica SOLO al departamento específico"],
+        ["• Es Global = NO: Subpartida normal de una partida"],
+        ["• Si Es Global = SI, DEBES llenar 'Departamento Aplicable'"],
+        ["• Si Es Global = NO, DEBES llenar 'Código Partida'"],
         [""],
         ["VALIDACIONES ANTES DE IMPORTAR:"],
         ["✓ Verificar que todos los códigos padre existan"],
@@ -85,7 +85,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
         ["TROUBLESHOOTING COMÚN:"],
         ["Error 'Mayor no encontrado' → Verificar Código Mayor en hoja Partidas"],
         ["Error 'Partida no encontrada' → Verificar Código Partida en hoja Subpartidas"],
-        ["Error 'Departamento inválido' → Usar solo departamentos de la lista"],
+        ["Subpartidas globales NO deben tener Código Partida"],
       ]
       const instructionsWs = XLSX.utils.aoa_to_sheet(instructionsData)
       XLSX.utils.book_append_sheet(wb, instructionsWs, "INSTRUCCIONES")
@@ -168,8 +168,9 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
         ["SI"],
         ["NO"],
         [""],
-        ["DEPARTAMENTOS VÁLIDOS:"],
-        ...departamentos.map(dept => [dept.value]),
+        ["DEPARTAMENTOS:"],
+        ["Puedes usar los existentes o agregar nuevos"],
+        ...defaultDepartments.map(dept => [dept]),
         [""],
         ["NOTAS:"],
         ["• Los códigos deben ser únicos en cada nivel"],
@@ -232,7 +233,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
         ["Puedes modificar los datos y volver a importar"],
         [""],
         ["ORDEN DE LLENADO OBLIGATORIO:"],
-        ["1. Departamentos (si son nuevos)"],
+        ["1. Departamentos (nuevos departamentos si los necesitas)"],
         ["2. Mayores"],
         ["3. Partidas"],
         ["4. Subpartidas"],
@@ -242,12 +243,13 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
         ["• Los códigos deben ser únicos"],
         ["• Respetar las dependencias entre niveles"],
         ["• No dejar celdas vacías en campos obligatorios"],
+        ["• PUEDES AGREGAR CUALQUIER DEPARTAMENTO NUEVO"],
         [""],
         ["SUBPARTIDAS GLOBALES:"],
-        ["• Es Global = SI: Se aplica a todos los departamentos"],
-        ["• Es Global = NO: Solo al departamento específico"],
-        ["• Si Es Global = SI, llenar 'Departamento Aplicable'"],
-        ["• Si Es Global = NO, llenar 'Código Partida'"],
+        ["• Es Global = SI: Se aplica SOLO al departamento específico"],
+        ["• Es Global = NO: Subpartida normal de una partida"],
+        ["• Si Es Global = SI, DEBES llenar 'Departamento Aplicable'"],
+        ["• Si Es Global = NO, DEBES llenar 'Código Partida'"],
       ]
       const instructionsWs = XLSX.utils.aoa_to_sheet(instructionsData)
       XLSX.utils.book_append_sheet(wb, instructionsWs, "INSTRUCCIONES")
@@ -375,15 +377,16 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
         }
       }
 
-      // Also extract departments from Global Construction Subpartidas
-      if (workbook.SheetNames.includes('Globales Construcción')) {
-        const globalSheet = workbook.Sheets['Globales Construcción']
-        const globalJsonData = XLSX.utils.sheet_to_json(globalSheet, { header: 1 })
+      // Also extract departments from Subpartidas sheet (Departamento Aplicable column)
+      if (workbook.SheetNames.includes('Subpartidas')) {
+        const subpartidasSheet = workbook.Sheets['Subpartidas']
+        const subpartidasJsonData = XLSX.utils.sheet_to_json(subpartidasSheet, { header: 1 })
         
-        for (let i = 1; i < globalJsonData.length; i++) {
-          const row = globalJsonData[i] as any[]
-          if (row[2] && row[2].toString().trim()) {
-            const dept = row[2].toString().trim()
+        for (let i = 1; i < subpartidasJsonData.length; i++) {
+          const row = subpartidasJsonData[i] as any[]
+          // Check Departamento Aplicable column (index 4)
+          if (row[4] && row[4].toString().trim()) {
+            const dept = row[4].toString().trim()
             if (!uniqueDepartments.includes(dept)) {
               uniqueDepartments.push(dept)
             }
@@ -972,7 +975,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
               <p><strong>Template Básico:</strong> Contiene hojas para Mayores, Partidas y Subpartidas con ejemplos y una hoja de referencia de departamentos.</p>
               <p><strong>Template con Información:</strong> Incluye todos los datos existentes en la base de datos para facilitar la edición masiva.</p>
               <p><strong>Cargar Excel:</strong> Procesa archivos con las hojas Mayores, Partidas y Subpartidas. Mantiene las relaciones jerárquicas entre ellos.</p>
-              <p><strong>Departamentos disponibles:</strong> {departamentos.map(d => d.label).join(', ')}</p>
+              <p><strong>Departamentos disponibles:</strong> {defaultDepartments.join(', ')} (puedes agregar nuevos)</p>
             </CardContent>
           </Card>
         </CardContent>
