@@ -107,10 +107,15 @@ export default function ExcelPreImportValidator() {
     return errors;
   }, []);
 
+  // Helper function for case-insensitive comparison without modifying original data
+  const normalizeForComparison = (value: any): string => {
+    return String(value || '').trim().toLowerCase();
+  };
+
   const validateDepartamentos = useCallback((data: any[]): ValidationError[] => {
     const errors: ValidationError[] = [];
     const seenCodes = new Set<string>();
-    const seenNames = new Set<string>();
+    const seenNamesForComparison = new Set<string>();
 
     data.forEach((row, index) => {
       const rowNum = index + 2; // Excel rows start at 1, plus header
@@ -132,20 +137,20 @@ export default function ExcelPreImportValidator() {
           data: row
         });
       } else {
-        // Convert to string and normalize
-        const normalizedName = String(departamentoValue).toLowerCase().trim();
-        if (seenNames.has(normalizedName)) {
+        // Normalize only for comparison, keep original value intact
+        const normalizedForComparison = normalizeForComparison(departamentoValue);
+        if (seenNamesForComparison.has(normalizedForComparison)) {
           errors.push({
             sheet: 'Departamentos',
             row: rowNum,
             column: 'departamento',
             type: 'error',
             code: 'DUPLICATE_DEPARTMENT',
-            message: `Departamento duplicado: "${departamentoValue}"`,
+            message: `Departamento duplicado: "${departamentoValue}" (se mantiene formato original, comparación ignora mayúsculas)`,
             suggestion: 'Eliminar o renombrar el departamento duplicado'
           });
         } else {
-          seenNames.add(normalizedName);
+          seenNamesForComparison.add(normalizedForComparison);
         }
       }
 
@@ -172,7 +177,9 @@ export default function ExcelPreImportValidator() {
   const validateMayores = useCallback((data: any[], departamentos: any[]): ValidationError[] => {
     const errors: ValidationError[] = [];
     const seenCodes = new Set<string>();
-    const validDepartments = new Set(departamentos.map(d => d.departamento?.toLowerCase().trim()));
+    const validDepartmentsForComparison = new Set(
+      departamentos.map(d => normalizeForComparison(d.departamento))
+    );
 
     data.forEach((row, index) => {
       const rowNum = index + 2;
@@ -228,16 +235,16 @@ export default function ExcelPreImportValidator() {
           suggestion: 'Especificar el departamento al que pertenece este mayor'
         });
       } else {
-        // Verificar que el departamento existe
-        const normalizedDept = row.departamento.toLowerCase().trim();
-        if (!validDepartments.has(normalizedDept)) {
+        // Verificar que el departamento existe (case-insensitive comparison)
+        const departmentForComparison = normalizeForComparison(row.departamento);
+        if (!validDepartmentsForComparison.has(departmentForComparison)) {
           errors.push({
             sheet: 'Mayores',
             row: rowNum,
             column: 'departamento',
             type: 'error',
             code: 'INVALID_DEPARTMENT_REF',
-            message: `Departamento no encontrado: "${row.departamento}"`,
+            message: `Departamento no encontrado: "${row.departamento}" (se mantiene formato original)`,
             suggestion: 'Usar un departamento que exista en la hoja "Departamentos"'
           });
         }
