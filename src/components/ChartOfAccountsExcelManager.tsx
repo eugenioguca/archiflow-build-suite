@@ -30,6 +30,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
   const [departmentValidation, setDepartmentValidation] = useState<any>(null)
   const [showDepartmentModal, setShowDepartmentModal] = useState(false)
   const [pendingImportData, setPendingImportData] = useState<any>(null)
+  const [importProgress, setImportProgress] = useState({ current: 0, total: 0, step: '' })
   const { toast } = useToast()
   const { saveImportResult } = useImportReports()
 
@@ -352,12 +353,17 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
     const file = event.target.files?.[0]
     if (!file) return
 
+    console.log("🚀 Iniciando proceso de importación para archivo:", file.name, `(${(file.size / 1024).toFixed(2)} KB)`)
     setImporting(true)
     setImportResult(null)
+    setImportProgress({ current: 0, total: 100, step: 'Analizando archivo...' })
     
     try {
       const data = await file.arrayBuffer()
       const workbook = XLSX.read(data)
+      
+      setImportProgress({ current: 10, total: 100, step: 'Validando departamentos...' })
+      console.log("📊 Sheets encontradas:", workbook.SheetNames)
       
       // Extract unique departments from Mayores sheet for validation
       const uniqueDepartments: string[] = []
@@ -396,20 +402,28 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
 
       // Validate departments using the database function
       if (uniqueDepartments.length > 0) {
+        console.log("🔍 Validando departamentos:", uniqueDepartments)
+        setImportProgress({ current: 20, total: 100, step: 'Validando departamentos en BD...' })
+        
         const { data: validation, error } = await supabase
           .rpc('validate_import_departments', { departments: uniqueDepartments })
 
         if (error) {
+          console.error("❌ Error validando departamentos:", error)
           throw new Error(`Error validando departamentos: ${error.message}`)
         }
+
+        console.log("✅ Resultado validación departamentos:", validation)
 
         // If there are new or invalid departments, show validation modal
         if (validation && typeof validation === 'object') {
           const validationObj = validation as any
           if (validationObj.new?.length > 0 || validationObj.invalid?.length > 0) {
+            console.log("⚠️ Departamentos nuevos/inválidos encontrados, mostrando modal")
             setDepartmentValidation(validationObj)
             setPendingImportData({ file, workbook })
             setShowDepartmentModal(true)
+            setImporting(false) // Reset importing state for modal
             return
           }
         }
@@ -561,6 +575,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
 
       // PROCESS IN CORRECT ORDER: Departamentos → Mayores → Partidas → Subpartidas
       console.log("📊 Iniciando procesamiento en orden correcto...")
+      setImportProgress({ current: 30, total: 100, step: 'Procesando datos...' })
 
       // Process Departamentos sheet first (NEW)
       if (workbook.SheetNames.includes('Departamentos')) {
@@ -571,7 +586,16 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
         const deptJsonData = XLSX.utils.sheet_to_json(deptSheet, { header: 1 })
 
         if (deptJsonData.length > 1) {
+          const totalDepts = deptJsonData.length - 1
+          console.log(`📊 Procesando ${totalDepts} departamentos...`)
+          
           for (let i = 1; i < deptJsonData.length; i++) {
+            setImportProgress({ 
+              current: 30 + ((i - 1) / totalDepts) * 10, 
+              total: 100, 
+              step: `Procesando departamento ${i}/${totalDepts}...` 
+            })
+            
             const row = deptJsonData[i] as any[]
             if (row.length >= 2 && row[0]) {
               try {
@@ -580,11 +604,14 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
 
                 if (deptError) {
                   errors.push(`Error creando departamento fila ${i + 1}: ${deptError.message}`)
+                  console.error(`❌ Error departamento fila ${i + 1}:`, deptError)
                 } else {
                   departamentosInserted++
+                  console.log(`✅ Departamento creado: ${row[0].toString().trim()}`)
                 }
               } catch (error: any) {
                 errors.push(`Error en Departamento fila ${i + 1}: ${error.message}`)
+                console.error(`❌ Error departamento fila ${i + 1}:`, error)
               }
             }
           }
@@ -601,7 +628,16 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
         const mayoresJsonData = XLSX.utils.sheet_to_json(mayoresSheet, { header: 1 })
 
         if (mayoresJsonData.length > 1) {
+          const totalMayores = mayoresJsonData.length - 1
+          console.log(`📊 Procesando ${totalMayores} mayores...`)
+          
           for (let i = 1; i < mayoresJsonData.length; i++) {
+            setImportProgress({ 
+              current: 40 + ((i - 1) / totalMayores) * 20, 
+              total: 100, 
+              step: `Procesando mayor ${i}/${totalMayores}...` 
+            })
+            
             const row = mayoresJsonData[i] as any[]
             if (row.length >= 4 && row[0] && row[1] && row[2]) {
               try {
@@ -620,11 +656,13 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
 
                 if (error) {
                   errors.push(`Error en Mayor fila ${i + 1}: ${error.message}`)
+                  console.error(`❌ Error mayor fila ${i + 1}:`, error)
                 } else {
                   mayoresInserted++
                 }
               } catch (error: any) {
                 errors.push(`Error en Mayor fila ${i + 1}: ${error.message}`)
+                console.error(`❌ Error mayor fila ${i + 1}:`, error)
               }
             }
           }
@@ -641,7 +679,16 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
         const partidasJsonData = XLSX.utils.sheet_to_json(partidasSheet, { header: 1 })
 
         if (partidasJsonData.length > 1) {
+          const totalPartidas = partidasJsonData.length - 1
+          console.log(`📊 Procesando ${totalPartidas} partidas...`)
+          
           for (let i = 1; i < partidasJsonData.length; i++) {
+            setImportProgress({ 
+              current: 60 + ((i - 1) / totalPartidas) * 20, 
+              total: 100, 
+              step: `Procesando partida ${i}/${totalPartidas}...` 
+            })
+            
             const row = partidasJsonData[i] as any[]
             if (row.length >= 4 && row[0] && row[1] && row[2]) {
               try {
@@ -653,6 +700,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
 
                 if (!mayor) {
                   errors.push(`Error en Partida fila ${i + 1}: No se encontró Mayor con código ${row[0]}`)
+                  console.error(`❌ Mayor no encontrado para partida fila ${i + 1}: ${row[0]}`)
                   continue
                 }
 
@@ -668,11 +716,13 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
 
                 if (error) {
                   errors.push(`Error en Partida fila ${i + 1}: ${error.message}`)
+                  console.error(`❌ Error partida fila ${i + 1}:`, error)
                 } else {
                   partidasInserted++
                 }
               } catch (error: any) {
                 errors.push(`Error en Partida fila ${i + 1}: ${error.message}`)
+                console.error(`❌ Error partida fila ${i + 1}:`, error)
               }
             }
           }
@@ -689,7 +739,16 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
         const subpartidasJsonData = XLSX.utils.sheet_to_json(subpartidasSheet, { header: 1 })
 
         if (subpartidasJsonData.length > 1) {
+          const totalSubpartidas = subpartidasJsonData.length - 1
+          console.log(`📊 Procesando ${totalSubpartidas} subpartidas...`)
+          
           for (let i = 1; i < subpartidasJsonData.length; i++) {
+            setImportProgress({ 
+              current: 80 + ((i - 1) / totalSubpartidas) * 15, 
+              total: 100, 
+              step: `Procesando subpartida ${i}/${totalSubpartidas}...` 
+            })
+            
             const row = subpartidasJsonData[i] as any[]
             if (row.length >= 6 && row[1] && row[2]) {
               try {
@@ -712,6 +771,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
 
                   if (!partida) {
                     errors.push(`Error en Subpartida fila ${i + 1}: No se encontró Partida con código ${partidaCode}`)
+                    console.error(`❌ Partida no encontrada para subpartida fila ${i + 1}: ${partidaCode}`)
                     continue
                   }
                   partidaId = partida.id
@@ -736,11 +796,13 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
 
                 if (error) {
                   errors.push(`Error en Subpartida fila ${i + 1}: ${error.message}`)
+                  console.error(`❌ Error subpartida fila ${i + 1}:`, error)
                 } else {
                   subpartidasInserted++
                 }
               } catch (error: any) {
                 errors.push(`Error en Subpartida fila ${i + 1}: ${error.message}`)
+                console.error(`❌ Error subpartida fila ${i + 1}:`, error)
               }
             }
           }
@@ -748,6 +810,8 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
         console.log(`✅ Subpartidas procesadas: ${subpartidasInserted} insertadas`)
       }
 
+      setImportProgress({ current: 95, total: 100, step: 'Finalizando importación...' })
+      
       const endTime = Date.now()
       const durationSeconds = (endTime - startTime) / 1000
       const totalRowsProcessed = mayoresInserted + partidasInserted + subpartidasInserted + errors.length
@@ -755,8 +819,18 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
       const importStatus = errors.length === 0 ? 'completed' : 
                           mayoresInserted + partidasInserted + subpartidasInserted > 0 ? 'partial' : 'failed'
 
+      console.log(`📊 Importación finalizada en ${durationSeconds.toFixed(2)}s:`, {
+        mayoresInserted,
+        partidasInserted, 
+        subpartidasInserted,
+        departamentosInserted,
+        errorsCount: errors.length,
+        status: importStatus
+      })
+
       // Save to import history
       try {
+        console.log("💾 Guardando historial de importación...")
         await saveImportResult({
           file_name: file.name,
           file_size: file.size,
@@ -772,8 +846,9 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
           duration_seconds: durationSeconds,
           status: importStatus
         });
+        console.log("✅ Historial guardado exitosamente")
       } catch (historyError) {
-        console.error('Error saving import history:', historyError);
+        console.error('❌ Error saving import history:', historyError);
       }
 
       setImportResult({
@@ -785,7 +860,10 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
         total_rows: mayoresInserted + partidasInserted + subpartidasInserted
       })
 
+      setImportProgress({ current: 100, total: 100, step: 'Completado' })
+
       if (mayoresInserted + partidasInserted + subpartidasInserted > 0) {
+        console.log("🎉 Importación exitosa, mostrando toast de éxito")
         toast({
           title: "Importación completada",
           description: `Se importaron ${mayoresInserted + partidasInserted + subpartidasInserted} registros exitosamente. ${departamentosInserted > 0 ? `Se crearon ${departamentosInserted} departamentos nuevos.` : ''}`,
@@ -794,6 +872,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
       }
 
       if (errors.length > 0) {
+        console.log("⚠️ Importación con errores, mostrando toast de advertencia")
         toast({
           title: "Importación con errores",
           description: `Se completó la importación pero con ${errors.length} errores.`,
@@ -802,6 +881,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
       }
 
     } catch (error: any) {
+      console.error("❌ Error crítico en processImport:", error)
       toast({
         title: "Error",
         description: "Error al procesar el archivo: " + error.message,
@@ -816,17 +896,30 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
         total_rows: 0
       })
     } finally {
+      console.log("🏁 Finalizando processImport, resetting states")
       setImporting(false)
+      setImportProgress({ current: 0, total: 0, step: '' })
     }
   }
 
   const confirmDepartmentCreation = async () => {
-    if (!pendingImportData) return
+    if (!pendingImportData) {
+      console.error("❌ No hay datos pendientes para procesar")
+      return
+    }
     
+    console.log("✅ Usuario confirmó creación de departamentos, procediendo con importación")
     setShowDepartmentModal(false)
-    await processImport(pendingImportData.file, pendingImportData.workbook)
-    setPendingImportData(null)
-    setDepartmentValidation(null)
+    setImporting(true) // Reactivate importing state
+    
+    try {
+      await processImport(pendingImportData.file, pendingImportData.workbook)
+    } catch (error) {
+      console.error("❌ Error en confirmDepartmentCreation:", error)
+    } finally {
+      setPendingImportData(null)
+      setDepartmentValidation(null)
+    }
   }
 
   const cancelImport = () => {
@@ -922,6 +1015,32 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
           </div>
 
           <Separator />
+
+          {/* Import Progress */}
+          {importing && importProgress.total > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="h-5 w-5 animate-pulse" />
+                  Importando Archivo...
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>{importProgress.step}</span>
+                    <span>{Math.round(importProgress.current)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                      style={{ width: `${Math.min(importProgress.current, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Import Results */}
           {importResult && (
