@@ -7,6 +7,7 @@ import { UnifiedTransactionForm } from "./UnifiedTransactionForm";
 import { UnifiedTransactionsTable } from "./UnifiedTransactionsTable";
 import { ChartOfAccountsManager } from "./ChartOfAccountsManager";
 import { ChartOfAccountsExcelManager } from "./ChartOfAccountsExcelManager";
+import { ImportReportsDashboard } from "./ImportReportsDashboard";
 
 export function UnifiedFinancialTransactions() {
   const [activeTab, setActiveTab] = useState("transactions");
@@ -53,16 +54,7 @@ export function UnifiedFinancialTransactions() {
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Reportes y Análisis</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Reportes y análisis del sistema unificado - Pendiente de implementación
-              </p>
-            </CardContent>
-          </Card>
+          <ImportReportsDashboard />
         </TabsContent>
       </Tabs>
 

@@ -221,6 +221,8 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
 
     setImporting(true)
     setImportResult(null)
+    
+    const startTime = Date.now()
 
     try {
       const data = await file.arrayBuffer()
@@ -230,6 +232,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
       let mayoresInserted = 0
       let partidasInserted = 0
       let subpartidasInserted = 0
+      const processedSheets: string[] = []
 
       // Get user profile
       const { data: profile } = await supabase
@@ -244,6 +247,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
 
       // Process Mayores sheet
       if (workbook.SheetNames.includes('Mayores')) {
+        processedSheets.push('Mayores')
         const mayoresSheet = workbook.Sheets['Mayores']
         const mayoresJsonData = XLSX.utils.sheet_to_json(mayoresSheet, { header: 1 })
 
@@ -277,6 +281,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
 
       // Process Partidas sheet
       if (workbook.SheetNames.includes('Partidas')) {
+        processedSheets.push('Partidas')
         const partidasSheet = workbook.Sheets['Partidas']
         const partidasJsonData = XLSX.utils.sheet_to_json(partidasSheet, { header: 1 })
 
@@ -322,6 +327,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
 
       // Process Subpartidas sheet
       if (workbook.SheetNames.includes('Subpartidas')) {
+        processedSheets.push('Subpartidas')
         const subpartidasSheet = workbook.Sheets['Subpartidas']
         const subpartidasJsonData = XLSX.utils.sheet_to_json(subpartidasSheet, { header: 1 })
 
@@ -373,6 +379,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
 
       // Process Global Construction Subpartidas sheet
       if (workbook.SheetNames.includes('Globales Construcción')) {
+        processedSheets.push('Globales Construcción')
         const globalSheet = workbook.Sheets['Globales Construcción']
         const globalJsonData = XLSX.utils.sheet_to_json(globalSheet, { header: 1 })
 
@@ -404,6 +411,38 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
             }
           }
         }
+      }
+
+      const endTime = Date.now()
+      const durationSeconds = (endTime - startTime) / 1000
+      const totalRowsProcessed = mayoresInserted + partidasInserted + subpartidasInserted + errors.length
+      
+      const importStatus = errors.length === 0 ? 'completed' : 
+                          mayoresInserted + partidasInserted + subpartidasInserted > 0 ? 'partial' : 'failed'
+
+      // Save to import history (using dynamic import to avoid circular dependency)
+      try {
+        const { useImportReports } = await import("@/hooks/useImportReports");
+        const { saveImportResult } = useImportReports();
+        
+        await saveImportResult({
+          file_name: file.name,
+          file_size: file.size,
+          total_rows_processed: totalRowsProcessed,
+          total_rows_successful: mayoresInserted + partidasInserted + subpartidasInserted,
+          total_rows_failed: errors.length,
+          mayores_inserted: mayoresInserted,
+          partidas_inserted: partidasInserted,
+          subpartidas_inserted: subpartidasInserted,
+          departamentos_inserted: 0, // Not implemented yet
+          error_summary: errors,
+          processed_sheets: processedSheets,
+          duration_seconds: durationSeconds,
+          status: importStatus
+        });
+      } catch (historyError) {
+        console.error('Error saving import history:', historyError);
+        // Don't fail the import if history saving fails
       }
 
       setImportResult({

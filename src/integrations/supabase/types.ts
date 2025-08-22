@@ -3443,6 +3443,78 @@ export type Database = {
         }
         Relationships: []
       }
+      import_history: {
+        Row: {
+          created_at: string
+          created_by: string
+          departamentos_inserted: number
+          duration_seconds: number | null
+          error_categories: Json
+          error_summary: Json
+          file_name: string
+          file_size: number
+          id: string
+          import_type: string
+          mayores_inserted: number
+          partidas_inserted: number
+          processed_sheets: string[] | null
+          sheet_summaries: Json
+          status: string
+          subpartidas_inserted: number
+          total_rows_failed: number
+          total_rows_processed: number
+          total_rows_successful: number
+          updated_at: string
+          validation_warnings: string[] | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          departamentos_inserted?: number
+          duration_seconds?: number | null
+          error_categories?: Json
+          error_summary?: Json
+          file_name: string
+          file_size: number
+          id?: string
+          import_type: string
+          mayores_inserted?: number
+          partidas_inserted?: number
+          processed_sheets?: string[] | null
+          sheet_summaries?: Json
+          status?: string
+          subpartidas_inserted?: number
+          total_rows_failed?: number
+          total_rows_processed?: number
+          total_rows_successful?: number
+          updated_at?: string
+          validation_warnings?: string[] | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          departamentos_inserted?: number
+          duration_seconds?: number | null
+          error_categories?: Json
+          error_summary?: Json
+          file_name?: string
+          file_size?: number
+          id?: string
+          import_type?: string
+          mayores_inserted?: number
+          partidas_inserted?: number
+          processed_sheets?: string[] | null
+          sheet_summaries?: Json
+          status?: string
+          subpartidas_inserted?: number
+          total_rows_failed?: number
+          total_rows_processed?: number
+          total_rows_successful?: number
+          updated_at?: string
+          validation_warnings?: string[] | null
+        }
+        Relationships: []
+      }
       invoice_cancellations: {
         Row: {
           acuse_cancelacion: string | null
@@ -6717,6 +6789,10 @@ export type Database = {
       }
     }
     Functions: {
+      analyze_import_quality: {
+        Args: { history_id: string }
+        Returns: Json
+      }
       bulk_delete_unified_transactions: {
         Args: { transaction_ids: string[] }
         Returns: Json
@@ -6724,6 +6800,10 @@ export type Database = {
       calculate_complement_due_date: {
         Args: { payment_date: string }
         Returns: string
+      }
+      categorize_import_errors: {
+        Args: { errors: string[] }
+        Returns: Json
       }
       cleanup_deprecated_client_documents: {
         Args: Record<PropertyKey, never>
