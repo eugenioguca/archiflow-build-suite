@@ -2,9 +2,11 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { Download, Upload, FileSpreadsheet, AlertCircle, CheckCircle } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Download, Upload, FileSpreadsheet, AlertCircle, CheckCircle, AlertTriangle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
+import { useImportReports } from "@/hooks/useImportReports"
 import * as XLSX from 'xlsx'
 
 interface ChartOfAccountsExcelManagerProps {
@@ -25,7 +27,11 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
   const [exportingTemplate, setExportingTemplate] = useState(false)
   const [exportingTemplateWithData, setExportingTemplateWithData] = useState(false)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
+  const [departmentValidation, setDepartmentValidation] = useState<any>(null)
+  const [showDepartmentModal, setShowDepartmentModal] = useState(false)
+  const [pendingImportData, setPendingImportData] = useState<any>(null)
   const { toast } = useToast()
+  const { saveImportResult } = useImportReports()
 
   const departamentos = [
     { value: "ventas", label: "Ventas" },
@@ -222,16 +228,88 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
     setImporting(true)
     setImportResult(null)
     
-    const startTime = Date.now()
-
     try {
       const data = await file.arrayBuffer()
       const workbook = XLSX.read(data)
       
+      // Extract unique departments from Mayores sheet for validation
+      const uniqueDepartments: string[] = []
+      
+      if (workbook.SheetNames.includes('Mayores')) {
+        const mayoresSheet = workbook.Sheets['Mayores']
+        const mayoresJsonData = XLSX.utils.sheet_to_json(mayoresSheet, { header: 1 })
+        
+        for (let i = 1; i < mayoresJsonData.length; i++) {
+          const row = mayoresJsonData[i] as any[]
+          if (row[0] && row[0].toString().trim()) {
+            const dept = row[0].toString().trim()
+            if (!uniqueDepartments.includes(dept)) {
+              uniqueDepartments.push(dept)
+            }
+          }
+        }
+      }
+
+      // Also extract departments from Global Construction Subpartidas
+      if (workbook.SheetNames.includes('Globales Construcción')) {
+        const globalSheet = workbook.Sheets['Globales Construcción']
+        const globalJsonData = XLSX.utils.sheet_to_json(globalSheet, { header: 1 })
+        
+        for (let i = 1; i < globalJsonData.length; i++) {
+          const row = globalJsonData[i] as any[]
+          if (row[2] && row[2].toString().trim()) {
+            const dept = row[2].toString().trim()
+            if (!uniqueDepartments.includes(dept)) {
+              uniqueDepartments.push(dept)
+            }
+          }
+        }
+      }
+
+      // Validate departments using the database function
+      if (uniqueDepartments.length > 0) {
+        const { data: validation, error } = await supabase
+          .rpc('validate_import_departments', { departments: uniqueDepartments })
+
+        if (error) {
+          throw new Error(`Error validando departamentos: ${error.message}`)
+        }
+
+        // If there are new or invalid departments, show validation modal
+        if (validation && typeof validation === 'object') {
+          const validationObj = validation as any
+          if (validationObj.new?.length > 0 || validationObj.invalid?.length > 0) {
+            setDepartmentValidation(validationObj)
+            setPendingImportData({ file, workbook })
+            setShowDepartmentModal(true)
+            return
+          }
+        }
+      }
+
+      // If no department issues, proceed with import
+      await processImport(file, workbook)
+
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Error al procesar el archivo: " + error.message,
+        variant: "destructive",
+      })
+      setImporting(false)
+      event.target.value = ''
+    }
+  }
+
+  const processImport = async (file: File, workbook: XLSX.WorkBook) => {
+    const startTime = Date.now()
+    
+    try {
       const errors: string[] = []
       let mayoresInserted = 0
       let partidasInserted = 0
       let subpartidasInserted = 0
+      let departamentosInserted = 0
       const processedSheets: string[] = []
 
       // Get user profile
@@ -245,7 +323,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
         throw new Error("No se pudo obtener el perfil del usuario")
       }
 
-      // Process Mayores sheet
+      // Process Mayores sheet with department auto-creation
       if (workbook.SheetNames.includes('Mayores')) {
         processedSheets.push('Mayores')
         const mayoresSheet = workbook.Sheets['Mayores']
@@ -256,6 +334,22 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
             const row = mayoresJsonData[i] as any[]
             if (row.length >= 4 && row[0] && row[1] && row[2]) {
               try {
+                // Use the ensure_department_exists function to auto-create departments
+                const { data: normalizedDept, error: deptError } = await supabase
+                  .rpc('ensure_department_exists', { dept_name: row[0].toString().trim() })
+
+                if (deptError) {
+                  errors.push(`Error creando departamento en Mayor fila ${i + 1}: ${deptError.message}`)
+                  continue
+                } else {
+                  // Count if this created a new department (simple check)
+                  const deptName = row[0].toString().trim().toLowerCase()
+                  const existingDepts = ['ventas', 'diseño', 'construccion', 'finanzas', 'contabilidad', 'recursos_humanos', 'direccion_general']
+                  if (!existingDepts.includes(deptName)) {
+                    departamentosInserted++
+                  }
+                }
+
                 const { error } = await supabase
                   .from('chart_of_accounts_mayor')
                   .insert({
@@ -279,7 +373,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
         }
       }
 
-      // Process Partidas sheet
+      // Process Partidas sheet (unchanged)
       if (workbook.SheetNames.includes('Partidas')) {
         processedSheets.push('Partidas')
         const partidasSheet = workbook.Sheets['Partidas']
@@ -290,7 +384,6 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
             const row = partidasJsonData[i] as any[]
             if (row.length >= 4 && row[0] && row[1] && row[2]) {
               try {
-                // Find mayor by codigo
                 const { data: mayor } = await supabase
                   .from('chart_of_accounts_mayor')
                   .select('id')
@@ -325,7 +418,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
         }
       }
 
-      // Process Subpartidas sheet
+      // Process Subpartidas sheet (unchanged)
       if (workbook.SheetNames.includes('Subpartidas')) {
         processedSheets.push('Subpartidas')
         const subpartidasSheet = workbook.Sheets['Subpartidas']
@@ -336,7 +429,6 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
             const row = subpartidasJsonData[i] as any[]
             if (row.length >= 4 && row[0] && row[1] && row[2]) {
               try {
-                // Find partida by codigo
                 const { data: partida } = await supabase
                   .from('chart_of_accounts_partidas')
                   .select('id')
@@ -377,7 +469,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
         }
       }
 
-      // Process Global Construction Subpartidas sheet
+      // Process Global Construction Subpartidas with department auto-creation
       if (workbook.SheetNames.includes('Globales Construcción')) {
         processedSheets.push('Globales Construcción')
         const globalSheet = workbook.Sheets['Globales Construcción']
@@ -388,10 +480,13 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
             const row = globalJsonData[i] as any[]
             if (row.length >= 3 && row[0] && row[1] && row[2]) {
               try {
+                // Ensure department exists for global subpartidas
+                await supabase.rpc('ensure_department_exists', { dept_name: row[2].toString().trim() })
+
                 const { error } = await supabase
                   .from('chart_of_accounts_subpartidas')
                   .insert({
-                    partida_id: null, // Global subpartidas don't belong to a specific partida
+                    partida_id: null,
                     codigo: row[0].toString().trim(),
                     nombre: row[1].toString().trim(),
                     es_global: true,
@@ -420,11 +515,8 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
       const importStatus = errors.length === 0 ? 'completed' : 
                           mayoresInserted + partidasInserted + subpartidasInserted > 0 ? 'partial' : 'failed'
 
-      // Save to import history (using dynamic import to avoid circular dependency)
+      // Save to import history
       try {
-        const { useImportReports } = await import("@/hooks/useImportReports");
-        const { saveImportResult } = useImportReports();
-        
         await saveImportResult({
           file_name: file.name,
           file_size: file.size,
@@ -434,7 +526,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
           mayores_inserted: mayoresInserted,
           partidas_inserted: partidasInserted,
           subpartidas_inserted: subpartidasInserted,
-          departamentos_inserted: 0, // Not implemented yet
+          departamentos_inserted: departamentosInserted,
           error_summary: errors,
           processed_sheets: processedSheets,
           duration_seconds: durationSeconds,
@@ -442,7 +534,6 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
         });
       } catch (historyError) {
         console.error('Error saving import history:', historyError);
-        // Don't fail the import if history saving fails
       }
 
       setImportResult({
@@ -457,7 +548,7 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
       if (mayoresInserted + partidasInserted + subpartidasInserted > 0) {
         toast({
           title: "Importación completada",
-          description: `Se importaron ${mayoresInserted + partidasInserted + subpartidasInserted} registros exitosamente.`,
+          description: `Se importaron ${mayoresInserted + partidasInserted + subpartidasInserted} registros exitosamente. ${departamentosInserted > 0 ? `Se crearon ${departamentosInserted} departamentos nuevos.` : ''}`,
         })
         onImportComplete?.()
       }
@@ -486,9 +577,23 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
       })
     } finally {
       setImporting(false)
-      // Reset file input
-      event.target.value = ''
     }
+  }
+
+  const confirmDepartmentCreation = async () => {
+    if (!pendingImportData) return
+    
+    setShowDepartmentModal(false)
+    await processImport(pendingImportData.file, pendingImportData.workbook)
+    setPendingImportData(null)
+    setDepartmentValidation(null)
+  }
+
+  const cancelImport = () => {
+    setShowDepartmentModal(false)
+    setPendingImportData(null)
+    setDepartmentValidation(null)
+    setImporting(false)
   }
 
   return (
@@ -635,6 +740,101 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
           </Card>
         </CardContent>
       </Card>
+
+      {/* Department Validation Modal */}
+      <Dialog open={showDepartmentModal} onOpenChange={setShowDepartmentModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              Validación de Departamentos
+            </DialogTitle>
+            <DialogDescription>
+              Se encontraron departamentos que requieren revisión antes de la importación.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {departmentValidation && (
+            <div className="space-y-4">
+              {/* New Departments */}
+              {departmentValidation.new?.length > 0 && (
+                <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                  <h4 className="font-medium text-blue-800 mb-2">
+                    Departamentos nuevos que se crearán ({departmentValidation.new.length}):
+                  </h4>
+                  <ul className="text-sm text-blue-700 space-y-1">
+                    {departmentValidation.new.map((dept: any, index: number) => (
+                      <li key={index}>
+                        • <strong>{dept.original}</strong> 
+                        {dept.normalized !== dept.original && (
+                          <span> → se normalizará como: <strong>{dept.normalized}</strong></span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Existing Departments */}
+              {departmentValidation.existing?.length > 0 && (
+                <div className="border border-green-200 rounded-lg p-4 bg-green-50">
+                  <h4 className="font-medium text-green-800 mb-2">
+                    Departamentos existentes ({departmentValidation.existing.length}):
+                  </h4>
+                  <ul className="text-sm text-green-700 space-y-1">
+                    {departmentValidation.existing.slice(0, 5).map((dept: any, index: number) => (
+                      <li key={index}>• {dept.original}</li>
+                    ))}
+                    {departmentValidation.existing.length > 5 && (
+                      <li className="text-xs italic">... y {departmentValidation.existing.length - 5} más</li>
+                    )}
+                  </ul>
+                </div>
+              )}
+
+              {/* Invalid Departments */}
+              {departmentValidation.invalid?.length > 0 && (
+                <div className="border border-red-200 rounded-lg p-4 bg-red-50">
+                  <h4 className="font-medium text-red-800 mb-2">
+                    Departamentos inválidos que causarán errores ({departmentValidation.invalid.length}):
+                  </h4>
+                  <ul className="text-sm text-red-700 space-y-1">
+                    {departmentValidation.invalid.map((dept: any, index: number) => (
+                      <li key={index}>
+                        • <strong>{dept.original}</strong> - {dept.reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="border-t pt-4">
+                <p className="text-sm text-muted-foreground mb-4">
+                  ¿Deseas continuar con la importación? Los departamentos nuevos se crearán automáticamente, 
+                  pero los inválidos causarán errores que podrás revisar después.
+                </p>
+                
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={confirmDepartmentCreation}
+                    disabled={importing}
+                    className="flex-1"
+                  >
+                    {importing ? "Importando..." : "Continuar Importación"}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={cancelImport}
+                    disabled={importing}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

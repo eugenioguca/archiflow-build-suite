@@ -6835,6 +6835,10 @@ export type Database = {
           | { project_id_param: string }
         Returns: boolean
       }
+      ensure_department_exists: {
+        Args: { dept_name: string }
+        Returns: string
+      }
       fix_budget_discrepancies: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -7086,6 +7090,10 @@ export type Database = {
       validate_bulk_delete_permissions: {
         Args: { record_ids: string[]; table_name: string }
         Returns: boolean
+      }
+      validate_import_departments: {
+        Args: { departments: string[] }
+        Returns: Json
       }
     }
     Enums: {
