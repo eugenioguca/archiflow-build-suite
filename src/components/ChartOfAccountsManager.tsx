@@ -158,8 +158,7 @@ export const ChartOfAccountsManager = forwardRef<{ refreshData: () => void }, {}
       .from("chart_of_accounts_subpartidas")
       .select(`
         *,
-        chart_of_accounts_partidas(codigo, nombre),
-        chart_of_accounts_departamentos!chart_of_accounts_subpartidas_departamento_aplicable_fkey(departamento)
+        chart_of_accounts_partidas(codigo, nombre)
       `)
       .order("es_global desc, codigo");
     
