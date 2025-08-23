@@ -9,6 +9,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/DatePicker";
 import { CurrencyInput } from "@/components/CurrencyInput";
+import { SearchableCombobox } from "@/components/ui/searchable-combobox";
+import type { SearchableComboboxItem } from "@/components/ui/searchable-combobox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
@@ -461,6 +463,59 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
     }
   };
 
+  // Convert data to SearchableComboboxItem format
+  const proyectosComboboxItems: SearchableComboboxItem[] = useMemo(() => 
+    proyectos.map(item => ({
+      value: item.id,
+      label: item.nombre,
+      searchText: item.nombre
+    })), [proyectos]
+  );
+
+  const departamentosComboboxItems: SearchableComboboxItem[] = useMemo(() => 
+    departamentos.map(dept => ({
+      value: dept.value,
+      label: dept.label,
+      searchText: dept.label
+    })), [departamentos]
+  );
+
+  const mayoresComboboxItems: SearchableComboboxItem[] = useMemo(() => 
+    mayores.map(item => ({
+      value: item.id,
+      label: item.nombre,
+      codigo: item.codigo,
+      searchText: `${item.codigo} ${item.nombre}`
+    })), [mayores]
+  );
+
+  const partidasComboboxItems: SearchableComboboxItem[] = useMemo(() => 
+    partidas.map(item => ({
+      value: item.id,
+      label: item.nombre,
+      codigo: item.codigo,
+      searchText: `${item.codigo} ${item.nombre}`
+    })), [partidas]
+  );
+
+  const subpartidasComboboxItems: SearchableComboboxItem[] = useMemo(() => 
+    subpartidas.map(item => ({
+      value: item.id,
+      label: item.nombre,
+      codigo: item.codigo,
+      searchText: `${item.codigo} ${item.nombre}`
+    })), [subpartidas]
+  );
+
+  const clientesProveedoresComboboxItems: SearchableComboboxItem[] = useMemo(() => 
+    clientesProveedores.map(item => ({
+      value: item.id,
+      label: item.nombre,
+      searchText: item.nombre,
+      group: 'tipo' in item ? (item.tipo === 'cliente' ? 'Clientes' : 'Proveedores') : undefined
+    })), [clientesProveedores]
+  );
+
   // departamentos now loaded dynamically from state
 
   return (
@@ -548,20 +603,18 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Empresa / Proyecto</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar proyecto" />
-                        </SelectTrigger>
-                      </FormControl>
-                       <SelectContent className="max-h-48 overflow-y-auto">
-                        {proyectos.filter(item => item.id && item.id.trim() !== '').map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.nombre}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <SearchableCombobox
+                        items={proyectosComboboxItems}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Seleccionar proyecto"
+                        searchPlaceholder="Buscar proyecto..."
+                        emptyText="No se encontraron proyectos."
+                        loading={dataLoading.proyectos}
+                        searchFields={['label', 'searchText']}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -616,20 +669,18 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Departamento</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar departamento" />
-                        </SelectTrigger>
-                      </FormControl>
-                       <SelectContent className="max-h-48 overflow-y-auto">
-                        {departamentos.map((dept) => (
-                          <SelectItem key={dept.value} value={dept.value}>
-                            {dept.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <SearchableCombobox
+                        items={departamentosComboboxItems}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Seleccionar departamento"
+                        searchPlaceholder="Buscar departamento..."
+                        emptyText="No se encontraron departamentos."
+                        loading={dataLoading.departamentos}
+                        searchFields={['label', 'searchText']}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -642,24 +693,20 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Mayor</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      value={field.value}
-                      disabled={!watchedDepartamento}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar mayor" />
-                        </SelectTrigger>
-                      </FormControl>
-                       <SelectContent className="max-h-48 overflow-y-auto">
-                        {mayores.filter(item => item.id && item.id.trim() !== '').map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.nombre}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <SearchableCombobox
+                        items={mayoresComboboxItems}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Seleccionar mayor"
+                        searchPlaceholder="Buscar por código o nombre..."
+                        emptyText="No se encontraron mayores."
+                        disabled={!watchedDepartamento}
+                        loading={dataLoading.mayores}
+                        searchFields={['label', 'codigo', 'searchText']}
+                        showCodes={true}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -672,24 +719,20 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Partidas</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      value={field.value}
-                      disabled={!watchedMayorId}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar partida" />
-                        </SelectTrigger>
-                      </FormControl>
-                       <SelectContent className="max-h-48 overflow-y-auto">
-                        {partidas.filter(item => item.id && item.id.trim() !== '').map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.nombre}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <SearchableCombobox
+                        items={partidasComboboxItems}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Seleccionar partida"
+                        searchPlaceholder="Buscar por código o nombre..."
+                        emptyText="No se encontraron partidas."
+                        disabled={!watchedMayorId}
+                        loading={dataLoading.partidas}
+                        searchFields={['label', 'codigo', 'searchText']}
+                        showCodes={true}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -702,24 +745,20 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Subpartidas</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      value={field.value}
-                      disabled={!watchedPartidaId}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar subpartida" />
-                        </SelectTrigger>
-                      </FormControl>
-                       <SelectContent className="max-h-48 overflow-y-auto">
-                        {subpartidas.filter(item => item.id && item.id.trim() !== '').map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.nombre}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <SearchableCombobox
+                        items={subpartidasComboboxItems}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Seleccionar subpartida"
+                        searchPlaceholder="Buscar por código o nombre..."
+                        emptyText="No se encontraron subpartidas."
+                        disabled={!watchedPartidaId}
+                        loading={dataLoading.subpartidas}
+                        searchFields={['label', 'codigo', 'searchText']}
+                        showCodes={true}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -732,20 +771,19 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cliente / Proveedor</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar cliente o proveedor" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="max-h-48 overflow-y-auto">
-                        {clientesProveedores.filter(item => item.id && item.id.trim() !== '').map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.nombre}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <SearchableCombobox
+                        items={clientesProveedoresComboboxItems}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Seleccionar cliente o proveedor"
+                        searchPlaceholder="Buscar cliente o proveedor..."
+                        emptyText="No se encontraron clientes o proveedores."
+                        loading={dataLoading.clientes}
+                        searchFields={['label', 'searchText']}
+                        maxHeight="400px"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
