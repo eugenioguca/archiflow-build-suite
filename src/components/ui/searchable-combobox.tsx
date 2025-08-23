@@ -81,49 +81,33 @@ export function SearchableCombobox({
 }: SearchableComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
+  const [filteredItems, setFilteredItems] = React.useState<SearchableComboboxItem[]>([])
+  const [selectedItem, setSelectedItem] = React.useState<SearchableComboboxItem | undefined>()
   
-  // Ensure props have safe defaults before using in any hooks
+  // Safe defaults
   const safeItems = items || []
   const safeSearchFields = searchFields || ['label']
   
-  // Debounced search to improve performance
-  const debouncedSearch = React.useMemo(() => {
-    const timeoutRef = React.useRef<NodeJS.Timeout>()
-    
-    return (searchValue: string) => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-      }
-      
-      timeoutRef.current = setTimeout(() => {
-        setSearch(searchValue || "")
-      }, 150)
+  // Update filtered items when search or items change
+  React.useEffect(() => {
+    if (!search || !safeItems.length) {
+      setFilteredItems(safeItems)
+      return
     }
-  }, [])
-
-  // Filter items based on search
-  const filteredItems = React.useMemo(() => {
-    if (!search || !safeItems.length) return safeItems
     
     const normalizedSearch = normalizeSearchText(search)
     const searchTerms = normalizedSearch.split(' ').filter(term => term.length > 0)
     
-    return safeItems.filter(item => {
+    const filtered = safeItems.filter(item => {
       const searchableText = normalizeSearchText(
         getSearchableText(item, safeSearchFields)
       )
       
       return searchTerms.every(term => searchableText.includes(term))
     })
-  }, [safeItems, search, safeSearchFields])
-
-  // Sort filtered items by relevance
-  const sortedItems = React.useMemo(() => {
-    if (!search || !filteredItems.length) return filteredItems
     
-    const normalizedSearch = normalizeSearchText(search)
-    
-    return [...filteredItems].sort((a, b) => {
+    // Sort by relevance
+    const sorted = [...filtered].sort((a, b) => {
       const aText = normalizeSearchText(getSearchableText(a, safeSearchFields))
       const bText = normalizeSearchText(getSearchableText(b, safeSearchFields))
       
@@ -142,13 +126,28 @@ export function SearchableCombobox({
       // Alphabetical order
       return aText.localeCompare(bText)
     })
-  }, [filteredItems, search, safeSearchFields])
-
-  const selectedItem = React.useMemo(() => 
-    safeItems.find((item) => item?.value === value), 
-    [safeItems, value]
-  )
-
+    
+    setFilteredItems(sorted)
+  }, [safeItems, search, safeSearchFields])
+  
+  // Update selected item when value changes
+  React.useEffect(() => {
+    const found = safeItems.find((item) => item?.value === value)
+    setSelectedItem(found)
+  }, [safeItems, value])
+  
+  // Debounced search handler
+  const debouncedSearchRef = React.useRef<NodeJS.Timeout>()
+  const handleSearch = React.useCallback((searchValue: string) => {
+    if (debouncedSearchRef.current) {
+      clearTimeout(debouncedSearchRef.current)
+    }
+    
+    debouncedSearchRef.current = setTimeout(() => {
+      setSearch(searchValue || "")
+    }, 150)
+  }, [])
+  
   const displayLabel = React.useMemo(() => {
     if (!selectedItem) return placeholder
     
@@ -194,12 +193,12 @@ export function SearchableCombobox({
         <Command shouldFilter={false}>
           <CommandInput 
             placeholder={effectiveSearchPlaceholder}
-            onValueChange={debouncedSearch}
+            onValueChange={handleSearch}
           />
           <CommandList style={{ maxHeight }}>
             <CommandEmpty>{emptyText}</CommandEmpty>
             <CommandGroup>
-              {sortedItems.map((item) => {
+              {filteredItems.map((item) => {
                 const itemLabel = showCodes && item.codigo 
                   ? `${item.codigo} - ${item.label}`
                   : item.label
