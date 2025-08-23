@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/DatePicker";
 import { CurrencyInput } from "@/components/CurrencyInput";
-import { SearchableCombobox } from "@/components/ui/searchable-combobox";
+import { HookFormCombobox } from "@/components/ui/hook-form-combobox";
 import type { SearchableComboboxItem } from "@/components/ui/searchable-combobox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -603,18 +603,16 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Empresa / Proyecto</FormLabel>
-                    <FormControl>
-                      <SearchableCombobox
-                        items={proyectosComboboxItems}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder="Seleccionar proyecto"
-                        searchPlaceholder="Buscar proyecto..."
-                        emptyText="No se encontraron proyectos."
-                        loading={dataLoading.proyectos}
-                        searchFields={['label', 'searchText']}
-                      />
-                    </FormControl>
+                    <HookFormCombobox
+                      items={proyectosComboboxItems}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      placeholder="Seleccionar proyecto"
+                      searchPlaceholder="Buscar proyecto..."
+                      emptyText="No se encontraron proyectos."
+                      loading={dataLoading.proyectos}
+                      searchFields={['label', 'searchText']}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -669,8 +667,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Departamento</FormLabel>
-                    <FormControl>
-                      <SearchableCombobox
+                     <HookFormCombobox
                         items={departamentosComboboxItems}
                         value={field.value}
                         onValueChange={field.onChange}
@@ -678,9 +675,8 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                         searchPlaceholder="Buscar departamento..."
                         emptyText="No se encontraron departamentos."
                         loading={dataLoading.departamentos}
-                        searchFields={['label', 'searchText']}
+                        searchFields={['label']}
                       />
-                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -693,20 +689,18 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Mayor</FormLabel>
-                    <FormControl>
-                      <SearchableCombobox
-                        items={mayoresComboboxItems}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder="Seleccionar mayor"
-                        searchPlaceholder="Buscar por código o nombre..."
-                        emptyText="No se encontraron mayores."
-                        disabled={!watchedDepartamento}
-                        loading={dataLoading.mayores}
-                        searchFields={['label', 'codigo', 'searchText']}
-                        showCodes={true}
-                      />
-                    </FormControl>
+                    <HookFormCombobox
+                      items={mayoresComboboxItems}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      placeholder="Seleccionar mayor"
+                      searchPlaceholder="Buscar por código o nombre..."
+                      emptyText="No se encontraron mayores."
+                      disabled={!watchedDepartamento}
+                      loading={dataLoading.mayores}
+                      searchFields={['label', 'codigo', 'searchText']}
+                      showCodes={true}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -719,20 +713,18 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Partidas</FormLabel>
-                    <FormControl>
-                      <SearchableCombobox
-                        items={partidasComboboxItems}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder="Seleccionar partida"
-                        searchPlaceholder="Buscar por código o nombre..."
-                        emptyText="No se encontraron partidas."
-                        disabled={!watchedMayorId}
-                        loading={dataLoading.partidas}
-                        searchFields={['label', 'codigo', 'searchText']}
-                        showCodes={true}
-                      />
-                    </FormControl>
+                    <HookFormCombobox
+                      items={partidasComboboxItems}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      placeholder="Seleccionar partida"
+                      searchPlaceholder="Buscar por código o nombre..."
+                      emptyText="No se encontraron partidas."
+                      disabled={!watchedMayorId}
+                      loading={dataLoading.partidas}
+                      searchFields={['label', 'codigo', 'searchText']}
+                      showCodes={true}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -745,20 +737,18 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Subpartidas</FormLabel>
-                    <FormControl>
-                      <SearchableCombobox
-                        items={subpartidasComboboxItems}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder="Seleccionar subpartida"
-                        searchPlaceholder="Buscar por código o nombre..."
-                        emptyText="No se encontraron subpartidas."
-                        disabled={!watchedPartidaId}
-                        loading={dataLoading.subpartidas}
-                        searchFields={['label', 'codigo', 'searchText']}
-                        showCodes={true}
-                      />
-                    </FormControl>
+                    <HookFormCombobox
+                      items={subpartidasComboboxItems}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      placeholder="Seleccionar subpartida"
+                      searchPlaceholder="Buscar por código o nombre..."
+                      emptyText="No se encontraron subpartidas."
+                      disabled={!watchedPartidaId}
+                      loading={dataLoading.subpartidas}
+                      searchFields={['label', 'codigo', 'searchText']}
+                      showCodes={true}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -771,19 +761,17 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cliente / Proveedor</FormLabel>
-                    <FormControl>
-                      <SearchableCombobox
-                        items={clientesProveedoresComboboxItems}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder="Seleccionar cliente o proveedor"
-                        searchPlaceholder="Buscar cliente o proveedor..."
-                        emptyText="No se encontraron clientes o proveedores."
-                        loading={dataLoading.clientes}
-                        searchFields={['label', 'searchText']}
-                        maxHeight="400px"
-                      />
-                    </FormControl>
+                    <HookFormCombobox
+                      items={clientesProveedoresComboboxItems}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      placeholder="Seleccionar cliente o proveedor"
+                      searchPlaceholder="Buscar cliente o proveedor..."
+                      emptyText="No se encontraron clientes o proveedores."
+                      loading={dataLoading.clientes}
+                      searchFields={['label', 'searchText']}
+                      maxHeight="400px"
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
