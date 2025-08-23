@@ -28,6 +28,7 @@ import ClientPortalPreview from "./pages/ClientPortalPreview";
 import SuppliersNew from "./pages/SuppliersNew";
 import ClientPortal from "./pages/ClientPortal";
 import UnifiedTransactions from "./pages/UnifiedTransactions";
+import TestTransactionForm from "./pages/TestTransactionForm";
 
 import PendingApproval from "./components/PendingApproval";
 import { UserOnboarding } from "./components/UserOnboarding";
@@ -228,6 +229,16 @@ const App = () => (
                  <ProtectedRoute>
                    <Layout>
                      <UnifiedTransactions />
+                   </Layout>
+                 </ProtectedRoute>
+               } 
+             />
+             <Route 
+               path="/test-transaction-form" 
+               element={
+                 <ProtectedRoute>
+                   <Layout>
+                     <TestTransactionForm />
                    </Layout>
                  </ProtectedRoute>
                } 
