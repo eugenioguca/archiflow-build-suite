@@ -2,13 +2,33 @@ import { Link, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Building2, Users, BarChart3, FileText, Zap, Shield, Globe, ArrowRight, Sparkles } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { TestCombobox } from '@/components/TestCombobox';
+import { useState } from 'react';
 
 const Index = () => {
   const { user, loading, isApproved } = useAuth();
+  const [showTest, setShowTest] = useState(false);
 
   // Si el usuario está autenticado y aprobado, redirigir al dashboard
   if (!loading && user && isApproved) {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  // Modo de prueba del combobox
+  if (showTest) {
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <div className="mb-4">
+          <Button 
+            onClick={() => setShowTest(false)}
+            variant="outline"
+          >
+            ← Volver a Index
+          </Button>
+        </div>
+        <TestCombobox />
+      </div>
+    );
   }
 
   return (
@@ -109,6 +129,17 @@ const Index = () => {
             </Button>
           </Link>
         </div>
+      </div>
+      
+      {/* Test button - floating */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <Button 
+          onClick={() => setShowTest(true)}
+          className="bg-red-600 hover:bg-red-700 text-white shadow-lg"
+          size="sm"
+        >
+          🧪 Test Combobox
+        </Button>
       </div>
     </div>
   );

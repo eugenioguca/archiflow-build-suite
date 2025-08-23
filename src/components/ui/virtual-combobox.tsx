@@ -157,6 +157,7 @@ export function VirtualCombobox({
 
   // Handle item selection
   const handleSelect = React.useCallback((selectedValue: string) => {
+    console.log('[VirtualCombobox] Selecting value:', selectedValue)
     onValueChange?.(selectedValue === value ? "" : selectedValue)
     setOpen(false)
     setInputValue("")
@@ -268,11 +269,14 @@ export function VirtualCombobox({
       >
         <div className="flex items-center border-b px-3 py-2">
           <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-          <Input
+            <Input
             ref={searchInputRef}
             placeholder={effectiveSearchPlaceholder}
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)} // Sin debounce para input
+            onChange={(e) => {
+              console.log('[VirtualCombobox] Input change:', e.target.value)
+              setInputValue(e.target.value)
+            }}
             className="border-0 shadow-none focus-visible:ring-0 h-8"
           />
         </div>
