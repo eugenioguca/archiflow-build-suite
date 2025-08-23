@@ -83,8 +83,8 @@ const SelectContent = React.forwardRef<
       {...props}
     >
       <SelectScrollUpButton />
-      <ScrollArea className="h-60">
-        <SelectPrimitive.Viewport className="p-1">
+      <ScrollArea className="h-60 touch-scroll-area">
+        <SelectPrimitive.Viewport className="p-1 touch-pan-y overscroll-contain">
           {children}
         </SelectPrimitive.Viewport>
       </ScrollArea>

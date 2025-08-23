@@ -269,4 +269,53 @@ All colors MUST be HSL.
   .ios-system-gray {
     color: #8E8E93;
   }
+
+  /* Enhanced Touch Scroll for Dropdowns */
+  .touch-scroll-area {
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+
+  .touch-scroll-area [data-radix-scroll-area-viewport] {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+    scroll-behavior: smooth;
+  }
+
+  /* Mobile-optimized scrollbar for dropdowns */
+  .touch-scroll-area::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .touch-scroll-area::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .touch-scroll-area::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 2px;
+  }
+
+  .touch-scroll-area::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  /* Touch-friendly padding for dropdown items */
+  .touch-scroll-area [data-radix-select-item] {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    touch-action: manipulation;
+  }
+
+  /* Momentum scrolling for better mobile experience */
+  @supports (-webkit-overflow-scrolling: touch) {
+    .touch-scroll-area {
+      -webkit-overflow-scrolling: touch;
+    }
+  }
 }
