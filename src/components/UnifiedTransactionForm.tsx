@@ -463,9 +463,9 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
     }
   };
 
-  // Convert data to SearchableComboboxItem format
+  // Convert data to SearchableComboboxItem format with null checks
   const proyectosComboboxItems: SearchableComboboxItem[] = useMemo(() => 
-    proyectos.map(item => ({
+    (proyectos || []).map(item => ({
       value: item.id,
       label: item.nombre,
       searchText: item.nombre
@@ -473,7 +473,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
   );
 
   const departamentosComboboxItems: SearchableComboboxItem[] = useMemo(() => 
-    departamentos.map(dept => ({
+    (departamentos || []).map(dept => ({
       value: dept.value,
       label: dept.label,
       searchText: dept.label
@@ -481,7 +481,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
   );
 
   const mayoresComboboxItems: SearchableComboboxItem[] = useMemo(() => 
-    mayores.map(item => ({
+    (mayores || []).map(item => ({
       value: item.id,
       label: item.nombre,
       codigo: item.codigo,
@@ -490,7 +490,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
   );
 
   const partidasComboboxItems: SearchableComboboxItem[] = useMemo(() => 
-    partidas.map(item => ({
+    (partidas || []).map(item => ({
       value: item.id,
       label: item.nombre,
       codigo: item.codigo,
@@ -499,7 +499,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
   );
 
   const subpartidasComboboxItems: SearchableComboboxItem[] = useMemo(() => 
-    subpartidas.map(item => ({
+    (subpartidas || []).map(item => ({
       value: item.id,
       label: item.nombre,
       codigo: item.codigo,
@@ -508,7 +508,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
   );
 
   const clientesProveedoresComboboxItems: SearchableComboboxItem[] = useMemo(() => 
-    clientesProveedores.map(item => ({
+    (clientesProveedores || []).map(item => ({
       value: item.id,
       label: item.nombre,
       searchText: item.nombre,
