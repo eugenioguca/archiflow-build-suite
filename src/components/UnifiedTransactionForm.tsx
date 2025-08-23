@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Form, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormField, FormItem, FormLabel, FormMessage, FormControl } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -59,15 +59,6 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
   const [showDescription, setShowDescription] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   
-  // Simple local states for each combobox (following TestCombobox pattern)
-  const [selectedSucursal, setSelectedSucursal] = useState("");
-  const [selectedProyecto, setSelectedProyecto] = useState("");
-  const [selectedDepartamento, setSelectedDepartamento] = useState("");
-  const [selectedMayor, setSelectedMayor] = useState("");
-  const [selectedPartida, setSelectedPartida] = useState("");
-  const [selectedSubpartida, setSelectedSubpartida] = useState("");
-  const [selectedClienteProveedor, setSelectedClienteProveedor] = useState("");
-  
   // Data states - always arrays, never loading states that prevent rendering
   const [sucursales, setSucursales] = useState<Option[]>([]);
   const [proyectos, setProyectos] = useState<Option[]>([]);
@@ -92,27 +83,31 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
 
   const watchedTieneFactura = form.watch("tiene_factura");
   const watchedMonto = form.watch("monto");
+  const watchedDepartamento = form.watch("departamento");
+  const watchedMayor = form.watch("mayor_id");
+  const watchedPartida = form.watch("partida_id");
 
   // Validation function
   const validateForm = useCallback(() => {
     const errors: string[] = [];
+    const values = form.getValues();
     
-    if (!selectedSucursal) {
+    if (!values.sucursal_id) {
       errors.push("Sucursal es requerida");
     }
-    if (!selectedDepartamento) {
+    if (!values.departamento) {
       errors.push("Departamento es requerido");
     }
-    if (!form.getValues("monto") || form.getValues("monto") <= 0) {
+    if (!values.monto || values.monto <= 0) {
       errors.push("Monto debe ser mayor a 0");
     }
-    if (form.getValues("tiene_factura") && !form.getValues("folio_factura")?.trim()) {
+    if (values.tiene_factura && !values.folio_factura?.trim()) {
       errors.push("Folio de factura es requerido cuando se marca 'Tiene factura'");
     }
     
     setValidationErrors(errors);
     return errors.length === 0;
-  }, [selectedSucursal, selectedDepartamento, form]);
+  }, [form]);
 
   // Load initial data when modal opens
   useEffect(() => {
@@ -121,71 +116,39 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
     }
   }, [open]);
 
-  // Sync local states with React Hook Form
+  // Handle cascading dependencies using form.watch
   useEffect(() => {
-    form.setValue("sucursal_id", selectedSucursal);
-  }, [selectedSucursal, form]);
-
-  useEffect(() => {
-    form.setValue("empresa_proyecto_id", selectedProyecto);
-  }, [selectedProyecto, form]);
-
-  useEffect(() => {
-    form.setValue("departamento", selectedDepartamento);
-    // When department changes, reset dependent fields
-    if (selectedDepartamento) {
-      setSelectedMayor("");
-      setSelectedPartida("");
-      setSelectedSubpartida("");
-      form.setValue("mayor_id", undefined);
-      form.setValue("partida_id", undefined);
-      form.setValue("subpartida_id", undefined);
-      loadMayores(selectedDepartamento);
-    } else {
+    if (watchedDepartamento) {
+      // Reset dependent fields
+      form.setValue("mayor_id", "");
+      form.setValue("partida_id", "");
+      form.setValue("subpartida_id", "");
       setMayores([]);
-    }
-  }, [selectedDepartamento, form]);
-
-  useEffect(() => {
-    form.setValue("mayor_id", selectedMayor);
-    // When mayor changes, reset dependent fields
-    if (selectedMayor) {
-      setSelectedPartida("");
-      setSelectedSubpartida("");
-      form.setValue("partida_id", undefined);
-      form.setValue("subpartida_id", undefined);
-      loadPartidas(selectedMayor);
-    } else {
       setPartidas([]);
-    }
-  }, [selectedMayor, form]);
-
-  useEffect(() => {
-    form.setValue("partida_id", selectedPartida);
-    // When partida changes, reset subpartida
-    if (selectedPartida) {
-      setSelectedSubpartida("");
-      form.setValue("subpartida_id", undefined);
-      loadSubpartidas(selectedPartida);
-    } else {
       setSubpartidas([]);
+      loadMayores(watchedDepartamento);
     }
-  }, [selectedPartida, form]);
+  }, [watchedDepartamento, form]);
 
   useEffect(() => {
-    form.setValue("subpartida_id", selectedSubpartida);
-  }, [selectedSubpartida, form]);
+    if (watchedMayor) {
+      // Reset dependent fields
+      form.setValue("partida_id", "");
+      form.setValue("subpartida_id", "");
+      setPartidas([]);
+      setSubpartidas([]);
+      loadPartidas(watchedMayor);
+    }
+  }, [watchedMayor, form]);
 
   useEffect(() => {
-    form.setValue("cliente_proveedor_id", selectedClienteProveedor);
-    // Determine tipo_entidad based on selected client/supplier
-    if (selectedClienteProveedor) {
-      const selected = clientesProveedores.find(item => item.id === selectedClienteProveedor);
-      if (selected?.tipo) {
-        form.setValue("tipo_entidad", selected.tipo);
-      }
+    if (watchedPartida) {
+      // Reset subpartida
+      form.setValue("subpartida_id", "");
+      setSubpartidas([]);
+      loadSubpartidas(watchedPartida);
     }
-  }, [selectedClienteProveedor, form, clientesProveedores]);
+  }, [watchedPartida, form]);
 
   // Real-time validation
   useEffect(() => {
@@ -471,14 +434,10 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
       toast.success(`Transacción creada exitosamente (Ref: ${insertedData?.referencia_unica || 'N/A'})`);
       onOpenChange(false);
       form.reset();
-      // Reset local states
-      setSelectedSucursal("");
-      setSelectedProyecto("");
-      setSelectedDepartamento("");
-      setSelectedMayor("");
-      setSelectedPartida("");
-      setSelectedSubpartida("");
-      setSelectedClienteProveedor("");
+      // Reset data arrays to avoid stale data
+      setMayores([]);
+      setPartidas([]);
+      setSubpartidas([]);
       setValidationErrors([]);
     } catch (error: any) {
       console.error("Error creating transaction:", error);
@@ -575,41 +534,55 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Fecha *</FormLabel>
-                    <DatePicker
-                      date={field.value}
-                      onDateChange={field.onChange}
-                    />
+                    <FormControl>
+                      <DatePicker
+                        date={field.value}
+                        onDateChange={field.onChange}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <FormItem>
-                <FormLabel>Sucursal *</FormLabel>
-                <SearchableCombobox
-                  items={sucursalesItems}
-                  value={selectedSucursal}
-                  onValueChange={setSelectedSucursal}
-                  placeholder="Seleccionar sucursal..."
-                  emptyText="No hay sucursales disponibles"
-                  disabled={loading}
-                />
-                <FormMessage />
-              </FormItem>
+              <FormField
+                control={form.control}
+                name="sucursal_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Sucursal *</FormLabel>
+                    <SearchableCombobox
+                      items={sucursalesItems}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      placeholder="Seleccionar sucursal..."
+                      emptyText="No hay sucursales disponibles"
+                      disabled={loading}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormItem>
-                <FormLabel>Proyecto</FormLabel>
-                <SearchableCombobox
-                  items={proyectosItems}
-                  value={selectedProyecto}
-                  onValueChange={setSelectedProyecto}
-                  placeholder="Seleccionar proyecto..."
-                  emptyText="No hay proyectos disponibles"
-                  disabled={loading}
-                />
-              </FormItem>
+              <FormField
+                control={form.control}
+                name="empresa_proyecto_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Proyecto</FormLabel>
+                    <SearchableCombobox
+                      items={proyectosItems}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      placeholder="Seleccionar proyecto..."
+                      emptyText="No hay proyectos disponibles"
+                      disabled={loading}
+                    />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}
@@ -640,85 +613,126 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Monto *</FormLabel>
-                    <CurrencyInput
-                      value={field.value}
-                      onChange={field.onChange}
-                      disabled={loading}
-                      placeholder="0.00"
-                    />
+                    <FormControl>
+                      <CurrencyInput
+                        value={field.value}
+                        onChange={field.onChange}
+                        disabled={loading}
+                        placeholder="0.00"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <FormItem>
-                <FormLabel>Departamento *</FormLabel>
-                <SearchableCombobox
-                  items={departamentosItems}
-                  value={selectedDepartamento}
-                  onValueChange={setSelectedDepartamento}
-                  placeholder="Seleccionar departamento..."
-                  emptyText="No hay departamentos disponibles"
-                  disabled={loading}
-                />
-                <FormMessage />
-              </FormItem>
+              <FormField
+                control={form.control}
+                name="departamento"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Departamento *</FormLabel>
+                    <SearchableCombobox
+                      items={departamentosItems}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      placeholder="Seleccionar departamento..."
+                      emptyText="No hay departamentos disponibles"
+                      disabled={loading}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             {/* Accounting Codes */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FormItem>
-                <FormLabel>Mayor</FormLabel>
-                <SearchableCombobox
-                  items={mayoresItems}
-                  value={selectedMayor}
-                  onValueChange={setSelectedMayor}
-                  placeholder="Seleccionar mayor..."
-                  emptyText="Selecciona un departamento primero"
-                  showCodes={true}
-                  disabled={loading || !selectedDepartamento}
-                />
-              </FormItem>
+              <FormField
+                control={form.control}
+                name="mayor_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mayor</FormLabel>
+                    <SearchableCombobox
+                      items={mayoresItems}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      placeholder="Seleccionar mayor..."
+                      emptyText="Selecciona un departamento primero"
+                      showCodes={true}
+                      disabled={loading || !watchedDepartamento}
+                    />
+                  </FormItem>
+                )}
+              />
 
-              <FormItem>
-                <FormLabel>Partida</FormLabel>
-                <SearchableCombobox
-                  items={partidasItems}
-                  value={selectedPartida}
-                  onValueChange={setSelectedPartida}
-                  placeholder="Seleccionar partida..."
-                  emptyText="Selecciona un mayor primero"
-                  showCodes={true}
-                  disabled={loading || !selectedMayor}
-                />
-              </FormItem>
+              <FormField
+                control={form.control}
+                name="partida_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Partida</FormLabel>
+                    <SearchableCombobox
+                      items={partidasItems}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      placeholder="Seleccionar partida..."
+                      emptyText="Selecciona un mayor primero"
+                      showCodes={true}
+                      disabled={loading || !watchedMayor}
+                    />
+                  </FormItem>
+                )}
+              />
 
-              <FormItem>
-                <FormLabel>Subpartida</FormLabel>
-                <SearchableCombobox
-                  items={subpartidasItems}
-                  value={selectedSubpartida}
-                  onValueChange={setSelectedSubpartida}
-                  placeholder="Seleccionar subpartida..."
-                  emptyText="Selecciona una partida primero"
-                  showCodes={true}
-                  disabled={loading || !selectedPartida}
-                />
-              </FormItem>
+              <FormField
+                control={form.control}
+                name="subpartida_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Subpartida</FormLabel>
+                    <SearchableCombobox
+                      items={subpartidasItems}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      placeholder="Seleccionar subpartida..."
+                      emptyText="Selecciona una partida primero"
+                      showCodes={true}
+                      disabled={loading || !watchedPartida}
+                    />
+                  </FormItem>
+                )}
+              />
             </div>
 
             {/* Client/Supplier */}
-            <FormItem>
-              <FormLabel>Cliente/Proveedor</FormLabel>
-              <SearchableCombobox
-                items={clientesProveedoresItems}
-                value={selectedClienteProveedor}
-                onValueChange={setSelectedClienteProveedor}
-                placeholder="Seleccionar cliente o proveedor..."
-                emptyText="No hay clientes o proveedores disponibles"
-                disabled={loading}
-              />
-            </FormItem>
+            <FormField
+              control={form.control}
+              name="cliente_proveedor_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cliente/Proveedor</FormLabel>
+                  <SearchableCombobox
+                    items={clientesProveedoresItems}
+                    value={field.value}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      // Set tipo_entidad based on selection
+                      if (value) {
+                        const selected = clientesProveedores.find(item => item.id === value);
+                        if (selected?.tipo) {
+                          form.setValue("tipo_entidad", selected.tipo);
+                        }
+                      }
+                    }}
+                    placeholder="Seleccionar cliente o proveedor..."
+                    emptyText="No hay clientes o proveedores disponibles"
+                    disabled={loading}
+                  />
+                </FormItem>
+              )}
+            />
 
             {/* Invoice Information */}
             <div className="space-y-4">
@@ -727,11 +741,13 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                 name="tiene_factura"
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      disabled={loading}
-                    />
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={loading}
+                      />
+                    </FormControl>
                     <div className="space-y-1 leading-none">
                       <FormLabel>Tiene factura</FormLabel>
                     </div>
@@ -746,11 +762,13 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Folio de Factura *</FormLabel>
-                      <Input
-                        placeholder="Ingrese el folio de la factura"
-                        disabled={loading}
-                        {...field}
-                      />
+                      <FormControl>
+                        <Input
+                          placeholder="Ingrese el folio de la factura"
+                          disabled={loading}
+                          {...field}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -780,12 +798,14 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Descripción</FormLabel>
-                      <Textarea
-                        placeholder="Descripción adicional (opcional)"
-                        className="resize-none"
-                        disabled={loading}
-                        {...field}
-                      />
+                      <FormControl>
+                        <Textarea
+                          placeholder="Descripción adicional (opcional)"
+                          className="resize-none"
+                          disabled={loading}
+                          {...field}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
