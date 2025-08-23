@@ -65,7 +65,7 @@ function getSearchableText(item: SearchableComboboxItem, searchFields: string[])
 }
 
 export function SearchableCombobox({
-  items,
+  items = [],
   value,
   onValueChange,
   placeholder = "Seleccionar opción...",
@@ -82,6 +82,10 @@ export function SearchableCombobox({
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
   
+  // Ensure items and searchFields are always arrays
+  const safeItems = React.useMemo(() => items || [], [items])
+  const safeSearchFields = React.useMemo(() => searchFields || ['label'], [searchFields])
+  
   // Debounced search to improve performance
   const debouncedSearch = React.useMemo(() => {
     const timeoutRef = React.useRef<NodeJS.Timeout>()
@@ -92,36 +96,36 @@ export function SearchableCombobox({
       }
       
       timeoutRef.current = setTimeout(() => {
-        setSearch(searchValue)
+        setSearch(searchValue || "")
       }, 150)
     }
   }, [])
 
   // Filter items based on search
   const filteredItems = React.useMemo(() => {
-    if (!search) return items
+    if (!search || !safeItems.length) return safeItems
     
     const normalizedSearch = normalizeSearchText(search)
     const searchTerms = normalizedSearch.split(' ').filter(term => term.length > 0)
     
-    return items.filter(item => {
+    return safeItems.filter(item => {
       const searchableText = normalizeSearchText(
-        getSearchableText(item, searchFields)
+        getSearchableText(item, safeSearchFields)
       )
       
       return searchTerms.every(term => searchableText.includes(term))
     })
-  }, [items, search, searchFields])
+  }, [safeItems, search, safeSearchFields])
 
   // Sort filtered items by relevance
   const sortedItems = React.useMemo(() => {
-    if (!search) return filteredItems
+    if (!search || !filteredItems.length) return filteredItems
     
     const normalizedSearch = normalizeSearchText(search)
     
     return [...filteredItems].sort((a, b) => {
-      const aText = normalizeSearchText(getSearchableText(a, searchFields))
-      const bText = normalizeSearchText(getSearchableText(b, searchFields))
+      const aText = normalizeSearchText(getSearchableText(a, safeSearchFields))
+      const bText = normalizeSearchText(getSearchableText(b, safeSearchFields))
       
       // Exact matches first
       const aExact = aText === normalizedSearch
@@ -138,9 +142,12 @@ export function SearchableCombobox({
       // Alphabetical order
       return aText.localeCompare(bText)
     })
-  }, [filteredItems, search, searchFields])
+  }, [filteredItems, search, safeSearchFields])
 
-  const selectedItem = items.find((item) => item.value === value)
+  const selectedItem = React.useMemo(() => 
+    safeItems.find((item) => item?.value === value), 
+    [safeItems, value]
+  )
 
   const displayLabel = React.useMemo(() => {
     if (!selectedItem) return placeholder
