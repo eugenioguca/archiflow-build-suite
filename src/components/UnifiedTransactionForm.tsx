@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormField, FormItem, FormLabel, FormMessage, FormControl } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -9,11 +11,50 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/DatePicker";
 import { CurrencyInput } from "@/components/CurrencyInput";
-import { SearchableCombobox, type SearchableComboboxItem } from "@/components/ui/searchable-combobox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+
+// Form validation schema
+const formSchema = z.object({
+  fecha: z.date(),
+  sucursal_id: z.string().min(1, "Sucursal es requerida"),
+  empresa_proyecto_id: z.string().optional(),
+  tipo_movimiento: z.enum(["ingreso", "egreso"]),
+  monto: z.number().min(0.01, "Monto debe ser mayor a 0"),
+  departamento: z.string().min(1, "Departamento es requerido"),
+  mayor_id: z.string().optional(),
+  partida_id: z.string().optional(),
+  subpartida_id: z.string().optional(),
+  cliente_proveedor_id: z.string().optional(),
+  tipo_entidad: z.enum(["cliente", "proveedor"]).optional(),
+  tiene_factura: z.boolean(),
+  folio_factura: z.string().optional(),
+  descripcion: z.string().optional(),
+}).refine((data) => {
+  if (data.tiene_factura && !data.folio_factura?.trim()) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Folio de factura es requerido cuando se marca 'Tiene factura'",
+  path: ["folio_factura"],
+});
+
+type FormData = z.infer<typeof formSchema>;
+
+interface UnifiedTransactionFormProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+interface Option {
+  id: string;
+  nombre: string;
+  codigo?: string;
+  tipo?: "cliente" | "proveedor";
+}
 
 // Function to normalize text for internal comparisons only
 const normalizeForComparison = (text: string): string => {
@@ -25,41 +66,12 @@ const normalizeForComparison = (text: string): string => {
     .replace(/_/g, ' ');
 };
 
-interface UnifiedTransactionFormProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-interface FormData {
-  fecha: Date;
-  sucursal_id: string;
-  empresa_proyecto_id?: string;
-  tipo_movimiento: "ingreso" | "egreso";
-  monto: number;
-  departamento: string;
-  mayor_id?: string;
-  partida_id?: string;
-  subpartida_id?: string;
-  cliente_proveedor_id?: string;
-  tipo_entidad?: "cliente" | "proveedor";
-  tiene_factura: boolean;
-  folio_factura?: string;
-  descripcion?: string;
-}
-
-interface Option {
-  id: string;
-  nombre: string;
-  codigo?: string;
-  tipo?: "cliente" | "proveedor";
-}
-
 export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactionFormProps) {
   const [loading, setLoading] = useState(false);
   const [showDescription, setShowDescription] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   
-  // Data states - always arrays, never loading states that prevent rendering
+  // Data states
   const [sucursales, setSucursales] = useState<Option[]>([]);
   const [proyectos, setProyectos] = useState<Option[]>([]);
   const [departamentos, setDepartamentos] = useState<Option[]>([]);
@@ -68,10 +80,14 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
   const [subpartidas, setSubpartidas] = useState<Option[]>([]);
   const [clientesProveedores, setClientesProveedores] = useState<Option[]>([]);
   
-  // Simple loading indicators that don't affect rendering
-  const [isLoadingData, setIsLoadingData] = useState(false);
+  // Loading states for individual dropdowns
+  const [isLoadingInitial, setIsLoadingInitial] = useState(false);
+  const [isLoadingMayores, setIsLoadingMayores] = useState(false);
+  const [isLoadingPartidas, setIsLoadingPartidas] = useState(false);
+  const [isLoadingSubpartidas, setIsLoadingSubpartidas] = useState(false);
 
   const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       fecha: new Date(),
       tipo_movimiento: "ingreso",
@@ -82,32 +98,9 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
   });
 
   const watchedTieneFactura = form.watch("tiene_factura");
-  const watchedMonto = form.watch("monto");
   const watchedDepartamento = form.watch("departamento");
   const watchedMayor = form.watch("mayor_id");
   const watchedPartida = form.watch("partida_id");
-
-  // Validation function
-  const validateForm = useCallback(() => {
-    const errors: string[] = [];
-    const values = form.getValues();
-    
-    if (!values.sucursal_id) {
-      errors.push("Sucursal es requerida");
-    }
-    if (!values.departamento) {
-      errors.push("Departamento es requerido");
-    }
-    if (!values.monto || values.monto <= 0) {
-      errors.push("Monto debe ser mayor a 0");
-    }
-    if (values.tiene_factura && !values.folio_factura?.trim()) {
-      errors.push("Folio de factura es requerido cuando se marca 'Tiene factura'");
-    }
-    
-    setValidationErrors(errors);
-    return errors.length === 0;
-  }, [form]);
 
   // Load initial data when modal opens
   useEffect(() => {
@@ -116,7 +109,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
     }
   }, [open]);
 
-  // Handle cascading dependencies using form.watch
+  // Handle cascading dependencies
   useEffect(() => {
     if (watchedDepartamento) {
       // Reset dependent fields
@@ -150,15 +143,8 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
     }
   }, [watchedPartida, form]);
 
-  // Real-time validation
-  useEffect(() => {
-    if (open) {
-      validateForm();
-    }
-  }, [open, watchedMonto, watchedTieneFactura, validateForm]);
-
   const loadInitialData = async () => {
-    setIsLoadingData(true);
+    setIsLoadingInitial(true);
     try {
       await Promise.all([
         loadSucursales(),
@@ -170,7 +156,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
       console.error("Error loading initial data:", error);
       toast.error("Error al cargar datos iniciales");
     } finally {
-      setIsLoadingData(false);
+      setIsLoadingInitial(false);
     }
   };
 
@@ -237,6 +223,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
   };
 
   const loadMayores = async (departamento: string) => {
+    setIsLoadingMayores(true);
     try {
       const { data, error } = await supabase
         .from("chart_of_accounts_mayor")
@@ -256,10 +243,13 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
       console.error("Error loading mayores:", error);
       toast.error("Error al cargar mayores");
       setMayores([]);
+    } finally {
+      setIsLoadingMayores(false);
     }
   };
 
   const loadPartidas = async (mayorId: string) => {
+    setIsLoadingPartidas(true);
     try {
       const { data, error } = await supabase
         .from("chart_of_accounts_partidas")
@@ -279,10 +269,13 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
       console.error("Error loading partidas:", error);
       toast.error("Error al cargar partidas");
       setPartidas([]);
+    } finally {
+      setIsLoadingPartidas(false);
     }
   };
 
   const loadSubpartidas = async (partidaId: string) => {
+    setIsLoadingSubpartidas(true);
     try {
       // Get the partida to check its department
       const { data: partida } = await supabase
@@ -336,6 +329,8 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
       console.error("Error loading subpartidas:", error);
       toast.error("Error al cargar subpartidas");
       setSubpartidas([]);
+    } finally {
+      setIsLoadingSubpartidas(false);
     }
   };
 
@@ -380,12 +375,6 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
   };
 
   const onSubmit = async (data: FormData) => {
-    // Validate form before submission
-    if (!validateForm()) {
-      toast.error("Por favor corrige los errores antes de continuar");
-      return;
-    }
-
     setLoading(true);
     try {
       // Get current user profile
@@ -433,12 +422,19 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
 
       toast.success(`Transacción creada exitosamente (Ref: ${insertedData?.referencia_unica || 'N/A'})`);
       onOpenChange(false);
-      form.reset();
-      // Reset data arrays to avoid stale data
+      form.reset({
+        fecha: new Date(),
+        tipo_movimiento: "ingreso",
+        monto: 0,
+        departamento: "",
+        tiene_factura: false,
+      });
+      
+      // Reset all dependent data
       setMayores([]);
       setPartidas([]);
       setSubpartidas([]);
-      setValidationErrors([]);
+      setShowDescription(false);
     } catch (error: any) {
       console.error("Error creating transaction:", error);
       const errorMessage = error.message || "Error desconocido al crear transacción";
@@ -455,79 +451,20 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
     }
   };
 
-  // Convert data to SearchableComboboxItem format (following TestCombobox pattern)
-  const sucursalesItems: SearchableComboboxItem[] = sucursales.map(item => ({
-    value: item.id,
-    label: item.nombre,
-    searchText: item.nombre
-  }));
-
-  const proyectosItems: SearchableComboboxItem[] = proyectos.map(item => ({
-    value: item.id,
-    label: item.nombre,
-    searchText: item.nombre
-  }));
-
-  const departamentosItems: SearchableComboboxItem[] = departamentos.map(item => ({
-    value: item.id,
-    label: item.nombre,
-    searchText: item.nombre
-  }));
-
-  const mayoresItems: SearchableComboboxItem[] = mayores.map(item => ({
-    value: item.id,
-    label: item.nombre,
-    codigo: item.codigo,
-    searchText: `${item.codigo} ${item.nombre}`
-  }));
-
-  const partidasItems: SearchableComboboxItem[] = partidas.map(item => ({
-    value: item.id,
-    label: item.nombre,
-    codigo: item.codigo,
-    searchText: `${item.codigo} ${item.nombre}`
-  }));
-
-  const subpartidasItems: SearchableComboboxItem[] = subpartidas.map(item => ({
-    value: item.id,
-    label: item.nombre,
-    codigo: item.codigo,
-    searchText: `${item.codigo} ${item.nombre}`
-  }));
-
-  const clientesProveedoresItems: SearchableComboboxItem[] = clientesProveedores.map(item => ({
-    value: item.id,
-    label: item.nombre,
-    searchText: item.nombre
-  }));
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Crear Nueva Transacción Financiera
-            {isLoadingData && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isLoadingInitial && <Loader2 className="h-4 w-4 animate-spin" />}
           </DialogTitle>
         </DialogHeader>
 
-        {validationErrors.length > 0 && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              <ul className="list-disc pl-4">
-                {validationErrors.map((error, index) => (
-                  <li key={index}>{error}</li>
-                ))}
-              </ul>
-            </AlertDescription>
-          </Alert>
-        )}
-
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Basic Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Row 1: Fecha, Sucursal, Proyecto */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FormField
                 control={form.control}
                 name="fecha"
@@ -551,49 +488,65 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Sucursal *</FormLabel>
-                    <SearchableCombobox
-                      items={sucursalesItems}
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      placeholder="Seleccionar sucursal..."
-                      emptyText="No hay sucursales disponibles"
-                      disabled={loading}
-                    />
+                    <Select value={field.value} onValueChange={field.onChange} disabled={loading || isLoadingInitial}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar sucursal..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {sucursales.map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="empresa_proyecto_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Empresa/Proyecto</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange} disabled={loading || isLoadingInitial}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar proyecto..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {proyectos.map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="empresa_proyecto_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Proyecto</FormLabel>
-                    <SearchableCombobox
-                      items={proyectosItems}
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      placeholder="Seleccionar proyecto..."
-                      emptyText="No hay proyectos disponibles"
-                      disabled={loading}
-                    />
-                  </FormItem>
-                )}
-              />
-
+            {/* Row 2: Movimiento, Monto, Departamento */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FormField
                 control={form.control}
                 name="tipo_movimiento"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tipo de Movimiento *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar tipo" />
-                      </SelectTrigger>
+                    <FormLabel>Movimiento *</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange} disabled={loading}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar tipo..." />
+                        </SelectTrigger>
+                      </FormControl>
                       <SelectContent>
                         <SelectItem value="ingreso">Ingreso</SelectItem>
                         <SelectItem value="egreso">Egreso</SelectItem>
@@ -603,10 +556,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                   </FormItem>
                 )}
               />
-            </div>
 
-            {/* Financial Details */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="monto"
@@ -632,21 +582,27 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Departamento *</FormLabel>
-                    <SearchableCombobox
-                      items={departamentosItems}
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      placeholder="Seleccionar departamento..."
-                      emptyText="No hay departamentos disponibles"
-                      disabled={loading}
-                    />
+                    <Select value={field.value} onValueChange={field.onChange} disabled={loading || isLoadingInitial}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar departamento..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {departamentos.map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
 
-            {/* Accounting Codes */}
+            {/* Row 3: Mayor, Partidas, Subpartidas */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FormField
                 control={form.control}
@@ -654,15 +610,31 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Mayor</FormLabel>
-                    <SearchableCombobox
-                      items={mayoresItems}
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      placeholder="Seleccionar mayor..."
-                      emptyText="Selecciona un departamento primero"
-                      showCodes={true}
-                      disabled={loading || !watchedDepartamento}
-                    />
+                    <Select 
+                      value={field.value} 
+                      onValueChange={field.onChange} 
+                      disabled={loading || isLoadingMayores || !watchedDepartamento}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={
+                            !watchedDepartamento 
+                              ? "Selecciona departamento primero" 
+                              : isLoadingMayores 
+                                ? "Cargando mayores..." 
+                                : "Seleccionar mayor..."
+                          } />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {mayores.map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -672,16 +644,32 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                 name="partida_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Partida</FormLabel>
-                    <SearchableCombobox
-                      items={partidasItems}
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      placeholder="Seleccionar partida..."
-                      emptyText="Selecciona un mayor primero"
-                      showCodes={true}
-                      disabled={loading || !watchedMayor}
-                    />
+                    <FormLabel>Partidas</FormLabel>
+                    <Select 
+                      value={field.value} 
+                      onValueChange={field.onChange} 
+                      disabled={loading || isLoadingPartidas || !watchedMayor}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={
+                            !watchedMayor 
+                              ? "Selecciona mayor primero" 
+                              : isLoadingPartidas 
+                                ? "Cargando partidas..." 
+                                : "Seleccionar partida..."
+                          } />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {partidas.map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -691,31 +679,46 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                 name="subpartida_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Subpartida</FormLabel>
-                    <SearchableCombobox
-                      items={subpartidasItems}
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      placeholder="Seleccionar subpartida..."
-                      emptyText="Selecciona una partida primero"
-                      showCodes={true}
-                      disabled={loading || !watchedPartida}
-                    />
+                    <FormLabel>Subpartidas</FormLabel>
+                    <Select 
+                      value={field.value} 
+                      onValueChange={field.onChange} 
+                      disabled={loading || isLoadingSubpartidas || !watchedPartida}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={
+                            !watchedPartida 
+                              ? "Selecciona partida primero" 
+                              : isLoadingSubpartidas 
+                                ? "Cargando subpartidas..." 
+                                : "Seleccionar subpartida..."
+                          } />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {subpartidas.map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.nombre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
 
-            {/* Client/Supplier */}
+            {/* Row 4: Cliente/Proveedor */}
             <FormField
               control={form.control}
               name="cliente_proveedor_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Cliente/Proveedor</FormLabel>
-                  <SearchableCombobox
-                    items={clientesProveedoresItems}
-                    value={field.value}
+                  <Select 
+                    value={field.value} 
                     onValueChange={(value) => {
                       field.onChange(value);
                       // Set tipo_entidad based on selection
@@ -725,17 +728,29 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                           form.setValue("tipo_entidad", selected.tipo);
                         }
                       }
-                    }}
-                    placeholder="Seleccionar cliente o proveedor..."
-                    emptyText="No hay clientes o proveedores disponibles"
-                    disabled={loading}
-                  />
+                    }} 
+                    disabled={loading || isLoadingInitial}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar cliente o proveedor..." />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {clientesProveedores.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* Invoice Information */}
-            <div className="space-y-4">
+            {/* Row 5: Checkbox y Folio Factura */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="tiene_factura"
@@ -749,7 +764,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                       />
                     </FormControl>
                     <div className="space-y-1 leading-none">
-                      <FormLabel>Tiene factura</FormLabel>
+                      <FormLabel>Cuenta con factura</FormLabel>
                     </div>
                   </FormItem>
                 )}
@@ -776,7 +791,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
               )}
             </div>
 
-            {/* Optional Description */}
+            {/* Optional Description Section */}
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <Button
@@ -823,7 +838,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={loading || validationErrors.length > 0}>
+              <Button type="submit" disabled={loading}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Crear Transacción
               </Button>
