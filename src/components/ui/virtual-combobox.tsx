@@ -3,7 +3,6 @@ import { Check, ChevronsUpDown, Loader2, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Popover,
   PopoverContent,
@@ -71,27 +70,36 @@ export function VirtualCombobox({
   searchFields = ['label'],
   showCodes = false,
   virtualized = false,
-  maxHeight = "60vh"
+  maxHeight = "400px"
 }: VirtualComboboxProps) {
   const [open, setOpen] = React.useState(false)
-  const [search, setSearch] = React.useState("")
+  const [inputValue, setInputValue] = React.useState("") // Input inmediato
+  const [debouncedSearch, setDebouncedSearch] = React.useState("") // Search con debounce
   const [filteredItems, setFilteredItems] = React.useState<VirtualComboboxItem[]>([])
   const [selectedItem, setSelectedItem] = React.useState<VirtualComboboxItem | undefined>()
   const [focusedIndex, setFocusedIndex] = React.useState(-1)
+  const [scrollTop, setScrollTop] = React.useState(0)
   
   const searchInputRef = React.useRef<HTMLInputElement>(null)
-  const debouncedSearchRef = React.useRef<NodeJS.Timeout>()
   const listRef = React.useRef<HTMLDivElement>(null)
 
-  // Filter and sort items
+  // Debounce para el search (solo para filtrado)
   React.useEffect(() => {
-    if (!search || !items.length) {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(inputValue)
+    }, 150)
+    return () => clearTimeout(timer)
+  }, [inputValue])
+
+  // Filter and sort items basado en debouncedSearch
+  React.useEffect(() => {
+    if (!debouncedSearch || !items.length) {
       setFilteredItems(items)
       setFocusedIndex(-1)
       return
     }
     
-    const normalizedSearch = normalizeSearchText(search)
+    const normalizedSearch = normalizeSearchText(debouncedSearch)
     const searchTerms = normalizedSearch.split(' ').filter(term => term.length > 0)
     
     const filtered = items.filter(item => {
@@ -124,7 +132,7 @@ export function VirtualCombobox({
     
     setFilteredItems(sorted)
     setFocusedIndex(sorted.length > 0 ? 0 : -1)
-  }, [items, search, searchFields])
+  }, [items, debouncedSearch, searchFields])
 
   // Update selected item when value changes
   React.useEffect(() => {
@@ -139,24 +147,20 @@ export function VirtualCombobox({
         searchInputRef.current?.focus()
       }, 100)
     }
-  }, [open])
-
-  // Debounced search handler
-  const handleSearchChange = React.useCallback((searchValue: string) => {
-    if (debouncedSearchRef.current) {
-      clearTimeout(debouncedSearchRef.current)
+    // Reset input cuando se abre
+    if (open) {
+      setInputValue("")
+      setDebouncedSearch("")
+      setScrollTop(0)
     }
-    
-    debouncedSearchRef.current = setTimeout(() => {
-      setSearch(searchValue)
-    }, 100) // Faster debounce
-  }, [])
+  }, [open])
 
   // Handle item selection
   const handleSelect = React.useCallback((selectedValue: string) => {
     onValueChange?.(selectedValue === value ? "" : selectedValue)
     setOpen(false)
-    setSearch("")
+    setInputValue("")
+    setDebouncedSearch("")
     setFocusedIndex(-1)
   }, [onValueChange, value])
 
@@ -184,24 +188,12 @@ export function VirtualCombobox({
       case 'Escape':
         e.preventDefault()
         setOpen(false)
-        setSearch("")
+        setInputValue("")
+        setDebouncedSearch("")
         setFocusedIndex(-1)
         break
     }
   }, [open, filteredItems, focusedIndex, handleSelect])
-
-  // Scroll focused item into view
-  React.useEffect(() => {
-    if (focusedIndex >= 0 && listRef.current) {
-      const focusedElement = listRef.current.children[focusedIndex] as HTMLElement
-      if (focusedElement) {
-        focusedElement.scrollIntoView({
-          block: 'nearest',
-          behavior: 'smooth'
-        })
-      }
-    }
-  }, [focusedIndex])
 
   const displayLabel = React.useMemo(() => {
     if (!selectedItem) return placeholder
@@ -217,26 +209,31 @@ export function VirtualCombobox({
     ? "Buscar por código o nombre..." 
     : searchPlaceholder
 
-  // Dynamic height calculation
-  const dynamicHeight = React.useMemo(() => {
-    const itemCount = filteredItems.length
-    const itemHeight = 40 // Approximate height per item
-    const calculatedHeight = Math.min(itemCount * itemHeight, 400)
-    return `min(${calculatedHeight}px, ${maxHeight})`
-  }, [filteredItems.length, maxHeight])
-
-  // Virtualized rendering for large lists
+  // Virtualización correcta
+  const ITEM_HEIGHT = 36
+  const MAX_VISIBLE_ITEMS = Math.floor(parseInt(maxHeight.replace('px', '')) / ITEM_HEIGHT)
+  
   const itemsToRender = React.useMemo(() => {
-    if (!virtualized || filteredItems.length < 100) {
-      return filteredItems
+    if (!virtualized || filteredItems.length <= 100) {
+      return { items: filteredItems, startIndex: 0, totalHeight: filteredItems.length * ITEM_HEIGHT }
     }
     
-    // Simple virtualization - render visible + buffer
-    const startIndex = Math.max(0, focusedIndex - 10)
-    const endIndex = Math.min(filteredItems.length, focusedIndex + 20)
+    const startIndex = Math.floor(scrollTop / ITEM_HEIGHT)
+    const endIndex = Math.min(startIndex + MAX_VISIBLE_ITEMS + 5, filteredItems.length) // +5 buffer
+    const visibleItems = filteredItems.slice(startIndex, endIndex)
     
-    return filteredItems.slice(startIndex, endIndex)
-  }, [filteredItems, virtualized, focusedIndex])
+    return {
+      items: visibleItems,
+      startIndex,
+      totalHeight: filteredItems.length * ITEM_HEIGHT,
+      offsetY: startIndex * ITEM_HEIGHT
+    }
+  }, [filteredItems, virtualized, scrollTop, MAX_VISIBLE_ITEMS])
+
+  // Handle scroll para virtualización
+  const handleScroll = React.useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    setScrollTop(e.currentTarget.scrollTop)
+  }, [])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -262,7 +259,8 @@ export function VirtualCombobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-[--radix-popover-trigger-width] p-0 z-[9999]" 
+        className="w-[--radix-popover-trigger-width] p-0" 
+        style={{ zIndex: 10000 }}
         align="start"
         sideOffset={4}
         avoidCollisions={true}
@@ -273,66 +271,123 @@ export function VirtualCombobox({
           <Input
             ref={searchInputRef}
             placeholder={effectiveSearchPlaceholder}
-            value={search}
-            onChange={(e) => handleSearchChange(e.target.value)}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)} // Sin debounce para input
             className="border-0 shadow-none focus-visible:ring-0 h-8"
           />
         </div>
         
-        <ScrollArea 
-          style={{ maxHeight: dynamicHeight }}
-          className="overflow-hidden"
+        {/* Scroll nativo - SIN ScrollArea */}
+        <div 
+          ref={listRef}
+          className="overflow-y-auto overscroll-contain"
+          style={{ 
+            maxHeight: maxHeight,
+            scrollbarWidth: 'thin',
+            scrollbarColor: 'hsl(var(--border)) transparent'
+          }}
+          onScroll={handleScroll}
         >
-          <div ref={listRef} className="p-1">
-            {filteredItems.length === 0 ? (
-              <div className="px-2 py-6 text-center text-sm text-muted-foreground">
-                {emptyText}
-              </div>
-            ) : (
-              itemsToRender.map((item, index) => {
-                const actualIndex = virtualized && filteredItems.length >= 100 
-                  ? filteredItems.indexOf(item)
-                  : index
-                
-                const itemLabel = showCodes && item.codigo 
-                  ? `${item.codigo} - ${item.label}`
-                  : item.label
-                
-                const isSelected = value === item.value
-                const isFocused = focusedIndex === actualIndex
-                
-                return (
-                  <div
-                    key={item.value}
-                    className={cn(
-                      "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none transition-colors",
-                      isSelected && "bg-accent text-accent-foreground",
-                      isFocused && !isSelected && "bg-accent/50",
-                      "hover:bg-accent/80"
-                    )}
-                    onClick={() => handleSelect(item.value)}
-                    onMouseEnter={() => setFocusedIndex(actualIndex)}
-                  >
-                    <Check
+          {virtualized && filteredItems.length > 100 ? (
+            // Virtualización completa
+            <div style={{ height: itemsToRender.totalHeight, position: 'relative' }}>
+              <div 
+                style={{ 
+                  transform: `translateY(${itemsToRender.offsetY || 0}px)`,
+                  position: 'absolute',
+                  width: '100%'
+                }}
+              >
+                {itemsToRender.items.map((item, index) => {
+                  const actualIndex = (itemsToRender.startIndex || 0) + index
+                  const itemLabel = showCodes && item.codigo 
+                    ? `${item.codigo} - ${item.label}`
+                    : item.label
+                  
+                  const isSelected = value === item.value
+                  const isFocused = focusedIndex === actualIndex
+                  
+                  return (
+                    <div
+                      key={item.value}
                       className={cn(
-                        "mr-2 h-4 w-4 shrink-0",
-                        isSelected ? "opacity-100" : "opacity-0"
+                        "relative flex cursor-pointer select-none items-center px-2 py-2 text-sm outline-none transition-colors",
+                        isSelected && "bg-accent text-accent-foreground",
+                        isFocused && !isSelected && "bg-accent/50",
+                        "hover:bg-accent/80"
                       )}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="truncate">{itemLabel}</div>
-                      {item.group && (
-                        <div className="text-xs text-muted-foreground truncate">
-                          {item.group}
-                        </div>
-                      )}
+                      style={{ height: ITEM_HEIGHT }}
+                      onClick={() => handleSelect(item.value)}
+                      onMouseEnter={() => setFocusedIndex(actualIndex)}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4 shrink-0",
+                          isSelected ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="truncate">{itemLabel}</div>
+                        {item.group && (
+                          <div className="text-xs text-muted-foreground truncate">
+                            {item.group}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )
-              })
-            )}
-          </div>
-        </ScrollArea>
+                  )
+                })}
+              </div>
+            </div>
+          ) : (
+            // Renderizado normal
+            <div className="p-1">
+              {filteredItems.length === 0 ? (
+                <div className="px-2 py-6 text-center text-sm text-muted-foreground">
+                  {emptyText}
+                </div>
+              ) : (
+                filteredItems.map((item, index) => {
+                  const itemLabel = showCodes && item.codigo 
+                    ? `${item.codigo} - ${item.label}`
+                    : item.label
+                  
+                  const isSelected = value === item.value
+                  const isFocused = focusedIndex === index
+                  
+                  return (
+                    <div
+                      key={item.value}
+                      className={cn(
+                        "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none transition-colors",
+                        isSelected && "bg-accent text-accent-foreground",
+                        isFocused && !isSelected && "bg-accent/50",
+                        "hover:bg-accent/80"
+                      )}
+                      onClick={() => handleSelect(item.value)}
+                      onMouseEnter={() => setFocusedIndex(index)}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4 shrink-0",
+                          isSelected ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="truncate">{itemLabel}</div>
+                        {item.group && (
+                          <div className="text-xs text-muted-foreground truncate">
+                            {item.group}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          )}
+        </div>
       </PopoverContent>
     </Popover>
   )
