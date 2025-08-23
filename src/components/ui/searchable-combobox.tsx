@@ -65,7 +65,7 @@ function getSearchableText(item: SearchableComboboxItem, searchFields: string[])
 }
 
 export function SearchableCombobox({
-  items = [],
+  items,
   value,
   onValueChange,
   placeholder = "Seleccionar opción...",
@@ -74,7 +74,7 @@ export function SearchableCombobox({
   className,
   disabled = false,
   loading = false,
-  searchFields = ['label'],
+  searchFields,
   maxHeight = "300px",
   showCodes = false,
   highlightMatches = false
@@ -82,9 +82,9 @@ export function SearchableCombobox({
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
   
-  // Ensure items and searchFields are always arrays
-  const safeItems = React.useMemo(() => items || [], [items])
-  const safeSearchFields = React.useMemo(() => searchFields || ['label'], [searchFields])
+  // Ensure props have safe defaults before using in any hooks
+  const safeItems = items || []
+  const safeSearchFields = searchFields || ['label']
   
   // Debounced search to improve performance
   const debouncedSearch = React.useMemo(() => {
