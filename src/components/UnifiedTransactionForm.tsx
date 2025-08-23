@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -13,7 +13,7 @@ import { DatePicker } from "@/components/DatePicker";
 import { CurrencyInput } from "@/components/CurrencyInput";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
+import { Eye, X, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Form validation schema
@@ -69,7 +69,6 @@ const normalizeForComparison = (text: string): string => {
 export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactionFormProps) {
   const [loading, setLoading] = useState(false);
   const [showDescription, setShowDescription] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   
   // Data states
   const [sucursales, setSucursales] = useState<Option[]>([]);
@@ -79,12 +78,6 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
   const [partidas, setPartidas] = useState<Option[]>([]);
   const [subpartidas, setSubpartidas] = useState<Option[]>([]);
   const [clientesProveedores, setClientesProveedores] = useState<Option[]>([]);
-  
-  // Loading states for individual dropdowns
-  const [isLoadingInitial, setIsLoadingInitial] = useState(false);
-  const [isLoadingMayores, setIsLoadingMayores] = useState(false);
-  const [isLoadingPartidas, setIsLoadingPartidas] = useState(false);
-  const [isLoadingSubpartidas, setIsLoadingSubpartidas] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -101,6 +94,12 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
   const watchedDepartamento = form.watch("departamento");
   const watchedMayor = form.watch("mayor_id");
   const watchedPartida = form.watch("partida_id");
+
+  // Get form errors for display
+  const formErrors = Object.keys(form.formState.errors).map(key => {
+    const error = form.formState.errors[key as keyof typeof form.formState.errors];
+    return error?.message || `Error en ${key}`;
+  });
 
   // Load initial data when modal opens
   useEffect(() => {
@@ -144,7 +143,6 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
   }, [watchedPartida, form]);
 
   const loadInitialData = async () => {
-    setIsLoadingInitial(true);
     try {
       await Promise.all([
         loadSucursales(),
@@ -155,8 +153,6 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
     } catch (error) {
       console.error("Error loading initial data:", error);
       toast.error("Error al cargar datos iniciales");
-    } finally {
-      setIsLoadingInitial(false);
     }
   };
 
@@ -172,7 +168,6 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
       setSucursales((data || []).map(item => ({ id: item.id, nombre: item.name })));
     } catch (error) {
       console.error("Error loading sucursales:", error);
-      toast.error("Error al cargar sucursales");
       setSucursales([]);
     }
   };
@@ -196,7 +191,6 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
       setProyectos(proyectosFormateados);
     } catch (error) {
       console.error("Error loading proyectos:", error);
-      toast.error("Error al cargar proyectos");
       setProyectos([{ id: "empresa", nombre: "Solo Empresa (Sin Proyecto)" }]);
     }
   };
@@ -217,13 +211,11 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
       })));
     } catch (error) {
       console.error("Error loading departamentos:", error);
-      toast.error("Error al cargar departamentos");
       setDepartamentos([]);
     }
   };
 
   const loadMayores = async (departamento: string) => {
-    setIsLoadingMayores(true);
     try {
       const { data, error } = await supabase
         .from("chart_of_accounts_mayor")
@@ -241,15 +233,11 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
       })));
     } catch (error) {
       console.error("Error loading mayores:", error);
-      toast.error("Error al cargar mayores");
       setMayores([]);
-    } finally {
-      setIsLoadingMayores(false);
     }
   };
 
   const loadPartidas = async (mayorId: string) => {
-    setIsLoadingPartidas(true);
     try {
       const { data, error } = await supabase
         .from("chart_of_accounts_partidas")
@@ -267,15 +255,11 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
       })));
     } catch (error) {
       console.error("Error loading partidas:", error);
-      toast.error("Error al cargar partidas");
       setPartidas([]);
-    } finally {
-      setIsLoadingPartidas(false);
     }
   };
 
   const loadSubpartidas = async (partidaId: string) => {
-    setIsLoadingSubpartidas(true);
     try {
       // Get the partida to check its department
       const { data: partida } = await supabase
@@ -327,10 +311,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
       })));
     } catch (error) {
       console.error("Error loading subpartidas:", error);
-      toast.error("Error al cargar subpartidas");
       setSubpartidas([]);
-    } finally {
-      setIsLoadingSubpartidas(false);
     }
   };
 
@@ -369,7 +350,6 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
       setClientesProveedores(combined);
     } catch (error) {
       console.error("Error loading clientes/proveedores:", error);
-      toast.error("Error al cargar clientes y proveedores");
       setClientesProveedores([]);
     }
   };
@@ -439,13 +419,6 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
       console.error("Error creating transaction:", error);
       const errorMessage = error.message || "Error desconocido al crear transacción";
       toast.error(`Error al crear transacción: ${errorMessage}`);
-      
-      // Handle specific error types
-      if (error.code === '23505') {
-        toast.error("Error: Referencia duplicada detectada");
-      } else if (error.code === '23503') {
-        toast.error("Error: Referencia a datos inexistentes");
-      }
     } finally {
       setLoading(false);
     }
@@ -453,330 +426,337 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            Crear Nueva Transacción Financiera
-            {isLoadingInitial && <Loader2 className="h-4 w-4 animate-spin" />}
-          </DialogTitle>
+      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto p-0">
+        {/* Header */}
+        <DialogHeader className="px-6 py-4 border-b">
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-xl font-semibold">
+              Nueva Transacción Financiera Unificada
+            </DialogTitle>
+            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Row 1: Fecha, Sucursal, Proyecto */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="fecha"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Fecha *</FormLabel>
-                    <FormControl>
-                      <DatePicker
-                        date={field.value}
-                        onDateChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+        <div className="px-6 py-4">
+          {/* Validation Errors */}
+          {formErrors.length > 0 && (
+            <Alert className="mb-6 bg-muted/50 border-destructive/20">
+              <AlertCircle className="h-4 w-4 text-destructive" />
+              <AlertDescription className="text-sm">
+                <div className="font-medium text-destructive mb-2">Errores de validación:</div>
+                <ul className="space-y-1">
+                  {formErrors.map((error, index) => (
+                    <li key={index} className="flex items-center gap-2 text-destructive">
+                      <div className="w-2 h-2 bg-destructive rounded-full flex-shrink-0" />
+                      {error}
+                    </li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
 
-              <FormField
-                control={form.control}
-                name="sucursal_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Sucursal *</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange} disabled={loading || isLoadingInitial}>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Row 1: Fecha, Sucursal, Empresa/Proyecto */}
+              <div className="grid grid-cols-3 gap-6">
+                <FormField
+                  control={form.control}
+                  name="fecha"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Fecha</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar sucursal..." />
-                        </SelectTrigger>
+                        <DatePicker
+                          date={field.value}
+                          onDateChange={field.onChange}
+                        />
                       </FormControl>
-                      <SelectContent>
-                        {sucursales.map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.nombre}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="empresa_proyecto_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Empresa/Proyecto</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange} disabled={loading || isLoadingInitial}>
+                <FormField
+                  control={form.control}
+                  name="sucursal_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Sucursal</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange} disabled={loading}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Seleccionar sucursal" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {sucursales.map((item) => (
+                            <SelectItem key={item.id} value={item.id}>
+                              {item.nombre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="empresa_proyecto_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Empresa / Proyecto</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange} disabled={loading}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Seleccionar proyecto" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {proyectos.map((item) => (
+                            <SelectItem key={item.id} value={item.id}>
+                              {item.nombre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Row 2: Movimiento, Monto, Departamento */}
+              <div className="grid grid-cols-3 gap-6">
+                <FormField
+                  control={form.control}
+                  name="tipo_movimiento"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Movimiento</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange} disabled={loading}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Seleccionar tipo" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="ingreso">Ingreso</SelectItem>
+                          <SelectItem value="egreso">Egreso</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="monto"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Monto</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar proyecto..." />
-                        </SelectTrigger>
+                        <CurrencyInput
+                          value={field.value}
+                          onChange={field.onChange}
+                          disabled={loading}
+                          placeholder="0.00"
+                        />
                       </FormControl>
-                      <SelectContent>
-                        {proyectos.map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.nombre}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            {/* Row 2: Movimiento, Monto, Departamento */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="tipo_movimiento"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Movimiento *</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange} disabled={loading}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar tipo..." />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="ingreso">Ingreso</SelectItem>
-                        <SelectItem value="egreso">Egreso</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="departamento"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Departamento</FormLabel>
+                      <Select value={field.value} onValueChange={field.onChange} disabled={loading}>
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Seleccionar departamento" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {departamentos.map((item) => (
+                            <SelectItem key={item.id} value={item.id}>
+                              {item.nombre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-              <FormField
-                control={form.control}
-                name="monto"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Monto *</FormLabel>
-                    <FormControl>
-                      <CurrencyInput
-                        value={field.value}
-                        onChange={field.onChange}
+              {/* Row 3: Mayor, Partidas, Subpartidas */}
+              <div className="grid grid-cols-3 gap-6">
+                <FormField
+                  control={form.control}
+                  name="mayor_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Mayor</FormLabel>
+                      <Select 
+                        value={field.value} 
+                        onValueChange={field.onChange} 
+                        disabled={loading || !watchedDepartamento}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Seleccionar mayor" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {mayores.map((item) => (
+                            <SelectItem key={item.id} value={item.id}>
+                              {item.nombre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="partida_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Partidas</FormLabel>
+                      <Select 
+                        value={field.value} 
+                        onValueChange={field.onChange} 
+                        disabled={loading || !watchedMayor}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Seleccionar partida" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {partidas.map((item) => (
+                            <SelectItem key={item.id} value={item.id}>
+                              {item.nombre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="subpartida_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Subpartidas</FormLabel>
+                      <Select 
+                        value={field.value} 
+                        onValueChange={field.onChange} 
+                        disabled={loading || !watchedPartida}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Seleccionar subpartida" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {subpartidas.map((item) => (
+                            <SelectItem key={item.id} value={item.id}>
+                              {item.nombre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Row 4: Cliente/Proveedor y Checkbox */}
+              <div className="grid grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="cliente_proveedor_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Cliente / Proveedor</FormLabel>
+                      <Select 
+                        value={field.value} 
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          // Set tipo_entidad based on selection
+                          if (value) {
+                            const selected = clientesProveedores.find(item => item.id === value);
+                            if (selected?.tipo) {
+                              form.setValue("tipo_entidad", selected.tipo);
+                            }
+                          }
+                        }} 
                         disabled={loading}
-                        placeholder="0.00"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Seleccionar cliente o proveedor..." />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {clientesProveedores.map((item) => (
+                            <SelectItem key={item.id} value={item.id}>
+                              {item.nombre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="departamento"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Departamento *</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange} disabled={loading || isLoadingInitial}>
+                <FormField
+                  control={form.control}
+                  name="tiene_factura"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-x-3 space-y-0 pt-6">
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar departamento..." />
-                        </SelectTrigger>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={loading}
+                        />
                       </FormControl>
-                      <SelectContent>
-                        {departamentos.map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.nombre}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel className="text-sm font-medium">Cuenta con factura</FormLabel>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-            {/* Row 3: Mayor, Partidas, Subpartidas */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="mayor_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Mayor</FormLabel>
-                    <Select 
-                      value={field.value} 
-                      onValueChange={field.onChange} 
-                      disabled={loading || isLoadingMayores || !watchedDepartamento}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={
-                            !watchedDepartamento 
-                              ? "Selecciona departamento primero" 
-                              : isLoadingMayores 
-                                ? "Cargando mayores..." 
-                                : "Seleccionar mayor..."
-                          } />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {mayores.map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.nombre}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="partida_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Partidas</FormLabel>
-                    <Select 
-                      value={field.value} 
-                      onValueChange={field.onChange} 
-                      disabled={loading || isLoadingPartidas || !watchedMayor}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={
-                            !watchedMayor 
-                              ? "Selecciona mayor primero" 
-                              : isLoadingPartidas 
-                                ? "Cargando partidas..." 
-                                : "Seleccionar partida..."
-                          } />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {partidas.map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.nombre}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="subpartida_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Subpartidas</FormLabel>
-                    <Select 
-                      value={field.value} 
-                      onValueChange={field.onChange} 
-                      disabled={loading || isLoadingSubpartidas || !watchedPartida}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={
-                            !watchedPartida 
-                              ? "Selecciona partida primero" 
-                              : isLoadingSubpartidas 
-                                ? "Cargando subpartidas..." 
-                                : "Seleccionar subpartida..."
-                          } />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {subpartidas.map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.nombre}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Row 4: Cliente/Proveedor */}
-            <FormField
-              control={form.control}
-              name="cliente_proveedor_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cliente/Proveedor</FormLabel>
-                  <Select 
-                    value={field.value} 
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      // Set tipo_entidad based on selection
-                      if (value) {
-                        const selected = clientesProveedores.find(item => item.id === value);
-                        if (selected?.tipo) {
-                          form.setValue("tipo_entidad", selected.tipo);
-                        }
-                      }
-                    }} 
-                    disabled={loading || isLoadingInitial}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar cliente o proveedor..." />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {clientesProveedores.map((item) => (
-                        <SelectItem key={item.id} value={item.id}>
-                          {item.nombre}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Row 5: Checkbox y Folio Factura */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="tiene_factura"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        disabled={loading}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Cuenta con factura</FormLabel>
-                    </div>
-                  </FormItem>
-                )}
-              />
-
+              {/* Conditional Folio Field */}
               {watchedTieneFactura && (
                 <FormField
                   control={form.control}
                   name="folio_factura"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Folio de Factura *</FormLabel>
+                      <FormLabel className="text-sm font-medium">Folio de Factura</FormLabel>
                       <FormControl>
                         <Input
                           placeholder="Ingrese el folio de la factura"
@@ -789,62 +769,65 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                   )}
                 />
               )}
-            </div>
 
-            {/* Optional Description Section */}
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
+              {/* Description Toggle */}
+              <div className="space-y-4">
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   onClick={() => setShowDescription(!showDescription)}
                   disabled={loading}
+                  className="flex items-center gap-2 text-sm"
                 >
-                  {showDescription ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  {showDescription ? "Ocultar" : "Agregar"} Descripción
+                  <Eye className="h-4 w-4" />
+                  Mostrar Descripción
                 </Button>
+
+                {showDescription && (
+                  <FormField
+                    control={form.control}
+                    name="descripcion"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Descripción</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Descripción adicional (opcional)"
+                            className="resize-none"
+                            disabled={loading}
+                            rows={3}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
 
-              {showDescription && (
-                <FormField
-                  control={form.control}
-                  name="descripcion"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Descripción</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Descripción adicional (opcional)"
-                          className="resize-none"
-                          disabled={loading}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-            </div>
-
-            {/* Form Actions */}
-            <div className="flex justify-end space-x-2 pt-4 border-t sticky bottom-0 bg-background">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={loading}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Crear Transacción
-              </Button>
-            </div>
-          </form>
-        </Form>
+              {/* Form Actions */}
+              <div className="flex justify-end gap-3 pt-6 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={loading}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={loading}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  {loading ? "Guardando..." : "Guardar Transacción"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
       </DialogContent>
     </Dialog>
   );
