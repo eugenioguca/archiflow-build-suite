@@ -7,6 +7,7 @@ import { Form, FormField, FormItem, FormLabel, FormMessage, FormControl } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TouchScrollSelect, TouchScrollSelectContent, TouchScrollSelectItem, TouchScrollSelectTrigger, TouchScrollSelectValue } from "@/components/ui/touch-scroll-select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/DatePicker";
@@ -485,20 +486,20 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Sucursal</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange} disabled={loading}>
+                      <TouchScrollSelect value={field.value} onValueChange={field.onChange} disabled={loading}>
                         <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Seleccionar sucursal" />
-                          </SelectTrigger>
+                          <TouchScrollSelectTrigger className="w-full">
+                            <TouchScrollSelectValue placeholder="Seleccionar sucursal" />
+                          </TouchScrollSelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <TouchScrollSelectContent>
                           {sucursales.map((item) => (
-                            <SelectItem key={item.id} value={item.id}>
+                            <TouchScrollSelectItem key={item.id} value={item.id}>
                               {item.nombre}
-                            </SelectItem>
+                            </TouchScrollSelectItem>
                           ))}
-                        </SelectContent>
-                      </Select>
+                        </TouchScrollSelectContent>
+                      </TouchScrollSelect>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -510,20 +511,20 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Empresa / Proyecto</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange} disabled={loading}>
+                      <TouchScrollSelect value={field.value} onValueChange={field.onChange} disabled={loading}>
                         <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Seleccionar proyecto" />
-                          </SelectTrigger>
+                          <TouchScrollSelectTrigger className="w-full">
+                            <TouchScrollSelectValue placeholder="Seleccionar proyecto" />
+                          </TouchScrollSelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <TouchScrollSelectContent>
                           {proyectos.map((item) => (
-                            <SelectItem key={item.id} value={item.id}>
+                            <TouchScrollSelectItem key={item.id} value={item.id}>
                               {item.nombre}
-                            </SelectItem>
+                            </TouchScrollSelectItem>
                           ))}
-                        </SelectContent>
-                      </Select>
+                        </TouchScrollSelectContent>
+                      </TouchScrollSelect>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -538,17 +539,17 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Movimiento</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange} disabled={loading}>
+                      <TouchScrollSelect value={field.value} onValueChange={field.onChange} disabled={loading}>
                         <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Seleccionar tipo" />
-                          </SelectTrigger>
+                          <TouchScrollSelectTrigger className="w-full">
+                            <TouchScrollSelectValue placeholder="Seleccionar tipo" />
+                          </TouchScrollSelectTrigger>
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="ingreso">Ingreso</SelectItem>
-                          <SelectItem value="egreso">Egreso</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        <TouchScrollSelectContent>
+                          <TouchScrollSelectItem value="ingreso">Ingreso</TouchScrollSelectItem>
+                          <TouchScrollSelectItem value="egreso">Egreso</TouchScrollSelectItem>
+                        </TouchScrollSelectContent>
+                      </TouchScrollSelect>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -579,20 +580,20 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Departamento</FormLabel>
-                      <Select value={field.value} onValueChange={field.onChange} disabled={loading}>
+                      <TouchScrollSelect value={field.value} onValueChange={field.onChange} disabled={loading}>
                         <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Seleccionar departamento" />
-                          </SelectTrigger>
+                          <TouchScrollSelectTrigger className="w-full">
+                            <TouchScrollSelectValue placeholder="Seleccionar departamento" />
+                          </TouchScrollSelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <TouchScrollSelectContent>
                           {departamentos.map((item) => (
-                            <SelectItem key={item.id} value={item.id}>
+                            <TouchScrollSelectItem key={item.id} value={item.id}>
                               {item.nombre}
-                            </SelectItem>
+                            </TouchScrollSelectItem>
                           ))}
-                        </SelectContent>
-                      </Select>
+                        </TouchScrollSelectContent>
+                      </TouchScrollSelect>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -607,24 +608,24 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Mayor</FormLabel>
-                      <Select 
+                      <TouchScrollSelect 
                         value={field.value} 
                         onValueChange={field.onChange} 
                         disabled={loading || !watchedDepartamento}
                       >
                         <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Seleccionar mayor" />
-                          </SelectTrigger>
+                          <TouchScrollSelectTrigger className="w-full">
+                            <TouchScrollSelectValue placeholder="Seleccionar mayor" />
+                          </TouchScrollSelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <TouchScrollSelectContent>
                           {mayores.map((item) => (
-                            <SelectItem key={item.id} value={item.id}>
+                            <TouchScrollSelectItem key={item.id} value={item.id}>
                               {item.nombre}
-                            </SelectItem>
+                            </TouchScrollSelectItem>
                           ))}
-                        </SelectContent>
-                      </Select>
+                        </TouchScrollSelectContent>
+                      </TouchScrollSelect>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -636,24 +637,24 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Partidas</FormLabel>
-                      <Select 
+                      <TouchScrollSelect 
                         value={field.value} 
                         onValueChange={field.onChange} 
                         disabled={loading || !watchedMayor}
                       >
                         <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Seleccionar partida" />
-                          </SelectTrigger>
+                          <TouchScrollSelectTrigger className="w-full">
+                            <TouchScrollSelectValue placeholder="Seleccionar partida" />
+                          </TouchScrollSelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <TouchScrollSelectContent>
                           {partidas.map((item) => (
-                            <SelectItem key={item.id} value={item.id}>
+                            <TouchScrollSelectItem key={item.id} value={item.id}>
                               {item.nombre}
-                            </SelectItem>
+                            </TouchScrollSelectItem>
                           ))}
-                        </SelectContent>
-                      </Select>
+                        </TouchScrollSelectContent>
+                      </TouchScrollSelect>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -665,24 +666,24 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Subpartidas</FormLabel>
-                      <Select 
+                      <TouchScrollSelect 
                         value={field.value} 
                         onValueChange={field.onChange} 
                         disabled={loading || !watchedPartida}
                       >
                         <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Seleccionar subpartida" />
-                          </SelectTrigger>
+                          <TouchScrollSelectTrigger className="w-full">
+                            <TouchScrollSelectValue placeholder="Seleccionar subpartida" />
+                          </TouchScrollSelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <TouchScrollSelectContent>
                           {subpartidas.map((item) => (
-                            <SelectItem key={item.id} value={item.id}>
+                            <TouchScrollSelectItem key={item.id} value={item.id}>
                               {item.nombre}
-                            </SelectItem>
+                            </TouchScrollSelectItem>
                           ))}
-                        </SelectContent>
-                      </Select>
+                        </TouchScrollSelectContent>
+                      </TouchScrollSelect>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -697,7 +698,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Cliente / Proveedor</FormLabel>
-                      <Select 
+                      <TouchScrollSelect 
                         value={field.value} 
                         onValueChange={(value) => {
                           field.onChange(value);
@@ -712,18 +713,18 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                         disabled={loading}
                       >
                         <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Seleccionar cliente o proveedor..." />
-                          </SelectTrigger>
+                          <TouchScrollSelectTrigger className="w-full">
+                            <TouchScrollSelectValue placeholder="Seleccionar cliente o proveedor..." />
+                          </TouchScrollSelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <TouchScrollSelectContent>
                           {clientesProveedores.map((item) => (
-                            <SelectItem key={item.id} value={item.id}>
+                            <TouchScrollSelectItem key={item.id} value={item.id}>
                               {item.nombre}
-                            </SelectItem>
+                            </TouchScrollSelectItem>
                           ))}
-                        </SelectContent>
-                      </Select>
+                        </TouchScrollSelectContent>
+                      </TouchScrollSelect>
                       <FormMessage />
                     </FormItem>
                   )}
