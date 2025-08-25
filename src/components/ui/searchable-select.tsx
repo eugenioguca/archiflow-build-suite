@@ -71,8 +71,8 @@ export function SearchableSelect({
   const scrollContainerRef = React.useRef<HTMLDivElement>(null)
   const itemRefs = React.useRef<(HTMLDivElement | null)[]>([])
 
-  // Debounce search for better performance
-  const debouncedSearch = useDebounce(search, 150)
+  // Debounce search for better performance (faster response)
+  const debouncedSearch = useDebounce(search, 50)
 
   // Find selected item
   const selectedItem = React.useMemo(() => 
@@ -105,30 +105,36 @@ export function SearchableSelect({
   // Focus input when popover opens and maintain focus
   React.useEffect(() => {
     if (open && inputRef.current) {
-      // Use a shorter timeout for faster focus
+      // Immediate focus for instant text input
+      inputRef.current.focus()
+      
+      // Backup focus in case of delays
       const timeoutId = setTimeout(() => {
         inputRef.current?.focus()
-      }, 50)
+      }, 10)
       
       return () => clearTimeout(timeoutId)
     }
   }, [open])
 
-  // Prevent input from losing focus during interaction
+  // Maintain input focus during interactions
   React.useEffect(() => {
     if (open && inputRef.current) {
       const input = inputRef.current
-      const handleBlur = (e: FocusEvent) => {
-        // Only blur if clicking outside the popover
-        if (!e.relatedTarget || !(e.relatedTarget as Element).closest('[data-radix-popover-content]')) {
-          return
+      
+      const handleFocusOut = (e: FocusEvent) => {
+        // Keep focus unless clicking completely outside the popover
+        const isClickingInsidePopover = e.relatedTarget && 
+          (e.relatedTarget as Element).closest('[data-radix-popover-content]')
+        
+        if (isClickingInsidePopover) {
+          // Prevent focus loss and refocus after a minimal delay
+          setTimeout(() => input.focus(), 0)
         }
-        e.preventDefault()
-        input.focus()
       }
 
-      input.addEventListener('blur', handleBlur)
-      return () => input.removeEventListener('blur', handleBlur)
+      input.addEventListener('focusout', handleFocusOut)
+      return () => input.removeEventListener('focusout', handleFocusOut)
     }
   }, [open])
 
@@ -248,17 +254,23 @@ export function SearchableSelect({
             placeholder={searchPlaceholder}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onInput={(e) => setSearch((e.target as HTMLInputElement).value)}
             onKeyDown={handleKeyDown}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
             className="h-8 border-0 px-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
           />
         </div>
         
         <div 
           ref={scrollContainerRef}
-          className="max-h-[300px] overflow-auto bg-background"
+          className="max-h-[300px] overflow-y-auto overflow-x-hidden bg-background searchable-select-scroll"
           style={{ 
             pointerEvents: 'auto',
-            scrollbarWidth: 'thin'
+            touchAction: 'pan-y',
+            scrollBehavior: 'smooth'
           }}
         >
           {filteredItems.length === 0 ? (
