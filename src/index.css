@@ -118,7 +118,57 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 226 232 240;
     --sidebar-border: 30 41 59;
     --sidebar-ring: 129 140 248;
-  }
+/* Custom styles for touch scroll enhanced components */
+.touch-scroll-enhanced .touch-scroll-area {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+
+.touch-scroll-enhanced .touch-scroll-area::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.touch-scroll-enhanced .touch-scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 4px;
+}
+
+.touch-scroll-enhanced .touch-scroll-area::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.touch-scroll-enhanced .touch-scroll-area::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--accent-foreground));
+  background-clip: content-box;
+}
+
+/* Searchable Select custom scrollbar */
+.searchable-select-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+
+.searchable-select-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.searchable-select-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.searchable-select-scroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+
+.searchable-select-scroll::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--accent-foreground));
+}
 }
 
 @layer base {

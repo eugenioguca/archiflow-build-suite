@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { UnifiedFinancialTransactions } from "@/components/UnifiedFinancialTransactions";
 import { TestCombobox } from '@/components/TestCombobox';
 import { UnifiedTransactionForm } from '@/components/UnifiedTransactionForm';
+import { UnifiedTransactionBulkForm } from '@/components/UnifiedTransactionBulkForm';
 import { Button } from '@/components/ui/button';
 
 export default function UnifiedTransactions() {
   const [showTest, setShowTest] = useState(false);
   const [showTestForm, setShowTestForm] = useState(false);
+  const [showBulkForm, setShowBulkForm] = useState(false);
 
   // Modo de prueba del combobox aislado
   if (showTest) {
@@ -60,6 +62,17 @@ export default function UnifiedTransactions() {
     <div className="relative">
       <UnifiedFinancialTransactions />
       
+      {/* Botón Nueva Carga */}
+      <div className="fixed bottom-4 left-4 z-50">
+        <Button 
+          onClick={() => setShowBulkForm(true)}
+          className="bg-green-600 hover:bg-green-700 text-white shadow-lg"
+          size="lg"
+        >
+          📦 Nueva Carga
+        </Button>
+      </div>
+      
       {/* Botones de test SOLO en el módulo de transacciones */}
       <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
         <Button 
@@ -77,6 +90,12 @@ export default function UnifiedTransactions() {
           🔧 Test Form
         </Button>
       </div>
+
+      {/* Formulario Nueva Carga */}
+      <UnifiedTransactionBulkForm 
+        open={showBulkForm}
+        onOpenChange={setShowBulkForm}
+      />
     </div>
   );
 }
