@@ -105,15 +105,27 @@ export function SearchableSelect({
   // Focus input when popover opens and maintain focus
   React.useEffect(() => {
     if (open && inputRef.current) {
-      // Immediate focus for instant text input
-      inputRef.current.focus()
+      // Multiple focus attempts for better reliability
+      const focusInput = () => {
+        if (inputRef.current) {
+          inputRef.current.focus()
+          inputRef.current.select() // Also select text if any
+        }
+      }
       
-      // Backup focus in case of delays
-      const timeoutId = setTimeout(() => {
-        inputRef.current?.focus()
-      }, 10)
+      // Immediate focus
+      focusInput()
       
-      return () => clearTimeout(timeoutId)
+      // Delayed focus to override any other focus events
+      const timeoutId1 = setTimeout(focusInput, 0)
+      const timeoutId2 = setTimeout(focusInput, 10)
+      const timeoutId3 = setTimeout(focusInput, 100)
+      
+      return () => {
+        clearTimeout(timeoutId1)
+        clearTimeout(timeoutId2)
+        clearTimeout(timeoutId3)
+      }
     }
   }, [open])
 
@@ -246,6 +258,12 @@ export function SearchableSelect({
         className="w-[var(--radix-popover-trigger-width)] p-0 bg-background border shadow-md"
         align="start"
         sideOffset={4}
+        container={typeof document !== 'undefined' ? document.querySelector('[data-radix-dialog-content]') || document.body : undefined}
+        style={{ zIndex: 9999 }}
+        onOpenAutoFocus={(e) => {
+          e.preventDefault()
+          // Focus will be handled by our useEffect
+        }}
       >
         <div className="flex items-center border-b px-3 py-2">
           <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
@@ -260,17 +278,40 @@ export function SearchableSelect({
             autoCorrect="off"
             autoCapitalize="off"
             spellCheck={false}
+            tabIndex={0}
             className="h-8 border-0 px-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+            style={{ pointerEvents: 'auto' }}
+            onBlur={(e) => {
+              // Prevent losing focus when clicking on scroll area or items
+              const relatedTarget = e.relatedTarget as HTMLElement
+              if (relatedTarget && relatedTarget.closest('[data-radix-popover-content]')) {
+                e.preventDefault()
+                setTimeout(() => inputRef.current?.focus(), 0)
+              }
+            }}
           />
         </div>
         
         <div 
           ref={scrollContainerRef}
           className="max-h-[300px] overflow-y-auto overflow-x-hidden bg-background searchable-select-scroll"
+          tabIndex={-1}
           style={{ 
             pointerEvents: 'auto',
             touchAction: 'pan-y',
             scrollBehavior: 'smooth'
+          }}
+          onKeyDown={(e) => {
+            // Handle scroll with keyboard in the container
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+              e.stopPropagation()
+              // Let the input handler manage this
+              inputRef.current?.focus()
+            }
+          }}
+          onWheel={(e) => {
+            // Ensure scroll events are not blocked
+            e.stopPropagation()
           }}
         >
           {filteredItems.length === 0 ? (
