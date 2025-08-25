@@ -30,7 +30,7 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+>(({ className, children, onFocusCapture, onKeyDownCapture, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
@@ -40,6 +40,26 @@ const DialogContent = React.forwardRef<
         className
       )}
       style={{ overflow: 'visible' }}
+      onFocusCapture={(e) => {
+        // Check if focus is within combobox - if so, don't interfere
+        const target = e.target as HTMLElement
+        if (target.closest('[data-combobox-root]')) {
+          console.log('[DialogContent] Focus within combobox - allowing natural focus')
+          return
+        }
+        // Call original handler if provided
+        onFocusCapture?.(e)
+      }}
+      onKeyDownCapture={(e) => {
+        // Check if keydown is within combobox - if so, don't interfere
+        const target = e.target as HTMLElement
+        if (target.closest('[data-combobox-root]')) {
+          console.log('[DialogContent] KeyDown within combobox - allowing natural handling:', e.key)
+          return
+        }
+        // Call original handler if provided
+        onKeyDownCapture?.(e)
+      }}
       {...props}
     >
       {children}

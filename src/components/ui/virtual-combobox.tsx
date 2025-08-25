@@ -140,7 +140,7 @@ export function VirtualCombobox({
     setSelectedItem(found)
   }, [items, value])
 
-  // Focus search input when opened - FIXED for Dialog context
+  // Focus search input when opened - ENHANCED for Dialog context
   React.useEffect(() => {
     if (open && searchInputRef.current) {
       // Reset input state first
@@ -148,28 +148,49 @@ export function VirtualCombobox({
       setDebouncedSearch("")
       setScrollTop(0)
       
-      // Focus with proper Dialog escape strategy
-      const attemptFocus = () => {
+      // Enhanced focus strategy for Dialog context
+      const ensureFocus = () => {
         if (searchInputRef.current) {
-          // Force focus even within Dialog context
+          console.log('[VirtualCombobox] Attempting to focus input')
+          
+          // Force focus with multiple strategies
           searchInputRef.current.focus({ preventScroll: true })
           
           // Verify focus was successful
-          const focused = document.activeElement === searchInputRef.current
-          console.log('[VirtualCombobox] Focus attempt result:', focused)
+          const isFocused = document.activeElement === searchInputRef.current
+          console.log('[VirtualCombobox] Focus result:', isFocused, 'activeElement:', document.activeElement)
           
-          if (!focused) {
-            // Fallback: try setting tabindex and focus again
+          if (!isFocused) {
+            // Fallback strategies
+            console.log('[VirtualCombobox] Initial focus failed, trying fallbacks')
+            
+            // Try setting tabindex and focus again
             searchInputRef.current.setAttribute('tabindex', '0')
-            searchInputRef.current.focus()
+            
+            // Try manual focus after slight delay
+            setTimeout(() => {
+              if (searchInputRef.current) {
+                searchInputRef.current.focus()
+                console.log('[VirtualCombobox] Delayed focus attempt, activeElement:', document.activeElement)
+              }
+            }, 10)
+            
+            // Final fallback with requestAnimationFrame
+            requestAnimationFrame(() => {
+              if (searchInputRef.current) {
+                searchInputRef.current.focus()
+                console.log('[VirtualCombobox] RAF focus attempt, activeElement:', document.activeElement)
+              }
+            })
           }
         }
       }
       
       // Multiple timing attempts to handle Dialog's focus management
-      setTimeout(attemptFocus, 0) // Immediate
-      setTimeout(attemptFocus, 50) // After Dialog settles
-      setTimeout(attemptFocus, 150) // Final fallback
+      setTimeout(ensureFocus, 0) // Immediate
+      setTimeout(ensureFocus, 50) // After Dialog settles
+      setTimeout(ensureFocus, 100) // Additional delay
+      setTimeout(ensureFocus, 200) // Final fallback
     }
   }, [open])
 
@@ -325,25 +346,33 @@ export function VirtualCombobox({
         >
           <div className="flex items-center border-b px-3 py-2">
             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-              <Input
+            <Input
               ref={searchInputRef}
               placeholder={effectiveSearchPlaceholder}
               value={inputValue}
               onChange={(e) => {
-                // Ensure onChange is always processed
+                console.log('[VirtualCombobox] Input onChange:', e.target.value)
                 setInputValue(e.target.value)
               }}
               onKeyDown={(e) => {
+                console.log('[VirtualCombobox] Input onKeyDown:', e.key, 'activeElement:', document.activeElement === searchInputRef.current)
                 // Handle keyboard navigation directly here to ensure it works in Dialog
                 e.stopPropagation() // Prevent Dialog from intercepting
                 handleKeyDown(e)
               }}
               onInput={(e) => {
+                console.log('[VirtualCombobox] Input onInput:', (e.target as HTMLInputElement).value)
                 // Fallback for input detection
                 const target = e.target as HTMLInputElement
                 if (target.value !== inputValue) {
                   setInputValue(target.value)
                 }
+              }}
+              onFocus={(e) => {
+                console.log('[VirtualCombobox] Input focused, activeElement is now:', document.activeElement)
+              }}
+              onBlur={(e) => {
+                console.log('[VirtualCombobox] Input blurred, activeElement is now:', document.activeElement)
               }}
               className="border-0 shadow-none focus-visible:ring-0 h-8"
               style={{ 
