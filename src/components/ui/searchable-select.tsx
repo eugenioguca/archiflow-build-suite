@@ -102,30 +102,19 @@ export function SearchableSelect({
     setFocusedIndex(-1)
   }, [filteredItems])
 
-  // Focus input when popover opens and maintain focus
+  // Simplified focus management
   React.useEffect(() => {
     if (open && inputRef.current) {
-      // Multiple focus attempts for better reliability
-      const focusInput = () => {
+      console.log('SearchableSelect: Setting focus on input')
+      // Single focus attempt with minimal delay
+      const timeoutId = setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.focus()
-          inputRef.current.select() // Also select text if any
+          console.log('SearchableSelect: Focus set on input')
         }
-      }
+      }, 10)
       
-      // Immediate focus
-      focusInput()
-      
-      // Delayed focus to override any other focus events
-      const timeoutId1 = setTimeout(focusInput, 0)
-      const timeoutId2 = setTimeout(focusInput, 10)
-      const timeoutId3 = setTimeout(focusInput, 100)
-      
-      return () => {
-        clearTimeout(timeoutId1)
-        clearTimeout(timeoutId2)
-        clearTimeout(timeoutId3)
-      }
+      return () => clearTimeout(timeoutId)
     }
   }, [open])
 
@@ -167,9 +156,20 @@ export function SearchableSelect({
     }
   }, [])
 
-  // Enhanced keyboard navigation
+  // Optimized keyboard navigation - only intercept specific keys
   const handleKeyDown = React.useCallback((e: React.KeyboardEvent) => {
+    console.log('SearchableSelect: Key pressed:', e.key, 'Character code:', e.keyCode)
+    
     if (!open) return
+
+    // Only intercept specific navigation keys
+    const navigationKeys = ['ArrowDown', 'ArrowUp', 'Enter', 'Escape', 'Tab']
+    if (!navigationKeys.includes(e.key)) {
+      console.log('SearchableSelect: Allowing normal key input for:', e.key)
+      return // Let normal typing through
+    }
+
+    console.log('SearchableSelect: Handling navigation key:', e.key)
 
     switch (e.key) {
       case 'ArrowDown':
@@ -271,8 +271,14 @@ export function SearchableSelect({
             ref={inputRef}
             placeholder={searchPlaceholder}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onInput={(e) => setSearch((e.target as HTMLInputElement).value)}
+            onChange={(e) => {
+              console.log('SearchableSelect: onChange triggered with value:', e.target.value)
+              setSearch(e.target.value)
+            }}
+            onInput={(e) => {
+              console.log('SearchableSelect: onInput triggered with value:', (e.target as HTMLInputElement).value)
+              setSearch((e.target as HTMLInputElement).value)
+            }}
             onKeyDown={handleKeyDown}
             autoComplete="off"
             autoCorrect="off"
@@ -281,14 +287,6 @@ export function SearchableSelect({
             tabIndex={0}
             className="h-8 border-0 px-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
             style={{ pointerEvents: 'auto' }}
-            onBlur={(e) => {
-              // Prevent losing focus when clicking on scroll area or items
-              const relatedTarget = e.relatedTarget as HTMLElement
-              if (relatedTarget && relatedTarget.closest('[data-radix-popover-content]')) {
-                e.preventDefault()
-                setTimeout(() => inputRef.current?.focus(), 0)
-              }
-            }}
           />
         </div>
         
