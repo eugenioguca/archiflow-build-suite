@@ -109,7 +109,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
       const options = data?.map(item => ({
         value: item.id,
         label: item.name,
-        codigo: item.id
+        codigo: item.name // Usar nombre en lugar de ID para búsqueda
       })) || [];
 
       setSucursales(options);
@@ -134,7 +134,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
       const options = data?.map(item => ({
         value: item.id,
         label: `${item.project_name} - ${item.clients?.full_name || 'Sin cliente'}`,
-        codigo: item.id
+        codigo: item.project_name // Usar nombre del proyecto para búsqueda
       })) || [];
 
       setProyectos(options);
@@ -157,11 +157,14 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
 
       if (error) throw error;
 
-      const options = data?.map(item => ({
-        value: item.departamento,
-        label: item.departamento,
-        codigo: item.departamento
-      })) || [];
+      // Evitar duplicados usando Set
+      const uniqueDepartamentos = [...new Set(data?.map(item => item.departamento) || [])];
+      
+      const options = uniqueDepartamentos.map(departamento => ({
+        value: departamento,
+        label: departamento,
+        codigo: departamento
+      }));
 
       setDepartamentos(options);
     } catch (error) {
@@ -521,14 +524,14 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                   <FormItem>
                     <FormLabel>Sucursal *</FormLabel>
                     <FormControl>
-                      <SearchableCombobox
+                       <SearchableCombobox
                         items={sucursales}
                         value={field.value}
                         onValueChange={field.onChange}
                         placeholder="Seleccionar sucursal..."
                         searchPlaceholder="Buscar sucursal..."
                         loading={loading.sucursales}
-                        showCodes={true}
+                        showCodes={false}
                         searchFields={['label', 'codigo']}
                       />
                     </FormControl>
@@ -544,14 +547,14 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                   <FormItem>
                     <FormLabel>Empresa/Proyecto *</FormLabel>
                     <FormControl>
-                      <SearchableCombobox
+                       <SearchableCombobox
                         items={proyectos}
                         value={field.value}
                         onValueChange={field.onChange}
                         placeholder="Seleccionar proyecto..."
                         searchPlaceholder="Buscar proyecto..."
                         loading={loading.proyectos}
-                        showCodes={true}
+                        showCodes={false}
                         searchFields={['label', 'codigo']}
                       />
                     </FormControl>
@@ -614,14 +617,14 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                   <FormItem>
                     <FormLabel>Departamento *</FormLabel>
                     <FormControl>
-                      <SearchableCombobox
+                       <SearchableCombobox
                         items={departamentos}
                         value={field.value}
                         onValueChange={field.onChange}
                         placeholder="Seleccionar departamento..."
                         searchPlaceholder="Buscar departamento..."
                         loading={loading.departamentos}
-                        showCodes={true}
+                        showCodes={false}
                         searchFields={['label', 'codigo']}
                       />
                     </FormControl>
