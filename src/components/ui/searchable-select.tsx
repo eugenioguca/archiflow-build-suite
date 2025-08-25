@@ -63,6 +63,7 @@ export function SearchableSelect({
   loading = false,
   showCodes = false
 }: SearchableSelectProps) {
+  // Force browser cache refresh - Component updated to use native scrolling
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState("")
   const [focusedIndex, setFocusedIndex] = React.useState(-1)
