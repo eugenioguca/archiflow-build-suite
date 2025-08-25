@@ -140,98 +140,12 @@ export function VirtualCombobox({
     setSelectedItem(found)
   }, [items, value])
 
-  // Focus search input when opened - AGGRESSIVE focus strategy for Dialog context
+  // Reset input state when opened
   React.useEffect(() => {
-    console.log('[VirtualCombobox] Open state changed:', open, 'input ref exists:', !!searchInputRef.current)
-    
-    if (open && searchInputRef.current) {
-      // Reset input state first
+    if (open) {
       setInputValue("")
       setDebouncedSearch("")
       setScrollTop(0)
-      
-      console.log('[VirtualCombobox] Starting aggressive focus sequence')
-      
-      // IMMEDIATE focus attempt
-      const aggressiveFocus = () => {
-        const input = searchInputRef.current
-        if (!input) {
-          console.log('[VirtualCombobox] Input ref lost during focus attempt')
-          return false
-        }
-
-        console.log('[VirtualCombobox] Attempting focus on input:', input.tagName, input.className)
-        
-        // Remove any existing focus traps temporarily
-        input.removeAttribute('data-no-focus-trap')
-        input.setAttribute('tabindex', '0')
-        
-        // Force focus with multiple methods
-        try {
-          input.focus({ preventScroll: true })
-          
-          // Double-check focus
-          const focused = document.activeElement === input
-          console.log('[VirtualCombobox] Focus attempt result:', focused)
-          console.log('[VirtualCombobox] Current activeElement:', document.activeElement?.tagName, document.activeElement?.className)
-          
-          if (focused) {
-            // Success! Ensure input is ready for typing
-            input.setAttribute('data-no-focus-trap', 'true')
-            console.log('[VirtualCombobox] ✓ Successfully focused input')
-            return true
-          }
-          
-          // If focus failed, try more aggressive methods
-          console.log('[VirtualCombobox] Standard focus failed, trying aggressive methods')
-          
-          // Method 1: Click to focus
-          input.click()
-          if (document.activeElement === input) {
-            console.log('[VirtualCombobox] ✓ Click focus worked')
-            return true
-          }
-          
-          // Method 2: Manual focus with selection
-          input.focus()
-          input.select()
-          if (document.activeElement === input) {
-            console.log('[VirtualCombobox] ✓ Focus with select worked')
-            return true
-          }
-          
-          // Method 3: Dispatch focus event
-          input.dispatchEvent(new FocusEvent('focus', { bubbles: true }))
-          if (document.activeElement === input) {
-            console.log('[VirtualCombobox] ✓ Dispatched focus event worked')
-            return true
-          }
-          
-          console.log('[VirtualCombobox] ✗ All focus methods failed')
-          return false
-          
-        } catch (error) {
-          console.error('[VirtualCombobox] Focus attempt error:', error)
-          return false
-        }
-      }
-
-      // Try immediate focus
-      if (aggressiveFocus()) {
-        return // Success on first try
-      }
-
-      // Fallback with delays
-      const retryFocus = (delay: number, attempt: number) => {
-        setTimeout(() => {
-          console.log(`[VirtualCombobox] Retry focus attempt ${attempt} (${delay}ms delay)`)
-          if (!aggressiveFocus() && attempt < 5) {
-            retryFocus(delay * 2, attempt + 1) // Exponential backoff
-          }
-        }, delay)
-      }
-
-      retryFocus(10, 1) // Start retry sequence
     }
   }, [open])
 
@@ -349,9 +263,10 @@ export function VirtualCombobox({
 
   return (
     <div data-combobox-root="true">
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={setOpen} modal={false}>
         <PopoverTrigger asChild>
           <Button
+            type="button"
             variant="outline"
             role="combobox"
             aria-expanded={open}
@@ -383,6 +298,21 @@ export function VirtualCombobox({
           avoidCollisions={true}
           // Add data attribute for Dialog to identify combobox area
           data-combobox-dropdown="true"
+          
+          // ✅ Radix: al abrir, NO autoenfoques el trigger; enfoca el input
+          onOpenAutoFocus={(e) => {
+            e.preventDefault()
+            // foco real en el input
+            if (searchInputRef.current) {
+              searchInputRef.current.focus({ preventScroll: true })
+              console.log('[VirtualCombobox] onOpenAutoFocus - activeElement:', document.activeElement === searchInputRef.current)
+            }
+          }}
+          // ✅ Radix: al cerrar, evita que re-enfoque el trigger
+          onCloseAutoFocus={(e) => {
+            e.preventDefault()
+          }}
+          
           // CRITICAL: Allow events to bubble up from popover
           onKeyDown={(e) => {
             // Don't stop propagation, let Dialog handle if needed
@@ -434,7 +364,7 @@ export function VirtualCombobox({
                 }
               }}
               onFocus={(e) => {
-                console.log('[VirtualCombobox] Input focused, activeElement is now:', document.activeElement)
+                console.log('[VirtualCombobox] Input focused, activeElement === input:', document.activeElement === searchInputRef.current)
               }}
               onBlur={(e) => {
                 console.log('[VirtualCombobox] Input blurred, activeElement is now:', document.activeElement)
@@ -444,6 +374,7 @@ export function VirtualCombobox({
                 pointerEvents: 'auto',
                 zIndex: 1, // Ensure input is above other elements
               }}
+              autoFocus // ✅ ayuda extra; Radix ya lo enfoca en onOpenAutoFocus
               autoComplete="off"
               autoCapitalize="off"
               autoCorrect="off"
