@@ -24,13 +24,29 @@ const formSchema = z.object({
   descripcion: z.string().optional(),
   sucursal_id: z.string().min(1, 'La sucursal es requerida'),
   proyecto_id: z.string().min(1, 'El proyecto es requerido'),
-  departamento_id: z.string().min(1, 'El departamento es requerido'),
-  mayor_id: z.string().min(1, 'El mayor es requerido'),
-  partida_id: z.string().min(1, 'La partida es requerida'),
+  tipo_partida: z.enum(['chart_accounts', 'construction_universal'], {
+    required_error: 'Debe seleccionar el tipo de partida'
+  }),
+  // Chart of Accounts fields
+  departamento_id: z.string().optional(),
+  mayor_id: z.string().optional(),
+  partida_id: z.string().optional(),
   subpartida_id: z.string().optional(),
+  // Construction Universal fields
+  partida_construccion_id: z.string().optional(),
   cliente_proveedor_id: z.string().optional(),
   tiene_factura: z.boolean().default(false),
   folio_factura: z.string().optional(),
+}).refine((data) => {
+  if (data.tipo_partida === 'chart_accounts') {
+    return data.departamento_id && data.mayor_id && data.partida_id;
+  } else if (data.tipo_partida === 'construction_universal') {
+    return data.partida_construccion_id;
+  }
+  return false;
+}, {
+  message: "Los campos requeridos según el tipo de partida deben estar completos",
+  path: ["tipo_partida"]
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -58,6 +74,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
   const [mayores, setMayores] = useState<SearchableComboboxItem[]>([]);
   const [partidas, setPartidas] = useState<SearchableComboboxItem[]>([]);
   const [subpartidas, setSubpartidas] = useState<SearchableComboboxItem[]>([]);
+  const [partidasConstructoriales, setPartidasConstructoriales] = useState<SearchableComboboxItem[]>([]);
   const [clientesProveedores, setClientesProveedores] = useState<SearchableComboboxItem[]>([]);
   
   // Estados de carga
@@ -68,6 +85,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
     mayores: false,
     partidas: false,
     subpartidas: false,
+    partidasConstructoriales: false,
     clientesProveedores: false,
   });
 
@@ -77,6 +95,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
       fecha: new Date(),
       monto: 0,
       descripcion: '',
+      tipo_partida: 'chart_accounts', // Default to chart of accounts
       tiene_factura: false,
       folio_factura: '',
     },
@@ -88,6 +107,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
       loadSucursales(),
       loadProyectos(),
       loadDepartamentos(),
+      loadPartidasConstructoriales(),
       loadClientesProveedores()
     ]);
   };
@@ -250,6 +270,32 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
     }
   };
 
+  // Cargar partidas universales de construcción
+  const loadPartidasConstructoriales = async () => {
+    setLoading(prev => ({ ...prev, partidasConstructoriales: true }));
+    try {
+      const { data, error } = await supabase
+        .from('construction_budget_items')
+        .select('id, item_name, item_code, category')
+        .order('category, item_name');
+
+      if (error) throw error;
+
+      // Group by category for better organization
+      const options = data?.map(item => ({
+        value: item.id,
+        label: `${item.item_name} (${item.category})`,
+        codigo: item.item_code
+      })) || [];
+
+      setPartidasConstructoriales(options);
+    } catch (error) {
+      console.error('Error loading partidas constructoriales:', error);
+    } finally {
+      setLoading(prev => ({ ...prev, partidasConstructoriales: false }));
+    }
+  };
+
   // Cargar clientes/proveedores
   const loadClientesProveedores = async () => {
     setLoading(prev => ({ ...prev, clientesProveedores: true }));
@@ -302,6 +348,22 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
       loadInitialData();
     }
   }, [open]);
+
+  // Watcher para tipo de partida
+  const tipoPartida = form.watch('tipo_partida');
+  useEffect(() => {
+    // Reset all partida-related fields when type changes
+    if (tipoPartida) {
+      form.setValue('departamento_id', '');
+      form.setValue('mayor_id', '');
+      form.setValue('partida_id', '');
+      form.setValue('subpartida_id', '');
+      form.setValue('partida_construccion_id', '');
+      setMayores([]);
+      setPartidas([]);
+      setSubpartidas([]);
+    }
+  }, [tipoPartida, form]);
 
   // Watcher para departamento
   const departamentoId = form.watch('departamento_id');
@@ -364,17 +426,13 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
         throw new Error('Error al obtener perfil de usuario');
       }
 
-      // Preparar datos para insertar
-      const transactionData = {
+      // Preparar datos para insertar según el tipo de partida
+      const baseTransactionData = {
         fecha: format(data.fecha, 'yyyy-MM-dd'),
         tipo_movimiento: 'ingreso', // Default for bulk form
         monto: data.monto,
         sucursal_id: data.sucursal_id,
         proyecto_id: data.proyecto_id,
-        departamento: data.departamento_id, // Use departamento string value
-        mayor_id: data.mayor_id,
-        partida_id: data.partida_id,
-        subpartida_id: data.subpartida_id || null,
         cliente_proveedor_id: data.cliente_proveedor_id || null,
         tiene_factura: data.tiene_factura,
         folio_factura: data.tiene_factura ? data.folio_factura : null,
@@ -384,6 +442,27 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
+
+      let transactionData;
+      if (data.tipo_partida === 'chart_accounts') {
+        transactionData = {
+          ...baseTransactionData,
+          departamento: data.departamento_id,
+          mayor_id: data.mayor_id,
+          partida_id: data.partida_id,
+          subpartida_id: data.subpartida_id || null,
+          partida_construccion_id: null,
+        };
+      } else {
+        transactionData = {
+          ...baseTransactionData,
+          departamento: 'CONSTRUCCIÓN', // Default department for construction items
+          mayor_id: null,
+          partida_id: null,
+          subpartida_id: null,
+          partida_construccion_id: data.partida_construccion_id,
+        };
+      }
 
       const { error } = await supabase
         .from('unified_financial_transactions')
@@ -543,97 +622,157 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
               />
             </div>
 
-            {/* Chart of Accounts - Cascada */}
+            {/* Tipo de partida */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium text-foreground">Catálogo de Cuentas</h3>
-              
-              <div className="grid grid-cols-1 gap-4">
-                <FormField
-                  control={form.control}
-                  name="departamento_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Departamento *</FormLabel>
-                      <FormControl>
-                        <SearchableCombobox
-                          items={departamentos}
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          placeholder="Seleccionar departamento..."
-                          searchPlaceholder="Buscar departamento..."
-                          loading={loading.departamentos}
-                          showCodes={true}
-                          searchFields={['label', 'codigo']}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <FormField
+                control={form.control}
+                name="tipo_partida"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de Partida *</FormLabel>
+                    <FormControl>
+                      <SearchableCombobox
+                        items={[
+                          { value: 'chart_accounts', label: 'Catálogo de Cuentas', codigo: 'CAT' },
+                          { value: 'construction_universal', label: 'Partidas Universales de Construcción', codigo: 'CON' }
+                        ]}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Seleccionar tipo de partida..."
+                        searchPlaceholder="Buscar tipo..."
+                        showCodes={true}
+                        searchFields={['label', 'codigo']}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-                <FormField
-                  control={form.control}
-                  name="mayor_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Mayor *</FormLabel>
-                      <FormControl>
-                        <SearchableCombobox
-                          items={mayores}
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          placeholder={departamentoId ? "Seleccionar mayor..." : "Primero selecciona un departamento"}
-                          searchPlaceholder="Buscar mayor..."
-                          loading={loading.mayores}
-                          disabled={!departamentoId}
-                          showCodes={true}
-                          searchFields={['label', 'codigo']}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            {/* Chart of Accounts - Cascada */}
+            {tipoPartida === 'chart_accounts' && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-foreground">Catálogo de Cuentas</h3>
+                
+                <div className="grid grid-cols-1 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="departamento_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Departamento *</FormLabel>
+                        <FormControl>
+                          <SearchableCombobox
+                            items={departamentos}
+                            value={field.value || ''}
+                            onValueChange={field.onChange}
+                            placeholder="Seleccionar departamento..."
+                            searchPlaceholder="Buscar departamento..."
+                            loading={loading.departamentos}
+                            showCodes={true}
+                            searchFields={['label', 'codigo']}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="partida_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Partida *</FormLabel>
-                      <FormControl>
-                        <SearchableCombobox
-                          items={partidas}
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          placeholder={mayorId ? "Seleccionar partida..." : "Primero selecciona un mayor"}
-                          searchPlaceholder="Buscar partida..."
-                          loading={loading.partidas}
-                          disabled={!mayorId}
-                          showCodes={true}
-                          searchFields={['label', 'codigo']}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="mayor_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Mayor *</FormLabel>
+                        <FormControl>
+                          <SearchableCombobox
+                            items={mayores}
+                            value={field.value || ''}
+                            onValueChange={field.onChange}
+                            placeholder={departamentoId ? "Seleccionar mayor..." : "Primero selecciona un departamento"}
+                            searchPlaceholder="Buscar mayor..."
+                            loading={loading.mayores}
+                            disabled={!departamentoId}
+                            showCodes={true}
+                            searchFields={['label', 'codigo']}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
+                  <FormField
+                    control={form.control}
+                    name="partida_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Partida *</FormLabel>
+                        <FormControl>
+                          <SearchableCombobox
+                            items={partidas}
+                            value={field.value || ''}
+                            onValueChange={field.onChange}
+                            placeholder={mayorId ? "Seleccionar partida..." : "Primero selecciona un mayor"}
+                            searchPlaceholder="Buscar partida..."
+                            loading={loading.partidas}
+                            disabled={!mayorId}
+                            showCodes={true}
+                            searchFields={['label', 'codigo']}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="subpartida_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Subpartida (Opcional)</FormLabel>
+                        <FormControl>
+                          <SearchableCombobox
+                            items={subpartidas}
+                            value={field.value || ''}
+                            onValueChange={field.onChange}
+                            placeholder={partidaId ? "Seleccionar subpartida..." : "Primero selecciona una partida"}
+                            searchPlaceholder="Buscar subpartida..."
+                            loading={loading.subpartidas}
+                            disabled={!partidaId}
+                            showCodes={true}
+                            searchFields={['label', 'codigo']}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Partidas Universales de Construcción */}
+            {tipoPartida === 'construction_universal' && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-foreground">Partidas Universales de Construcción</h3>
+                
                 <FormField
                   control={form.control}
-                  name="subpartida_id"
+                  name="partida_construccion_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Subpartida (Opcional)</FormLabel>
+                      <FormLabel>Partida de Construcción *</FormLabel>
                       <FormControl>
                         <SearchableCombobox
-                          items={subpartidas}
+                          items={partidasConstructoriales}
                           value={field.value || ''}
                           onValueChange={field.onChange}
-                          placeholder={partidaId ? "Seleccionar subpartida..." : "Primero selecciona una partida"}
-                          searchPlaceholder="Buscar subpartida..."
-                          loading={loading.subpartidas}
-                          disabled={!partidaId}
+                          placeholder="Seleccionar partida de construcción..."
+                          searchPlaceholder="Buscar partida..."
+                          loading={loading.partidasConstructoriales}
                           showCodes={true}
                           searchFields={['label', 'codigo']}
                         />
@@ -643,7 +782,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                   )}
                 />
               </div>
-            </div>
+            )}
 
             {/* Cliente/Proveedor */}
             <FormField
