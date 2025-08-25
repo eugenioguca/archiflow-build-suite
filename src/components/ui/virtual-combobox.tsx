@@ -149,38 +149,128 @@ export function VirtualCombobox({
     }
   }, [open])
 
-  // Force focus on input when popover opens
+  // Aggressive focus management with multiple strategies
   React.useEffect(() => {
-    if (open && searchInputRef.current) {
-      const id = setTimeout(() => {
-        searchInputRef.current?.focus({ preventScroll: true })
-        console.log("Focused on input:", document.activeElement === searchInputRef.current)
-      }, 0)
-      return () => clearTimeout(id)
+    if (!open || !searchInputRef.current) return
+
+    console.log('[VirtualCombobox] Popover opened, initiating aggressive focus management')
+    
+    let attempts = 0
+    const maxAttempts = 10
+    const focusTimeouts: NodeJS.Timeout[] = []
+    
+    const attemptFocus = () => {
+      attempts++
+      console.log(`[VirtualCombobox] Focus attempt ${attempts}/${maxAttempts}`)
+      
+      if (!searchInputRef.current) {
+        console.log('[VirtualCombobox] searchInputRef is null, aborting focus attempt')
+        return
+      }
+
+      const currentActiveElement = document.activeElement
+      console.log('[VirtualCombobox] Current active element:', currentActiveElement?.tagName, currentActiveElement?.className)
+      
+      if (currentActiveElement === searchInputRef.current) {
+        console.log('[VirtualCombobox] ✅ Input is already focused, focus management complete')
+        return
+      }
+
+      // Try to focus the input
+      searchInputRef.current.focus({ preventScroll: true })
+      
+      // Verify focus was successful
+      if (document.activeElement === searchInputRef.current) {
+        console.log('[VirtualCombobox] ✅ Successfully focused input on attempt', attempts)
+        return
+      }
+
+      // If we haven't succeeded and haven't reached max attempts, try again
+      if (attempts < maxAttempts) {
+        console.log('[VirtualCombobox] Focus failed, scheduling retry...')
+        const timeout = setTimeout(attemptFocus, 10 * attempts) // Increasing delay
+        focusTimeouts.push(timeout)
+      } else {
+        console.error('[VirtualCombobox] ❌ Failed to focus input after', maxAttempts, 'attempts')
+      }
+    }
+
+    // Strategy 1: Immediate focus
+    attemptFocus()
+    
+    // Strategy 2: requestAnimationFrame (next render cycle)
+    const rafId = requestAnimationFrame(() => {
+      if (document.activeElement !== searchInputRef.current) {
+        attemptFocus()
+      }
+    })
+    
+    // Strategy 3: Small delay for DOM updates
+    const timeout1 = setTimeout(attemptFocus, 0)
+    const timeout2 = setTimeout(attemptFocus, 10)
+    const timeout3 = setTimeout(attemptFocus, 50)
+    
+    return () => {
+      cancelAnimationFrame(rafId)
+      clearTimeout(timeout1)
+      clearTimeout(timeout2) 
+      clearTimeout(timeout3)
+      focusTimeouts.forEach(clearTimeout)
     }
   }, [open])
 
-  // Additional focus insurance - focus on any interaction with the popover
+  // Fallback strategy: Focus on any interaction with the popover
   React.useEffect(() => {
-    if (open) {
-      const ensureFocusOnInteraction = () => {
-        if (searchInputRef.current && document.activeElement !== searchInputRef.current) {
-          console.log('[VirtualCombobox] Interaction detected, ensuring focus')
-          searchInputRef.current.focus()
-        }
-      }
+    if (!open) return
 
-      // Add event listeners for any interaction within the popover
-      const popover = document.querySelector('[data-combobox-dropdown="true"]')
-      if (popover) {
-        popover.addEventListener('click', ensureFocusOnInteraction)
-        popover.addEventListener('mousedown', ensureFocusOnInteraction)
-        
-        return () => {
-          popover.removeEventListener('click', ensureFocusOnInteraction)
-          popover.removeEventListener('mousedown', ensureFocusOnInteraction)
-        }
+    const ensureFocusOnInteraction = (event: Event) => {
+      console.log('[VirtualCombobox] User interaction detected:', event.type)
+      
+      if (searchInputRef.current && document.activeElement !== searchInputRef.current) {
+        console.log('[VirtualCombobox] Focus not on input, redirecting focus...')
+        event.preventDefault?.()
+        searchInputRef.current.focus({ preventScroll: true })
       }
+    }
+
+    // Listen for any user interaction that might indicate they want to type
+    const events = ['click', 'mousedown', 'keydown', 'focus']
+    const popover = document.querySelector('[data-combobox-dropdown="true"]')
+    
+    if (popover) {
+      events.forEach(eventType => {
+        popover.addEventListener(eventType, ensureFocusOnInteraction, { capture: true })
+      })
+      
+      return () => {
+        events.forEach(eventType => {
+          popover.removeEventListener(eventType, ensureFocusOnInteraction, { capture: true })
+        })
+      }
+    }
+  }, [open])
+
+  // Monitor focus changes and log for debugging
+  React.useEffect(() => {
+    if (!open) return
+
+    const handleFocusChange = () => {
+      const active = document.activeElement
+      console.log('[VirtualCombobox] Focus changed to:', active?.tagName, active?.className)
+      
+      if (active === searchInputRef.current) {
+        console.log('[VirtualCombobox] ✅ Focus is correctly on search input')
+      } else if (searchInputRef.current) {
+        console.log('[VirtualCombobox] ⚠️ Focus is NOT on search input, current active:', active)
+      }
+    }
+
+    document.addEventListener('focusin', handleFocusChange)
+    document.addEventListener('focusout', handleFocusChange)
+    
+    return () => {
+      document.removeEventListener('focusin', handleFocusChange)
+      document.removeEventListener('focusout', handleFocusChange)
     }
   }, [open])
 

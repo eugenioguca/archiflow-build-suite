@@ -41,22 +41,34 @@ const DialogContent = React.forwardRef<
       )}
       style={{ overflow: 'visible' }}
       onFocusCapture={(e) => {
-        // Check if focus is within combobox - if so, don't interfere
+        // Enhanced combobox detection and bypass
         const target = e.target as HTMLElement
-        if (target.closest('[data-combobox-root]')) {
-          console.log('[DialogContent] Focus within combobox - allowing natural focus')
+        const comboboxRoot = target.closest('[data-combobox-root]')
+        const comboboxInput = target.closest('[data-combobox-input]')
+        const comboboxDropdown = target.closest('[data-combobox-dropdown]')
+        
+        if (comboboxRoot || comboboxInput || comboboxDropdown) {
+          console.log('[DialogContent] Enhanced focus bypass - combobox element detected:', target.tagName, target.className)
+          e.stopPropagation()
           return
         }
+        
         // Call original handler if provided
         onFocusCapture?.(e)
       }}
       onKeyDownCapture={(e) => {
-        // Check if keydown is within combobox - if so, don't interfere
+        // Enhanced combobox detection and bypass
         const target = e.target as HTMLElement
-        if (target.closest('[data-combobox-root]')) {
-          console.log('[DialogContent] KeyDown within combobox - allowing natural handling:', e.key)
+        const comboboxRoot = target.closest('[data-combobox-root]')
+        const comboboxInput = target.closest('[data-combobox-input]')
+        const comboboxDropdown = target.closest('[data-combobox-dropdown]')
+        
+        if (comboboxRoot || comboboxInput || comboboxDropdown) {
+          console.log('[DialogContent] Enhanced keydown bypass - combobox element detected:', e.key, target.tagName)
+          e.stopPropagation()
           return
         }
+        
         // Call original handler if provided
         onKeyDownCapture?.(e)
       }}
