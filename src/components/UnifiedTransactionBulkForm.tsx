@@ -460,25 +460,42 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
   const handleDialogKeyDown = (e: React.KeyboardEvent) => {
     // Check if the event is from SearchableCombobox input or navigation
     const target = e.target as HTMLElement
-    const isComboboxInput = target.role === 'combobox' || 
-                           target.closest('[role="combobox"]') ||
-                           target.hasAttribute('data-no-focus-trap')
     
-    if (isComboboxInput) {
-      // Allow keyboard events to pass through for SearchableCombobox
-      e.stopPropagation()
+    // More comprehensive check for combobox elements
+    const isComboboxRelated = 
+      target.role === 'combobox' ||
+      target.hasAttribute('data-no-focus-trap') ||
+      target.closest('[data-no-focus-trap]') ||
+      target.closest('[role="combobox"]') ||
+      target.closest('[data-radix-popper-content-wrapper]') ||
+      target.className?.includes('combobox') ||
+      // Check if it's within any popover content
+      target.closest('[data-radix-popover-content]')
+    
+    if (isComboboxRelated) {
+      // Don't prevent default or stop propagation - let the combobox handle it naturally
+      return
+    }
+    
+    // Only handle dialog-specific keys when not in combobox
+    if (e.key === 'Escape') {
+      // Let Escape work normally
+      return
     }
   }
 
   const handleDialogWheel = (e: React.WheelEvent) => {
     // Check if wheel event is from SearchableCombobox scroll container
     const target = e.target as HTMLElement
-    const isComboboxScroll = target.closest('[data-no-focus-trap]') ||
-                            target.classList.contains('overflow-y-auto')
+    const isComboboxScroll = 
+      target.closest('[data-no-focus-trap]') ||
+      target.closest('[data-radix-popover-content]') ||
+      target.classList.contains('overflow-y-auto') ||
+      target.closest('.overflow-y-auto')
     
     if (isComboboxScroll) {
-      // Allow scroll events to pass through for SearchableCombobox
-      e.stopPropagation()
+      // Don't prevent - let scrolling work naturally
+      return
     }
   }
 
@@ -488,6 +505,14 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
         className="max-w-4xl max-h-[90vh] overflow-y-auto"
         onKeyDown={handleDialogKeyDown}
         onWheel={handleDialogWheel}
+        // Prevent focus trap from interfering with combobox
+        onInteractOutside={(e) => {
+          // Don't close dialog when interacting with combobox popover
+          const target = e.target as Element
+          if (target.closest('[data-radix-popover-content]') || target.closest('[data-no-focus-trap]')) {
+            e.preventDefault()
+          }
+        }}
       >
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold flex items-center gap-2">
