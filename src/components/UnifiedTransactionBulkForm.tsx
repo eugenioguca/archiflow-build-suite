@@ -31,6 +31,7 @@ const formSchema = z.object({
   cliente_proveedor_id: z.string().optional(),
   tiene_factura: z.boolean().default(false),
   folio_factura: z.string().optional(),
+  tipo_movimiento: z.string().default('ingreso'),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -79,6 +80,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
       descripcion: '',
       tiene_factura: false,
       folio_factura: '',
+      tipo_movimiento: 'ingreso',
     },
   });
 
@@ -404,7 +406,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
       // Preparar datos para insertar
       const transactionData = {
         fecha: format(data.fecha, 'yyyy-MM-dd'),
-        tipo_movimiento: 'ingreso', // Default for bulk form
+        tipo_movimiento: data.tipo_movimiento || 'ingreso',
         monto: data.monto,
         sucursal_id: data.sucursal_id,
         proyecto_id: data.proyecto_id,
@@ -492,8 +494,8 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Información básica */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Primera fila: Fecha | Sucursal | Empresa/Proyecto */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FormField
                 control={form.control}
                 name="fecha"
@@ -512,27 +514,6 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="monto"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Monto *</FormLabel>
-                    <FormControl>
-                      <CurrencyInput
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="0.00"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Organización */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="sucursal_id"
@@ -561,7 +542,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                 name="proyecto_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Proyecto *</FormLabel>
+                    <FormLabel>Empresa/Proyecto *</FormLabel>
                     <FormControl>
                       <SearchableCombobox
                         items={proyectos}
@@ -580,106 +561,149 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
               />
             </div>
 
-            {/* Chart of Accounts - Cascada */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-foreground">Catálogo de Cuentas</h3>
-              
-              <div className="grid grid-cols-1 gap-4">
-                <FormField
-                  control={form.control}
-                  name="departamento_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Departamento *</FormLabel>
-                      <FormControl>
-                        <SearchableCombobox
-                          items={departamentos}
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          placeholder="Seleccionar departamento..."
-                          searchPlaceholder="Buscar departamento..."
-                          loading={loading.departamentos}
-                          showCodes={true}
-                          searchFields={['label', 'codigo']}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            {/* Segunda fila: Movimiento | Monto | Departamento */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="tipo_movimiento"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Movimiento *</FormLabel>
+                    <FormControl>
+                      <SearchableCombobox
+                        items={[
+                          { value: 'ingreso', label: 'Ingreso', codigo: 'ING' },
+                          { value: 'egreso', label: 'Egreso', codigo: 'EGR' }
+                        ]}
+                        value={field.value as string || 'ingreso'}
+                        onValueChange={field.onChange}
+                        placeholder="Seleccionar movimiento..."
+                        searchPlaceholder="Buscar movimiento..."
+                        loading={false}
+                        showCodes={true}
+                        searchFields={['label', 'codigo']}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                <FormField
-                  control={form.control}
-                  name="mayor_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Mayor *</FormLabel>
-                      <FormControl>
-                        <SearchableCombobox
-                          items={mayores}
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          placeholder={departamentoId ? "Seleccionar mayor..." : "Primero selecciona un departamento"}
-                          searchPlaceholder="Buscar mayor..."
-                          loading={loading.mayores}
-                          disabled={!departamentoId}
-                          showCodes={true}
-                          searchFields={['label', 'codigo']}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <FormField
+                control={form.control}
+                name="monto"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Monto *</FormLabel>
+                    <FormControl>
+                      <CurrencyInput
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="0.00"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                <FormField
-                  control={form.control}
-                  name="partida_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Partida *</FormLabel>
-                      <FormControl>
-                        <SearchableCombobox
-                          items={partidas}
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          placeholder={mayorId ? "Seleccionar partida..." : "Primero selecciona un mayor"}
-                          searchPlaceholder="Buscar partida..."
-                          loading={loading.partidas}
-                          disabled={!mayorId}
-                          showCodes={true}
-                          searchFields={['label', 'codigo']}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <FormField
+                control={form.control}
+                name="departamento_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Departamento *</FormLabel>
+                    <FormControl>
+                      <SearchableCombobox
+                        items={departamentos}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Seleccionar departamento..."
+                        searchPlaceholder="Buscar departamento..."
+                        loading={loading.departamentos}
+                        showCodes={true}
+                        searchFields={['label', 'codigo']}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-                <FormField
-                  control={form.control}
-                  name="subpartida_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Subpartida (Opcional)</FormLabel>
-                      <FormControl>
-                        <SearchableCombobox
-                          items={subpartidas}
-                          value={field.value || ''}
-                          onValueChange={field.onChange}
-                          placeholder={partidaId ? "Seleccionar subpartida..." : "Primero selecciona una partida"}
-                          searchPlaceholder="Buscar subpartida..."
-                          loading={loading.subpartidas}
-                          disabled={!partidaId}
-                          showCodes={true}
-                          searchFields={['label', 'codigo']}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+            {/* Tercera fila: Mayor | Partidas | Subpartidas */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="mayor_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mayor *</FormLabel>
+                    <FormControl>
+                      <SearchableCombobox
+                        items={mayores}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder={departamentoId ? "Seleccionar mayor..." : "Primero selecciona un departamento"}
+                        searchPlaceholder="Buscar mayor..."
+                        loading={loading.mayores}
+                        disabled={!departamentoId}
+                        showCodes={true}
+                        searchFields={['label', 'codigo']}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="partida_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Partidas *</FormLabel>
+                    <FormControl>
+                      <SearchableCombobox
+                        items={partidas}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder={mayorId ? "Seleccionar partida..." : "Primero selecciona un mayor"}
+                        searchPlaceholder="Buscar partida..."
+                        loading={loading.partidas}
+                        disabled={!mayorId}
+                        showCodes={true}
+                        searchFields={['label', 'codigo']}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="subpartida_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Subpartidas</FormLabel>
+                    <FormControl>
+                      <SearchableCombobox
+                        items={subpartidas}
+                        value={field.value || ''}
+                        onValueChange={field.onChange}
+                        placeholder={partidaId ? "Seleccionar subpartida..." : "Primero selecciona una partida"}
+                        searchPlaceholder="Buscar subpartida..."
+                        loading={loading.subpartidas}
+                        disabled={!partidaId}
+                        showCodes={true}
+                        searchFields={['label', 'codigo']}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             {/* Cliente/Proveedor */}
@@ -706,47 +730,45 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
               )}
             />
 
-            {/* Información de facturación */}
-            <div className="space-y-4">
+            {/* Quinta fila: Checkbox de facturación */}
+            <FormField
+              control={form.control}
+              name="tiene_factura"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Cuenta con factura</FormLabel>
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            {form.watch('tiene_factura') && (
               <FormField
                 control={form.control}
-                name="tiene_factura"
+                name="folio_factura"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormItem>
+                    <FormLabel>Folio de Factura</FormLabel>
                     <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
+                      <Input
+                        {...field}
+                        placeholder="Ingresa el folio de la factura"
                       />
                     </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Esta transacción tiene factura</FormLabel>
-                    </div>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
+            )}
 
-              {form.watch('tiene_factura') && (
-                <FormField
-                  control={form.control}
-                  name="folio_factura"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Folio de Factura</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          placeholder="Ingresa el folio de la factura"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-            </div>
-
-            {/* Descripción opcional */}
+            {/* Sexta fila: Botón de descripción */}
             <div className="space-y-2">
               <Button
                 type="button"
@@ -756,7 +778,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                 className="flex items-center gap-2 text-sm"
               >
                 {showDescription ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                {showDescription ? 'Ocultar descripción' : 'Agregar descripción'}
+                Mostrar Descripción
               </Button>
 
               {showDescription && (
