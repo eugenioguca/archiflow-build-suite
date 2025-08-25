@@ -461,27 +461,28 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
     // Check if the event is from SearchableCombobox input or navigation
     const target = e.target as HTMLElement
     
-    // More comprehensive check for combobox elements
+    // Comprehensive check for combobox elements - DO NOT INTERFERE
     const isComboboxRelated = 
-      target.role === 'combobox' ||
       target.hasAttribute('data-no-focus-trap') ||
+      target.hasAttribute('data-combobox-trigger') ||
       target.closest('[data-no-focus-trap]') ||
+      target.closest('[data-combobox-trigger]') ||
+      target.closest('[data-combobox-dropdown]') ||
       target.closest('[role="combobox"]') ||
       target.closest('[data-radix-popper-content-wrapper]') ||
-      target.className?.includes('combobox') ||
-      // Check if it's within any popover content
-      target.closest('[data-radix-popover-content]')
+      target.closest('[data-radix-popover-content]') ||
+      target.classList.contains('combobox') ||
+      (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'text') // Check for text inputs
+    
     
     if (isComboboxRelated) {
-      // Don't prevent default or stop propagation - let the combobox handle it naturally
+      // CRITICAL: Do absolutely nothing - let combobox handle everything
+      console.log('[Dialog] Bypassing event handling for combobox:', e.key)
       return
     }
     
-    // Only handle dialog-specific keys when not in combobox
-    if (e.key === 'Escape') {
-      // Let Escape work normally
-      return
-    }
+    // Only handle dialog-specific functionality when NOT in combobox
+    console.log('[Dialog] Handling dialog event:', e.key)
   }
 
   const handleDialogWheel = (e: React.WheelEvent) => {
@@ -489,12 +490,14 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
     const target = e.target as HTMLElement
     const isComboboxScroll = 
       target.closest('[data-no-focus-trap]') ||
+      target.closest('[data-combobox-dropdown]') ||
       target.closest('[data-radix-popover-content]') ||
       target.classList.contains('overflow-y-auto') ||
       target.closest('.overflow-y-auto')
     
     if (isComboboxScroll) {
-      // Don't prevent - let scrolling work naturally
+      // CRITICAL: Do nothing - let scrolling work naturally
+      console.log('[Dialog] Allowing scroll for combobox')
       return
     }
   }
@@ -507,9 +510,28 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
         onWheel={handleDialogWheel}
         // Prevent focus trap from interfering with combobox
         onInteractOutside={(e) => {
-          // Don't close dialog when interacting with combobox popover
+          // Don't close dialog when interacting with combobox elements
           const target = e.target as Element
-          if (target.closest('[data-radix-popover-content]') || target.closest('[data-no-focus-trap]')) {
+          if (
+            target.closest('[data-radix-popover-content]') || 
+            target.closest('[data-no-focus-trap]') ||
+            target.closest('[data-combobox-dropdown]') ||
+            target.closest('[data-combobox-trigger]')
+          ) {
+            console.log('[Dialog] Preventing close on combobox interaction')
+            e.preventDefault()
+          }
+        }}
+        onFocusOutside={(e) => {
+          // Don't close dialog when focusing combobox elements
+          const target = e.target as Element
+          if (
+            target.closest('[data-radix-popover-content]') || 
+            target.closest('[data-no-focus-trap]') ||
+            target.hasAttribute('data-no-focus-trap') ||
+            target.closest('[data-combobox-dropdown]')
+          ) {
+            console.log('[Dialog] Preventing close on combobox focus')
             e.preventDefault()
           }
         }}

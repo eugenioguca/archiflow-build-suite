@@ -270,6 +270,7 @@ export function VirtualCombobox({
           aria-expanded={open}
           className={cn("w-full justify-between", className)}
           disabled={disabled || loading}
+          data-combobox-trigger="true"
         >
           <span className="truncate">
             {loading ? (
@@ -293,6 +294,8 @@ export function VirtualCombobox({
         align="start"
         sideOffset={4}
         avoidCollisions={true}
+        // Add data attribute for Dialog to identify combobox area
+        data-combobox-dropdown="true"
         // CRITICAL: Allow events to bubble up from popover
         onKeyDown={(e) => {
           // Don't stop propagation, let Dialog handle if needed
