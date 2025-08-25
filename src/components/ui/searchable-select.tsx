@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { ScrollArea } from "@/components/ui/scroll-area"
 
 export interface SearchableSelectItem {
   value: string
@@ -35,6 +34,23 @@ const normalizeText = (text: string): string => {
     .trim()
 }
 
+// Custom hook for debounced search
+const useDebounce = (value: string, delay: number) => {
+  const [debouncedValue, setDebouncedValue] = React.useState(value)
+
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value)
+    }, delay)
+
+    return () => {
+      clearTimeout(handler)
+    }
+  }, [value, delay])
+
+  return debouncedValue
+}
+
 export function SearchableSelect({
   items = [],
   value,
@@ -51,8 +67,11 @@ export function SearchableSelect({
   const [search, setSearch] = React.useState("")
   const [focusedIndex, setFocusedIndex] = React.useState(-1)
   const inputRef = React.useRef<HTMLInputElement>(null)
-  const scrollAreaRef = React.useRef<HTMLDivElement>(null)
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null)
   const itemRefs = React.useRef<(HTMLDivElement | null)[]>([])
+
+  // Debounce search for better performance
+  const debouncedSearch = useDebounce(search, 150)
 
   // Find selected item
   const selectedItem = React.useMemo(() => 
@@ -60,11 +79,11 @@ export function SearchableSelect({
     [items, value]
   )
 
-  // Filter items based on search
+  // Filter items based on debounced search
   const filteredItems = React.useMemo(() => {
-    if (!search.trim()) return items
+    if (!debouncedSearch.trim()) return items
     
-    const normalizedSearch = normalizeText(search)
+    const normalizedSearch = normalizeText(debouncedSearch)
     
     return items.filter(item => {
       const searchFields = [
@@ -75,38 +94,68 @@ export function SearchableSelect({
       
       return normalizeText(searchFields).includes(normalizedSearch)
     })
-  }, [items, search])
+  }, [items, debouncedSearch])
 
   // Reset focused index when filtered items change
   React.useEffect(() => {
     setFocusedIndex(-1)
   }, [filteredItems])
 
-  // Focus input when popover opens
+  // Focus input when popover opens and maintain focus
   React.useEffect(() => {
     if (open && inputRef.current) {
-      setTimeout(() => inputRef.current?.focus(), 100)
+      // Use a shorter timeout for faster focus
+      const timeoutId = setTimeout(() => {
+        inputRef.current?.focus()
+      }, 50)
+      
+      return () => clearTimeout(timeoutId)
     }
   }, [open])
 
-  // Scroll focused item into view
+  // Prevent input from losing focus during interaction
+  React.useEffect(() => {
+    if (open && inputRef.current) {
+      const input = inputRef.current
+      const handleBlur = (e: FocusEvent) => {
+        // Only blur if clicking outside the popover
+        if (!e.relatedTarget || !(e.relatedTarget as Element).closest('[data-radix-popover-content]')) {
+          return
+        }
+        e.preventDefault()
+        input.focus()
+      }
+
+      input.addEventListener('blur', handleBlur)
+      return () => input.removeEventListener('blur', handleBlur)
+    }
+  }, [open])
+
+  // Scroll focused item into view with better performance
   const scrollToItem = React.useCallback((index: number) => {
     const item = itemRefs.current[index]
-    if (item && scrollAreaRef.current) {
-      item.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest'
-      })
+    const container = scrollContainerRef.current
+    
+    if (item && container) {
+      const itemRect = item.getBoundingClientRect()
+      const containerRect = container.getBoundingClientRect()
+      
+      if (itemRect.top < containerRect.top) {
+        container.scrollTop -= (containerRect.top - itemRect.top + 8)
+      } else if (itemRect.bottom > containerRect.bottom) {
+        container.scrollTop += (itemRect.bottom - containerRect.bottom + 8)
+      }
     }
   }, [])
 
-  // Handle keyboard navigation
+  // Enhanced keyboard navigation
   const handleKeyDown = React.useCallback((e: React.KeyboardEvent) => {
     if (!open) return
 
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault()
+        e.stopPropagation()
         const nextIndex = focusedIndex < filteredItems.length - 1 ? focusedIndex + 1 : 0
         setFocusedIndex(nextIndex)
         scrollToItem(nextIndex)
@@ -114,6 +163,7 @@ export function SearchableSelect({
         
       case 'ArrowUp':
         e.preventDefault()
+        e.stopPropagation()
         const prevIndex = focusedIndex > 0 ? focusedIndex - 1 : filteredItems.length - 1
         setFocusedIndex(prevIndex)
         scrollToItem(prevIndex)
@@ -121,6 +171,7 @@ export function SearchableSelect({
         
       case 'Enter':
         e.preventDefault()
+        e.stopPropagation()
         if (focusedIndex >= 0 && filteredItems[focusedIndex]) {
           handleSelect(filteredItems[focusedIndex].value)
         }
@@ -128,18 +179,29 @@ export function SearchableSelect({
         
       case 'Escape':
         e.preventDefault()
+        e.stopPropagation()
+        setOpen(false)
+        break
+        
+      case 'Tab':
+        // Allow tab to close and move to next element
         setOpen(false)
         break
     }
   }, [open, focusedIndex, filteredItems, scrollToItem])
 
-  // Handle item selection
+  // Handle item selection with better event handling
   const handleSelect = React.useCallback((selectedValue: string) => {
     onValueChange?.(selectedValue)
     setOpen(false)
     setSearch("")
     setFocusedIndex(-1)
   }, [onValueChange])
+
+  // Handle mouse enter with debounce to prevent excessive updates
+  const handleMouseEnter = React.useCallback((index: number) => {
+    setFocusedIndex(index)
+  }, [])
 
   // Display label with optional code
   const displayLabel = React.useMemo(() => {
@@ -190,9 +252,13 @@ export function SearchableSelect({
           />
         </div>
         
-        <ScrollArea 
-          ref={scrollAreaRef}
-          className="max-h-[300px] overflow-auto searchable-select-scroll"
+        <div 
+          ref={scrollContainerRef}
+          className="max-h-[300px] overflow-auto bg-background"
+          style={{ 
+            pointerEvents: 'auto',
+            scrollbarWidth: 'thin'
+          }}
         >
           {filteredItems.length === 0 ? (
             <div className="py-6 text-center text-sm text-muted-foreground">
@@ -211,8 +277,14 @@ export function SearchableSelect({
                     item.value === value && "bg-accent text-accent-foreground",
                     focusedIndex === index && "bg-accent text-accent-foreground"
                   )}
-                  onClick={() => handleSelect(item.value)}
-                  onMouseEnter={() => setFocusedIndex(index)}
+                  style={{ pointerEvents: 'auto' }}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    handleSelect(item.value)
+                  }}
+                  onMouseEnter={() => handleMouseEnter(index)}
+                  onMouseDown={(e) => e.preventDefault()} // Prevent focus loss
                 >
                   <Check
                     className={cn(
@@ -232,7 +304,7 @@ export function SearchableSelect({
               ))}
             </div>
           )}
-        </ScrollArea>
+        </div>
       </PopoverContent>
     </Popover>
   )
