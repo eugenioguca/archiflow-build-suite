@@ -11,7 +11,11 @@ import { ImportReportsDashboard } from "./ImportReportsDashboard";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export const UnifiedFinancialTransactions = memo(() => {
+interface UnifiedFinancialTransactionsProps {
+  onBulkFormOpen?: () => void;
+}
+
+export const UnifiedFinancialTransactions = memo(({ onBulkFormOpen }: UnifiedFinancialTransactionsProps) => {
   const [activeTab, setActiveTab] = useState("transactions");
   const [showForm, setShowForm] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -140,6 +144,13 @@ export const UnifiedFinancialTransactions = memo(() => {
                 <Button onClick={handleFormOpen}>
                   <Plus className="h-4 w-4 mr-2" />
                   Nueva Transacción
+                </Button>
+                <Button 
+                  onClick={onBulkFormOpen}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  📦 Nueva Carga
                 </Button>
               </div>
             </CardHeader>

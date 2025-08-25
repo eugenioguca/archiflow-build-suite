@@ -60,18 +60,7 @@ export default function UnifiedTransactions() {
 
   return (
     <div className="relative">
-      <UnifiedFinancialTransactions />
-      
-      {/* Botón Nueva Carga */}
-      <div className="fixed bottom-4 left-4 z-50">
-        <Button 
-          onClick={() => setShowBulkForm(true)}
-          className="bg-green-600 hover:bg-green-700 text-white shadow-lg"
-          size="lg"
-        >
-          📦 Nueva Carga
-        </Button>
-      </div>
+      <UnifiedFinancialTransactions onBulkFormOpen={() => setShowBulkForm(true)} />
       
       {/* Botones de test SOLO en el módulo de transacciones */}
       <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
