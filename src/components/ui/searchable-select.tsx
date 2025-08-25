@@ -102,40 +102,25 @@ export function SearchableSelect({
     setFocusedIndex(-1)
   }, [filteredItems])
 
-  // Simplified focus management
+  // Focus management with debug
   React.useEffect(() => {
     if (open && inputRef.current) {
       console.log('SearchableSelect: Setting focus on input')
-      // Single focus attempt with minimal delay
-      const timeoutId = setTimeout(() => {
+      
+      const focusInput = () => {
         if (inputRef.current) {
           inputRef.current.focus()
-          console.log('SearchableSelect: Focus set on input')
-        }
-      }, 10)
-      
-      return () => clearTimeout(timeoutId)
-    }
-  }, [open])
-
-  // Maintain input focus during interactions
-  React.useEffect(() => {
-    if (open && inputRef.current) {
-      const input = inputRef.current
-      
-      const handleFocusOut = (e: FocusEvent) => {
-        // Keep focus unless clicking completely outside the popover
-        const isClickingInsidePopover = e.relatedTarget && 
-          (e.relatedTarget as Element).closest('[data-radix-popover-content]')
-        
-        if (isClickingInsidePopover) {
-          // Prevent focus loss and refocus after a minimal delay
-          setTimeout(() => input.focus(), 0)
+          console.log('SearchableSelect: Focus set on input, activeElement:', document.activeElement === inputRef.current)
         }
       }
-
-      input.addEventListener('focusout', handleFocusOut)
-      return () => input.removeEventListener('focusout', handleFocusOut)
+      
+      // Immediate focus
+      focusInput()
+      
+      // Backup focus attempt
+      const timeoutId = setTimeout(focusInput, 50)
+      
+      return () => clearTimeout(timeoutId)
     }
   }, [open])
 
@@ -211,6 +196,7 @@ export function SearchableSelect({
 
   // Handle item selection with better event handling
   const handleSelect = React.useCallback((selectedValue: string) => {
+    console.log('SearchableSelect: Selecting item:', selectedValue)
     onValueChange?.(selectedValue)
     setOpen(false)
     setSearch("")
@@ -219,6 +205,7 @@ export function SearchableSelect({
 
   // Handle mouse enter with debounce to prevent excessive updates
   const handleMouseEnter = React.useCallback((index: number) => {
+    console.log('SearchableSelect: Setting focusedIndex to:', index)
     setFocusedIndex(index)
   }, [])
 
@@ -265,10 +252,11 @@ export function SearchableSelect({
           // Focus will be handled by our useEffect
         }}
       >
-        <div className="flex items-center border-b px-3 py-2">
+        <div className="flex items-center border-b px-3 py-2" role="combobox" aria-expanded={open} aria-controls="searchable-select-listbox">
           <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
           <Input
             ref={inputRef}
+            type="text"
             placeholder={searchPlaceholder}
             value={search}
             onChange={(e) => {
@@ -279,19 +267,29 @@ export function SearchableSelect({
               console.log('SearchableSelect: onInput triggered with value:', (e.target as HTMLInputElement).value)
               setSearch((e.target as HTMLInputElement).value)
             }}
+            onFocus={(e) => {
+              console.log('SearchableSelect: Input focused, activeElement:', document.activeElement === e.target)
+            }}
+            onBlur={(e) => {
+              console.log('SearchableSelect: Input blur, relatedTarget:', e.relatedTarget)
+            }}
             onKeyDown={handleKeyDown}
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="off"
             spellCheck={false}
             tabIndex={0}
+            aria-autocomplete="list"
+            aria-activedescendant={focusedIndex >= 0 ? `option-${focusedIndex}` : undefined}
             className="h-8 border-0 px-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
             style={{ pointerEvents: 'auto' }}
           />
         </div>
         
         <div 
+          id="searchable-select-listbox"
           ref={scrollContainerRef}
+          role="listbox"
           className="max-h-[300px] overflow-y-auto overflow-x-hidden bg-background searchable-select-scroll"
           tabIndex={-1}
           style={{ 
@@ -300,15 +298,13 @@ export function SearchableSelect({
             scrollBehavior: 'smooth'
           }}
           onKeyDown={(e) => {
-            // Handle scroll with keyboard in the container
+            // Don't interfere with input key handling
             if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
               e.stopPropagation()
-              // Let the input handler manage this
               inputRef.current?.focus()
             }
           }}
           onWheel={(e) => {
-            // Ensure scroll events are not blocked
             e.stopPropagation()
           }}
         >
@@ -321,7 +317,10 @@ export function SearchableSelect({
               {filteredItems.map((item, index) => (
                 <div
                   key={item.value}
+                  id={`option-${index}`}
                   ref={el => itemRefs.current[index] = el}
+                  role="option"
+                  aria-selected={item.value === value}
                   className={cn(
                     "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none transition-colors",
                     "hover:bg-accent hover:text-accent-foreground",
@@ -333,10 +332,17 @@ export function SearchableSelect({
                   onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
+                    console.log('SearchableSelect: Item clicked:', item.value)
                     handleSelect(item.value)
                   }}
-                  onMouseEnter={() => handleMouseEnter(index)}
-                  onMouseDown={(e) => e.preventDefault()} // Prevent focus loss
+                  onMouseEnter={() => {
+                    console.log('SearchableSelect: Mouse enter on index:', index)
+                    handleMouseEnter(index)
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault() // Prevent focus loss from input
+                    console.log('SearchableSelect: Mouse down on item, preventing default')
+                  }}
                 >
                   <Check
                     className={cn(
