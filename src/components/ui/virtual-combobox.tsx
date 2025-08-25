@@ -152,25 +152,62 @@ export function VirtualCombobox({
       const computedStyle = window.getComputedStyle(searchInputRef.current)
       console.log('[VirtualCombobox] Input pointer-events:', computedStyle.pointerEvents)
       
-      // Check parent elements for pointer-events
+      // Check parent elements for pointer-events and focus traps
       let parent = searchInputRef.current.parentElement
       let level = 0
       while (parent && level < 10) {
         const parentStyle = window.getComputedStyle(parent)
+        console.log(`[VirtualCombobox] Parent ${level} (${parent.tagName}.${parent.className}):`, {
+          pointerEvents: parentStyle.pointerEvents,
+          position: parentStyle.position,
+          zIndex: parentStyle.zIndex,
+          tabIndex: parent.tabIndex,
+          role: parent.getAttribute('role'),
+          ariaHidden: parent.getAttribute('aria-hidden')
+        })
         if (parentStyle.pointerEvents === 'none') {
-          console.log(`[VirtualCombobox] Found pointer-events:none at level ${level}:`, parent.tagName, parent.className)
+          console.log(`[VirtualCombobox] ⚠️ Found pointer-events:none at level ${level}:`, parent.tagName, parent.className)
         }
         parent = parent.parentElement
         level++
       }
       
-      setTimeout(() => {
-        if (searchInputRef.current) {
-          searchInputRef.current.focus()
-          console.log('[VirtualCombobox] Focus attempted, result:', document.activeElement === searchInputRef.current)
-          console.log('[VirtualCombobox] Active element after focus:', document.activeElement?.tagName, document.activeElement?.className)
+      // Multiple focus attempts with different strategies
+      const focusStrategies = [
+        // Strategy 1: Direct focus
+        () => {
+          console.log('[VirtualCombobox] Strategy 1: Direct focus')
+          searchInputRef.current?.focus()
+        },
+        // Strategy 2: Focus with click simulation
+        () => {
+          console.log('[VirtualCombobox] Strategy 2: Focus with click')
+          searchInputRef.current?.focus()
+          searchInputRef.current?.click()
+        },
+        // Strategy 3: Focus with selection
+        () => {
+          console.log('[VirtualCombobox] Strategy 3: Focus with selection')
+          if (searchInputRef.current) {
+            searchInputRef.current.focus()
+            searchInputRef.current.select()
+          }
         }
-      }, 100)
+      ]
+      
+      // Try each strategy with increasing delays
+      focusStrategies.forEach((strategy, index) => {
+        setTimeout(() => {
+          if (open && searchInputRef.current && document.activeElement !== searchInputRef.current) {
+            console.log(`[VirtualCombobox] Trying focus strategy ${index + 1}`)
+            strategy()
+            setTimeout(() => {
+              console.log(`[VirtualCombobox] Strategy ${index + 1} result:`, document.activeElement === searchInputRef.current)
+              console.log('[VirtualCombobox] Current activeElement after strategy:', document.activeElement?.tagName, document.activeElement?.className)
+            }, 50)
+          }
+        }, 100 + (index * 100))
+      })
     }
     // Reset input cuando se abre
     if (open) {
@@ -300,10 +337,31 @@ export function VirtualCombobox({
         align="start"
         sideOffset={4}
         avoidCollisions={true}
-        onKeyDown={handleKeyDown}
+        onKeyDown={(e) => {
+          console.log('[VirtualCombobox] PopoverContent keydown:', e.key)
+          console.log('[VirtualCombobox] PopoverContent activeElement:', document.activeElement?.tagName)
+          handleKeyDown(e)
+        }}
         onMouseDown={(e) => {
           console.log('[VirtualCombobox] PopoverContent mousedown')
           console.log('[VirtualCombobox] PopoverContent pointer-events:', window.getComputedStyle(e.currentTarget).pointerEvents)
+        }}
+        // Prevent focus trap from interfering
+        onFocusOutside={(e) => {
+          console.log('[VirtualCombobox] Focus outside event prevented')
+          e.preventDefault()
+        }}
+        onInteractOutside={(e) => {
+          console.log('[VirtualCombobox] Interact outside - target:', e.target)
+          // Only close if clicking truly outside, not on input or items
+          const currentTarget = e.currentTarget as Element
+          const target = e.target as Node
+          if (!currentTarget.contains(target)) {
+            console.log('[VirtualCombobox] Closing dropdown - click outside')
+          } else {
+            console.log('[VirtualCombobox] Preventing close - click inside')
+            e.preventDefault()
+          }
         }}
       >
         <div className="flex items-center border-b px-3 py-2">
@@ -330,8 +388,19 @@ export function VirtualCombobox({
               console.log('[VirtualCombobox] Input pointerdown event')
               console.log('[VirtualCombobox] PointerDown target:', e.target)
             }}
+            onKeyDown={(e) => {
+              console.log('[VirtualCombobox] Input keydown event:', e.key)
+              console.log('[VirtualCombobox] Input keydown activeElement === input:', document.activeElement === e.target)
+              // Important: call the main keydown handler
+              handleKeyDown(e)
+            }}
+            onInput={(e) => {
+              console.log('[VirtualCombobox] Native input event detected:', (e.target as HTMLInputElement).value)
+            }}
             className="border-0 shadow-none focus-visible:ring-0 h-8"
             style={{ pointerEvents: 'auto' }} // Force pointer events
+            autoFocus={false} // Prevent browser auto-focus conflicts
+            tabIndex={0} // Ensure it's focusable
           />
         </div>
         
