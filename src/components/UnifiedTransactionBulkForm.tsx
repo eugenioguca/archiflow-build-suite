@@ -227,22 +227,59 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
   const loadSubpartidas = async (partidaId: string) => {
     setLoading(prev => ({ ...prev, subpartidas: true }));
     try {
-      const { data, error } = await supabase
+      // Primero obtener el departamento de la partida seleccionada
+      const { data: partidaData, error: partidaError } = await supabase
+        .from('chart_of_accounts_partidas')
+        .select(`
+          mayor_id,
+          chart_of_accounts_mayor!inner(departamento)
+        `)
+        .eq('id', partidaId)
+        .single();
+
+      if (partidaError) throw partidaError;
+
+      const departamento = partidaData?.chart_of_accounts_mayor?.departamento;
+
+      // Cargar subpartidas dependientes de la partida
+      const { data: dependientes, error: dependientesError } = await supabase
         .from('chart_of_accounts_subpartidas')
         .select('id, nombre, codigo')
         .eq('partida_id', partidaId)
         .eq('activo', true)
         .order('codigo');
 
-      if (error) throw error;
+      if (dependientesError) throw dependientesError;
 
-      const options = data?.map(item => ({
+      // Cargar subpartidas universales del mismo departamento
+      const { data: universales, error: universalesError } = await supabase
+        .from('chart_of_accounts_subpartidas')
+        .select('id, nombre, codigo')
+        .eq('es_global', true)
+        .eq('departamento_aplicable', departamento)
+        .eq('activo', true)
+        .order('codigo');
+
+      if (universalesError) throw universalesError;
+
+      // Combinar ambos tipos de subpartidas
+      const dependientesOptions = dependientes?.map(item => ({
         value: item.id,
         label: item.nombre,
         codigo: item.codigo
       })) || [];
 
-      setSubpartidas(options);
+      const universalesOptions = universales?.map(item => ({
+        value: item.id,
+        label: `${item.nombre} (Universal)`,
+        codigo: item.codigo
+      })) || [];
+
+      // Combinar y ordenar por código
+      const allOptions = [...dependientesOptions, ...universalesOptions]
+        .sort((a, b) => a.codigo.localeCompare(b.codigo));
+
+      setSubpartidas(allOptions);
     } catch (error) {
       console.error('Error loading subpartidas:', error);
     } finally {
