@@ -262,16 +262,17 @@ export function VirtualCombobox({
   }, [])
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={cn("w-full justify-between", className)}
-          disabled={disabled || loading}
-          data-combobox-trigger="true"
-        >
+    <div data-combobox-root="true">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className={cn("w-full justify-between", className)}
+            disabled={disabled || loading}
+            data-combobox-trigger="true"
+          >
           <span className="truncate">
             {loading ? (
               <div className="flex items-center">
@@ -283,110 +284,112 @@ export function VirtualCombobox({
             )}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent 
-        className="w-[--radix-popover-trigger-width] p-0" 
-        style={{ 
-          zIndex: 50000, // Higher z-index to escape Dialog
-          pointerEvents: 'auto',
-        }}
-        align="start"
-        sideOffset={4}
-        avoidCollisions={true}
-        // Add data attribute for Dialog to identify combobox area
-        data-combobox-dropdown="true"
-        // CRITICAL: Allow events to bubble up from popover
-        onKeyDown={(e) => {
-          // Don't stop propagation, let Dialog handle if needed
-          handleKeyDown(e)
-        }}
-        // Prevent Dialog's focus trap from closing the popover
-        onFocusOutside={(e) => {
-          // Only prevent if focus is going to our input
-          if (e.target === searchInputRef.current) {
-            e.preventDefault()
-          }
-        }}
-        onInteractOutside={(e) => {
-          // Allow interaction with input and dropdown content
-          const currentTarget = e.currentTarget as Element
-          const target = e.target as Node
-          if (currentTarget.contains(target) || target === searchInputRef.current) {
-            e.preventDefault()
-          }
-        }}
-        // Ensure popover stays open during interaction
-        onEscapeKeyDown={(e) => {
-          e.preventDefault()
-          setOpen(false)
-        }}
-      >
-        <div className="flex items-center border-b px-3 py-2">
-          <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-            <Input
-            ref={searchInputRef}
-            placeholder={effectiveSearchPlaceholder}
-            value={inputValue}
-            onChange={(e) => {
-              // Ensure onChange is always processed
-              setInputValue(e.target.value)
-            }}
-            onKeyDown={(e) => {
-              // Handle keyboard navigation directly here to ensure it works in Dialog
-              e.stopPropagation() // Prevent Dialog from intercepting
-              handleKeyDown(e)
-            }}
-            onInput={(e) => {
-              // Fallback for input detection
-              const target = e.target as HTMLInputElement
-              if (target.value !== inputValue) {
-                setInputValue(target.value)
-              }
-            }}
-            className="border-0 shadow-none focus-visible:ring-0 h-8"
-            style={{ 
-              pointerEvents: 'auto',
-              zIndex: 1, // Ensure input is above other elements
-            }}
-            autoComplete="off"
-            autoCapitalize="off"
-            autoCorrect="off"
-            spellCheck={false}
-            tabIndex={0}
-            // Force attributes for Dialog compatibility
-            data-no-focus-trap="true"
-            role="combobox"
-            aria-expanded={open}
-            aria-autocomplete="list"
-          />
-        </div>
-        
-        {/* Scroll container with Dialog compatibility */}
-        <div 
-          ref={listRef}
-          className="overflow-y-auto overscroll-contain"
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent 
+          className="w-[--radix-popover-trigger-width] p-0" 
           style={{ 
-            maxHeight: maxHeight,
-            scrollbarWidth: 'thin',
-            scrollbarColor: 'hsl(var(--border)) transparent',
+            zIndex: 50000, // Higher z-index to escape Dialog
             pointerEvents: 'auto',
-            position: 'relative', // Ensure proper stacking
-            zIndex: 1,
           }}
-          onScroll={(e) => {
-            e.stopPropagation() // Prevent Dialog scroll interference
-            handleScroll(e)
+          align="start"
+          sideOffset={4}
+          avoidCollisions={true}
+          // Add data attribute for Dialog to identify combobox area
+          data-combobox-dropdown="true"
+          // CRITICAL: Allow events to bubble up from popover
+          onKeyDown={(e) => {
+            // Don't stop propagation, let Dialog handle if needed
+            handleKeyDown(e)
           }}
-          onWheel={(e) => {
-            e.stopPropagation() // Critical: prevent Dialog from blocking wheel events
+          // Prevent Dialog's focus trap from closing the popover
+          onFocusOutside={(e) => {
+            // Only prevent if focus is going to our input
+            if (e.target === searchInputRef.current) {
+              e.preventDefault()
+            }
           }}
-          onTouchMove={(e) => {
-            e.stopPropagation() // Prevent Dialog from blocking touch scroll
+          onInteractOutside={(e) => {
+            // Allow interaction with input and dropdown content
+            const currentTarget = e.currentTarget as Element
+            const target = e.target as Node
+            if (currentTarget.contains(target) || target === searchInputRef.current) {
+              e.preventDefault()
+            }
           }}
-          // Ensure scroll events work in Dialog context
-          data-no-focus-trap="true"
+          // Ensure popover stays open during interaction
+          onEscapeKeyDown={(e) => {
+            e.preventDefault()
+            setOpen(false)
+          }}
         >
+          <div className="flex items-center border-b px-3 py-2">
+            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+              <Input
+              ref={searchInputRef}
+              placeholder={effectiveSearchPlaceholder}
+              value={inputValue}
+              onChange={(e) => {
+                // Ensure onChange is always processed
+                setInputValue(e.target.value)
+              }}
+              onKeyDown={(e) => {
+                // Handle keyboard navigation directly here to ensure it works in Dialog
+                e.stopPropagation() // Prevent Dialog from intercepting
+                handleKeyDown(e)
+              }}
+              onInput={(e) => {
+                // Fallback for input detection
+                const target = e.target as HTMLInputElement
+                if (target.value !== inputValue) {
+                  setInputValue(target.value)
+                }
+              }}
+              className="border-0 shadow-none focus-visible:ring-0 h-8"
+              style={{ 
+                pointerEvents: 'auto',
+                zIndex: 1, // Ensure input is above other elements
+              }}
+              autoComplete="off"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              tabIndex={0}
+              // Force attributes for Dialog compatibility
+              data-no-focus-trap="true"
+              data-combobox-input="true"
+              role="combobox"
+              aria-expanded={open}
+              aria-autocomplete="list"
+            />
+          </div>
+          
+          {/* Scroll container with Dialog compatibility */}
+          <div 
+            ref={listRef}
+            className="overflow-y-auto overscroll-contain"
+            style={{ 
+              maxHeight: maxHeight,
+              scrollbarWidth: 'thin',
+              scrollbarColor: 'hsl(var(--border)) transparent',
+              pointerEvents: 'auto',
+              position: 'relative', // Ensure proper stacking
+              zIndex: 1,
+            }}
+            onScroll={(e) => {
+              e.stopPropagation() // Prevent Dialog scroll interference
+              handleScroll(e)
+            }}
+            onWheel={(e) => {
+              e.stopPropagation() // Critical: prevent Dialog from blocking wheel events
+            }}
+            onTouchMove={(e) => {
+              e.stopPropagation() // Prevent Dialog from blocking touch scroll
+            }}
+            // Ensure scroll events work in Dialog context
+            data-no-focus-trap="true"
+            data-combobox-list="true"
+          >
           {virtualized && filteredItems.length > 100 ? (
             // Virtualización completa
             <div style={{ height: itemsToRender.totalHeight, position: 'relative' }}>
@@ -507,7 +510,8 @@ export function VirtualCombobox({
             </div>
           )}
         </div>
-      </PopoverContent>
-    </Popover>
+        </PopoverContent>
+      </Popover>
+    </div>
   )
 }
