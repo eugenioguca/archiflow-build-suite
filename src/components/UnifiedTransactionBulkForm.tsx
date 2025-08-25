@@ -315,7 +315,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
           combined.push({
             value: `client_${client.id}`,
             label: `${client.full_name} (Cliente)`,
-            codigo: client.id
+            codigo: client.full_name // Usar nombre para búsqueda en lugar de ID
           });
         });
       }
@@ -325,7 +325,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
           combined.push({
             value: `supplier_${supplier.id}`,
             label: `${supplier.company_name} (Proveedor)`,
-            codigo: supplier.id
+            codigo: supplier.company_name // Usar nombre para búsqueda en lugar de ID
           });
         });
       }
@@ -717,16 +717,16 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                 <FormItem>
                   <FormLabel>Cliente/Proveedor (Opcional)</FormLabel>
                   <FormControl>
-                    <SearchableCombobox
-                      items={clientesProveedores}
-                      value={field.value || ''}
-                      onValueChange={field.onChange}
-                      placeholder="Seleccionar cliente/proveedor..."
-                      searchPlaceholder="Buscar cliente/proveedor..."
-                      loading={loading.clientesProveedores}
-                      showCodes={true}
-                      searchFields={['label', 'codigo']}
-                    />
+                     <SearchableCombobox
+                       items={clientesProveedores}
+                       value={field.value || ''}
+                       onValueChange={field.onChange}
+                       placeholder="Seleccionar cliente/proveedor..."
+                       searchPlaceholder="Buscar cliente/proveedor..."
+                       loading={loading.clientesProveedores}
+                       showCodes={false}
+                       searchFields={['label', 'codigo']}
+                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
