@@ -414,9 +414,39 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
     }
   };
 
+  // Handle keyboard and scroll events for SearchableCombobox inside Dialog
+  const handleDialogKeyDown = (e: React.KeyboardEvent) => {
+    // Check if the event is from SearchableCombobox input or navigation
+    const target = e.target as HTMLElement
+    const isComboboxInput = target.role === 'combobox' || 
+                           target.closest('[role="combobox"]') ||
+                           target.hasAttribute('data-no-focus-trap')
+    
+    if (isComboboxInput) {
+      // Allow keyboard events to pass through for SearchableCombobox
+      e.stopPropagation()
+    }
+  }
+
+  const handleDialogWheel = (e: React.WheelEvent) => {
+    // Check if wheel event is from SearchableCombobox scroll container
+    const target = e.target as HTMLElement
+    const isComboboxScroll = target.closest('[data-no-focus-trap]') ||
+                            target.classList.contains('overflow-y-auto')
+    
+    if (isComboboxScroll) {
+      // Allow scroll events to pass through for SearchableCombobox
+      e.stopPropagation()
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent 
+        className="max-w-4xl max-h-[90vh] overflow-y-auto"
+        onKeyDown={handleDialogKeyDown}
+        onWheel={handleDialogWheel}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold flex items-center gap-2">
             📦 Nueva Carga - Transacción Financiera
