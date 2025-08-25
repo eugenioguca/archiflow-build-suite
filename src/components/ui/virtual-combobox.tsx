@@ -149,6 +149,17 @@ export function VirtualCombobox({
     }
   }, [open])
 
+  // Force focus on input when popover opens
+  React.useEffect(() => {
+    if (open && searchInputRef.current) {
+      const id = setTimeout(() => {
+        searchInputRef.current?.focus({ preventScroll: true })
+        console.log("Focused on input:", document.activeElement === searchInputRef.current)
+      }, 0)
+      return () => clearTimeout(id)
+    }
+  }, [open])
+
   // Additional focus insurance - focus on any interaction with the popover
   React.useEffect(() => {
     if (open) {
