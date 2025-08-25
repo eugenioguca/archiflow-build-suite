@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus, RefreshCw } from "lucide-react";
-import { UnifiedTransactionForm } from "./UnifiedTransactionForm";
 import { UnifiedTransactionsTable } from "./UnifiedTransactionsTable";
 import { ChartOfAccountsManager } from "./ChartOfAccountsManager";
 import { ChartOfAccountsExcelManager } from "./ChartOfAccountsExcelManager";
@@ -17,7 +16,6 @@ interface UnifiedFinancialTransactionsProps {
 
 export const UnifiedFinancialTransactions = memo(({ onBulkFormOpen }: UnifiedFinancialTransactionsProps) => {
   const [activeTab, setActiveTab] = useState("transactions");
-  const [showForm, setShowForm] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'error'>('connected');
   const tableRef = useRef<{ refreshData: () => void }>(null);
@@ -82,12 +80,7 @@ export const UnifiedFinancialTransactions = memo(({ onBulkFormOpen }: UnifiedFin
   }, []);
 
   // Form handlers with optimization
-  const handleFormOpen = useCallback(() => {
-    setShowForm(true);
-  }, []);
-
   const handleFormClose = useCallback((open: boolean) => {
-    setShowForm(open);
     if (!open) {
       // Optimized refresh - only refresh if form was likely successful
       tableRef.current?.refreshData();
@@ -141,10 +134,6 @@ export const UnifiedFinancialTransactions = memo(({ onBulkFormOpen }: UnifiedFin
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Transacciones Financieras Unificadas</CardTitle>
               <div className="flex gap-2">
-                <Button onClick={handleFormOpen}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nueva Transacción
-                </Button>
                 <Button 
                   onClick={onBulkFormOpen}
                   className="bg-green-600 hover:bg-green-700 text-white"
@@ -171,13 +160,6 @@ export const UnifiedFinancialTransactions = memo(({ onBulkFormOpen }: UnifiedFin
           <ImportReportsDashboard />
         </TabsContent>
       </Tabs>
-
-      {showForm && (
-        <UnifiedTransactionForm 
-          open={showForm} 
-          onOpenChange={handleFormClose}
-        />
-      )}
     </div>
   );
 });
