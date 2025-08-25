@@ -573,19 +573,19 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                   <FormItem>
                     <FormLabel>Movimiento *</FormLabel>
                     <FormControl>
-                      <SearchableCombobox
-                        items={[
-                          { value: 'ingreso', label: 'Ingreso', codigo: 'ING' },
-                          { value: 'egreso', label: 'Egreso', codigo: 'EGR' }
-                        ]}
-                        value={field.value as string || 'ingreso'}
-                        onValueChange={field.onChange}
-                        placeholder="Seleccionar movimiento..."
-                        searchPlaceholder="Buscar movimiento..."
-                        loading={false}
-                        showCodes={true}
-                        searchFields={['label', 'codigo']}
-                      />
+                       <SearchableCombobox
+                         items={[
+                           { value: 'ingreso', label: 'Ingreso', codigo: 'Ingreso' },
+                           { value: 'egreso', label: 'Egreso', codigo: 'Egreso' }
+                         ]}
+                         value={field.value as string || 'ingreso'}
+                         onValueChange={field.onChange}
+                         placeholder="Seleccionar movimiento..."
+                         searchPlaceholder="Buscar movimiento..."
+                         loading={false}
+                         showCodes={false}
+                         searchFields={['label', 'codigo']}
+                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
