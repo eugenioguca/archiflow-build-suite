@@ -7,7 +7,7 @@ import { Form, FormField, FormItem, FormLabel, FormMessage, FormControl } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { SearchableSelect, SearchableSelectItem } from "@/components/ui/searchable-select";
+import { SearchableCombobox, SearchableComboboxItem } from "@/components/ui/searchable-combobox";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/DatePicker";
@@ -57,8 +57,8 @@ interface Option {
   tipo?: "cliente" | "proveedor";
 }
 
-// Transform Option to SearchableSelectItem
-const transformToSearchableItems = (options: Option[]): SearchableSelectItem[] => {
+// Transform Option to SearchableComboboxItem  
+const transformToComboboxItems = (options: Option[]): SearchableComboboxItem[] => {
   return options.map(option => ({
     value: option.id,
     label: option.nombre,
@@ -498,12 +498,15 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Sucursal</FormLabel>
                       <FormControl>
-                        <SearchableSelect
-                          items={transformToSearchableItems(sucursales)}
+                        <SearchableCombobox
+                          items={transformToComboboxItems(sucursales)}
                           value={field.value}
                           onValueChange={field.onChange}
                           placeholder="Seleccionar sucursal"
+                          searchPlaceholder="Buscar sucursal..."
                           disabled={loading}
+                          showCodes={true}
+                          searchFields={['label', 'codigo', 'searchText']}
                           className="w-full"
                         />
                       </FormControl>
@@ -519,12 +522,15 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Empresa / Proyecto</FormLabel>
                       <FormControl>
-                        <SearchableSelect
-                          items={transformToSearchableItems(proyectos)}
+                        <SearchableCombobox
+                          items={transformToComboboxItems(proyectos)}
                           value={field.value}
                           onValueChange={field.onChange}
                           placeholder="Seleccionar proyecto"
+                          searchPlaceholder="Buscar proyecto..."
                           disabled={loading}
+                          showCodes={true}
+                          searchFields={['label', 'codigo', 'searchText']}
                           className="w-full"
                         />
                       </FormControl>
@@ -543,15 +549,17 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Movimiento</FormLabel>
                       <FormControl>
-                        <SearchableSelect
+                        <SearchableCombobox
                           items={[
-                            { value: "ingreso", label: "Ingreso" },
-                            { value: "egreso", label: "Egreso" }
+                            { value: "ingreso", label: "Ingreso", searchText: "ingreso" },
+                            { value: "egreso", label: "Egreso", searchText: "egreso" }
                           ]}
                           value={field.value}
                           onValueChange={field.onChange}
                           placeholder="Seleccionar tipo"
+                          searchPlaceholder="Buscar tipo..."
                           disabled={loading}
+                          searchFields={['label', 'searchText']}
                           className="w-full"
                         />
                       </FormControl>
@@ -586,12 +594,15 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Departamento</FormLabel>
                       <FormControl>
-                        <SearchableSelect
-                          items={transformToSearchableItems(departamentos)}
+                        <SearchableCombobox
+                          items={transformToComboboxItems(departamentos)}
                           value={field.value}
                           onValueChange={field.onChange}
                           placeholder="Seleccionar departamento"
+                          searchPlaceholder="Buscar departamento..."
                           disabled={loading}
+                          showCodes={true}
+                          searchFields={['label', 'codigo', 'searchText']}
                           className="w-full"
                         />
                       </FormControl>
@@ -610,12 +621,15 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Mayor</FormLabel>
                       <FormControl>
-                        <SearchableSelect
-                          items={transformToSearchableItems(mayores)}
+                        <SearchableCombobox
+                          items={transformToComboboxItems(mayores)}
                           value={field.value}
                           onValueChange={field.onChange}
                           placeholder="Seleccionar mayor"
+                          searchPlaceholder="Buscar mayor..."
                           disabled={loading || !watchedDepartamento}
+                          showCodes={true}
+                          searchFields={['label', 'codigo', 'searchText']}
                           className="w-full"
                         />
                       </FormControl>
@@ -631,12 +645,15 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Partidas</FormLabel>
                       <FormControl>
-                        <SearchableSelect
-                          items={transformToSearchableItems(partidas)}
+                        <SearchableCombobox
+                          items={transformToComboboxItems(partidas)}
                           value={field.value}
                           onValueChange={field.onChange}
                           placeholder="Seleccionar partida"
+                          searchPlaceholder="Buscar partida..."
                           disabled={loading || !watchedMayor}
+                          showCodes={true}
+                          searchFields={['label', 'codigo', 'searchText']}
                           className="w-full"
                         />
                       </FormControl>
@@ -652,12 +669,15 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Subpartidas</FormLabel>
                       <FormControl>
-                        <SearchableSelect
-                          items={transformToSearchableItems(subpartidas)}
+                        <SearchableCombobox
+                          items={transformToComboboxItems(subpartidas)}
                           value={field.value}
                           onValueChange={field.onChange}
                           placeholder="Seleccionar subpartida"
+                          searchPlaceholder="Buscar subpartida..."
                           disabled={loading || !watchedPartida}
+                          showCodes={true}
+                          searchFields={['label', 'codigo', 'searchText']}
                           className="w-full"
                         />
                       </FormControl>
@@ -676,8 +696,8 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Cliente / Proveedor</FormLabel>
                       <FormControl>
-                        <SearchableSelect
-                          items={transformToSearchableItems(clientesProveedores)}
+                        <SearchableCombobox
+                          items={transformToComboboxItems(clientesProveedores)}
                           value={field.value}
                           onValueChange={(value) => {
                             field.onChange(value);
@@ -690,7 +710,10 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                             }
                           }}
                           placeholder="Seleccionar cliente o proveedor..."
+                          searchPlaceholder="Buscar cliente/proveedor..."
                           disabled={loading}
+                          showCodes={true}
+                          searchFields={['label', 'codigo', 'searchText']}
                           className="w-full"
                         />
                       </FormControl>

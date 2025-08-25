@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DatePicker } from '@/components/DatePicker';
 import { CurrencyInput } from '@/components/CurrencyInput';
-import { SearchableSelect, type SearchableSelectItem } from '@/components/ui/searchable-select';
+import { SearchableCombobox, type SearchableComboboxItem } from '@/components/ui/searchable-combobox';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { format } from 'date-fns';
@@ -52,13 +52,13 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
   const [showDescription, setShowDescription] = useState(false);
   
   // Estados para las opciones de los dropdowns
-  const [sucursales, setSucursales] = useState<SearchableSelectItem[]>([]);
-  const [proyectos, setProyectos] = useState<SearchableSelectItem[]>([]);
-  const [departamentos, setDepartamentos] = useState<SearchableSelectItem[]>([]);
-  const [mayores, setMayores] = useState<SearchableSelectItem[]>([]);
-  const [partidas, setPartidas] = useState<SearchableSelectItem[]>([]);
-  const [subpartidas, setSubpartidas] = useState<SearchableSelectItem[]>([]);
-  const [clientesProveedores, setClientesProveedores] = useState<SearchableSelectItem[]>([]);
+  const [sucursales, setSucursales] = useState<SearchableComboboxItem[]>([]);
+  const [proyectos, setProyectos] = useState<SearchableComboboxItem[]>([]);
+  const [departamentos, setDepartamentos] = useState<SearchableComboboxItem[]>([]);
+  const [mayores, setMayores] = useState<SearchableComboboxItem[]>([]);
+  const [partidas, setPartidas] = useState<SearchableComboboxItem[]>([]);
+  const [subpartidas, setSubpartidas] = useState<SearchableComboboxItem[]>([]);
+  const [clientesProveedores, setClientesProveedores] = useState<SearchableComboboxItem[]>([]);
   
   // Estados de carga
   const [loading, setLoading] = useState({
@@ -266,7 +266,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
         .select('id, company_name')
         .order('company_name');
 
-      const combined: SearchableSelectItem[] = [];
+      const combined: SearchableComboboxItem[] = [];
       
       if (clients) {
         clients.forEach(client => {
@@ -473,7 +473,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                   <FormItem>
                     <FormLabel>Sucursal *</FormLabel>
                     <FormControl>
-                      <SearchableSelect
+                      <SearchableCombobox
                         items={sucursales}
                         value={field.value}
                         onValueChange={field.onChange}
@@ -481,6 +481,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                         searchPlaceholder="Buscar sucursal..."
                         loading={loading.sucursales}
                         showCodes={true}
+                        searchFields={['label', 'codigo']}
                       />
                     </FormControl>
                     <FormMessage />
@@ -495,7 +496,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                   <FormItem>
                     <FormLabel>Proyecto *</FormLabel>
                     <FormControl>
-                      <SearchableSelect
+                      <SearchableCombobox
                         items={proyectos}
                         value={field.value}
                         onValueChange={field.onChange}
@@ -503,6 +504,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                         searchPlaceholder="Buscar proyecto..."
                         loading={loading.proyectos}
                         showCodes={true}
+                        searchFields={['label', 'codigo']}
                       />
                     </FormControl>
                     <FormMessage />
@@ -523,7 +525,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                     <FormItem>
                       <FormLabel>Departamento *</FormLabel>
                       <FormControl>
-                        <SearchableSelect
+                        <SearchableCombobox
                           items={departamentos}
                           value={field.value}
                           onValueChange={field.onChange}
@@ -531,6 +533,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                           searchPlaceholder="Buscar departamento..."
                           loading={loading.departamentos}
                           showCodes={true}
+                          searchFields={['label', 'codigo']}
                         />
                       </FormControl>
                       <FormMessage />
@@ -545,7 +548,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                     <FormItem>
                       <FormLabel>Mayor *</FormLabel>
                       <FormControl>
-                        <SearchableSelect
+                        <SearchableCombobox
                           items={mayores}
                           value={field.value}
                           onValueChange={field.onChange}
@@ -554,6 +557,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                           loading={loading.mayores}
                           disabled={!departamentoId}
                           showCodes={true}
+                          searchFields={['label', 'codigo']}
                         />
                       </FormControl>
                       <FormMessage />
@@ -568,7 +572,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                     <FormItem>
                       <FormLabel>Partida *</FormLabel>
                       <FormControl>
-                        <SearchableSelect
+                        <SearchableCombobox
                           items={partidas}
                           value={field.value}
                           onValueChange={field.onChange}
@@ -577,6 +581,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                           loading={loading.partidas}
                           disabled={!mayorId}
                           showCodes={true}
+                          searchFields={['label', 'codigo']}
                         />
                       </FormControl>
                       <FormMessage />
@@ -591,7 +596,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                     <FormItem>
                       <FormLabel>Subpartida (Opcional)</FormLabel>
                       <FormControl>
-                        <SearchableSelect
+                        <SearchableCombobox
                           items={subpartidas}
                           value={field.value || ''}
                           onValueChange={field.onChange}
@@ -600,6 +605,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                           loading={loading.subpartidas}
                           disabled={!partidaId}
                           showCodes={true}
+                          searchFields={['label', 'codigo']}
                         />
                       </FormControl>
                       <FormMessage />
@@ -617,7 +623,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                 <FormItem>
                   <FormLabel>Cliente/Proveedor (Opcional)</FormLabel>
                   <FormControl>
-                    <SearchableSelect
+                    <SearchableCombobox
                       items={clientesProveedores}
                       value={field.value || ''}
                       onValueChange={field.onChange}
@@ -625,6 +631,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                       searchPlaceholder="Buscar cliente/proveedor..."
                       loading={loading.clientesProveedores}
                       showCodes={true}
+                      searchFields={['label', 'codigo']}
                     />
                   </FormControl>
                   <FormMessage />
