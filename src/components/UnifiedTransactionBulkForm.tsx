@@ -456,35 +456,51 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
     }
   };
 
-  // Handle keyboard and scroll events for SearchableCombobox inside Dialog
-  const handleDialogKeyDown = (e: React.KeyboardEvent) => {
-    // Check if the event is from SearchableCombobox input or navigation
+  // Enhanced keyboard and scroll event handling for SearchableCombobox inside Dialog
+  const handleDialogKeyDownCapture = (e: React.KeyboardEvent) => {
     const target = e.target as HTMLElement
     
-    // CRITICAL: Check if we're inside a combobox root - if so, DO NOTHING
-    const isWithinCombobox = target.closest('[data-combobox-root]')
-    
-    if (isWithinCombobox) {
-      // ABSOLUTELY NO INTERFERENCE - let combobox handle everything naturally
-      console.log('[Dialog] Event within combobox root - bypassing all Dialog handling:', e.key)
-      return
+    // CRITICAL: Bypass ALL Dialog handling if within combobox
+    if (target.closest('[data-combobox-root]')) {
+      console.log('[Dialog] KeyDownCapture within combobox - bypassing Dialog handling:', e.key)
+      console.log('[Dialog] activeElement:', document.activeElement?.tagName, document.activeElement?.className)
+      return; // Let combobox handle this event naturally
     }
     
-    // Only handle dialog-specific functionality when NOT in combobox
-    console.log('[Dialog] Handling dialog event:', e.key)
+    // Normal Dialog handling for non-combobox events
+    if (e.key === "Escape") {
+      console.log('[Dialog] Escape pressed outside combobox - closing dialog')
+    }
+  }
+
+  const handleDialogFocusCapture = (e: React.FocusEvent) => {
+    const target = e.target as HTMLElement
+    
+    // CRITICAL: Bypass focus trap if within combobox
+    if (target.closest('[data-combobox-root]')) {
+      console.log('[Dialog] FocusCapture within combobox - bypassing focus trap')
+      console.log('[Dialog] activeElement:', document.activeElement?.tagName, document.activeElement?.className)
+      return; // Let combobox manage its own focus
+    }
+  }
+
+  const handleDialogKeyDown = (e: React.KeyboardEvent) => {
+    const target = e.target as HTMLElement
+    
+    if (target.closest('[data-combobox-root]')) {
+      console.log('[Dialog] KeyDown within combobox - bypassing all Dialog handling:', e.key)
+      return; // Prevent Dialog from interfering
+    }
+    
+    console.log('[Dialog] Handling dialog-specific event:', e.key)
   }
 
   const handleDialogWheel = (e: React.WheelEvent) => {
-    // Check if wheel event is from SearchableCombobox scroll container
     const target = e.target as HTMLElement
     
-    // CRITICAL: Check if we're inside a combobox root
-    const isWithinCombobox = target.closest('[data-combobox-root]')
-    
-    if (isWithinCombobox) {
-      // ABSOLUTELY NO INTERFERENCE - let combobox handle scrolling naturally  
-      console.log('[Dialog] Scroll within combobox root - bypassing Dialog handling')
-      return
+    if (target.closest('[data-combobox-root]')) {
+      console.log('[Dialog] Wheel within combobox - bypassing Dialog handling')
+      return; // Let combobox handle scroll naturally
     }
   }
 
@@ -492,11 +508,11 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
         className="max-w-4xl max-h-[90vh] overflow-y-auto"
+        onKeyDownCapture={handleDialogKeyDownCapture}
+        onFocusCapture={handleDialogFocusCapture}
         onKeyDown={handleDialogKeyDown}
         onWheel={handleDialogWheel}
-        // Prevent focus trap from interfering with combobox
         onInteractOutside={(e) => {
-          // Don't close dialog when interacting with combobox elements
           const target = e.target as Element
           if (target.closest('[data-combobox-root]')) {
             console.log('[Dialog] Preventing close on combobox interaction')
@@ -504,7 +520,6 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
           }
         }}
         onFocusOutside={(e) => {
-          // Don't close dialog when focusing combobox elements
           const target = e.target as Element  
           if (target.closest('[data-combobox-root]')) {
             console.log('[Dialog] Preventing close on combobox focus')
@@ -547,16 +562,18 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                   <FormItem>
                     <FormLabel>Sucursal *</FormLabel>
                     <FormControl>
-                       <SearchableCombobox
-                        items={sucursales}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder="Seleccionar sucursal..."
-                        searchPlaceholder="Buscar sucursal..."
-                        loading={loading.sucursales}
-                        showCodes={false}
-                        searchFields={['label', 'codigo']}
-                      />
+                      <div data-combobox-root>
+                        <SearchableCombobox
+                          items={sucursales}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Seleccionar sucursal..."
+                          searchPlaceholder="Buscar sucursal..."
+                          loading={loading.sucursales}
+                          showCodes={false}
+                          searchFields={['label', 'codigo']}
+                        />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -570,16 +587,18 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                   <FormItem>
                     <FormLabel>Empresa/Proyecto *</FormLabel>
                     <FormControl>
-                       <SearchableCombobox
-                        items={proyectos}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder="Seleccionar proyecto..."
-                        searchPlaceholder="Buscar proyecto..."
-                        loading={loading.proyectos}
-                        showCodes={false}
-                        searchFields={['label', 'codigo']}
-                      />
+                      <div data-combobox-root>
+                        <SearchableCombobox
+                          items={proyectos}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Seleccionar proyecto..."
+                          searchPlaceholder="Buscar proyecto..."
+                          loading={loading.proyectos}
+                          showCodes={false}
+                          searchFields={['label', 'codigo']}
+                        />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -596,19 +615,21 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                   <FormItem>
                     <FormLabel>Movimiento *</FormLabel>
                     <FormControl>
-                       <SearchableCombobox
-                         items={[
-                           { value: 'ingreso', label: 'Ingreso', codigo: 'Ingreso' },
-                           { value: 'egreso', label: 'Egreso', codigo: 'Egreso' }
-                         ]}
-                         value={field.value as string || 'ingreso'}
-                         onValueChange={field.onChange}
-                         placeholder="Seleccionar movimiento..."
-                         searchPlaceholder="Buscar movimiento..."
-                         loading={false}
-                         showCodes={false}
-                         searchFields={['label', 'codigo']}
-                       />
+                      <div data-combobox-root>
+                        <SearchableCombobox
+                          items={[
+                            { value: 'ingreso', label: 'Ingreso', codigo: 'Ingreso' },
+                            { value: 'egreso', label: 'Egreso', codigo: 'Egreso' }
+                          ]}
+                          value={field.value as string || 'ingreso'}
+                          onValueChange={field.onChange}
+                          placeholder="Seleccionar movimiento..."
+                          searchPlaceholder="Buscar movimiento..."
+                          loading={false}
+                          showCodes={false}
+                          searchFields={['label', 'codigo']}
+                        />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -640,16 +661,18 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                   <FormItem>
                     <FormLabel>Departamento *</FormLabel>
                     <FormControl>
-                       <SearchableCombobox
-                        items={departamentos}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder="Seleccionar departamento..."
-                        searchPlaceholder="Buscar departamento..."
-                        loading={loading.departamentos}
-                        showCodes={false}
-                        searchFields={['label', 'codigo']}
-                      />
+                      <div data-combobox-root>
+                        <SearchableCombobox
+                          items={departamentos}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Seleccionar departamento..."
+                          searchPlaceholder="Buscar departamento..."
+                          loading={loading.departamentos}
+                          showCodes={false}
+                          searchFields={['label', 'codigo']}
+                        />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -666,17 +689,19 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                   <FormItem>
                     <FormLabel>Mayor *</FormLabel>
                     <FormControl>
-                      <SearchableCombobox
-                        items={mayores}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder={departamentoId ? "Seleccionar mayor..." : "Primero selecciona un departamento"}
-                        searchPlaceholder="Buscar mayor..."
-                        loading={loading.mayores}
-                        disabled={!departamentoId}
-                        showCodes={true}
-                        searchFields={['label', 'codigo']}
-                      />
+                      <div data-combobox-root>
+                        <SearchableCombobox
+                          items={mayores}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder={departamentoId ? "Seleccionar mayor..." : "Primero selecciona un departamento"}
+                          searchPlaceholder="Buscar mayor..."
+                          loading={loading.mayores}
+                          disabled={!departamentoId}
+                          showCodes={true}
+                          searchFields={['label', 'codigo']}
+                        />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -690,17 +715,19 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                   <FormItem>
                     <FormLabel>Partidas *</FormLabel>
                     <FormControl>
-                      <SearchableCombobox
-                        items={partidas}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder={mayorId ? "Seleccionar partida..." : "Primero selecciona un mayor"}
-                        searchPlaceholder="Buscar partida..."
-                        loading={loading.partidas}
-                        disabled={!mayorId}
-                        showCodes={true}
-                        searchFields={['label', 'codigo']}
-                      />
+                      <div data-combobox-root>
+                        <SearchableCombobox
+                          items={partidas}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder={mayorId ? "Seleccionar partida..." : "Primero selecciona un mayor"}
+                          searchPlaceholder="Buscar partida..."
+                          loading={loading.partidas}
+                          disabled={!mayorId}
+                          showCodes={true}
+                          searchFields={['label', 'codigo']}
+                        />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -714,17 +741,19 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                   <FormItem>
                     <FormLabel>Subpartidas</FormLabel>
                     <FormControl>
-                      <SearchableCombobox
-                        items={subpartidas}
-                        value={field.value || ''}
-                        onValueChange={field.onChange}
-                        placeholder={partidaId ? "Seleccionar subpartida..." : "Primero selecciona una partida"}
-                        searchPlaceholder="Buscar subpartida..."
-                        loading={loading.subpartidas}
-                        disabled={!partidaId}
-                        showCodes={true}
-                        searchFields={['label', 'codigo']}
-                      />
+                      <div data-combobox-root>
+                        <SearchableCombobox
+                          items={subpartidas}
+                          value={field.value || ''}
+                          onValueChange={field.onChange}
+                          placeholder={partidaId ? "Seleccionar subpartida..." : "Primero selecciona una partida"}
+                          searchPlaceholder="Buscar subpartida..."
+                          loading={loading.subpartidas}
+                          disabled={!partidaId}
+                          showCodes={true}
+                          searchFields={['label', 'codigo']}
+                        />
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -740,16 +769,18 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                 <FormItem>
                   <FormLabel>Cliente/Proveedor (Opcional)</FormLabel>
                   <FormControl>
-                     <SearchableCombobox
-                       items={clientesProveedores}
-                       value={field.value || ''}
-                       onValueChange={field.onChange}
-                       placeholder="Seleccionar cliente/proveedor..."
-                       searchPlaceholder="Buscar cliente/proveedor..."
-                       loading={loading.clientesProveedores}
-                       showCodes={false}
-                       searchFields={['label', 'codigo']}
-                     />
+                    <div data-combobox-root>
+                      <SearchableCombobox
+                        items={clientesProveedores}
+                        value={field.value || ''}
+                        onValueChange={field.onChange}
+                        placeholder="Seleccionar cliente/proveedor..."
+                        searchPlaceholder="Buscar cliente/proveedor..."
+                        loading={loading.clientesProveedores}
+                        showCodes={false}
+                        searchFields={['label', 'codigo']}
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
