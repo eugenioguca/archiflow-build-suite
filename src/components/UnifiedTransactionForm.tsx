@@ -427,11 +427,11 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto p-0">
-        {/* Header */}
-        <DialogHeader className="px-6 py-4 border-b">
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+        {/* Fixed Header */}
+        <DialogHeader className="px-4 py-3 border-b bg-background sticky top-0 z-10">
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl font-semibold">
+            <DialogTitle className="text-lg font-semibold">
               Nueva Transacción Financiera Unificada
             </DialogTitle>
             <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
@@ -440,10 +440,11 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
           </div>
         </DialogHeader>
 
-        <div className="px-6 py-4">
+        {/* Scrollable Content */}
+        <div className="px-4 py-4 overflow-y-auto max-h-[calc(90vh-120px)]">
           {/* Validation Errors */}
           {formErrors.length > 0 && (
-            <Alert className="mb-6 bg-muted/50 border-destructive/20">
+            <Alert className="mb-4 bg-muted/50 border-destructive/20">
               <AlertCircle className="h-4 w-4 text-destructive" />
               <AlertDescription className="text-sm">
                 <div className="font-medium text-destructive mb-2">Errores de validación:</div>
@@ -460,9 +461,9 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
           )}
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
               {/* Row 1: Fecha, Sucursal, Empresa/Proyecto */}
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-3 gap-3">
                 <FormField
                   control={form.control}
                   name="fecha"
@@ -532,7 +533,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
               </div>
 
               {/* Row 2: Movimiento, Monto, Departamento */}
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-3 gap-3">
                 <FormField
                   control={form.control}
                   name="tipo_movimiento"
@@ -601,7 +602,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
               </div>
 
               {/* Row 3: Mayor, Partidas, Subpartidas */}
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-3 gap-3">
                 <FormField
                   control={form.control}
                   name="mayor_id"
@@ -691,7 +692,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
               </div>
 
               {/* Row 4: Cliente/Proveedor y Checkbox */}
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-2 gap-3">
                 <FormField
                   control={form.control}
                   name="cliente_proveedor_id"
@@ -772,7 +773,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
               )}
 
               {/* Description Toggle */}
-              <div className="space-y-4">
+              <div className="space-y-2">
                 <Button
                   type="button"
                   variant="ghost"
@@ -807,27 +808,30 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                   />
                 )}
               </div>
-
-              {/* Form Actions */}
-              <div className="flex justify-end gap-3 pt-6 border-t">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  disabled={loading}
-                >
-                  Cancelar
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={loading}
-                  className="bg-primary text-primary-foreground hover:bg-primary/90"
-                >
-                  {loading ? "Guardando..." : "Guardar Transacción"}
-                </Button>
-              </div>
             </form>
           </Form>
+        </div>
+
+        {/* Fixed Footer Actions */}
+        <div className="px-4 py-3 border-t bg-background sticky bottom-0 z-10">
+          <div className="flex justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={loading}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={form.handleSubmit(onSubmit)}
+            >
+              {loading ? "Guardando..." : "Guardar Transacción"}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
