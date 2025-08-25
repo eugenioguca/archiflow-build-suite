@@ -7,7 +7,7 @@ import { Form, FormField, FormItem, FormLabel, FormMessage, FormControl } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TouchScrollSelect, TouchScrollSelectContent, TouchScrollSelectItem, TouchScrollSelectTrigger, TouchScrollSelectValue } from "@/components/ui/touch-scroll-select";
+import { SearchableSelect, SearchableSelectItem } from "@/components/ui/searchable-select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/DatePicker";
@@ -56,6 +56,16 @@ interface Option {
   codigo?: string;
   tipo?: "cliente" | "proveedor";
 }
+
+// Transform Option to SearchableSelectItem
+const transformToSearchableItems = (options: Option[]): SearchableSelectItem[] => {
+  return options.map(option => ({
+    value: option.id,
+    label: option.nombre,
+    codigo: option.codigo,
+    searchText: `${option.codigo || ''} ${option.nombre}`.toLowerCase()
+  }));
+};
 
 // Function to normalize text for internal comparisons only
 const normalizeForComparison = (text: string): string => {
@@ -487,20 +497,16 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Sucursal</FormLabel>
-                      <TouchScrollSelect value={field.value} onValueChange={field.onChange} disabled={loading}>
-                        <FormControl>
-                          <TouchScrollSelectTrigger className="w-full">
-                            <TouchScrollSelectValue placeholder="Seleccionar sucursal" />
-                          </TouchScrollSelectTrigger>
-                        </FormControl>
-                        <TouchScrollSelectContent>
-                          {sucursales.map((item) => (
-                            <TouchScrollSelectItem key={item.id} value={item.id}>
-                              {item.nombre}
-                            </TouchScrollSelectItem>
-                          ))}
-                        </TouchScrollSelectContent>
-                      </TouchScrollSelect>
+                      <FormControl>
+                        <SearchableSelect
+                          items={transformToSearchableItems(sucursales)}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Seleccionar sucursal"
+                          disabled={loading}
+                          className="w-full"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -512,24 +518,20 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Empresa / Proyecto</FormLabel>
-                      <TouchScrollSelect value={field.value} onValueChange={field.onChange} disabled={loading}>
-                        <FormControl>
-                          <TouchScrollSelectTrigger className="w-full">
-                            <TouchScrollSelectValue placeholder="Seleccionar proyecto" />
-                          </TouchScrollSelectTrigger>
-                        </FormControl>
-                        <TouchScrollSelectContent>
-                          {proyectos.map((item) => (
-                            <TouchScrollSelectItem key={item.id} value={item.id}>
-                              {item.nombre}
-                            </TouchScrollSelectItem>
-                          ))}
-                        </TouchScrollSelectContent>
-                      </TouchScrollSelect>
+                      <FormControl>
+                        <SearchableSelect
+                          items={transformToSearchableItems(proyectos)}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Seleccionar proyecto"
+                          disabled={loading}
+                          className="w-full"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
-                />
+                 />
               </div>
 
               {/* Row 2: Movimiento, Monto, Departamento */}
@@ -540,17 +542,19 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Movimiento</FormLabel>
-                      <TouchScrollSelect value={field.value} onValueChange={field.onChange} disabled={loading}>
-                        <FormControl>
-                          <TouchScrollSelectTrigger className="w-full">
-                            <TouchScrollSelectValue placeholder="Seleccionar tipo" />
-                          </TouchScrollSelectTrigger>
-                        </FormControl>
-                        <TouchScrollSelectContent>
-                          <TouchScrollSelectItem value="ingreso">Ingreso</TouchScrollSelectItem>
-                          <TouchScrollSelectItem value="egreso">Egreso</TouchScrollSelectItem>
-                        </TouchScrollSelectContent>
-                      </TouchScrollSelect>
+                      <FormControl>
+                        <SearchableSelect
+                          items={[
+                            { value: "ingreso", label: "Ingreso" },
+                            { value: "egreso", label: "Egreso" }
+                          ]}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Seleccionar tipo"
+                          disabled={loading}
+                          className="w-full"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -581,20 +585,16 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Departamento</FormLabel>
-                      <TouchScrollSelect value={field.value} onValueChange={field.onChange} disabled={loading}>
-                        <FormControl>
-                          <TouchScrollSelectTrigger className="w-full">
-                            <TouchScrollSelectValue placeholder="Seleccionar departamento" />
-                          </TouchScrollSelectTrigger>
-                        </FormControl>
-                        <TouchScrollSelectContent>
-                          {departamentos.map((item) => (
-                            <TouchScrollSelectItem key={item.id} value={item.id}>
-                              {item.nombre}
-                            </TouchScrollSelectItem>
-                          ))}
-                        </TouchScrollSelectContent>
-                      </TouchScrollSelect>
+                      <FormControl>
+                        <SearchableSelect
+                          items={transformToSearchableItems(departamentos)}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Seleccionar departamento"
+                          disabled={loading}
+                          className="w-full"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -609,24 +609,16 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Mayor</FormLabel>
-                      <TouchScrollSelect 
-                        value={field.value} 
-                        onValueChange={field.onChange} 
-                        disabled={loading || !watchedDepartamento}
-                      >
-                        <FormControl>
-                          <TouchScrollSelectTrigger className="w-full">
-                            <TouchScrollSelectValue placeholder="Seleccionar mayor" />
-                          </TouchScrollSelectTrigger>
-                        </FormControl>
-                        <TouchScrollSelectContent>
-                          {mayores.map((item) => (
-                            <TouchScrollSelectItem key={item.id} value={item.id}>
-                              {item.nombre}
-                            </TouchScrollSelectItem>
-                          ))}
-                        </TouchScrollSelectContent>
-                      </TouchScrollSelect>
+                      <FormControl>
+                        <SearchableSelect
+                          items={transformToSearchableItems(mayores)}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Seleccionar mayor"
+                          disabled={loading || !watchedDepartamento}
+                          className="w-full"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -638,24 +630,16 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Partidas</FormLabel>
-                      <TouchScrollSelect 
-                        value={field.value} 
-                        onValueChange={field.onChange} 
-                        disabled={loading || !watchedMayor}
-                      >
-                        <FormControl>
-                          <TouchScrollSelectTrigger className="w-full">
-                            <TouchScrollSelectValue placeholder="Seleccionar partida" />
-                          </TouchScrollSelectTrigger>
-                        </FormControl>
-                        <TouchScrollSelectContent>
-                          {partidas.map((item) => (
-                            <TouchScrollSelectItem key={item.id} value={item.id}>
-                              {item.nombre}
-                            </TouchScrollSelectItem>
-                          ))}
-                        </TouchScrollSelectContent>
-                      </TouchScrollSelect>
+                      <FormControl>
+                        <SearchableSelect
+                          items={transformToSearchableItems(partidas)}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Seleccionar partida"
+                          disabled={loading || !watchedMayor}
+                          className="w-full"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -667,24 +651,16 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Subpartidas</FormLabel>
-                      <TouchScrollSelect 
-                        value={field.value} 
-                        onValueChange={field.onChange} 
-                        disabled={loading || !watchedPartida}
-                      >
-                        <FormControl>
-                          <TouchScrollSelectTrigger className="w-full">
-                            <TouchScrollSelectValue placeholder="Seleccionar subpartida" />
-                          </TouchScrollSelectTrigger>
-                        </FormControl>
-                        <TouchScrollSelectContent>
-                          {subpartidas.map((item) => (
-                            <TouchScrollSelectItem key={item.id} value={item.id}>
-                              {item.nombre}
-                            </TouchScrollSelectItem>
-                          ))}
-                        </TouchScrollSelectContent>
-                      </TouchScrollSelect>
+                      <FormControl>
+                        <SearchableSelect
+                          items={transformToSearchableItems(subpartidas)}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Seleccionar subpartida"
+                          disabled={loading || !watchedPartida}
+                          className="w-full"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -699,33 +675,25 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Cliente / Proveedor</FormLabel>
-                      <TouchScrollSelect 
-                        value={field.value} 
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          // Set tipo_entidad based on selection
-                          if (value) {
-                            const selected = clientesProveedores.find(item => item.id === value);
-                            if (selected?.tipo) {
-                              form.setValue("tipo_entidad", selected.tipo);
+                      <FormControl>
+                        <SearchableSelect
+                          items={transformToSearchableItems(clientesProveedores)}
+                          value={field.value}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            // Set tipo_entidad based on selection
+                            if (value) {
+                              const selected = clientesProveedores.find(item => item.id === value);
+                              if (selected?.tipo) {
+                                form.setValue("tipo_entidad", selected.tipo);
+                              }
                             }
-                          }
-                        }} 
-                        disabled={loading}
-                      >
-                        <FormControl>
-                          <TouchScrollSelectTrigger className="w-full">
-                            <TouchScrollSelectValue placeholder="Seleccionar cliente o proveedor..." />
-                          </TouchScrollSelectTrigger>
-                        </FormControl>
-                        <TouchScrollSelectContent>
-                          {clientesProveedores.map((item) => (
-                            <TouchScrollSelectItem key={item.id} value={item.id}>
-                              {item.nombre}
-                            </TouchScrollSelectItem>
-                          ))}
-                        </TouchScrollSelectContent>
-                      </TouchScrollSelect>
+                          }}
+                          placeholder="Seleccionar cliente o proveedor..."
+                          disabled={loading}
+                          className="w-full"
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
