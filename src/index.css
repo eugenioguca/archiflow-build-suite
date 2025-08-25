@@ -118,6 +118,19 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 226 232 240;
     --sidebar-border: 30 41 59;
     --sidebar-ring: 129 140 248;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+}
+
 /* Custom styles for touch scroll enhanced components */
 .touch-scroll-enhanced .touch-scroll-area {
   scrollbar-width: thin;
@@ -168,7 +181,6 @@ All colors MUST be HSL.
 
 .searchable-select-scroll::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--accent-foreground));
-}
 }
 
 @layer base {
