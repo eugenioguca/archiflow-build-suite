@@ -102,25 +102,48 @@ export function SearchableSelect({
     setFocusedIndex(-1)
   }, [filteredItems])
 
-  // Focus management with debug
+  // Enhanced focus management for dialog context
   React.useEffect(() => {
     if (open && inputRef.current) {
-      console.log('SearchableSelect: Setting focus on input')
+      console.log('SearchableSelect: Setting focus on input (enhanced for dialog)')
       
       const focusInput = () => {
         if (inputRef.current) {
-          inputRef.current.focus()
-          console.log('SearchableSelect: Focus set on input, activeElement:', document.activeElement === inputRef.current)
+          // Force focus even in dialog context
+          inputRef.current.focus({ preventScroll: true })
+          inputRef.current.setSelectionRange(inputRef.current.value.length, inputRef.current.value.length)
+          console.log('SearchableSelect: Enhanced focus set, activeElement:', document.activeElement === inputRef.current, 'input focused:', inputRef.current === document.activeElement)
         }
       }
       
-      // Immediate focus
+      // Multiple focus attempts for dialog context
       focusInput()
+      const timeoutId1 = setTimeout(focusInput, 10)
+      const timeoutId2 = setTimeout(focusInput, 50)
+      const timeoutId3 = setTimeout(focusInput, 100)
       
-      // Backup focus attempt
-      const timeoutId = setTimeout(focusInput, 50)
+      // Add focus listener to re-focus if focus gets stolen
+      const handleFocusOut = (e: FocusEvent) => {
+        // Only refocus if focus goes outside the popover content
+        const popoverContent = inputRef.current?.closest('[data-radix-popover-content]')
+        if (popoverContent && !popoverContent.contains(e.relatedTarget as Node)) {
+          setTimeout(() => {
+            if (open && inputRef.current && document.activeElement !== inputRef.current) {
+              console.log('SearchableSelect: Re-focusing input after focus steal')
+              inputRef.current.focus({ preventScroll: true })
+            }
+          }, 10)
+        }
+      }
       
-      return () => clearTimeout(timeoutId)
+      document.addEventListener('focusout', handleFocusOut)
+      
+      return () => {
+        clearTimeout(timeoutId1)
+        clearTimeout(timeoutId2)
+        clearTimeout(timeoutId3)
+        document.removeEventListener('focusout', handleFocusOut)
+      }
     }
   }, [open])
 
@@ -245,11 +268,15 @@ export function SearchableSelect({
         className="w-[var(--radix-popover-trigger-width)] p-0 bg-background border shadow-md"
         align="start"
         sideOffset={4}
-        container={typeof document !== 'undefined' ? document.querySelector('[data-radix-dialog-content]') || document.body : undefined}
         style={{ zIndex: 9999 }}
         onOpenAutoFocus={(e) => {
-          e.preventDefault()
-          // Focus will be handled by our useEffect
+          // Allow natural focus behavior but also manually focus
+          if (inputRef.current) {
+            setTimeout(() => {
+              inputRef.current?.focus()
+              console.log('SearchableSelect: Manual focus after auto-focus, activeElement:', document.activeElement === inputRef.current)
+            }, 0)
+          }
         }}
       >
         <div className="flex items-center border-b px-3 py-2" role="combobox" aria-expanded={open} aria-controls="searchable-select-listbox">
