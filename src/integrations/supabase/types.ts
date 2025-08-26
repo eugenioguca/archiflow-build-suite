@@ -7095,9 +7095,25 @@ export type Database = {
         Args: { record_ids: string[]; table_name: string }
         Returns: boolean
       }
+      validate_departamento: {
+        Args: { departamento_value: string }
+        Returns: boolean
+      }
       validate_import_departments: {
         Args: { departments: string[] }
         Returns: Json
+      }
+      validate_mayor: {
+        Args: { mayor_id_value: string }
+        Returns: boolean
+      }
+      validate_partida: {
+        Args: { partida_id_value: string }
+        Returns: boolean
+      }
+      validate_subpartida: {
+        Args: { subpartida_id_value: string }
+        Returns: boolean
       }
     }
     Enums: {
