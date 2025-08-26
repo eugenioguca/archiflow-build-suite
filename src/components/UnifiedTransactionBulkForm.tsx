@@ -753,18 +753,19 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                     <FormLabel>Subpartidas</FormLabel>
                     <FormControl>
                       <div data-combobox-root>
-                        <SearchableCombobox
-                          items={subpartidas}
-                          value={field.value || ''}
-                          onValueChange={field.onChange}
-                          placeholder={partidaId ? "Seleccionar subpartida..." : "Primero selecciona una partida"}
-                          searchPlaceholder="Buscar subpartida..."
-                          loading={loading.subpartidas}
-                          disabled={!partidaId}
-                          showCodes={true}
-                          searchFields={['label', 'codigo']}
-                          portalContainer={dialogContentRef.current}
-                        />
+                         <SearchableCombobox
+                           items={subpartidas}
+                           value={field.value || ''}
+                           onValueChange={field.onChange}
+                           placeholder={partidaId ? "Seleccionar subpartida..." : "Primero selecciona una partida"}
+                           searchPlaceholder="Buscar subpartida..."
+                           loading={loading.subpartidas}
+                           disabled={!partidaId}
+                           showCodes={true}
+                           searchFields={['label', 'codigo']}
+                           portalContainer={dialogContentRef.current}
+                           tooltipSide="left"
+                         />
                       </div>
                     </FormControl>
                     <FormMessage />

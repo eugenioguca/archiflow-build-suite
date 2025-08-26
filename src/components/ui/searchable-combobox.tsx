@@ -24,6 +24,7 @@ interface SearchableComboboxProps {
   showCodes?: boolean
   highlightMatches?: boolean
   portalContainer?: HTMLElement | null
+  tooltipSide?: 'left' | 'right' | 'top' | 'bottom'
 }
 
 export function SearchableCombobox({
@@ -40,7 +41,8 @@ export function SearchableCombobox({
   maxHeight = "300px",
   showCodes = false,
   highlightMatches = false,
-  portalContainer
+  portalContainer,
+  tooltipSide = 'left'
 }: SearchableComboboxProps) {
   // Convert SearchableComboboxItem to VirtualComboboxItem (they're the same interface)
   const virtualItems: VirtualComboboxItem[] = React.useMemo(() => 
@@ -64,6 +66,7 @@ export function SearchableCombobox({
       maxHeight={maxHeight}
       virtualized={virtualItems.length > 100} // Auto-enable virtualization for large lists
       portalContainer={portalContainer}
+      tooltipSide={tooltipSide}
     />
   )
 }

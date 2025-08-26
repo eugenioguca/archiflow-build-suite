@@ -38,6 +38,7 @@ interface VirtualComboboxProps {
   virtualized?: boolean
   maxHeight?: string
   portalContainer?: HTMLElement | null
+  tooltipSide?: 'left' | 'right' | 'top' | 'bottom'
 }
 
 function normalizeSearchText(text: string): string {
@@ -91,7 +92,8 @@ export function VirtualCombobox({
   showCodes = false,
   virtualized = false,
   maxHeight = "400px",
-  portalContainer
+  portalContainer,
+  tooltipSide = 'left'
 }: VirtualComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [inputValue, setInputValue] = React.useState("") // Input inmediato
@@ -413,7 +415,7 @@ export function VirtualCombobox({
                           </div>
                         </TooltipTrigger>
                         <TooltipContent 
-                          side="left" 
+                          side={tooltipSide} 
                           align="start"
                           className="max-w-xs text-xs bg-popover text-popover-foreground border border-border rounded-md shadow-lg px-2 py-1"
                         >
@@ -482,7 +484,7 @@ export function VirtualCombobox({
                           </div>
                         </TooltipTrigger>
                          <TooltipContent 
-                          side="left" 
+                          side={tooltipSide} 
                           align="start"
                           className="max-w-xs text-xs bg-popover text-popover-foreground border border-border rounded-md shadow-lg px-2 py-1"
                         >
