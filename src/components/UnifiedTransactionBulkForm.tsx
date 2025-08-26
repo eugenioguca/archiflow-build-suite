@@ -435,9 +435,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
         folio_factura: data.tiene_factura ? data.folio_factura : null,
         descripcion: data.descripcion || null,
         created_by: profile.id,
-        referencia_unica: `BULK_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        referencia_unica: null, // Se generará automáticamente con el trigger
       };
 
       const { error } = await supabase
