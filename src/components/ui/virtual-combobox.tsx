@@ -413,7 +413,7 @@ export function VirtualCombobox({
                           </div>
                         </TooltipTrigger>
                         <TooltipContent 
-                          side="right" 
+                          side="left" 
                           align="start"
                           className="max-w-xs text-xs bg-popover text-popover-foreground border border-border rounded-md shadow-lg px-2 py-1"
                         >
@@ -481,8 +481,8 @@ export function VirtualCombobox({
                             </div>
                           </div>
                         </TooltipTrigger>
-                        <TooltipContent 
-                          side="right" 
+                         <TooltipContent 
+                          side="left" 
                           align="start"
                           className="max-w-xs text-xs bg-popover text-popover-foreground border border-border rounded-md shadow-lg px-2 py-1"
                         >
