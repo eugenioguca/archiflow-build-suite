@@ -417,7 +417,9 @@ export function VirtualCombobox({
                         <TooltipContent 
                           side={tooltipSide} 
                           align="start"
-                          className="max-w-xs text-xs bg-popover text-popover-foreground border border-border rounded-md shadow-lg px-2 py-1"
+                          sideOffset={4}
+                          collisionPadding={8}
+                          className="max-w-xs text-xs bg-popover text-popover-foreground border border-border rounded-md shadow-lg px-2 py-1 z-[60000]"
                         >
                           <div>{itemLabel}</div>
                           {item.group && (
@@ -486,7 +488,9 @@ export function VirtualCombobox({
                          <TooltipContent 
                           side={tooltipSide} 
                           align="start"
-                          className="max-w-xs text-xs bg-popover text-popover-foreground border border-border rounded-md shadow-lg px-2 py-1"
+                          sideOffset={4}
+                          collisionPadding={8}
+                          className="max-w-xs text-xs bg-popover text-popover-foreground border border-border rounded-md shadow-lg px-2 py-1 z-[60000]"
                         >
                           <div>{itemLabel}</div>
                           {item.group && (
