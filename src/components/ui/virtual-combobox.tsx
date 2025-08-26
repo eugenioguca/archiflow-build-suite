@@ -7,6 +7,12 @@ import {
   Popover,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import * as PopoverPrimitive from "@radix-ui/react-popover"
 
 export interface VirtualComboboxItem {
@@ -320,151 +326,179 @@ export function VirtualCombobox({
           </div>
           
           {/* Scroll container with Dialog compatibility */}
-          <div 
-            ref={listRef}
-            className="overflow-y-auto overscroll-contain"
-            style={{ 
-              maxHeight: maxHeight,
-              scrollbarWidth: 'thin',
-              scrollbarColor: 'hsl(var(--border)) transparent',
-              pointerEvents: 'auto',
-              position: 'relative', // Ensure proper stacking
-              zIndex: 1,
-            }}
-            onScroll={(e) => {
-              e.stopPropagation() // Prevent Dialog scroll interference
-              handleScroll(e)
-            }}
-            onWheel={(e) => {
-              e.stopPropagation() // Critical: prevent Dialog from blocking wheel events
-            }}
-            onTouchMove={(e) => {
-              e.stopPropagation() // Prevent Dialog from blocking touch scroll
-            }}
-            // Ensure scroll events work in Dialog context
-            data-no-focus-trap="true"
-            data-combobox-list="true"
-          >
-          {virtualized && filteredItems.length > 100 ? (
-            // Virtualización completa
-            <div style={{ height: itemsToRender.totalHeight, position: 'relative' }}>
-              <div 
-                style={{ 
-                  transform: `translateY(${itemsToRender.offsetY || 0}px)`,
-                  position: 'absolute',
-                  width: '100%'
-                }}
-              >
-                {itemsToRender.items.map((item, index) => {
-                  const actualIndex = (itemsToRender.startIndex || 0) + index
-                  const itemLabel = showCodes && item.codigo 
-                    ? `${item.codigo} - ${item.label}`
-                    : item.label
-                  
-                  const isSelected = value === item.value
-                  const isFocused = focusedIndex === actualIndex
-                  
-                  return (
-                     <div
-                      key={item.value}
-                      className={cn(
-                        "relative flex cursor-pointer select-none items-center px-2 py-2 text-sm outline-none transition-colors",
-                        isSelected && "bg-accent text-accent-foreground",
-                        isFocused && !isSelected && "bg-accent/50",
-                        "hover:bg-accent/80"
-                      )}
-                      style={{ 
-                        height: ITEM_HEIGHT,
-                        pointerEvents: 'auto' // Force pointer events
-                      }}
-                      onClick={(e) => {
-                        console.log('[VirtualCombobox] Item clicked (virtualized):', item.value)
-                        console.log('[VirtualCombobox] Click target pointer-events:', window.getComputedStyle(e.currentTarget).pointerEvents)
-                        handleSelect(item.value)
-                      }}
-                      onMouseEnter={(e) => {
-                        console.log('[VirtualCombobox] Item mouse enter (virtualized):', actualIndex)
-                        console.log('[VirtualCombobox] MouseEnter target pointer-events:', window.getComputedStyle(e.currentTarget).pointerEvents)
-                        setFocusedIndex(actualIndex)
-                      }}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4 shrink-0",
-                          isSelected ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="truncate">{itemLabel}</div>
-                        {item.group && (
-                          <div className="text-xs text-muted-foreground truncate">
-                            {item.group}
+          <TooltipProvider delayDuration={300}>
+            <div 
+              ref={listRef}
+              className="overflow-y-auto overscroll-contain"
+              style={{ 
+                maxHeight: maxHeight,
+                scrollbarWidth: 'thin',
+                scrollbarColor: 'hsl(var(--border)) transparent',
+                pointerEvents: 'auto',
+                position: 'relative', // Ensure proper stacking
+                zIndex: 1,
+              }}
+              onScroll={(e) => {
+                e.stopPropagation() // Prevent Dialog scroll interference
+                handleScroll(e)
+              }}
+              onWheel={(e) => {
+                e.stopPropagation() // Critical: prevent Dialog from blocking wheel events
+              }}
+              onTouchMove={(e) => {
+                e.stopPropagation() // Prevent Dialog from blocking touch scroll
+              }}
+              // Ensure scroll events work in Dialog context
+              data-no-focus-trap="true"
+              data-combobox-list="true"
+            >
+            {virtualized && filteredItems.length > 100 ? (
+              // Virtualización completa
+              <div style={{ height: itemsToRender.totalHeight, position: 'relative' }}>
+                <div 
+                  style={{ 
+                    transform: `translateY(${itemsToRender.offsetY || 0}px)`,
+                    position: 'absolute',
+                    width: '100%'
+                  }}
+                >
+                  {itemsToRender.items.map((item, index) => {
+                    const actualIndex = (itemsToRender.startIndex || 0) + index
+                    const itemLabel = showCodes && item.codigo 
+                      ? `${item.codigo} - ${item.label}`
+                      : item.label
+                    
+                    const isSelected = value === item.value
+                    const isFocused = focusedIndex === actualIndex
+                    
+                    return (
+                      <Tooltip key={item.value}>
+                        <TooltipTrigger asChild>
+                          <div
+                            className={cn(
+                              "relative flex cursor-pointer select-none items-center px-2 py-2 text-sm outline-none transition-colors",
+                              isSelected && "bg-accent text-accent-foreground",
+                              isFocused && !isSelected && "bg-accent/50",
+                              "hover:bg-accent/80"
+                            )}
+                            style={{ 
+                              height: ITEM_HEIGHT,
+                              pointerEvents: 'auto' // Force pointer events
+                            }}
+                            onClick={(e) => {
+                              console.log('[VirtualCombobox] Item clicked (virtualized):', item.value)
+                              console.log('[VirtualCombobox] Click target pointer-events:', window.getComputedStyle(e.currentTarget).pointerEvents)
+                              handleSelect(item.value)
+                            }}
+                            onMouseEnter={(e) => {
+                              console.log('[VirtualCombobox] Item mouse enter (virtualized):', actualIndex)
+                              console.log('[VirtualCombobox] MouseEnter target pointer-events:', window.getComputedStyle(e.currentTarget).pointerEvents)
+                              setFocusedIndex(actualIndex)
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4 shrink-0",
+                                isSelected ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="truncate">{itemLabel}</div>
+                              {item.group && (
+                                <div className="text-xs text-muted-foreground truncate">
+                                  {item.group}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          ) : (
-            // Renderizado normal
-            <div className="p-1">
-              {filteredItems.length === 0 ? (
-                <div className="px-2 py-6 text-center text-sm text-muted-foreground">
-                  {emptyText}
+                        </TooltipTrigger>
+                        <TooltipContent 
+                          side="right" 
+                          align="start"
+                          className="max-w-xs text-xs bg-popover text-popover-foreground border border-border rounded-md shadow-lg px-2 py-1"
+                        >
+                          <div>{itemLabel}</div>
+                          {item.group && (
+                            <div className="text-muted-foreground mt-1">{item.group}</div>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
+                    )
+                  })}
                 </div>
-              ) : (
-                filteredItems.map((item, index) => {
-                  const itemLabel = showCodes && item.codigo 
-                    ? `${item.codigo} - ${item.label}`
-                    : item.label
-                  
-                  const isSelected = value === item.value
-                  const isFocused = focusedIndex === index
-                  
-                  return (
-                    <div
-                      key={item.value}
-                      className={cn(
-                        "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none transition-colors",
-                        isSelected && "bg-accent text-accent-foreground",
-                        isFocused && !isSelected && "bg-accent/50",
-                        "hover:bg-accent/80"
-                      )}
-                      style={{ pointerEvents: 'auto' }} // Force pointer events
-                      onClick={(e) => {
-                        console.log('[VirtualCombobox] Item clicked (normal):', item.value)
-                        console.log('[VirtualCombobox] Click target pointer-events:', window.getComputedStyle(e.currentTarget).pointerEvents)
-                        handleSelect(item.value)
-                      }}
-                      onMouseEnter={(e) => {
-                        console.log('[VirtualCombobox] Item mouse enter (normal):', index)
-                        console.log('[VirtualCombobox] MouseEnter target pointer-events:', window.getComputedStyle(e.currentTarget).pointerEvents)
-                        setFocusedIndex(index)
-                      }}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4 shrink-0",
-                          isSelected ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="truncate">{itemLabel}</div>
-                        {item.group && (
-                          <div className="text-xs text-muted-foreground truncate">
-                            {item.group}
+              </div>
+            ) : (
+              // Renderizado normal
+              <div className="p-1">
+                {filteredItems.length === 0 ? (
+                  <div className="px-2 py-6 text-center text-sm text-muted-foreground">
+                    {emptyText}
+                  </div>
+                ) : (
+                  filteredItems.map((item, index) => {
+                    const itemLabel = showCodes && item.codigo 
+                      ? `${item.codigo} - ${item.label}`
+                      : item.label
+                    
+                    const isSelected = value === item.value
+                    const isFocused = focusedIndex === index
+                    
+                    return (
+                      <Tooltip key={item.value}>
+                        <TooltipTrigger asChild>
+                          <div
+                            className={cn(
+                              "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none transition-colors",
+                              isSelected && "bg-accent text-accent-foreground",
+                              isFocused && !isSelected && "bg-accent/50",
+                              "hover:bg-accent/80"
+                            )}
+                            style={{ pointerEvents: 'auto' }} // Force pointer events
+                            onClick={(e) => {
+                              console.log('[VirtualCombobox] Item clicked (normal):', item.value)
+                              console.log('[VirtualCombobox] Click target pointer-events:', window.getComputedStyle(e.currentTarget).pointerEvents)
+                              handleSelect(item.value)
+                            }}
+                            onMouseEnter={(e) => {
+                              console.log('[VirtualCombobox] Item mouse enter (normal):', index)
+                              console.log('[VirtualCombobox] MouseEnter target pointer-events:', window.getComputedStyle(e.currentTarget).pointerEvents)
+                              setFocusedIndex(index)
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4 shrink-0",
+                                isSelected ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="truncate">{itemLabel}</div>
+                              {item.group && (
+                                <div className="text-xs text-muted-foreground truncate">
+                                  {item.group}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })
-              )}
-            </div>
-          )}
-        </div>
+                        </TooltipTrigger>
+                        <TooltipContent 
+                          side="right" 
+                          align="start"
+                          className="max-w-xs text-xs bg-popover text-popover-foreground border border-border rounded-md shadow-lg px-2 py-1"
+                        >
+                          <div>{itemLabel}</div>
+                          {item.group && (
+                            <div className="text-muted-foreground mt-1">{item.group}</div>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
+                    )
+                  })
+                )}
+              </div>
+            )}
+          </div>
+          </TooltipProvider>
         </PopoverContentInDialog>
       </Popover>
     </div>
