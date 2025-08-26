@@ -106,6 +106,12 @@ export function VirtualCombobox({
   const searchInputRef = React.useRef<HTMLInputElement>(null)
   const listRef = React.useRef<HTMLDivElement>(null)
 
+  // Auto-enable virtualization for large lists
+  const isVirtual = virtualized || items.length > 100
+
+  // Debug flag - disable in production
+  const DEBUG = false
+
   // Debounce para el search (solo para filtrado)
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -176,7 +182,7 @@ export function VirtualCombobox({
 
   // Handle item selection
   const handleSelect = React.useCallback((selectedValue: string) => {
-    console.log('[VirtualCombobox] Selecting value:', selectedValue)
+    if (DEBUG) console.log('[VirtualCombobox] Selecting value:', selectedValue)
     onValueChange?.(selectedValue === value ? "" : selectedValue)
     setOpen(false)
     setInputValue("")
@@ -186,34 +192,36 @@ export function VirtualCombobox({
 
   // Keyboard navigation
   const handleKeyDown = React.useCallback((e: React.KeyboardEvent) => {
-    console.log('[VirtualCombobox] KeyDown event:', e.key, 'target:', e.target, 'currentTarget:', e.currentTarget)
-    console.log('[VirtualCombobox] Active element during keydown:', document.activeElement?.tagName, document.activeElement?.className)
+    if (DEBUG) {
+      console.log('[VirtualCombobox] KeyDown event:', e.key, 'target:', e.target, 'currentTarget:', e.currentTarget)
+      console.log('[VirtualCombobox] Active element during keydown:', document.activeElement?.tagName, document.activeElement?.className)
+    }
     
     if (!open) return
 
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault()
-        console.log('[VirtualCombobox] Arrow Down - focusing next item')
+        if (DEBUG) console.log('[VirtualCombobox] Arrow Down - focusing next item')
         setFocusedIndex(prev => 
           prev < filteredItems.length - 1 ? prev + 1 : prev
         )
         break
       case 'ArrowUp':
         e.preventDefault()
-        console.log('[VirtualCombobox] Arrow Up - focusing previous item')
+        if (DEBUG) console.log('[VirtualCombobox] Arrow Up - focusing previous item')
         setFocusedIndex(prev => prev > 0 ? prev - 1 : prev)
         break
       case 'Enter':
         e.preventDefault()
         if (focusedIndex >= 0 && filteredItems[focusedIndex]) {
-          console.log('[VirtualCombobox] Enter pressed - selecting item:', filteredItems[focusedIndex].value)
+          if (DEBUG) console.log('[VirtualCombobox] Enter pressed - selecting item:', filteredItems[focusedIndex].value)
           handleSelect(filteredItems[focusedIndex].value)
         }
         break
       case 'Escape':
         e.preventDefault()
-        console.log('[VirtualCombobox] Escape pressed - closing dropdown')
+        if (DEBUG) console.log('[VirtualCombobox] Escape pressed - closing dropdown')
         setOpen(false)
         setInputValue("")
         setDebouncedSearch("")
@@ -241,12 +249,12 @@ export function VirtualCombobox({
   const MAX_VISIBLE_ITEMS = Math.floor(parseInt(maxHeight.replace('px', '')) / ITEM_HEIGHT)
   
   const itemsToRender = React.useMemo(() => {
-    if (!virtualized || filteredItems.length <= 100) {
-      return { items: filteredItems, startIndex: 0, totalHeight: filteredItems.length * ITEM_HEIGHT }
+    if (!isVirtual || filteredItems.length <= 100) {
+      return { items: filteredItems, startIndex: 0, totalHeight: filteredItems.length * ITEM_HEIGHT, offsetY: 0 }
     }
     
     const startIndex = Math.floor(scrollTop / ITEM_HEIGHT)
-    const endIndex = Math.min(startIndex + MAX_VISIBLE_ITEMS + 5, filteredItems.length) // +5 buffer
+    const endIndex = Math.min(startIndex + MAX_VISIBLE_ITEMS + 6, filteredItems.length) // +6 buffer
     const visibleItems = filteredItems.slice(startIndex, endIndex)
     
     return {
@@ -255,7 +263,7 @@ export function VirtualCombobox({
       totalHeight: filteredItems.length * ITEM_HEIGHT,
       offsetY: startIndex * ITEM_HEIGHT
     }
-  }, [filteredItems, virtualized, scrollTop, MAX_VISIBLE_ITEMS])
+  }, [filteredItems, isVirtual, scrollTop, MAX_VISIBLE_ITEMS])
 
   // Handle scroll para virtualización
   const handleScroll = React.useCallback((e: React.UIEvent<HTMLDivElement>) => {
@@ -312,7 +320,7 @@ export function VirtualCombobox({
               placeholder={effectiveSearchPlaceholder}
               value={inputValue}
               onChange={(e) => {
-                console.log('[VirtualCombobox] Input onChange:', e.target.value)
+                if (DEBUG) console.log('[VirtualCombobox] Input onChange:', e.target.value)
                 setInputValue(e.target.value)
               }}
               onKeyDown={(e) => {
@@ -337,24 +345,25 @@ export function VirtualCombobox({
                 scrollbarWidth: 'thin',
                 scrollbarColor: 'hsl(var(--border)) transparent',
                 pointerEvents: 'auto',
-                position: 'relative', // Ensure proper stacking
+                position: 'relative',
                 zIndex: 1,
+                willChange: 'transform', // Prevent layout thrash
+                overscrollBehavior: 'contain' // Isolate scroll
               }}
               onScroll={(e) => {
-                e.stopPropagation() // Prevent Dialog scroll interference
+                e.stopPropagation()
                 handleScroll(e)
               }}
               onWheel={(e) => {
-                e.stopPropagation() // Critical: prevent Dialog from blocking wheel events
+                e.stopPropagation()
               }}
               onTouchMove={(e) => {
-                e.stopPropagation() // Prevent Dialog from blocking touch scroll
+                e.stopPropagation()
               }}
-              // Ensure scroll events work in Dialog context
               data-no-focus-trap="true"
               data-combobox-list="true"
             >
-            {virtualized && filteredItems.length > 100 ? (
+            {isVirtual && filteredItems.length > 100 ? (
               // Virtualización completa
               <div style={{ height: itemsToRender.totalHeight, position: 'relative' }}>
                 <div 
@@ -388,15 +397,20 @@ export function VirtualCombobox({
                               pointerEvents: 'auto' // Force pointer events
                             }}
                             onClick={(e) => {
-                              console.log('[VirtualCombobox] Item clicked (virtualized):', item.value)
-                              console.log('[VirtualCombobox] Click target pointer-events:', window.getComputedStyle(e.currentTarget).pointerEvents)
+                              if (DEBUG) {
+                                console.log('[VirtualCombobox] Item clicked (virtualized):', item.value)
+                                console.log('[VirtualCombobox] Click target pointer-events:', window.getComputedStyle(e.currentTarget).pointerEvents)
+                              }
                               handleSelect(item.value)
                             }}
                             onMouseEnter={(e) => {
-                              console.log('[VirtualCombobox] Item mouse enter (virtualized):', actualIndex)
-                              console.log('[VirtualCombobox] MouseEnter target pointer-events:', window.getComputedStyle(e.currentTarget).pointerEvents)
+                              if (DEBUG) {
+                                console.log('[VirtualCombobox] Item mouse enter (virtualized):', actualIndex)
+                                console.log('[VirtualCombobox] MouseEnter target pointer-events:', window.getComputedStyle(e.currentTarget).pointerEvents)
+                              }
                               setFocusedIndex(actualIndex)
                             }}
+                            title={itemLabel}
                           >
                             <Check
                               className={cn(
@@ -459,15 +473,20 @@ export function VirtualCombobox({
                             )}
                             style={{ pointerEvents: 'auto' }} // Force pointer events
                             onClick={(e) => {
-                              console.log('[VirtualCombobox] Item clicked (normal):', item.value)
-                              console.log('[VirtualCombobox] Click target pointer-events:', window.getComputedStyle(e.currentTarget).pointerEvents)
+                              if (DEBUG) {
+                                console.log('[VirtualCombobox] Item clicked (normal):', item.value)
+                                console.log('[VirtualCombobox] Click target pointer-events:', window.getComputedStyle(e.currentTarget).pointerEvents)
+                              }
                               handleSelect(item.value)
                             }}
                             onMouseEnter={(e) => {
-                              console.log('[VirtualCombobox] Item mouse enter (normal):', index)
-                              console.log('[VirtualCombobox] MouseEnter target pointer-events:', window.getComputedStyle(e.currentTarget).pointerEvents)
+                              if (DEBUG) {
+                                console.log('[VirtualCombobox] Item mouse enter (normal):', index)
+                                console.log('[VirtualCombobox] MouseEnter target pointer-events:', window.getComputedStyle(e.currentTarget).pointerEvents)
+                              }
                               setFocusedIndex(index)
                             }}
+                            title={itemLabel}
                           >
                             <Check
                               className={cn(
