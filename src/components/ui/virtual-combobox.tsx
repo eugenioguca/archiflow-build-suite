@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
   Popover,
-  PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import * as PopoverPrimitive from "@radix-ui/react-popover"
 
 export interface VirtualComboboxItem {
   value: string
@@ -31,6 +31,7 @@ interface VirtualComboboxProps {
   showCodes?: boolean
   virtualized?: boolean
   maxHeight?: string
+  portalContainer?: HTMLElement | null
 }
 
 function normalizeSearchText(text: string): string {
@@ -57,6 +58,19 @@ function getSearchableText(item: VirtualComboboxItem, searchFields: string[]): s
   return texts.join(' ')
 }
 
+// NUEVO: PopoverContent que permite inyectar el contenedor del portal
+const PopoverContentInDialog = React.forwardRef<
+  React.ElementRef<typeof PopoverPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content> & { container?: HTMLElement | null }
+>(({ container, ...props }, ref) => {
+  return (
+    <PopoverPrimitive.Portal container={container ?? undefined}>
+      <PopoverPrimitive.Content ref={ref} {...props} />
+    </PopoverPrimitive.Portal>
+  );
+});
+PopoverContentInDialog.displayName = "PopoverContentInDialog";
+
 export function VirtualCombobox({
   items = [],
   value,
@@ -70,7 +84,8 @@ export function VirtualCombobox({
   searchFields = ['label'],
   showCodes = false,
   virtualized = false,
-  maxHeight = "400px"
+  maxHeight = "400px",
+  portalContainer
 }: VirtualComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [inputValue, setInputValue] = React.useState("") // Input inmediato
@@ -149,130 +164,7 @@ export function VirtualCombobox({
     }
   }, [open])
 
-  // Aggressive focus management with multiple strategies
-  React.useEffect(() => {
-    if (!open || !searchInputRef.current) return
-
-    console.log('[VirtualCombobox] Popover opened, initiating aggressive focus management')
-    
-    let attempts = 0
-    const maxAttempts = 10
-    const focusTimeouts: NodeJS.Timeout[] = []
-    
-    const attemptFocus = () => {
-      attempts++
-      console.log(`[VirtualCombobox] Focus attempt ${attempts}/${maxAttempts}`)
-      
-      if (!searchInputRef.current) {
-        console.log('[VirtualCombobox] searchInputRef is null, aborting focus attempt')
-        return
-      }
-
-      const currentActiveElement = document.activeElement
-      console.log('[VirtualCombobox] Current active element:', currentActiveElement?.tagName, currentActiveElement?.className)
-      
-      if (currentActiveElement === searchInputRef.current) {
-        console.log('[VirtualCombobox] ✅ Input is already focused, focus management complete')
-        return
-      }
-
-      // Try to focus the input
-      searchInputRef.current.focus({ preventScroll: true })
-      
-      // Verify focus was successful
-      if (document.activeElement === searchInputRef.current) {
-        console.log('[VirtualCombobox] ✅ Successfully focused input on attempt', attempts)
-        return
-      }
-
-      // If we haven't succeeded and haven't reached max attempts, try again
-      if (attempts < maxAttempts) {
-        console.log('[VirtualCombobox] Focus failed, scheduling retry...')
-        const timeout = setTimeout(attemptFocus, 10 * attempts) // Increasing delay
-        focusTimeouts.push(timeout)
-      } else {
-        console.error('[VirtualCombobox] ❌ Failed to focus input after', maxAttempts, 'attempts')
-      }
-    }
-
-    // Strategy 1: Immediate focus
-    attemptFocus()
-    
-    // Strategy 2: requestAnimationFrame (next render cycle)
-    const rafId = requestAnimationFrame(() => {
-      if (document.activeElement !== searchInputRef.current) {
-        attemptFocus()
-      }
-    })
-    
-    // Strategy 3: Small delay for DOM updates
-    const timeout1 = setTimeout(attemptFocus, 0)
-    const timeout2 = setTimeout(attemptFocus, 10)
-    const timeout3 = setTimeout(attemptFocus, 50)
-    
-    return () => {
-      cancelAnimationFrame(rafId)
-      clearTimeout(timeout1)
-      clearTimeout(timeout2) 
-      clearTimeout(timeout3)
-      focusTimeouts.forEach(clearTimeout)
-    }
-  }, [open])
-
-  // Fallback strategy: Focus on any interaction with the popover
-  React.useEffect(() => {
-    if (!open) return
-
-    const ensureFocusOnInteraction = (event: Event) => {
-      console.log('[VirtualCombobox] User interaction detected:', event.type)
-      
-      if (searchInputRef.current && document.activeElement !== searchInputRef.current) {
-        console.log('[VirtualCombobox] Focus not on input, redirecting focus...')
-        event.preventDefault?.()
-        searchInputRef.current.focus({ preventScroll: true })
-      }
-    }
-
-    // Listen for any user interaction that might indicate they want to type
-    const events = ['click', 'mousedown', 'keydown', 'focus']
-    const popover = document.querySelector('[data-combobox-dropdown="true"]')
-    
-    if (popover) {
-      events.forEach(eventType => {
-        popover.addEventListener(eventType, ensureFocusOnInteraction, { capture: true })
-      })
-      
-      return () => {
-        events.forEach(eventType => {
-          popover.removeEventListener(eventType, ensureFocusOnInteraction, { capture: true })
-        })
-      }
-    }
-  }, [open])
-
-  // Monitor focus changes and log for debugging
-  React.useEffect(() => {
-    if (!open) return
-
-    const handleFocusChange = () => {
-      const active = document.activeElement
-      console.log('[VirtualCombobox] Focus changed to:', active?.tagName, active?.className)
-      
-      if (active === searchInputRef.current) {
-        console.log('[VirtualCombobox] ✅ Focus is correctly on search input')
-      } else if (searchInputRef.current) {
-        console.log('[VirtualCombobox] ⚠️ Focus is NOT on search input, current active:', active)
-      }
-    }
-
-    document.addEventListener('focusin', handleFocusChange)
-    document.addEventListener('focusout', handleFocusChange)
-    
-    return () => {
-      document.removeEventListener('focusin', handleFocusChange)
-      document.removeEventListener('focusout', handleFocusChange)
-    }
-  }, [open])
+  // Removed aggressive focus strategy - let onOpenAutoFocus handle it cleanly
 
   // Handle item selection
   const handleSelect = React.useCallback((selectedValue: string) => {
@@ -364,7 +256,7 @@ export function VirtualCombobox({
 
   return (
     <div data-combobox-root="true">
-      <Popover open={open} onOpenChange={setOpen} modal={false}>
+      <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             type="button"
@@ -373,7 +265,6 @@ export function VirtualCombobox({
             aria-expanded={open}
             className={cn("w-full justify-between", className)}
             disabled={disabled || loading}
-            data-combobox-trigger="true"
           >
           <span className="truncate">
             {loading ? (
@@ -388,56 +279,22 @@ export function VirtualCombobox({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent 
-          className="w-[--radix-popover-trigger-width] p-0" 
-          style={{ 
-            zIndex: 50000, // Higher z-index to escape Dialog
-            pointerEvents: 'auto',
-          }}
+
+        {/* USAR el PopoverContentInDialog con container = portalContainer */}
+        <PopoverContentInDialog
+          container={portalContainer}
+          className="w-[--radix-popover-trigger-width] p-0"
           align="start"
           sideOffset={4}
-          avoidCollisions={true}
-          // Add data attribute for Dialog to identify combobox area
-          data-combobox-dropdown="true"
-          
-          // ✅ Radix: al abrir, NO autoenfoques el trigger; enfoca el input
+          style={{ zIndex: 50000, pointerEvents: "auto" }}
+          // Evita que Radix intente re-enfocar el trigger
           onOpenAutoFocus={(e) => {
-            e.preventDefault()
-            // foco real en el input
-            if (searchInputRef.current) {
-              searchInputRef.current.focus({ preventScroll: true })
-              console.log('[VirtualCombobox] onOpenAutoFocus - activeElement:', document.activeElement === searchInputRef.current)
-            }
+            e.preventDefault();
+            // foco real en el input apenas se abre
+            searchInputRef.current?.focus({ preventScroll: true });
           }}
-          // ✅ Radix: al cerrar, evita que re-enfoque el trigger
           onCloseAutoFocus={(e) => {
-            e.preventDefault()
-          }}
-          
-          // CRITICAL: Allow events to bubble up from popover
-          onKeyDown={(e) => {
-            // Don't stop propagation, let Dialog handle if needed
-            handleKeyDown(e)
-          }}
-          // Prevent Dialog's focus trap from closing the popover
-          onFocusOutside={(e) => {
-            // Only prevent if focus is going to our input
-            if (e.target === searchInputRef.current) {
-              e.preventDefault()
-            }
-          }}
-          onInteractOutside={(e) => {
-            // Allow interaction with input and dropdown content
-            const currentTarget = e.currentTarget as Element
-            const target = e.target as Node
-            if (currentTarget.contains(target) || target === searchInputRef.current) {
-              e.preventDefault()
-            }
-          }}
-          // Ensure popover stays open during interaction
-          onEscapeKeyDown={(e) => {
-            e.preventDefault()
-            setOpen(false)
+            e.preventDefault(); // no devuelvas foco al trigger
           }}
         >
           <div className="flex items-center border-b px-3 py-2">
@@ -451,42 +308,14 @@ export function VirtualCombobox({
                 setInputValue(e.target.value)
               }}
               onKeyDown={(e) => {
-                console.log('[VirtualCombobox] Input onKeyDown:', e.key, 'activeElement:', document.activeElement === searchInputRef.current)
-                // Handle keyboard navigation directly here to ensure it works in Dialog
-                e.stopPropagation() // Prevent Dialog from intercepting
-                handleKeyDown(e)
+                e.stopPropagation() // el Dialog no debe ver estas teclas
+                handleKeyDown(e) // flechas / Enter → selección
               }}
-              onInput={(e) => {
-                console.log('[VirtualCombobox] Input onInput:', (e.target as HTMLInputElement).value)
-                // Fallback for input detection
-                const target = e.target as HTMLInputElement
-                if (target.value !== inputValue) {
-                  setInputValue(target.value)
-                }
-              }}
-              onFocus={(e) => {
-                console.log('[VirtualCombobox] Input focused, activeElement === input:', document.activeElement === searchInputRef.current)
-              }}
-              onBlur={(e) => {
-                console.log('[VirtualCombobox] Input blurred, activeElement is now:', document.activeElement)
-              }}
-              className="border-0 shadow-none focus-visible:ring-0 h-8"
-              style={{ 
-                pointerEvents: 'auto',
-                zIndex: 1, // Ensure input is above other elements
-              }}
-              autoFocus // ✅ ayuda extra; Radix ya lo enfoca en onOpenAutoFocus
               autoComplete="off"
               autoCapitalize="off"
               autoCorrect="off"
               spellCheck={false}
-              tabIndex={0}
-              // Force attributes for Dialog compatibility
-              data-no-focus-trap="true"
-              data-combobox-input="true"
-              role="combobox"
-              aria-expanded={open}
-              aria-autocomplete="list"
+              className="border-0 shadow-none focus-visible:ring-0 h-8"
             />
           </div>
           
@@ -636,7 +465,7 @@ export function VirtualCombobox({
             </div>
           )}
         </div>
-        </PopoverContent>
+        </PopoverContentInDialog>
       </Popover>
     </div>
   )

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -51,6 +51,9 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDescription, setShowDescription] = useState(false);
+  
+  // Ref para el contenedor del Dialog - necesario para que el Popover se renderice dentro del Dialog
+  const dialogContentRef = React.useRef<HTMLDivElement>(null);
   
   // Estados para las opciones de los dropdowns
   const [sucursales, setSucursales] = useState<SearchableComboboxItem[]>([]);
@@ -507,6 +510,8 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
+        ref={dialogContentRef}
+        data-dialog-content="nueva-carga"
         className="max-w-4xl max-h-[90vh] overflow-y-auto"
         onKeyDownCapture={handleDialogKeyDownCapture}
         onFocusCapture={handleDialogFocusCapture}
@@ -572,6 +577,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                           loading={loading.sucursales}
                           showCodes={false}
                           searchFields={['label', 'codigo']}
+                          portalContainer={dialogContentRef.current}
                         />
                       </div>
                     </FormControl>
@@ -597,6 +603,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                           loading={loading.proyectos}
                           showCodes={false}
                           searchFields={['label', 'codigo']}
+                          portalContainer={dialogContentRef.current}
                         />
                       </div>
                     </FormControl>
@@ -628,6 +635,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                           loading={false}
                           showCodes={false}
                           searchFields={['label', 'codigo']}
+                          portalContainer={dialogContentRef.current}
                         />
                       </div>
                     </FormControl>
@@ -671,6 +679,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                           loading={loading.departamentos}
                           showCodes={false}
                           searchFields={['label', 'codigo']}
+                          portalContainer={dialogContentRef.current}
                         />
                       </div>
                     </FormControl>
@@ -700,6 +709,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                           disabled={!departamentoId}
                           showCodes={true}
                           searchFields={['label', 'codigo']}
+                          portalContainer={dialogContentRef.current}
                         />
                       </div>
                     </FormControl>
@@ -726,6 +736,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                           disabled={!mayorId}
                           showCodes={true}
                           searchFields={['label', 'codigo']}
+                          portalContainer={dialogContentRef.current}
                         />
                       </div>
                     </FormControl>
@@ -752,6 +763,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                           disabled={!partidaId}
                           showCodes={true}
                           searchFields={['label', 'codigo']}
+                          portalContainer={dialogContentRef.current}
                         />
                       </div>
                     </FormControl>
@@ -769,18 +781,19 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                 <FormItem>
                   <FormLabel>Cliente/Proveedor (Opcional)</FormLabel>
                   <FormControl>
-                    <div data-combobox-root>
-                      <SearchableCombobox
-                        items={clientesProveedores}
-                        value={field.value || ''}
-                        onValueChange={field.onChange}
-                        placeholder="Seleccionar cliente/proveedor..."
-                        searchPlaceholder="Buscar cliente/proveedor..."
-                        loading={loading.clientesProveedores}
-                        showCodes={false}
-                        searchFields={['label', 'codigo']}
-                      />
-                    </div>
+                  <div data-combobox-root>
+                    <SearchableCombobox
+                      items={clientesProveedores}
+                      value={field.value || ''}
+                      onValueChange={field.onChange}
+                      placeholder="Seleccionar cliente/proveedor..."
+                      searchPlaceholder="Buscar cliente/proveedor..."
+                      loading={loading.clientesProveedores}
+                      showCodes={false}
+                      searchFields={['label', 'codigo']}
+                      portalContainer={dialogContentRef.current}
+                    />
+                  </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
