@@ -134,11 +134,21 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
 
       if (error) throw error;
 
-      const options = data?.map(item => ({
+      const projectOptions = data?.map(item => ({
         value: item.id,
         label: `${item.project_name} - ${item.clients?.full_name || 'Sin cliente'}`,
         codigo: item.project_name // Usar nombre del proyecto para búsqueda
       })) || [];
+
+      // Agregar opción de Dovita al inicio
+      const options = [
+        {
+          value: 'DOVITA_INTERNAL',
+          label: 'Dovita',
+          codigo: 'Dovita'
+        },
+        ...projectOptions
+      ];
 
       setProyectos(options);
     } catch (error) {
@@ -415,7 +425,7 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
         tipo_movimiento: data.tipo_movimiento || 'ingreso',
         monto: data.monto,
         sucursal_id: data.sucursal_id,
-        proyecto_id: data.proyecto_id,
+        empresa_proyecto_id: data.proyecto_id === 'DOVITA_INTERNAL' ? null : data.proyecto_id,
         departamento: data.departamento_id, // Use departamento string value
         mayor_id: data.mayor_id,
         partida_id: data.partida_id,
