@@ -283,10 +283,10 @@ export function VirtualCombobox({
         {/* USAR el PopoverContentInDialog con container = portalContainer */}
         <PopoverContentInDialog
           container={portalContainer}
-          className="w-[--radix-popover-trigger-width] p-0"
+          className="w-[--radix-popover-trigger-width] p-0 relative z-[9999] max-h-96 min-w-[8rem] overflow-visible rounded-md border bg-popover text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2"
           align="start"
           sideOffset={4}
-          style={{ zIndex: 50000, pointerEvents: "auto" }}
+          style={{ pointerEvents: "auto" }}
           // Evita que Radix intente re-enfocar el trigger
           onOpenAutoFocus={(e) => {
             e.preventDefault();
