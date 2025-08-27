@@ -20,7 +20,10 @@ import { format } from 'date-fns';
 // Schema de validación
 const formSchema = z.object({
   fecha: z.date({ required_error: 'La fecha es requerida' }),
-  monto: z.number().min(0.01, 'El monto debe ser mayor a 0'),
+  unidad: z.enum(["PZA", "M2", "M3", "ML", "KG", "TON", "LT", "GAL", "M"]).default("PZA"),
+  cantidad_requerida: z.number().min(0.01, 'La cantidad debe ser mayor a 0').default(1),
+  precio_unitario: z.number().min(0, 'El precio debe ser mayor o igual a 0').default(0),
+  monto_total: z.number().min(0).default(0),
   descripcion: z.string().optional(),
   sucursal_id: z.string().min(1, 'La sucursal es requerida'),
   proyecto_id: z.string().min(1, 'El proyecto es requerido'),
@@ -79,7 +82,10 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
     resolver: zodResolver(formSchema),
     defaultValues: {
       fecha: new Date(),
-      monto: 0,
+      unidad: 'PZA',
+      cantidad_requerida: 1,
+      precio_unitario: 0,
+      monto_total: 0,
       descripcion: '',
       tiene_factura: false,
       folio_factura: '',
@@ -397,6 +403,15 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
     }
   }, [partidaId, form]);
 
+  // Client-side computation for monto_total
+  const precioUnitario = form.watch('precio_unitario') || 0;
+  const cantidadRequerida = form.watch('cantidad_requerida') || 1;
+  
+  useEffect(() => {
+    const total = Math.round((precioUnitario * cantidadRequerida) * 100) / 100;
+    form.setValue('monto_total', total);
+  }, [precioUnitario, cantidadRequerida, form]);
+
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     
@@ -423,7 +438,10 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
       const transactionData = {
         fecha: format(data.fecha, 'yyyy-MM-dd'),
         tipo_movimiento: data.tipo_movimiento || 'ingreso',
-        monto: data.monto,
+        precio_unitario: data.precio_unitario,
+        monto_total: data.monto_total,
+        unidad: data.unidad,
+        cantidad_requerida: data.cantidad_requerida,
         sucursal_id: data.sucursal_id,
         empresa_proyecto_id: data.proyecto_id === 'DOVITA_INTERNAL' ? null : data.proyecto_id,
         departamento: data.departamento_id, // Use departamento string value
@@ -654,10 +672,10 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
 
               <FormField
                 control={form.control}
-                name="monto"
+                name="precio_unitario"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Monto *</FormLabel>
+                    <FormLabel>Precio Unitario *</FormLabel>
                     <FormControl>
                       <CurrencyInput
                         value={field.value}
@@ -776,6 +794,103 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                             virtualized={true}
                           />
                       </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Nueva fila: Unidad | Cantidad Requerida | Precio Unitario | Monto Total */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <FormField
+                control={form.control}
+                name="unidad"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Unidad</FormLabel>
+                    <FormControl>
+                      <SearchableCombobox
+                        items={[
+                          { value: "PZA", label: "Pieza (PZA)", codigo: "PZA" },
+                          { value: "M2", label: "Metro Cuadrado (M2)", codigo: "M2" },
+                          { value: "M3", label: "Metro Cúbico (M3)", codigo: "M3" },
+                          { value: "ML", label: "Metro Lineal (ML)", codigo: "ML" },
+                          { value: "KG", label: "Kilogramo (KG)", codigo: "KG" },
+                          { value: "TON", label: "Tonelada (TON)", codigo: "TON" },
+                          { value: "LT", label: "Litro (LT)", codigo: "LT" },
+                          { value: "GAL", label: "Galón (GAL)", codigo: "GAL" },
+                          { value: "M", label: "Metro (M)", codigo: "M" }
+                        ]}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Seleccionar unidad..."
+                        searchPlaceholder="Buscar unidad..."
+                        loading={false}
+                        showCodes={false}
+                        searchFields={['label', 'codigo']}
+                        portalContainer={dialogContentRef.current}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="cantidad_requerida"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cantidad Requerida</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        value={field.value}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 1)}
+                        placeholder="1"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="precio_unitario"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Precio Unitario</FormLabel>
+                    <FormControl>
+                      <CurrencyInput
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="0.00"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="monto_total"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Monto Total</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        value={field.value.toFixed(2)}
+                        readOnly
+                        disabled
+                        className="bg-muted"
+                        placeholder="0.00"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

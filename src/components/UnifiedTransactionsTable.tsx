@@ -19,7 +19,8 @@ interface Transaction {
   fecha: string;
   referencia_unica: string;
   tipo_movimiento: string;
-  monto: number;
+  precio_unitario: number;
+  monto_total: number;
   departamento: string;
   unidad: string;
   cantidad_requerida: number;
@@ -78,7 +79,8 @@ export const UnifiedTransactionsTable = forwardRef<{ refreshData: () => void }, 
           fecha,
           referencia_unica,
           tipo_movimiento,
-          monto,
+          precio_unitario,
+          monto_total,
           departamento,
           unidad,
           cantidad_requerida,
@@ -331,13 +333,14 @@ export const UnifiedTransactionsTable = forwardRef<{ refreshData: () => void }, 
               <TableHead>Sucursal</TableHead>
               <TableHead>Proyecto</TableHead>
               <TableHead>Movimiento</TableHead>
-              <TableHead className="text-right">Monto</TableHead>
               <TableHead>Departamento</TableHead>
               <TableHead>Mayor</TableHead>
               <TableHead>Partida</TableHead>
               <TableHead>Subpartida</TableHead>
               <TableHead>Unidad</TableHead>
               <TableHead>Cantidad</TableHead>
+              <TableHead>Precio Unitario</TableHead>
+              <TableHead>Monto Total</TableHead>
               <TableHead>Factura</TableHead>
               <TableHead>Descripción</TableHead>
             </TableRow>
@@ -345,7 +348,7 @@ export const UnifiedTransactionsTable = forwardRef<{ refreshData: () => void }, 
           <TableBody>
             {filteredTransactions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={isDeleteMode ? 15 : 14} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={isDeleteMode ? 16 : 15} className="text-center py-8 text-muted-foreground">
                   No se encontraron transacciones
                 </TableCell>
               </TableRow>
@@ -388,9 +391,6 @@ export const UnifiedTransactionsTable = forwardRef<{ refreshData: () => void }, 
                       {transaction.tipo_movimiento === "ingreso" ? "Ingreso" : "Egreso"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right font-medium">
-                    ${transaction.monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                  </TableCell>
                   <TableCell className="capitalize">
                     {transaction.departamento.replace("_", " ")}
                   </TableCell>
@@ -431,6 +431,12 @@ export const UnifiedTransactionsTable = forwardRef<{ refreshData: () => void }, 
                   </TableCell>
                   <TableCell className="text-center font-medium">
                     {transaction.cantidad_requerida || 1}
+                  </TableCell>
+                  <TableCell className="text-right font-medium">
+                    ${transaction.precio_unitario.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                  </TableCell>
+                  <TableCell className="text-right font-bold">
+                    ${transaction.monto_total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                   </TableCell>
                   <TableCell>
                     {transaction.tiene_factura ? (

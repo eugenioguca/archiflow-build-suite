@@ -6448,8 +6448,9 @@ export type Database = {
           folio_factura: string | null
           id: string
           mayor_id: string | null
-          monto: number
+          monto_total: number
           partida_id: string | null
+          precio_unitario: number
           referencia_unica: string
           subpartida_id: string | null
           sucursal_id: string | null
@@ -6471,8 +6472,9 @@ export type Database = {
           folio_factura?: string | null
           id?: string
           mayor_id?: string | null
-          monto?: number
+          monto_total?: number
           partida_id?: string | null
+          precio_unitario?: number
           referencia_unica: string
           subpartida_id?: string | null
           sucursal_id?: string | null
@@ -6494,8 +6496,9 @@ export type Database = {
           folio_factura?: string | null
           id?: string
           mayor_id?: string | null
-          monto?: number
+          monto_total?: number
           partida_id?: string | null
+          precio_unitario?: number
           referencia_unica?: string
           subpartida_id?: string | null
           sucursal_id?: string | null
