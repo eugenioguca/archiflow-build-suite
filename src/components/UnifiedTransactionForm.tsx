@@ -28,7 +28,7 @@ const formSchema = z.object({
   mayor_id: z.string().optional(),
   partida_id: z.string().optional(),
   subpartida_id: z.string().optional(),
-  unidad: z.string().default("PZA"),
+  unidad: z.enum(["PZA", "M2", "M3", "ML", "KG", "TON", "LT", "GAL", "M"]).default("PZA"),
   cantidad_requerida: z.number().min(0.01, "La cantidad debe ser mayor a 0").default(1),
   cliente_proveedor_id: z.string().optional(),
   tipo_entidad: z.enum(["cliente", "proveedor"]).optional(),
@@ -99,6 +99,8 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
       tipo_movimiento: "ingreso",
       monto: 0,
       departamento: "",
+      unidad: "PZA",
+      cantidad_requerida: 1,
       tiene_factura: false,
     },
   });
@@ -701,7 +703,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium">Unidad</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Seleccionar unidad" />
