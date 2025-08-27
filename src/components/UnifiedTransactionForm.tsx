@@ -28,6 +28,8 @@ const formSchema = z.object({
   mayor_id: z.string().optional(),
   partida_id: z.string().optional(),
   subpartida_id: z.string().optional(),
+  unidad: z.string().default("PZA"),
+  cantidad_requerida: z.number().min(0.01, "La cantidad debe ser mayor a 0").default(1),
   cliente_proveedor_id: z.string().optional(),
   tipo_entidad: z.enum(["cliente", "proveedor"]).optional(),
   tiene_factura: z.boolean(),
@@ -387,7 +389,7 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
       const transactionData = {
         fecha: data.fecha.toISOString().split('T')[0],
         sucursal_id: data.sucursal_id,
-        referencia_unica: '',
+        referencia_unica: null, // Se generará automáticamente con el trigger
         empresa_proyecto_id: data.empresa_proyecto_id === "empresa" ? null : data.empresa_proyecto_id,
         tipo_movimiento: data.tipo_movimiento,
         monto: data.monto,
@@ -395,6 +397,8 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
         mayor_id: data.mayor_id || null,
         partida_id: data.partida_id || null,
         subpartida_id: data.subpartida_id || null,
+        unidad: data.unidad || 'PZA',
+        cantidad_requerida: data.cantidad_requerida || 1,
         cliente_proveedor_id: data.cliente_proveedor_id || null,
         tipo_entidad: data.tipo_entidad,
         tiene_factura: data.tiene_factura,
@@ -418,6 +422,8 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
         tipo_movimiento: "ingreso",
         monto: 0,
         departamento: "",
+        unidad: "PZA",
+        cantidad_requerida: 1,
         tiene_factura: false,
       });
       
@@ -679,6 +685,59 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
                           showCodes={true}
                           searchFields={['label', 'codigo', 'searchText']}
                           className="w-full"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* New Row: Unidad y Cantidad */}
+              <div className="grid grid-cols-2 gap-3">
+                <FormField
+                  control={form.control}
+                  name="unidad"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Unidad</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar unidad" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="PZA">Pieza (PZA)</SelectItem>
+                          <SelectItem value="M2">Metro Cuadrado (M2)</SelectItem>
+                          <SelectItem value="M3">Metro Cúbico (M3)</SelectItem>
+                          <SelectItem value="ML">Metro Lineal (ML)</SelectItem>
+                          <SelectItem value="KG">Kilogramo (KG)</SelectItem>
+                          <SelectItem value="TON">Tonelada (TON)</SelectItem>
+                          <SelectItem value="LT">Litro (LT)</SelectItem>
+                          <SelectItem value="GAL">Galón (GAL)</SelectItem>
+                          <SelectItem value="M">Metro (M)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="cantidad_requerida"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Cantidad Requerida</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0.01"
+                          placeholder="1"
+                          disabled={loading}
+                          {...field}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 1)}
                         />
                       </FormControl>
                       <FormMessage />

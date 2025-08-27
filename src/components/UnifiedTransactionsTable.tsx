@@ -21,6 +21,8 @@ interface Transaction {
   tipo_movimiento: string;
   monto: number;
   departamento: string;
+  unidad: string;
+  cantidad_requerida: number;
   descripcion?: string;
   tiene_factura: boolean;
   folio_factura?: string;
@@ -72,9 +74,22 @@ export const UnifiedTransactionsTable = forwardRef<{ refreshData: () => void }, 
       const { data, error } = await supabase
         .from("unified_financial_transactions")
         .select(`
-          *,
+          id,
+          fecha,
+          referencia_unica,
+          tipo_movimiento,
+          monto,
+          departamento,
+          unidad,
+          cantidad_requerida,
+          descripcion,
+          tiene_factura,
+          folio_factura,
           branch_offices(name),
-          client_projects(project_name, clients(full_name)),
+          client_projects(
+            project_name,
+            clients(full_name)
+          ),
           chart_of_accounts_mayor(nombre, codigo),
           chart_of_accounts_partidas(nombre, codigo),
           chart_of_accounts_subpartidas(nombre, codigo)
@@ -321,6 +336,8 @@ export const UnifiedTransactionsTable = forwardRef<{ refreshData: () => void }, 
               <TableHead>Mayor</TableHead>
               <TableHead>Partida</TableHead>
               <TableHead>Subpartida</TableHead>
+              <TableHead>Unidad</TableHead>
+              <TableHead>Cantidad</TableHead>
               <TableHead>Factura</TableHead>
               <TableHead>Descripción</TableHead>
             </TableRow>
@@ -328,7 +345,7 @@ export const UnifiedTransactionsTable = forwardRef<{ refreshData: () => void }, 
           <TableBody>
             {filteredTransactions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={isDeleteMode ? 13 : 12} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={isDeleteMode ? 15 : 14} className="text-center py-8 text-muted-foreground">
                   No se encontraron transacciones
                 </TableCell>
               </TableRow>
@@ -406,6 +423,14 @@ export const UnifiedTransactionsTable = forwardRef<{ refreshData: () => void }, 
                         </div>
                       </div>
                     ) : "-"}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className="px-2 py-1 bg-muted rounded text-sm font-medium">
+                      {transaction.unidad || 'PZA'}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-center font-medium">
+                    {transaction.cantidad_requerida || 1}
                   </TableCell>
                   <TableCell>
                     {transaction.tiene_factura ? (

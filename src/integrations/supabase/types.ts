@@ -6437,6 +6437,7 @@ export type Database = {
       }
       unified_financial_transactions: {
         Row: {
+          cantidad_requerida: number
           cliente_proveedor_id: string | null
           created_at: string
           created_by: string
@@ -6455,9 +6456,11 @@ export type Database = {
           tiene_factura: boolean
           tipo_entidad: string | null
           tipo_movimiento: string
+          unidad: string
           updated_at: string
         }
         Insert: {
+          cantidad_requerida?: number
           cliente_proveedor_id?: string | null
           created_at?: string
           created_by: string
@@ -6476,9 +6479,11 @@ export type Database = {
           tiene_factura?: boolean
           tipo_entidad?: string | null
           tipo_movimiento: string
+          unidad?: string
           updated_at?: string
         }
         Update: {
+          cantidad_requerida?: number
           cliente_proveedor_id?: string | null
           created_at?: string
           created_by?: string
@@ -6497,6 +6502,7 @@ export type Database = {
           tiene_factura?: boolean
           tipo_entidad?: string | null
           tipo_movimiento?: string
+          unidad?: string
           updated_at?: string
         }
         Relationships: [
