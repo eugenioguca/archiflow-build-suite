@@ -639,8 +639,8 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
               />
             </div>
 
-            {/* Segunda fila: Movimiento | Monto | Departamento */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Segunda fila: Movimiento | Departamento */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="tipo_movimiento"
@@ -664,24 +664,6 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                           portalContainer={dialogContentRef.current}
                         />
                       </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="precio_unitario"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Precio Unitario *</FormLabel>
-                    <FormControl>
-                      <CurrencyInput
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="0.00"
-                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
