@@ -434,6 +434,23 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
         throw new Error('Error al obtener perfil de usuario');
       }
 
+      // Procesar cliente_proveedor_id para extraer UUID limpio
+      let clienteProveedorId = null;
+      let tipoEntidad = null;
+
+      if (data.cliente_proveedor_id) {
+        if (data.cliente_proveedor_id.startsWith('client_')) {
+          clienteProveedorId = data.cliente_proveedor_id.replace('client_', '');
+          tipoEntidad = 'client';
+        } else if (data.cliente_proveedor_id.startsWith('supplier_')) {
+          clienteProveedorId = data.cliente_proveedor_id.replace('supplier_', '');
+          tipoEntidad = 'supplier';
+        } else {
+          // Si no tiene prefijo, asumir que es un UUID limpio
+          clienteProveedorId = data.cliente_proveedor_id;
+        }
+      }
+
       // Preparar datos para insertar
       const transactionData = {
         fecha: format(data.fecha, 'yyyy-MM-dd'),
@@ -448,7 +465,8 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
         mayor_id: data.mayor_id,
         partida_id: data.partida_id,
         subpartida_id: data.subpartida_id || null,
-        cliente_proveedor_id: data.cliente_proveedor_id || null,
+        cliente_proveedor_id: clienteProveedorId,
+        tipo_entidad: tipoEntidad,
         tiene_factura: data.tiene_factura,
         folio_factura: data.tiene_factura ? data.folio_factura : null,
         descripcion: data.descripcion || null,
