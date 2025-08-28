@@ -848,8 +848,18 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                         type="number"
                         min="0.01"
                         step="0.01"
-                        value={field.value}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 1)}
+                        value={field.value || 1}
+                        onChange={(e) => {
+                          const value = parseFloat(e.target.value);
+                          field.onChange(isNaN(value) ? 1 : value);
+                        }}
+                        onBlur={(e) => {
+                          const value = parseFloat(e.target.value);
+                          if (isNaN(value) || value <= 0) {
+                            field.onChange(1);
+                          }
+                        }}
+                        className="text-right"
                         placeholder="1"
                       />
                     </FormControl>
