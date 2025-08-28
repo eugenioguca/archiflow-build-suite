@@ -884,12 +884,16 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                     <FormLabel>Monto Total</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        value={field.value.toFixed(2)}
+                        type="text"
+                        value={new Intl.NumberFormat('es-MX', {
+                          style: 'currency',
+                          currency: 'MXN',
+                          minimumFractionDigits: 2
+                        }).format(field.value)}
                         readOnly
                         disabled
-                        className="bg-muted"
-                        placeholder="0.00"
+                        className="bg-muted text-right"
+                        placeholder="$0.00"
                       />
                     </FormControl>
                     <FormMessage />
