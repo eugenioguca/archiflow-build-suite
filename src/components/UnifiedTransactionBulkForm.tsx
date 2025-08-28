@@ -441,10 +441,10 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
       if (data.cliente_proveedor_id) {
         if (data.cliente_proveedor_id.startsWith('client_')) {
           clienteProveedorId = data.cliente_proveedor_id.replace('client_', '');
-          tipoEntidad = 'client';
+          tipoEntidad = 'cliente';
         } else if (data.cliente_proveedor_id.startsWith('supplier_')) {
           clienteProveedorId = data.cliente_proveedor_id.replace('supplier_', '');
-          tipoEntidad = 'supplier';
+          tipoEntidad = 'proveedor';
         } else {
           // Si no tiene prefijo, asumir que es un UUID limpio
           clienteProveedorId = data.cliente_proveedor_id;
