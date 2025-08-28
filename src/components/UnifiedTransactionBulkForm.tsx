@@ -848,10 +848,15 @@ export function UnifiedTransactionBulkForm({ open, onOpenChange }: UnifiedTransa
                         type="number"
                         min="0.01"
                         step="0.01"
-                        value={field.value || 1}
+                        value={field.value || ""}
                         onChange={(e) => {
-                          const value = parseFloat(e.target.value);
-                          field.onChange(isNaN(value) ? 1 : value);
+                          const value = e.target.value;
+                          if (value === "") {
+                            field.onChange("");
+                          } else {
+                            const numValue = parseFloat(value);
+                            field.onChange(isNaN(numValue) ? "" : numValue);
+                          }
                         }}
                         onBlur={(e) => {
                           const value = parseFloat(e.target.value);
