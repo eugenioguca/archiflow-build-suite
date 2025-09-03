@@ -29,6 +29,7 @@ import SuppliersNew from "./pages/SuppliersNew";
 import ClientPortal from "./pages/ClientPortal";
 import UnifiedTransactions from "./pages/UnifiedTransactions";
 import TestTransactionForm from "./pages/TestTransactionForm";
+import PresupuestosPlaneacion from "./pages/PresupuestosPlaneacion";
 
 import PendingApproval from "./components/PendingApproval";
 import { UserOnboarding } from "./components/UserOnboarding";
@@ -191,6 +192,16 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <Design />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/presupuestos-planeacion" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <PresupuestosPlaneacion />
                 </Layout>
               </ProtectedRoute>
             } 

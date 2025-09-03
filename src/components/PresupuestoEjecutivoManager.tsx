@@ -160,18 +160,10 @@ export function PresupuestoEjecutivoManager() {
         });
       }
       
-      // Remove the row from local state after saving
+      // Remove the row from local state after saving  
       removeRow(index);
     } catch (error) {
       console.error('Error saving row:', error);
-    }
-  };
-
-  const deleteRow = async (id: string) => {
-    try {
-      await deletePresupuestoEjecutivo.mutateAsync(id);
-    } catch (error) {
-      console.error('Error deleting row:', error);
     }
   };
 
@@ -180,6 +172,14 @@ export function PresupuestoEjecutivoManager() {
       sub.partida_id === partidaId || 
       (sub.es_global && sub.departamento_aplicable === 'Construcción')
     );
+  };
+
+  const deleteRow = async (id: string) => {
+    try {
+      await deletePresupuestoEjecutivo.mutateAsync(id);
+    } catch (error) {
+      console.error('Error deleting row:', error);
+    }
   };
 
   // Calculate totals and validation

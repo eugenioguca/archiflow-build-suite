@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { CalendarDays, Building2, Wrench, Camera, FileText, Users, BarChart3, MapPin, Menu } from "lucide-react";
+import { CalendarDays, Building2, Wrench, Camera, FileText, Users, BarChart3, MapPin, Menu, Calculator } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -456,7 +456,32 @@ export function Construction() {
                 </TabsContent>
 
                 <TabsContent value="budget" className="mt-6">
-                  <AdvancedBudgetManager projectId={selectedProject.id} />
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Calculator className="h-5 w-5" />
+                        Presupuesto y Planeación
+                      </CardTitle>
+                      <CardDescription>
+                        El presupuesto detallado ahora se gestiona en el módulo de Presupuestos y Planeación
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="bg-muted/30 border border-dashed rounded-lg p-6 text-center space-y-3">
+                        <Calculator className="w-12 h-12 text-primary mx-auto" />
+                        <div>
+                          <h3 className="text-lg font-semibold">Ir a Presupuestos y Planeación</h3>
+                          <p className="text-muted-foreground text-sm">
+                            Gestiona presupuestos paramétricos, cronogramas de Gantt y planes de pago
+                          </p>
+                        </div>
+                        <Button onClick={() => window.location.href = '/presupuestos-planeacion'} className="gap-2">
+                          <Calculator className="h-4 w-4" />
+                          Abrir Módulo
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </TabsContent>
 
                 <TabsContent value="timeline" className="mt-6">
