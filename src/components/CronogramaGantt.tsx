@@ -57,72 +57,27 @@ export function CronogramaGantt() {
     deleteCronograma
   } = useCronogramaGantt(selectedClientId, selectedProjectId);
 
-  const [rows, setRows] = useState<CronogramaRow[]>([]);
-  
-  // Estados para opciones de dropdowns - misma lógica que UnifiedTransactionBulkForm
-  const [departamentoId, setDepartamentoId] = useState<string>('');
-  const [mayores, setMayores] = useState<{ value: string; label: string; codigo?: string }[]>([]);
+  // Modal states
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
 
-  // Cargar departamentos y encontrar "Construcción" - misma lógica que UnifiedTransactionBulkForm
-  const loadDepartamentos = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('chart_of_accounts_departamentos')
-        .select('departamento')
-        .eq('activo', true)
-        .order('departamento');
-
-      if (error) throw error;
-
-      // Evitar duplicados usando Set
-      const uniqueDepartamentos = [...new Set(data?.map(item => item.departamento) || [])];
-      
-      // Encontrar "Construcción" y establecerlo como departamento por defecto
-      const construccionDept = uniqueDepartamentos.find(dept => dept === 'Construcción');
-      if (construccionDept) {
-        setDepartamentoId(construccionDept);
-      }
-    } catch (error) {
-      console.error('Error loading departamentos:', error);
-    }
+  // Handle form submission for create/edit
+  const handleFormSubmit = async (data: CronogramaFormData) => {
+    // Implementation would go here - saving to cronograma table
+    console.log('Cronograma form submitted:', data);
   };
 
-  // Cargar mayores basado en departamento seleccionado - misma lógica que UnifiedTransactionBulkForm
-  const loadMayores = async (departamentoId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('chart_of_accounts_mayor')
-        .select('id, nombre, codigo')
-        .eq('departamento', departamentoId)
-        .eq('activo', true)
-        .order('codigo');
-
-      if (error) throw error;
-
-      const options = data?.map(item => ({
-        value: item.id,
-        label: item.nombre,
-        codigo: item.codigo
-      })) || [];
-
-      setMayores(options);
-    } catch (error) {
-      console.error('Error loading mayores:', error);
-      setMayores([]);
-    }
+  // Handle opening new form modal
+  const handleNewActividad = () => {
+    setEditingItem(null);
+    setShowFormModal(true);
   };
 
-  // Cargar departamentos al montar el componente
-  useEffect(() => {
-    loadDepartamentos();
-  }, []);
-
-  // Cargar mayores cuando el departamento esté disponible
-  useEffect(() => {
-    if (departamentoId && hasFilters && selectedClientId && selectedProjectId) {
-      loadMayores(departamentoId);
-    }
-  }, [departamentoId, hasFilters, selectedClientId, selectedProjectId]);
+  // Handle opening edit form modal
+  const handleEditActividad = (item: any) => {
+    setEditingItem(item);
+    setShowFormModal(true);
+  };
 
   const addRow = () => {
     const newRow: CronogramaRow = {
@@ -311,9 +266,9 @@ export function CronogramaGantt() {
                 <Download className="h-4 w-4" />
                 PDF
               </Button>
-              <Button onClick={addRow} className="gap-2">
+              <Button onClick={handleNewActividad} className="gap-2">
                 <Plus className="h-4 w-4" />
-                Añadir Actividad
+                Nueva Actividad
               </Button>
             </div>
           </CardHeader>
@@ -440,6 +395,18 @@ export function CronogramaGantt() {
           </CardContent>
         </Card>
       )}
+
+      {/* Form Modal */}
+      <CronogramaGanttFormModal
+        open={showFormModal}
+        onOpenChange={setShowFormModal}
+        onSubmit={handleFormSubmit}
+        initialData={editingItem}
+        clienteId={selectedClientId}
+        proyectoId={selectedProjectId}
+        title={editingItem ? "Editar Actividad - Cronograma" : "Nueva Actividad - Cronograma"}
+      />
+      }
 
       {!hasFilters && (
         <Card>

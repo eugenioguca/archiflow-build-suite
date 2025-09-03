@@ -1,43 +1,25 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Download } from 'lucide-react';
+import { Plus, Trash2, Download, Edit } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { usePresupuestoParametrico } from '@/hooks/usePresupuestoParametrico';
 import { useClientProjectFilters } from '@/hooks/useClientProjectFilters';
 import { CollapsibleFilters } from '@/components/CollapsibleFilters';
-import { SearchableCombobox } from '@/components/ui/searchable-combobox';
+import { PresupuestoParametricoFormModal } from '@/components/modals/PresupuestoParametricoFormModal';
 import { supabase } from '@/integrations/supabase/client';
-import { CurrencyInput } from '@/components/CurrencyInput';
 
-interface PresupuestoRow {
-  id?: string;
-  departamento: string;
+// Form data interface for modal
+interface PresupuestoFormData {
+  departamento_id: string;
   mayor_id: string;
   partida_id: string;
   cantidad_requerida: number;
   precio_unitario: number;
   monto_total: number;
 }
-
-interface Option {
-  id: string;
-  nombre: string;
-  codigo?: string;
-}
-
-// Transform Option to SearchableComboboxItem
-const transformToComboboxItems = (options: Option[]) => {
-  return options.map(option => ({
-    value: option.id,
-    label: option.nombre,
-    codigo: option.codigo,
-    searchText: `${option.codigo || ''} ${option.nombre}`.toLowerCase()
-  }));
-};
 
 export function PresupuestoParametrico() {
   const {
@@ -57,189 +39,68 @@ export function PresupuestoParametrico() {
     deletePresupuesto
   } = usePresupuestoParametrico(selectedClientId, selectedProjectId);
 
-  const [rows, setRows] = useState<PresupuestoRow[]>([]);
-  const [editingRow, setEditingRow] = useState<string | null>(null);
-  
-  // Estados para opciones de dropdowns - misma lógica que UnifiedTransactionBulkForm
-  const [departamentoId, setDepartamentoId] = useState<string>('');
-  const [mayores, setMayores] = useState<{ value: string; label: string; codigo?: string }[]>([]);
-  const [partidas, setPartidas] = useState<{ value: string; label: string; codigo?: string }[]>([]);
+  // Modal states
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
 
-  // Cargar departamentos y encontrar "Construcción" - misma lógica que UnifiedTransactionBulkForm
-  const loadDepartamentos = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('chart_of_accounts_departamentos')
-        .select('departamento')
-        .eq('activo', true)
-        .order('departamento');
-
-      if (error) throw error;
-
-      // Evitar duplicados usando Set
-      const uniqueDepartamentos = [...new Set(data?.map(item => item.departamento) || [])];
-      
-      // Encontrar "Construcción" y establecerlo como departamento por defecto
-      const construccionDept = uniqueDepartamentos.find(dept => dept === 'Construcción');
-      if (construccionDept) {
-        setDepartamentoId(construccionDept);
-      }
-    } catch (error) {
-      console.error('Error loading departamentos:', error);
-    }
-  };
-
-  // Cargar mayores basado en departamento seleccionado - misma lógica que UnifiedTransactionBulkForm
-  const loadMayores = async (departamentoId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('chart_of_accounts_mayor')
-        .select('id, nombre, codigo')
-        .eq('departamento', departamentoId)
-        .eq('activo', true)
-        .order('codigo');
-
-      if (error) throw error;
-
-      const options = data?.map(item => ({
-        value: item.id,
-        label: item.nombre,
-        codigo: item.codigo
-      })) || [];
-
-      setMayores(options);
-    } catch (error) {
-      console.error('Error loading mayores:', error);
-      setMayores([]);
-    }
-  };
-
-  // Cargar partidas basado en mayor seleccionado - misma lógica que UnifiedTransactionBulkForm
-  const loadPartidas = async (mayorId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('chart_of_accounts_partidas')
-        .select('id, nombre, codigo')
-        .eq('mayor_id', mayorId)
-        .eq('activo', true)
-        .order('codigo');
-
-      if (error) throw error;
-
-      const options = data?.map(item => ({
-        value: item.id,
-        label: item.nombre,
-        codigo: item.codigo
-      })) || [];
-
-      setPartidas(options);
-    } catch (error) {
-      console.error('Error loading partidas:', error);
-      setPartidas([]);
-    }
-  };
-
-  // Cargar departamentos al montar el componente
-  useEffect(() => {
-    loadDepartamentos();
-  }, []);
-
-  // Cargar mayores cuando el departamento esté disponible
-  useEffect(() => {
-    if (departamentoId && hasFilters && selectedClientId && selectedProjectId) {
-      loadMayores(departamentoId);
-    }
-  }, [departamentoId, hasFilters, selectedClientId, selectedProjectId]);
-
-  const addRow = () => {
-    const newRow: PresupuestoRow = {
-      departamento: departamentoId || 'Construcción',
-      mayor_id: '',
-      partida_id: '',
-      cantidad_requerida: 1,
-      precio_unitario: 0,
-      monto_total: 0
-    };
-    setRows([...rows, newRow]);
-  };
-
-  const updateRow = (index: number, field: keyof PresupuestoRow, value: any) => {
-    const updatedRows = [...rows];
-    updatedRows[index] = { ...updatedRows[index], [field]: value };
-    
-    // Auto-calculate monto_total
-    if (field === 'cantidad_requerida' || field === 'precio_unitario') {
-      updatedRows[index].monto_total = 
-        updatedRows[index].cantidad_requerida * updatedRows[index].precio_unitario;
-    }
-    
-    setRows(updatedRows);
-  };
-
-  const removeRow = (index: number) => {
-    const updatedRows = rows.filter((_, i) => i !== index);
-    setRows(updatedRows);
-  };
-
-  const saveRow = async (index: number) => {
-    const row = rows[index];
-    
+  // Handle form submission for create/edit
+  const handleFormSubmit = async (data: PresupuestoFormData) => {
     if (!selectedClientId || !selectedProjectId) {
-      return;
-    }
-
-    if (!row.mayor_id || !row.partida_id) {
-      return;
+      throw new Error('Cliente y proyecto son requeridos');
     }
 
     try {
-      if (row.id) {
+      if (editingItem) {
         await updatePresupuesto.mutateAsync({
-          id: row.id,
+          id: editingItem.id,
           data: {
-            mayor_id: row.mayor_id,
-            partida_id: row.partida_id,
-            cantidad_requerida: row.cantidad_requerida,
-            precio_unitario: row.precio_unitario
+            departamento: data.departamento_id,
+            mayor_id: data.mayor_id,
+            partida_id: data.partida_id,
+            cantidad_requerida: data.cantidad_requerida,
+            precio_unitario: data.precio_unitario
           }
         });
+        setEditingItem(null);
       } else {
         await createPresupuesto.mutateAsync({
           cliente_id: selectedClientId,
           proyecto_id: selectedProjectId,
-          departamento: departamentoId, // Usar departamento cargado de la DB
-          mayor_id: row.mayor_id,
-          partida_id: row.partida_id,
-          cantidad_requerida: row.cantidad_requerida,
-          precio_unitario: row.precio_unitario
+          departamento: data.departamento_id,
+          mayor_id: data.mayor_id,
+          partida_id: data.partida_id,
+          cantidad_requerida: data.cantidad_requerida,
+          precio_unitario: data.precio_unitario
         });
       }
-      
-      setEditingRow(null);
     } catch (error) {
-      console.error('Error saving row:', error);
+      console.error('Error submitting form:', error);
+      throw error;
     }
   };
 
-  const deleteRow = async (id: string) => {
+  // Handle opening new form modal
+  const handleNewPartida = () => {
+    setEditingItem(null);
+    setShowFormModal(true);
+  };
+
+  // Handle opening edit form modal
+  const handleEditPartida = (item: any) => {
+    setEditingItem(item);
+    setShowFormModal(true);
+  };
+
+  // Handle delete partida
+  const handleDeletePartida = async (id: string) => {
     try {
       await deletePresupuesto.mutateAsync(id);
     } catch (error) {
-      console.error('Error deleting row:', error);
+      console.error('Error deleting partida:', error);
     }
   };
 
-  const handleMayorChange = (index: number, mayorId: string) => {
-    updateRow(index, 'mayor_id', mayorId);
-    updateRow(index, 'partida_id', ''); // Reset partida when mayor changes
-    setPartidas([]); // Clear partidas
-    if (mayorId) {
-      loadPartidas(mayorId);
-    }
-  };
-
-  const totalGeneral = presupuestos.reduce((sum, item) => sum + item.monto_total, 0) +
-    rows.reduce((sum, row) => sum + row.monto_total, 0);
+  const totalGeneral = presupuestos.reduce((sum, item) => sum + item.monto_total, 0);
 
   const exportToPDF = async () => {
     const doc = new jsPDF({
@@ -283,30 +144,14 @@ export function PresupuestoParametrico() {
 
     // Data rows
     doc.setFont('helvetica', 'normal');
-    const savedItems = presupuestos.map(item => ({
-      departamento: 'Construcción',
+    const allItems = presupuestos.map(item => ({
+      departamento: item.departamento,
       mayor_codigo: item.mayor ? `${item.mayor.codigo}` : '',
       partida_codigo: item.partida ? `${item.partida.codigo}` : '',
       cantidad_requerida: item.cantidad_requerida,
       precio_unitario: item.precio_unitario,
       monto_total: item.monto_total
     }));
-
-    const validRows = rows.filter(row => row.mayor_id && row.partida_id).map(row => {
-      const mayorData = mayores.find(m => m.value === row.mayor_id);
-      const partidaData = partidas.find(p => p.value === row.partida_id);
-      
-      return {
-        departamento: 'Construcción',
-        mayor_codigo: mayorData ? mayorData.codigo : '',
-        partida_codigo: partidaData ? partidaData.codigo : '',
-        cantidad_requerida: row.cantidad_requerida,
-        precio_unitario: row.precio_unitario,
-        monto_total: row.monto_total
-      };
-    });
-    
-    const allItems = [...savedItems, ...validRows];
     
     allItems.forEach((item) => {
       // Check if we need a new page
@@ -389,9 +234,9 @@ export function PresupuestoParametrico() {
                   Exportar PDF
                 </Button>
               )}
-              <Button onClick={addRow} className="gap-2">
+              <Button onClick={handleNewPartida} className="gap-2">
                 <Plus className="h-4 w-4" />
-                Añadir Partida
+                Nueva Partida
               </Button>
             </div>
           </CardHeader>
@@ -429,110 +274,31 @@ export function PresupuestoParametrico() {
                         ${item.monto_total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteRow(item.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditPartida(item);
+                            }}
+                            className="text-blue-600 hover:text-blue-700"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeletePartida(item.id);
+                            }}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
-                    </TableRow>
-                  ))}
-                  
-                  {rows.map((row, index) => (
-                    <TableRow key={index}>
-                      <TableCell>
-                        <Badge variant="secondary">Construcción</Badge>
-                      </TableCell>
-                       <TableCell>
-                         <div className="pointer-events-auto">
-                            <SearchableCombobox
-                              value={row.mayor_id}
-                              onValueChange={(value) => handleMayorChange(index, value)}
-                              items={mayores}
-                              searchPlaceholder="Buscar mayor..."
-                              emptyText="No se encontraron mayores"
-                              className="w-full pointer-events-auto"
-                              disabled={!hasFilters || !departamentoId}
-                            />
-                         </div>
-                       </TableCell>
-                       <TableCell>
-                         <div className="pointer-events-auto">
-                            <SearchableCombobox
-                              value={row.partida_id}
-                              onValueChange={(value) => updateRow(index, 'partida_id', value)}
-                              items={partidas}
-                              searchPlaceholder="Buscar partida..."
-                              emptyText="No se encontraron partidas"
-                              className="w-full pointer-events-auto"
-                              disabled={!hasFilters || !row.mayor_id}
-                            />
-                         </div>
-                       </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          min="0.01"
-                          step="0.01"
-                          value={row.cantidad_requerida || ""}
-                          placeholder="1"
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            if (value === "") {
-                              updateRow(index, 'cantidad_requerida', "");
-                            } else {
-                              const numValue = parseFloat(value);
-                              updateRow(index, 'cantidad_requerida', isNaN(numValue) ? "" : numValue);
-                            }
-                          }}
-                          onBlur={(e) => {
-                            const value = parseFloat(e.target.value);
-                            if (isNaN(value) || value <= 0) {
-                              updateRow(index, 'cantidad_requerida', 1);
-                            }
-                          }}
-                          className="text-right"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <CurrencyInput
-                          value={row.precio_unitario}
-                          onChange={(value) => updateRow(index, 'precio_unitario', value)}
-                          className="text-right"
-                        />
-                      </TableCell>
-                      <TableCell className="font-semibold">
-                        ${row.monto_total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                      </TableCell>
-                       <TableCell>
-                         <div className="flex gap-1">
-                           <Button
-                             variant="ghost"
-                             size="sm"
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               saveRow(index);
-                             }}
-                             disabled={!row.mayor_id || !row.partida_id}
-                           >
-                             ✓
-                           </Button>
-                           <Button
-                             variant="ghost"
-                             size="sm"
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               removeRow(index);
-                             }}
-                             className="text-red-600 hover:text-red-700"
-                           >
-                             <Trash2 className="h-4 w-4" />
-                           </Button>
-                         </div>
-                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -549,6 +315,24 @@ export function PresupuestoParametrico() {
           </CardContent>
         </Card>
       )}
+
+      {/* Form Modal */}
+      <PresupuestoParametricoFormModal
+        open={showFormModal}
+        onOpenChange={setShowFormModal}
+        onSubmit={handleFormSubmit}
+        initialData={editingItem ? {
+          departamento_id: editingItem.departamento,
+          mayor_id: editingItem.mayor_id,
+          partida_id: editingItem.partida_id,
+          cantidad_requerida: editingItem.cantidad_requerida,
+          precio_unitario: editingItem.precio_unitario,
+          monto_total: editingItem.monto_total,
+        } : undefined}
+        clienteId={selectedClientId}
+        proyectoId={selectedProjectId}
+        title={editingItem ? "Editar Partida - Presupuesto Paramétrico" : "Nueva Partida - Presupuesto Paramétrico"}
+      />
 
       {!hasFilters && (
         <Card>
