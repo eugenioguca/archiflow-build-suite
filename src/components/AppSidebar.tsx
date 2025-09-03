@@ -47,7 +47,7 @@ const allMenuItems = [
   { title: "Clientes", url: "/clients", icon: Users, color: "text-primary", module: "clients" },
   { title: "Ventas", url: "/sales", icon: TrendingUp, color: "text-success", module: "sales" },
   { title: "Diseño", url: "/design", icon: Building, color: "text-purple", module: "design" },
-  { title: "Presupuestos y Planeación", url: "/presupuestos-planeacion", icon: Calculator, color: "text-blue", module: "budgets_planning" },
+  { title: "Presupuestos y Planeación", url: "/presupuestos-planeacion", icon: Calculator, color: "text-blue", module: "construction" },
   { title: "Construcción", url: "/construction", icon: HardHat, color: "text-orange", module: "construction" },
   { title: "Proveedores", url: "/suppliers", icon: Truck, color: "text-orange", module: "suppliers" },
   { title: "Finanzas", url: "/finances", icon: DollarSign, color: "text-primary", module: "finances" },
