@@ -61,11 +61,11 @@ export function PresupuestoParametrico() {
   const [editingRow, setEditingRow] = useState<string | null>(null);
   
   // Estados para opciones de dropdowns - usando la misma lógica que UnifiedTransactionBulkForm
-  const [departamento, setDepartamento] = useState<string>('');
+  const [departamentoId, setDepartamentoId] = useState<string>('');
   const [mayores, setMayores] = useState<{ value: string; label: string; codigo?: string }[]>([]);
   const [partidas, setPartidas] = useState<{ value: string; label: string; codigo?: string }[]>([]);
 
-  // Cargar el departamento "Construcción" desde la base de datos
+  // Cargar el departamento "Construcción" desde la base de datos - obtener el registro real
   const loadDepartamento = async () => {
     try {
       const { data, error } = await supabase
@@ -77,7 +77,7 @@ export function PresupuestoParametrico() {
 
       if (error) throw error;
       if (data) {
-        setDepartamento(data.departamento);
+        setDepartamentoId(data.departamento); // Store the departamento string for querying
       }
     } catch (error) {
       console.error('Error loading departamento:', error);
@@ -141,14 +141,14 @@ export function PresupuestoParametrico() {
 
   // Cargar mayores cuando el departamento esté disponible
   useEffect(() => {
-    if (departamento && hasFilters && selectedClientId && selectedProjectId) {
-      loadMayores(departamento);
+    if (departamentoId && hasFilters && selectedClientId && selectedProjectId) {
+      loadMayores(departamentoId);
     }
-  }, [departamento, hasFilters, selectedClientId, selectedProjectId]);
+  }, [departamentoId, hasFilters, selectedClientId, selectedProjectId]);
 
   const addRow = () => {
     const newRow: PresupuestoRow = {
-      departamento: departamento || 'Construcción',
+      departamento: departamentoId || 'Construcción',
       mayor_id: '',
       partida_id: '',
       cantidad_requerida: 1,
@@ -202,7 +202,7 @@ export function PresupuestoParametrico() {
         await createPresupuesto.mutateAsync({
           cliente_id: selectedClientId,
           proyecto_id: selectedProjectId,
-          departamento: departamento, // Usar departamento cargado de la DB
+          departamento: departamentoId, // Usar departamento cargado de la DB
           mayor_id: row.mayor_id,
           partida_id: row.partida_id,
           cantidad_requerida: row.cantidad_requerida,
@@ -441,28 +441,32 @@ export function PresupuestoParametrico() {
                       <TableCell>
                         <Badge variant="secondary">Construcción</Badge>
                       </TableCell>
-                      <TableCell>
+                       <TableCell>
+                         <div className="pointer-events-auto">
                             <SearchableCombobox
                               value={row.mayor_id}
                               onValueChange={(value) => handleMayorChange(index, value)}
                               items={mayores}
                               searchPlaceholder="Buscar mayor..."
                               emptyText="No se encontraron mayores"
-                              className="w-full"
-                              disabled={!hasFilters || !departamento}
+                              className="w-full pointer-events-auto"
+                              disabled={!hasFilters || !departamentoId}
                             />
-                      </TableCell>
-                      <TableCell>
+                         </div>
+                       </TableCell>
+                       <TableCell>
+                         <div className="pointer-events-auto">
                             <SearchableCombobox
                               value={row.partida_id}
                               onValueChange={(value) => updateRow(index, 'partida_id', value)}
                               items={partidas}
                               searchPlaceholder="Buscar partida..."
                               emptyText="No se encontraron partidas"
-                              className="w-full"
+                              className="w-full pointer-events-auto"
                               disabled={!hasFilters || !row.mayor_id}
                             />
-                      </TableCell>
+                         </div>
+                       </TableCell>
                       <TableCell>
                         <Input
                           type="number"
@@ -498,26 +502,32 @@ export function PresupuestoParametrico() {
                       <TableCell className="font-semibold">
                         ${row.monto_total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => saveRow(index)}
-                            disabled={!row.mayor_id || !row.partida_id}
-                          >
-                            ✓
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeRow(index)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+                       <TableCell>
+                         <div className="flex gap-1">
+                           <Button
+                             variant="ghost"
+                             size="sm"
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               saveRow(index);
+                             }}
+                             disabled={!row.mayor_id || !row.partida_id}
+                           >
+                             ✓
+                           </Button>
+                           <Button
+                             variant="ghost"
+                             size="sm"
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               removeRow(index);
+                             }}
+                             className="text-red-600 hover:text-red-700"
+                           >
+                             <Trash2 className="h-4 w-4" />
+                           </Button>
+                         </div>
+                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

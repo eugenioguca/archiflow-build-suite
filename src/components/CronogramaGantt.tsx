@@ -60,10 +60,10 @@ export function CronogramaGantt() {
   const [rows, setRows] = useState<CronogramaRow[]>([]);
   
   // Estados para opciones de dropdowns - usando la misma lógica que UnifiedTransactionBulkForm
-  const [departamento, setDepartamento] = useState<string>('');
+  const [departamentoId, setDepartamentoId] = useState<string>('');
   const [mayores, setMayores] = useState<{ value: string; label: string; codigo?: string }[]>([]);
 
-  // Cargar el departamento "Construcción" desde la base de datos
+  // Cargar el departamento "Construcción" desde la base de datos - obtener el registro real
   const loadDepartamento = async () => {
     try {
       const { data, error } = await supabase
@@ -75,7 +75,7 @@ export function CronogramaGantt() {
 
       if (error) throw error;
       if (data) {
-        setDepartamento(data.departamento);
+        setDepartamentoId(data.departamento); // Store the departamento string for querying
       }
     } catch (error) {
       console.error('Error loading departamento:', error);
@@ -114,14 +114,14 @@ export function CronogramaGantt() {
 
   // Cargar mayores cuando el departamento esté disponible
   useEffect(() => {
-    if (departamento && hasFilters && selectedClientId && selectedProjectId) {
-      loadMayores(departamento);
+    if (departamentoId && hasFilters && selectedClientId && selectedProjectId) {
+      loadMayores(departamentoId);
     }
-  }, [departamento, hasFilters, selectedClientId, selectedProjectId]);
+  }, [departamentoId, hasFilters, selectedClientId, selectedProjectId]);
 
   const addRow = () => {
     const newRow: CronogramaRow = {
-      departamento: departamento || 'Construcción',
+      departamento: departamentoId || 'Construcción',
       mayor_id: '',
       fecha_inicio: undefined,
       fecha_fin: undefined,
@@ -175,7 +175,7 @@ export function CronogramaGantt() {
         await createCronograma.mutateAsync({
           cliente_id: selectedClientId,
           proyecto_id: selectedProjectId,
-          departamento: departamento, // Usar departamento cargado de la DB
+          departamento: departamentoId, // Usar departamento cargado de la DB
           mayor_id: row.mayor_id,
           fecha_inicio: format(row.fecha_inicio, 'yyyy-MM-dd'),
           fecha_fin: format(row.fecha_fin, 'yyyy-MM-dd')
@@ -363,17 +363,19 @@ export function CronogramaGantt() {
                       <TableCell>
                         <Badge variant="secondary">Construcción</Badge>
                       </TableCell>
-                      <TableCell>
-                        <SearchableCombobox
-                          value={row.mayor_id}
-                          onValueChange={(value) => updateRow(index, 'mayor_id', value)}
-                          items={mayores}
-                          searchPlaceholder="Buscar mayor..."
-                          emptyText="No se encontraron mayores"
-                          className="w-full"
-                          disabled={!hasFilters || !departamento}
-                        />
-                      </TableCell>
+                       <TableCell>
+                         <div className="pointer-events-auto">
+                           <SearchableCombobox
+                             value={row.mayor_id}
+                             onValueChange={(value) => updateRow(index, 'mayor_id', value)}
+                             items={mayores}
+                             searchPlaceholder="Buscar mayor..."
+                             emptyText="No se encontraron mayores"
+                             className="w-full pointer-events-auto"
+                             disabled={!hasFilters || !departamentoId}
+                           />
+                         </div>
+                       </TableCell>
                       <TableCell>
                         <DatePicker
                           date={row.fecha_inicio}
@@ -399,26 +401,32 @@ export function CronogramaGantt() {
                           <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => saveRow(index)}
-                            disabled={!row.mayor_id || !row.fecha_inicio || !row.fecha_fin}
-                          >
-                            ✓
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeRow(index)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+                       <TableCell>
+                         <div className="flex gap-1">
+                           <Button
+                             variant="ghost"
+                             size="sm"
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               saveRow(index);
+                             }}
+                             disabled={!row.mayor_id || !row.fecha_inicio || !row.fecha_fin}
+                           >
+                             ✓
+                           </Button>
+                           <Button
+                             variant="ghost"
+                             size="sm"
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               removeRow(index);
+                             }}
+                             className="text-red-600 hover:text-red-700"
+                           >
+                             <Trash2 className="h-4 w-4" />
+                           </Button>
+                         </div>
+                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

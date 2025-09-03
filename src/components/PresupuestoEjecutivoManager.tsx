@@ -385,33 +385,38 @@ export function PresupuestoEjecutivoManager() {
                         
                         {rows.map((row, index) => (
                           <TableRow key={index}>
-                            <TableCell>
-                            <SearchableCombobox
-                              value={row.subpartida_id}
-                              onValueChange={(value) => updateRow(index, 'subpartida_id', value)}
-                              items={subpartidas}
-                              searchPlaceholder="Buscar subpartida..."
-                              emptyText="No se encontraron subpartidas"
-                              className="w-full"
-                            />
-                            </TableCell>
-                            <TableCell>
-                              <Select
-                                value={row.unidad}
-                                onValueChange={(value) => updateRow(index, 'unidad', value)}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Seleccionar unidad" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {UNIDADES.map((unidad) => (
-                                    <SelectItem key={unidad.value} value={unidad.value}>
-                                      {unidad.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
+                             <TableCell>
+                               <div className="pointer-events-auto">
+                                 <SearchableCombobox
+                                   value={row.subpartida_id}
+                                   onValueChange={(value) => updateRow(index, 'subpartida_id', value)}
+                                   items={subpartidas}
+                                   searchPlaceholder="Buscar subpartida..."
+                                   emptyText="No se encontraron subpartidas"
+                                   className="w-full pointer-events-auto"
+                                   disabled={!selectedPresupuesto?.partida_id}
+                                 />
+                               </div>  
+                             </TableCell>
+                             <TableCell>
+                               <div className="pointer-events-auto">
+                                 <Select
+                                   value={row.unidad}
+                                   onValueChange={(value) => updateRow(index, 'unidad', value)}
+                                 >
+                                   <SelectTrigger className="pointer-events-auto">
+                                     <SelectValue placeholder="Seleccionar unidad" />
+                                   </SelectTrigger>
+                                   <SelectContent position="popper" side="bottom" align="start" className="z-[9999]">
+                                     {UNIDADES.map((unidad) => (
+                                       <SelectItem key={unidad.value} value={unidad.value}>
+                                         {unidad.label}
+                                       </SelectItem>
+                                     ))}
+                                   </SelectContent>
+                                 </Select>
+                               </div>
+                             </TableCell>
                             <TableCell>
                               <Input
                                 type="number"
@@ -447,26 +452,32 @@ export function PresupuestoEjecutivoManager() {
                             <TableCell className="font-semibold">
                               ${row.monto_total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                             </TableCell>
-                            <TableCell>
-                              <div className="flex gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => saveRow(index)}
-                                  disabled={!row.subpartida_id}
-                                >
-                                  ✓
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => removeRow(index)}
-                                  className="text-red-600 hover:text-red-700"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
+                             <TableCell>
+                               <div className="flex gap-1">
+                                 <Button
+                                   variant="ghost"
+                                   size="sm"
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     saveRow(index);
+                                   }}
+                                   disabled={!row.subpartida_id}
+                                 >
+                                   ✓
+                                 </Button>
+                                 <Button
+                                   variant="ghost"
+                                   size="sm"
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     removeRow(index);
+                                   }}
+                                   className="text-red-600 hover:text-red-700"
+                                 >
+                                   <Trash2 className="h-4 w-4" />
+                                 </Button>
+                               </div>
+                             </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
