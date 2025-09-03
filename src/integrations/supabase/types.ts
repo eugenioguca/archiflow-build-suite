@@ -2724,6 +2724,77 @@ export type Database = {
           },
         ]
       }
+      cronograma_gantt: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          created_by: string
+          departamento: string
+          duracion: number | null
+          fecha_fin: string
+          fecha_inicio: string
+          id: string
+          mayor_id: string
+          proyecto_id: string
+          updated_at: string
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          created_by: string
+          departamento?: string
+          duracion?: number | null
+          fecha_fin: string
+          fecha_inicio: string
+          id?: string
+          mayor_id: string
+          proyecto_id: string
+          updated_at?: string
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          created_by?: string
+          departamento?: string
+          duracion?: number | null
+          fecha_fin?: string
+          fecha_inicio?: string
+          id?: string
+          mayor_id?: string
+          proyecto_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_cronograma_gantt_cliente"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_cronograma_gantt_mayor"
+            columns: ["mayor_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts_mayor"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_cronograma_gantt_proyecto"
+            columns: ["proyecto_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_cronograma_gantt_proyecto"
+            columns: ["proyecto_id"]
+            isOneToOne: false
+            referencedRelation: "financial_summary_by_client_project"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
       design_appointments: {
         Row: {
           appointment_date: string
@@ -4660,6 +4731,191 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      presupuesto_ejecutivo: {
+        Row: {
+          cantidad_requerida: number
+          cliente_id: string
+          created_at: string
+          created_by: string
+          departamento: string
+          id: string
+          mayor_id: string
+          monto_total: number
+          partida_id: string
+          precio_unitario: number
+          presupuesto_parametrico_id: string
+          proyecto_id: string
+          subpartida_id: string
+          unidad: string
+          updated_at: string
+        }
+        Insert: {
+          cantidad_requerida?: number
+          cliente_id: string
+          created_at?: string
+          created_by: string
+          departamento?: string
+          id?: string
+          mayor_id: string
+          monto_total?: number
+          partida_id: string
+          precio_unitario?: number
+          presupuesto_parametrico_id: string
+          proyecto_id: string
+          subpartida_id: string
+          unidad: string
+          updated_at?: string
+        }
+        Update: {
+          cantidad_requerida?: number
+          cliente_id?: string
+          created_at?: string
+          created_by?: string
+          departamento?: string
+          id?: string
+          mayor_id?: string
+          monto_total?: number
+          partida_id?: string
+          precio_unitario?: number
+          presupuesto_parametrico_id?: string
+          proyecto_id?: string
+          subpartida_id?: string
+          unidad?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_presupuesto_ejecutivo_cliente"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_presupuesto_ejecutivo_mayor"
+            columns: ["mayor_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts_mayor"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_presupuesto_ejecutivo_parametrico"
+            columns: ["presupuesto_parametrico_id"]
+            isOneToOne: false
+            referencedRelation: "presupuesto_parametrico"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_presupuesto_ejecutivo_partida"
+            columns: ["partida_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts_partidas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_presupuesto_ejecutivo_proyecto"
+            columns: ["proyecto_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_presupuesto_ejecutivo_proyecto"
+            columns: ["proyecto_id"]
+            isOneToOne: false
+            referencedRelation: "financial_summary_by_client_project"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "fk_presupuesto_ejecutivo_subpartida"
+            columns: ["subpartida_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts_subpartidas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presupuesto_parametrico: {
+        Row: {
+          cantidad_requerida: number
+          cliente_id: string
+          created_at: string
+          created_by: string
+          departamento: string
+          id: string
+          mayor_id: string
+          monto_total: number
+          partida_id: string
+          precio_unitario: number
+          proyecto_id: string
+          updated_at: string
+        }
+        Insert: {
+          cantidad_requerida?: number
+          cliente_id: string
+          created_at?: string
+          created_by: string
+          departamento?: string
+          id?: string
+          mayor_id: string
+          monto_total?: number
+          partida_id: string
+          precio_unitario?: number
+          proyecto_id: string
+          updated_at?: string
+        }
+        Update: {
+          cantidad_requerida?: number
+          cliente_id?: string
+          created_at?: string
+          created_by?: string
+          departamento?: string
+          id?: string
+          mayor_id?: string
+          monto_total?: number
+          partida_id?: string
+          precio_unitario?: number
+          proyecto_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_presupuesto_parametrico_cliente"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_presupuesto_parametrico_mayor"
+            columns: ["mayor_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts_mayor"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_presupuesto_parametrico_partida"
+            columns: ["partida_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts_partidas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_presupuesto_parametrico_proyecto"
+            columns: ["proyecto_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_presupuesto_parametrico_proyecto"
+            columns: ["proyecto_id"]
+            isOneToOne: false
+            referencedRelation: "financial_summary_by_client_project"
+            referencedColumns: ["project_id"]
+          },
+        ]
       }
       products_services: {
         Row: {
