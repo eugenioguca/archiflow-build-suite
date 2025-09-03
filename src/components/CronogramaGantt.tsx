@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +11,6 @@ import { useClientProjectFilters } from '@/hooks/useClientProjectFilters';
 import { CollapsibleFilters } from '@/components/CollapsibleFilters';
 import { SearchableCombobox } from '@/components/ui/searchable-combobox';
 import { DatePicker } from '@/components/DatePicker';
-import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format, differenceInDays } from 'date-fns';
 
@@ -23,6 +22,22 @@ interface CronogramaRow {
   fecha_fin: Date | undefined;
   duracion: number;
 }
+
+interface Option {
+  id: string;
+  nombre: string;
+  codigo?: string;
+}
+
+// Transform Option to SearchableComboboxItem
+const transformToComboboxItems = (options: Option[]) => {
+  return options.map(option => ({
+    value: option.id,
+    label: option.nombre,
+    codigo: option.codigo,
+    searchText: `${option.codigo || ''} ${option.nombre}`.toLowerCase()
+  }));
+};
 
 export function CronogramaGantt() {
   const {
@@ -43,26 +58,36 @@ export function CronogramaGantt() {
   } = useCronogramaGantt(selectedClientId, selectedProjectId);
 
   const [rows, setRows] = useState<CronogramaRow[]>([]);
+  
+  // Data states for dropdowns - same as UnifiedTransactionForm
+  const [mayores, setMayores] = useState<Option[]>([]);
 
-  // Fetch chart of accounts data
-  const { data: mayores = [] } = useQuery({
-    queryKey: ['mayores', 'Construcción'],
-    queryFn: async () => {
+  // Load mayores for Construction department on component mount
+  useEffect(() => {
+    loadMayores('Construcción');
+  }, []);
+
+  const loadMayores = async (departamento: string) => {
+    try {
       const { data, error } = await supabase
-        .from('chart_of_accounts_mayor')
-        .select('id, codigo, nombre')
-        .eq('departamento', 'Construcción')
-        .eq('activo', true)
-        .order('codigo');
+        .from("chart_of_accounts_mayor")
+        .select("id, nombre, codigo")
+        .eq("departamento", departamento)
+        .eq("activo", true)
+        .order("codigo");
       
       if (error) throw error;
-      return data.map(item => ({
-        value: item.id,
-        label: `${item.codigo} - ${item.nombre}`,
-        codigo: item.codigo
-      }));
-    },
-  });
+      
+      setMayores((data || []).map(item => ({ 
+        id: item.id, 
+        nombre: `${item.codigo} - ${item.nombre}`,
+        codigo: item.codigo 
+      })));
+    } catch (error) {
+      console.error("Error loading mayores:", error);
+      setMayores([]);
+    }
+  };
 
   const addRow = () => {
     const newRow: CronogramaRow = {
@@ -310,11 +335,14 @@ export function CronogramaGantt() {
                       </TableCell>
                       <TableCell>
                         <SearchableCombobox
-                          items={mayores}
+                          items={transformToComboboxItems(mayores)}
                           value={row.mayor_id}
                           onValueChange={(value) => updateRow(index, 'mayor_id', value)}
                           placeholder="Seleccionar Mayor..."
+                          searchPlaceholder="Buscar mayor..."
                           emptyText="No se encontraron mayores."
+                          showCodes={true}
+                          searchFields={['label', 'codigo', 'searchText']}
                           className="w-full min-w-[200px]"
                         />
                       </TableCell>

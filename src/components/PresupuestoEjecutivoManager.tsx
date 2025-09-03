@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +11,6 @@ import { usePresupuestoParametrico } from '@/hooks/usePresupuestoParametrico';
 import { useClientProjectFilters } from '@/hooks/useClientProjectFilters';
 import { CollapsibleFilters } from '@/components/CollapsibleFilters';
 import { SearchableCombobox } from '@/components/ui/searchable-combobox';
-import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { CurrencyInput } from '@/components/CurrencyInput';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -30,16 +29,42 @@ interface PresupuestoEjecutivoRow {
 }
 
 const UNIDADES = [
-  { value: 'PZA', label: 'PZA - Pieza' },
-  { value: 'M2', label: 'M2 - Metro Cuadrado' },
-  { value: 'M3', label: 'M3 - Metro Cúbico' },
-  { value: 'ML', label: 'ML - Metro Lineal' },
-  { value: 'KG', label: 'KG - Kilogramo' },
-  { value: 'TON', label: 'TON - Tonelada' },
-  { value: 'LT', label: 'LT - Litro' },
-  { value: 'GAL', label: 'GAL - Galón' },
-  { value: 'M', label: 'M - Metro' }
+  { value: 'PZA', label: 'Pieza (PZA)' },
+  { value: 'M2', label: 'Metro Cuadrado (M2)' },
+  { value: 'M3', label: 'Metro Cúbico (M3)' },
+  { value: 'ML', label: 'Metro Lineal (ML)' },
+  { value: 'KG', label: 'Kilogramo (KG)' },
+  { value: 'TON', label: 'Tonelada (TON)' },
+  { value: 'LT', label: 'Litro (LT)' },
+  { value: 'GAL', label: 'Galón (GAL)' },
+  { value: 'M', label: 'Metro (M)' }
 ];
+
+interface Option {
+  id: string;
+  nombre: string;
+  codigo?: string;
+}
+
+// Transform Option to SearchableComboboxItem
+const transformToComboboxItems = (options: Option[]) => {
+  return options.map(option => ({
+    value: option.id,
+    label: option.nombre,
+    codigo: option.codigo,
+    searchText: `${option.codigo || ''} ${option.nombre}`.toLowerCase()
+  }));
+};
+
+// Function to normalize text for internal comparisons only
+const normalizeForComparison = (text: string): string => {
+  return text
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove accents
+    .replace(/_/g, ' ');
+};
 
 export function PresupuestoEjecutivoManager() {
   const {
@@ -63,30 +88,75 @@ export function PresupuestoEjecutivoManager() {
   } = usePresupuestoEjecutivo(selectedClientId, selectedProjectId, selectedPresupuestoId);
 
   const [rows, setRows] = useState<PresupuestoEjecutivoRow[]>([]);
-
-  // Fetch chart of accounts data
-  const { data: subpartidas = [] } = useQuery({
-    queryKey: ['subpartidas'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('chart_of_accounts_subpartidas')
-        .select('id, codigo, nombre, partida_id, departamento_aplicable, es_global')
-        .eq('activo', true)
-        .order('codigo');
-      
-      if (error) throw error;
-      return data.map(item => ({
-        value: item.id,
-        label: `${item.codigo} - ${item.nombre}`,
-        codigo: item.codigo,
-        partida_id: item.partida_id,
-        es_global: item.es_global,
-        departamento_aplicable: item.departamento_aplicable
-      }));
-    },
-  });
+  
+  // Data states for dropdowns - same as UnifiedTransactionForm
+  const [subpartidas, setSubpartidas] = useState<Option[]>([]);
 
   const selectedPresupuesto = presupuestos.find(p => p.id === selectedPresupuestoId);
+
+  // Load subpartidas when a parametric budget is selected
+  useEffect(() => {
+    if (selectedPresupuesto?.partida_id) {
+      loadSubpartidas(selectedPresupuesto.partida_id);
+    }
+  }, [selectedPresupuesto]);
+
+  const loadSubpartidas = async (partidaId: string) => {
+    try {
+      // Get the partida to check its department
+      const { data: partida } = await supabase
+        .from("chart_of_accounts_partidas")
+        .select("*, chart_of_accounts_mayor(departamento)")
+        .eq("id", partidaId)
+        .single();
+
+      // Load specific subpartidas for this partida
+      const { data: specificSubpartidas } = await supabase
+        .from("chart_of_accounts_subpartidas")
+        .select("id, nombre, codigo")
+        .eq("partida_id", partidaId)
+        .eq("activo", true)
+        .order("codigo");
+
+      let allSubpartidas = [...(specificSubpartidas || [])];
+
+      // If this is a construction partida, also load global construction subpartidas
+      const departamentoNormalizado = normalizeForComparison(partida?.chart_of_accounts_mayor?.departamento || '');
+      if (departamentoNormalizado === 'construccion') {
+        const { data: globalSubpartidas } = await supabase
+          .from("chart_of_accounts_subpartidas")
+          .select("id, nombre, codigo, departamento_aplicable")
+          .eq("es_global", true)
+          .eq("activo", true)
+          .order("codigo");
+
+        // Filter global subpartidas for construction department
+        const constructionGlobals = globalSubpartidas?.filter(item => 
+          normalizeForComparison(item.departamento_aplicable || '') === 'construccion'
+        ) || [];
+
+        if (constructionGlobals.length > 0) {
+          allSubpartidas = [
+            ...allSubpartidas,
+            ...constructionGlobals.map(item => ({
+              ...item,
+              nombre: `${item.nombre} (Global)` // Mark as global for clarity
+            }))
+          ];
+        }
+      }
+      
+      setSubpartidas(allSubpartidas.map(item => ({ 
+        id: item.id, 
+        nombre: `${item.codigo} - ${item.nombre}`,
+        codigo: item.codigo 
+      })));
+    } catch (error) {
+      console.error("Error loading subpartidas:", error);
+      setSubpartidas([]);
+    }
+  };
+
 
   const addSubpartida = () => {
     if (!selectedPresupuesto) return;
@@ -167,12 +237,7 @@ export function PresupuestoEjecutivoManager() {
     }
   };
 
-  const getFilteredSubpartidas = (partidaId: string) => {
-    return subpartidas.filter(sub => 
-      sub.partida_id === partidaId || 
-      (sub.es_global && sub.departamento_aplicable === 'Construcción')
-    );
-  };
+  // This function is no longer needed since we load subpartidas directly for the selected parametric budget
 
   const deleteRow = async (id: string) => {
     try {
@@ -316,11 +381,14 @@ export function PresupuestoEjecutivoManager() {
                           <TableRow key={index}>
                             <TableCell>
                               <SearchableCombobox
-                                items={getFilteredSubpartidas(row.partida_id)}
+                                items={transformToComboboxItems(subpartidas)}
                                 value={row.subpartida_id}
                                 onValueChange={(value) => updateRow(index, 'subpartida_id', value)}
                                 placeholder="Seleccionar Subpartida..."
+                                searchPlaceholder="Buscar subpartida..."
                                 emptyText="No se encontraron subpartidas."
+                                showCodes={true}
+                                searchFields={['label', 'codigo', 'searchText']}
                                 className="w-full min-w-[200px]"
                               />
                             </TableCell>
@@ -330,7 +398,7 @@ export function PresupuestoEjecutivoManager() {
                                 onValueChange={(value) => updateRow(index, 'unidad', value)}
                               >
                                 <SelectTrigger>
-                                  <SelectValue />
+                                  <SelectValue placeholder="Seleccionar unidad" />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {UNIDADES.map((unidad) => (
