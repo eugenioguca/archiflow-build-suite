@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, Trash2 } from 'lucide-react';
 import { GanttBar } from '@/hooks/useInteractiveGantt';
 import { cn } from '@/lib/utils';
+import { CronogramaGanttFormModal } from '@/components/modals/CronogramaGanttFormModal';
 
 interface InteractiveGanttChartProps {
   ganttBars: GanttBar[];
@@ -126,21 +127,24 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
     }
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
+  // Create new bar modal
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newBarData, setNewBarData] = useState<{month: number, week: number, mayorId: string} | null>(null);
+
   // Handle cell click to create new bar
   const handleCellClick = (month: number, week: number, mayorId: string) => {
     if (!selectedMayor || isDragging) return;
+    
+    setNewBarData({ month, week, mayorId });
+    setShowCreateModal(true);
+  };
 
-    onCreateBar({
-      cliente_id: clienteId,
-      proyecto_id: proyectoId,
-      departamento_id: 'Construcción',
-      mayor_id: mayorId,
-      start_month: month,
-      start_week: week,
-      end_month: month,
-      end_week: week,
-      duration_weeks: 1
-    });
+  const handleCreateNewBar = async (formData: any) => {
+    // Pass form data directly to onCreateBar - the hook will handle the format detection
+    await onCreateBar(formData);
+    
+    setShowCreateModal(false);
+    setNewBarData(null);
   };
 
   return (
@@ -148,13 +152,21 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Cronograma Interactivo de Gantt</span>
-          <div className="flex gap-2">
+                  <div className="flex gap-2">
+            <Button
+              onClick={() => setShowCreateModal(true)}
+              variant="default"
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Añadir Actividad
+            </Button>
             <select 
               value={selectedMayor}
               onChange={(e) => setSelectedMayor(e.target.value)}
               className="px-3 py-1 border rounded text-sm"
             >
-              <option value="">Seleccionar Mayor</option>
+              <option value="">Seleccionar Mayor para vista rápida</option>
               {mayores.map(mayor => (
                 <option key={mayor.id} value={mayor.id}>
                   {mayor.codigo} - {mayor.nombre}
@@ -276,6 +288,16 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
             <p className="text-sm">Selecciona un Mayor y haz clic en las celdas de semanas para crear barras.</p>
           </div>
         )}
+        
+        {/* Create Activity Modal */}
+        <CronogramaGanttFormModal
+          open={showCreateModal}
+          onOpenChange={setShowCreateModal}
+          onSubmit={handleCreateNewBar}
+          clienteId={clienteId}
+          proyectoId={proyectoId}
+          title="Nueva Actividad - Cronograma de Gantt"
+        />
       </CardContent>
     </Card>
   );

@@ -59,16 +59,33 @@ export const useInteractiveGantt = (clienteId?: string, proyectoId?: string) => 
       
       if (error) throw error;
 
-      // Convert database format to GanttBar format
-      return (data || []).map(item => ({
-        ...item,
-        start_month: Math.floor((new Date(item.fecha_inicio).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24 * 30)) + 1,
-        start_week: 1,
-        end_month: Math.floor((new Date(item.fecha_fin).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24 * 30)) + 1,
-        end_week: 4,
-        duration_weeks: Math.floor(item.duracion / 7),
-        departamento_id: item.departamento
-      })) as GanttBar[];
+  // Convert database format to GanttBar format
+      return (data || []).map(item => {
+        const startDate = new Date(item.fecha_inicio);
+        const endDate = new Date(item.fecha_fin);
+        const baseDate = new Date();
+        baseDate.setDate(1); // Start from first day of current month
+        
+        const startMonthDiff = (startDate.getFullYear() - baseDate.getFullYear()) * 12 + (startDate.getMonth() - baseDate.getMonth()) + 1;
+        const endMonthDiff = (endDate.getFullYear() - baseDate.getFullYear()) * 12 + (endDate.getMonth() - baseDate.getMonth()) + 1;
+        
+        // Calculate week within month (1-4)
+        const startWeek = Math.ceil(startDate.getDate() / 7);
+        const endWeek = Math.ceil(endDate.getDate() / 7);
+        
+        const durationInDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        const durationWeeks = Math.ceil(durationInDays / 7);
+        
+        return {
+          ...item,
+          start_month: Math.max(1, startMonthDiff),
+          start_week: Math.min(4, Math.max(1, startWeek)),
+          end_month: Math.max(1, endMonthDiff),
+          end_week: Math.min(4, Math.max(1, endWeek)),
+          duration_weeks: Math.max(1, durationWeeks),
+          departamento_id: item.departamento
+        };
+      }) as GanttBar[];
     },
     enabled: !!clienteId && !!proyectoId,
   });
@@ -132,7 +149,7 @@ export const useInteractiveGantt = (clienteId?: string, proyectoId?: string) => 
 
   // Create Gantt bar
   const createGanttBar = useMutation({
-    mutationFn: async (data: Omit<GanttBar, 'id' | 'created_at' | 'updated_at' | 'created_by' | 'mayor'>) => {
+    mutationFn: async (data: any) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
@@ -144,25 +161,43 @@ export const useInteractiveGantt = (clienteId?: string, proyectoId?: string) => 
 
       if (!profile) throw new Error('Profile not found');
 
-      // Convert weeks to dates (approximation)
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() + (data.start_month - 1) * 30 + (data.start_week - 1) * 7);
+      // Determine if we're getting form data or processed bar data
+      let insertData;
       
-      const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + data.duration_weeks * 7);
-
-      const { data: result, error } = await supabase
-        .from('cronograma_gantt')
-        .insert({
+      if (data.fecha_inicio && data.fecha_fin) {
+        // This is form data from the modal
+        insertData = {
+          cliente_id: data.cliente_id,
+          proyecto_id: data.proyecto_id,
+          departamento: data.departamento_id,
+          mayor_id: data.mayor_id,
+          fecha_inicio: data.fecha_inicio.toISOString().split('T')[0],
+          fecha_fin: data.fecha_fin.toISOString().split('T')[0],
+          duracion: data.duracion_dias,
+          created_by: profile.id
+        };
+      } else {
+        // This is processed bar data from drag/drop
+        const currentDate = new Date();
+        const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + (data.start_month - 1), (data.start_week - 1) * 7 + 1);
+        const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + (data.end_month - 1), (data.end_week - 1) * 7 + 7);
+        const durationInDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        
+        insertData = {
           cliente_id: data.cliente_id,
           proyecto_id: data.proyecto_id,
           departamento: data.departamento_id,
           mayor_id: data.mayor_id,
           fecha_inicio: startDate.toISOString().split('T')[0],
           fecha_fin: endDate.toISOString().split('T')[0],
-          duracion: data.duration_weeks * 7,
+          duracion: durationInDays,
           created_by: profile.id
-        })
+        };
+      }
+
+      const { data: result, error } = await supabase
+        .from('cronograma_gantt')
+        .insert(insertData)
         .select()
         .single();
       
@@ -191,17 +226,17 @@ export const useInteractiveGantt = (clienteId?: string, proyectoId?: string) => 
     mutationFn: async ({ id, data }: { id: string; data: Partial<GanttBar> }) => {
       const updates: any = { updated_at: new Date().toISOString() };
       
-      if (data.start_month !== undefined || data.start_week !== undefined || data.duration_weeks !== undefined) {
-        // Convert weeks back to dates
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() + ((data.start_month || 1) - 1) * 30 + ((data.start_week || 1) - 1) * 7);
+      if (data.start_month !== undefined || data.start_week !== undefined || data.end_month !== undefined || data.end_week !== undefined) {
+        // Convert weeks and months back to actual dates
+        const currentDate = new Date();
+        const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + ((data.start_month || 1) - 1), ((data.start_week || 1) - 1) * 7 + 1);
+        const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + ((data.end_month || 1) - 1), ((data.end_week || 1) - 1) * 7 + 7);
         
-        const endDate = new Date(startDate);
-        endDate.setDate(endDate.getDate() + (data.duration_weeks || 1) * 7);
+        const durationInDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
         
         updates.fecha_inicio = startDate.toISOString().split('T')[0];
         updates.fecha_fin = endDate.toISOString().split('T')[0];
-        updates.duracion = (data.duration_weeks || 1) * 7;
+        updates.duracion = durationInDays;
       }
 
       const { data: result, error } = await supabase

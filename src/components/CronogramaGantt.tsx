@@ -32,7 +32,7 @@ export function CronogramaGantt() {
 
   const [months, setMonths] = useState(12);
 
-  // Handle bar creation
+  // Handle bar creation from form
   const handleCreateBar = async (data: any) => {
     if (!selectedClientId || !selectedProjectId) return;
     
