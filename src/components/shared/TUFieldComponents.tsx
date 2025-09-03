@@ -204,13 +204,12 @@ export function TUDepartamentoField({
   disabled = false,
   portalContainer 
 }: TUDepartamentoFieldProps) {
-  const { departamentos, loading } = useTUCascadingData();
+  const { departamentos, loading, loadDepartamentos } = useTUCascadingData();
 
   useEffect(() => {
     // Auto-load departamentos when component mounts
-    const { loadDepartamentos } = useTUCascadingData();
     loadDepartamentos();
-  }, []);
+  }, [loadDepartamentos]);
 
   return (
     <FormItem>
@@ -262,7 +261,7 @@ export function TUMayorField({
         onMayorLoad?.(mayores);
       });
     }
-  }, [departamentoId]);
+  }, [departamentoId, loadMayores, mayores, onMayorLoad]);
 
   return (
     <FormItem>
@@ -310,7 +309,7 @@ export function TUPartidaField({
     if (mayorId) {
       loadPartidas(mayorId);
     }
-  }, [mayorId]);
+  }, [mayorId, loadPartidas]);
 
   return (
     <FormItem>
@@ -358,7 +357,7 @@ export function TUSubpartidaField({
     if (partidaId) {
       loadSubpartidas(partidaId);
     }
-  }, [partidaId]);
+  }, [partidaId, loadSubpartidas]);
 
   return (
     <FormItem>
