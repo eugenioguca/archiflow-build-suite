@@ -1,43 +1,24 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Download } from 'lucide-react';
+import { Plus, Trash2, Download, Edit } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { useCronogramaGantt } from '@/hooks/useCronogramaGantt';
 import { useClientProjectFilters } from '@/hooks/useClientProjectFilters';
 import { CollapsibleFilters } from '@/components/CollapsibleFilters';
-import { SearchableCombobox } from '@/components/ui/searchable-combobox';
-import { DatePicker } from '@/components/DatePicker';
-import { supabase } from '@/integrations/supabase/client';
-import { format, differenceInDays } from 'date-fns';
+import { CronogramaGanttFormModal } from '@/components/modals/CronogramaGanttFormModal';
+import { format } from 'date-fns';
 
-interface CronogramaRow {
-  id?: string;
-  departamento: string;
+// Form data interface for modal
+interface CronogramaFormData {
+  departamento_id: string;
   mayor_id: string;
-  fecha_inicio: Date | undefined;
-  fecha_fin: Date | undefined;
-  duracion: number;
+  fecha_inicio: Date;
+  fecha_fin: Date;
+  duracion_dias: number;
 }
-
-interface Option {
-  id: string;
-  nombre: string;
-  codigo?: string;
-}
-
-// Transform Option to SearchableComboboxItem
-const transformToComboboxItems = (options: Option[]) => {
-  return options.map(option => ({
-    value: option.id,
-    label: option.nombre,
-    codigo: option.codigo,
-    searchText: `${option.codigo || ''} ${option.nombre}`.toLowerCase()
-  }));
-};
 
 export function CronogramaGantt() {
   const {
@@ -63,8 +44,36 @@ export function CronogramaGantt() {
 
   // Handle form submission for create/edit
   const handleFormSubmit = async (data: CronogramaFormData) => {
-    // Implementation would go here - saving to cronograma table
-    console.log('Cronograma form submitted:', data);
+    if (!selectedClientId || !selectedProjectId) {
+      throw new Error('Cliente y proyecto son requeridos');
+    }
+
+    try {
+      if (editingItem) {
+        await updateCronograma.mutateAsync({
+          id: editingItem.id,
+          data: {
+            departamento: data.departamento_id,
+            mayor_id: data.mayor_id,
+            fecha_inicio: format(data.fecha_inicio, 'yyyy-MM-dd'),
+            fecha_fin: format(data.fecha_fin, 'yyyy-MM-dd')
+          }
+        });
+        setEditingItem(null);
+      } else {
+        await createCronograma.mutateAsync({
+          cliente_id: selectedClientId,
+          proyecto_id: selectedProjectId,
+          departamento: data.departamento_id,
+          mayor_id: data.mayor_id,
+          fecha_inicio: format(data.fecha_inicio, 'yyyy-MM-dd'),
+          fecha_fin: format(data.fecha_fin, 'yyyy-MM-dd')
+        });
+      }
+    } catch (error) {
+      console.error('Error submitting cronograma form:', error);
+      throw error;
+    }
   };
 
   // Handle opening new form modal
@@ -79,78 +88,12 @@ export function CronogramaGantt() {
     setShowFormModal(true);
   };
 
-  const addRow = () => {
-    const newRow: CronogramaRow = {
-      departamento: departamentoId || 'Construcción',
-      mayor_id: '',
-      fecha_inicio: undefined,
-      fecha_fin: undefined,
-      duracion: 0
-    };
-    setRows([...rows, newRow]);
-  };
-
-  const updateRow = (index: number, field: keyof CronogramaRow, value: any) => {
-    const updatedRows = [...rows];
-    updatedRows[index] = { ...updatedRows[index], [field]: value };
-    
-    // Auto-calculate duracion
-    if (field === 'fecha_inicio' || field === 'fecha_fin') {
-      const row = updatedRows[index];
-      if (row.fecha_inicio && row.fecha_fin) {
-        row.duracion = differenceInDays(row.fecha_fin, row.fecha_inicio);
-      }
-    }
-    
-    setRows(updatedRows);
-  };
-
-  const removeRow = (index: number) => {
-    const updatedRows = rows.filter((_, i) => i !== index);
-    setRows(updatedRows);
-  };
-
-  const saveRow = async (index: number) => {
-    const row = rows[index];
-    
-    if (!selectedClientId || !selectedProjectId) {
-      return;
-    }
-
-    if (!row.mayor_id || !row.fecha_inicio || !row.fecha_fin) {
-      return;
-    }
-
-    try {
-      if (row.id) {
-        await updateCronograma.mutateAsync({
-          id: row.id,
-          data: {
-            mayor_id: row.mayor_id,
-            fecha_inicio: format(row.fecha_inicio, 'yyyy-MM-dd'),
-            fecha_fin: format(row.fecha_fin, 'yyyy-MM-dd')
-          }
-        });
-      } else {
-        await createCronograma.mutateAsync({
-          cliente_id: selectedClientId,
-          proyecto_id: selectedProjectId,
-          departamento: departamentoId, // Usar departamento cargado de la DB
-          mayor_id: row.mayor_id,
-          fecha_inicio: format(row.fecha_inicio, 'yyyy-MM-dd'),
-          fecha_fin: format(row.fecha_fin, 'yyyy-MM-dd')
-        });
-      }
-    } catch (error) {
-      console.error('Error saving row:', error);
-    }
-  };
-
-  const deleteRow = async (id: string) => {
+  // Handle delete activity
+  const handleDeleteActividad = async (id: string) => {
     try {
       await deleteCronograma.mutateAsync(id);
     } catch (error) {
-      console.error('Error deleting row:', error);
+      console.error('Error deleting activity:', error);
     }
   };
 
@@ -306,87 +249,31 @@ export function CronogramaGantt() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteRow(item.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditActividad(item);
+                            }}
+                            className="text-blue-600 hover:text-blue-700"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteActividad(item.id);
+                            }}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
-                    </TableRow>
-                  ))}
-                  
-                  {rows.map((row, index) => (
-                    <TableRow key={index}>
-                      <TableCell>
-                        <Badge variant="secondary">Construcción</Badge>
-                      </TableCell>
-                       <TableCell>
-                         <div className="pointer-events-auto">
-                           <SearchableCombobox
-                             value={row.mayor_id}
-                             onValueChange={(value) => updateRow(index, 'mayor_id', value)}
-                             items={mayores}
-                             searchPlaceholder="Buscar mayor..."
-                             emptyText="No se encontraron mayores"
-                             className="w-full pointer-events-auto"
-                             disabled={!hasFilters || !departamentoId}
-                           />
-                         </div>
-                       </TableCell>
-                      <TableCell>
-                        <DatePicker
-                          date={row.fecha_inicio}
-                          onDateChange={(date) => updateRow(index, 'fecha_inicio', date)}
-                          placeholder="Fecha inicio"
-                          className="w-full"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <DatePicker
-                          date={row.fecha_fin}
-                          onDateChange={(date) => updateRow(index, 'fecha_fin', date)}
-                          placeholder="Fecha fin"
-                          className="w-full"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {row.duracion > 0 ? (
-                          <Badge variant="outline">
-                            {getDurationText(row.duracion)}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                       <TableCell>
-                         <div className="flex gap-1">
-                           <Button
-                             variant="ghost"
-                             size="sm"
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               saveRow(index);
-                             }}
-                             disabled={!row.mayor_id || !row.fecha_inicio || !row.fecha_fin}
-                           >
-                             ✓
-                           </Button>
-                           <Button
-                             variant="ghost"
-                             size="sm"
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               removeRow(index);
-                             }}
-                             className="text-red-600 hover:text-red-700"
-                           >
-                             <Trash2 className="h-4 w-4" />
-                           </Button>
-                         </div>
-                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -401,12 +288,17 @@ export function CronogramaGantt() {
         open={showFormModal}
         onOpenChange={setShowFormModal}
         onSubmit={handleFormSubmit}
-        initialData={editingItem}
+        initialData={editingItem ? {
+          departamento_id: editingItem.departamento,
+          mayor_id: editingItem.mayor_id,
+          fecha_inicio: new Date(editingItem.fecha_inicio),
+          fecha_fin: new Date(editingItem.fecha_fin),
+          duracion_dias: editingItem.duracion,
+        } : undefined}
         clienteId={selectedClientId}
         proyectoId={selectedProjectId}
         title={editingItem ? "Editar Actividad - Cronograma" : "Nueva Actividad - Cronograma"}
       />
-      }
 
       {!hasFilters && (
         <Card>
