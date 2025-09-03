@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { SearchableCombobox, type SearchableComboboxItem } from '@/components/ui/searchable-combobox';
 import { FormControl, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -28,7 +28,7 @@ export const useTUCascadingData = () => {
   });
 
   // Load departamentos
-  const loadDepartamentos = async () => {
+  const loadDepartamentos = useCallback(async () => {
     setLoading(prev => ({ ...prev, departamentos: true }));
     try {
       const { data, error } = await supabase
@@ -54,10 +54,10 @@ export const useTUCascadingData = () => {
     } finally {
       setLoading(prev => ({ ...prev, departamentos: false }));
     }
-  };
+  }, []);
 
   // Load mayores by departamento
-  const loadMayores = async (departamentoId: string) => {
+  const loadMayores = useCallback(async (departamentoId: string) => {
     setLoading(prev => ({ ...prev, mayores: true }));
     try {
       const { data, error } = await supabase
@@ -82,10 +82,10 @@ export const useTUCascadingData = () => {
     } finally {
       setLoading(prev => ({ ...prev, mayores: false }));
     }
-  };
+  }, []);
 
   // Load partidas by mayor
-  const loadPartidas = async (mayorId: string) => {
+  const loadPartidas = useCallback(async (mayorId: string) => {
     setLoading(prev => ({ ...prev, partidas: true }));
     try {
       const { data, error } = await supabase
@@ -110,10 +110,10 @@ export const useTUCascadingData = () => {
     } finally {
       setLoading(prev => ({ ...prev, partidas: false }));
     }
-  };
+  }, []);
 
   // Load subpartidas by partida (including universals)
-  const loadSubpartidas = async (partidaId: string) => {
+  const loadSubpartidas = useCallback(async (partidaId: string) => {
     setLoading(prev => ({ ...prev, subpartidas: true }));
     try {
       // First get departamento from the selected partida
@@ -175,7 +175,7 @@ export const useTUCascadingData = () => {
     } finally {
       setLoading(prev => ({ ...prev, subpartidas: false }));
     }
-  };
+  }, []);
 
   return {
     departamentos,
@@ -257,11 +257,14 @@ export function TUMayorField({
 
   useEffect(() => {
     if (departamentoId) {
-      loadMayores(departamentoId).then(() => {
-        onMayorLoad?.(mayores);
-      });
+      loadMayores(departamentoId);
+      // Don't add onMayorLoad to dependencies to avoid infinite loops
+      if (onMayorLoad) {
+        // Call after state update
+        setTimeout(() => onMayorLoad(mayores), 0);
+      }
     }
-  }, [departamentoId, loadMayores, mayores, onMayorLoad]);
+  }, [departamentoId, loadMayores]); // Remove mayores and onMayorLoad from deps
 
   return (
     <FormItem>
