@@ -10,6 +10,7 @@ import { useClientProjectFilters } from '@/hooks/useClientProjectFilters';
 import { CollapsibleFilters } from '@/components/CollapsibleFilters';
 import { PresupuestoParametricoFormModal } from '@/components/modals/PresupuestoParametricoFormModal';
 import { supabase } from '@/integrations/supabase/client';
+import dovitaLogo from '@/assets/dovita-logo.png';
 
 // Form data interface for modal
 interface PresupuestoFormData {
@@ -103,105 +104,291 @@ export function PresupuestoParametrico() {
   const totalGeneral = presupuestos.reduce((sum, item) => sum + item.monto_total, 0);
 
   const exportToPDF = async () => {
+    // Get client and project info
+    let clientInfo = null;
+    let projectInfo = null;
+
+    try {
+      if (selectedClientId) {
+        const { data: client } = await supabase
+          .from('clients')
+          .select('nombre, email, telefono')
+          .eq('id', selectedClientId)
+          .single();
+        clientInfo = client;
+      }
+
+      if (selectedProjectId && selectedClientId) {
+        const { data: project } = await supabase
+          .from('client_projects')
+          .select('project_name, project_location')
+          .eq('id', selectedProjectId)
+          .eq('client_id', selectedClientId)
+          .single();
+        projectInfo = project;
+      }
+    } catch (error) {
+      console.warn('Could not fetch client/project info for PDF:', error);
+    }
+
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
       format: 'letter'
     });
 
-    // Header with Dovita logo
-    doc.setFontSize(20);
+    // Page dimensions for Letter size
+    const pageWidth = 215.9; // Letter width in mm
+    const pageHeight = 279.4; // Letter height in mm
+    const margin = 15;
+    const contentWidth = pageWidth - (margin * 2);
+
+    let currentPage = 1;
+    let totalPages = 1; // We'll calculate this later
+
+    // Function to draw header on each page
+    const drawHeader = () => {
+      // Header background bar
+      doc.setFillColor(51, 126, 198); // Primary color from theme (hsl(210 85% 60%))
+      doc.rect(0, 0, pageWidth, 25, 'F');
+
+      // Add company logo
+      try {
+        doc.addImage(dovitaLogo, 'PNG', margin, 5, 15, 15);
+      } catch (error) {
+        console.warn('Could not load logo:', error);
+      }
+
+      // Company name
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text('DOVITA CONSTRUCCIONES', margin + 20, 15);
+
+      // Company info on the right
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      const companyInfo = [
+        'Tel: +52 (55) 1234-5678',
+        'Email: info@dovita.com.mx',
+        'Monterrey, Nuevo León'
+      ];
+      
+      companyInfo.forEach((info, index) => {
+        doc.text(info, pageWidth - margin, 8 + (index * 4), { align: 'right' });
+      });
+
+      // Reset text color
+      doc.setTextColor(0, 0, 0);
+    };
+
+    // Function to draw footer on each page
+    const drawFooter = (page: number, total: number) => {
+      // Footer background bar
+      doc.setFillColor(242, 151, 81); // Secondary color from theme (hsl(25 70% 65%))
+      doc.rect(0, pageHeight - 15, pageWidth, 15, 'F');
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Sistema de Gestión DOVITA', margin, pageHeight - 5);
+      doc.text(`Página ${page} de ${total}`, pageWidth - margin, pageHeight - 5, { align: 'right' });
+      
+      // Reset text color
+      doc.setTextColor(0, 0, 0);
+    };
+
+    // Calculate total pages needed (rough estimate)
+    const itemsPerPage = Math.floor((pageHeight - 120) / 8); // Approximate
+    totalPages = Math.ceil(presupuestos.length / itemsPerPage);
+
+    // Draw first page header and footer
+    drawHeader();
+    drawFooter(currentPage, totalPages);
+
+    // Document title
+    doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.text('DOVITA CONSTRUCCIONES', 105, 20, { align: 'center' });
-    
-    doc.setFontSize(16);
+    doc.setTextColor(51, 126, 198); // Primary color
+    doc.text('PRESUPUESTO PARAMÉTRICO', pageWidth / 2, 40, { align: 'center' });
+
+    // Reset color
+    doc.setTextColor(0, 0, 0);
+
+    // Client and project information section
+    let infoY = 55;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('INFORMACIÓN DEL PROYECTO', margin, infoY);
+    infoY += 8;
+
+    // Date
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text('PRESUPUESTO PARAMÉTRICO', 105, 30, { align: 'center' });
+    const today = new Date();
+    const formattedDate = today.toLocaleDateString('es-MX', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: '2-digit' 
+    });
+    doc.text(`Fecha de Generación: ${formattedDate}`, margin, infoY);
+    infoY += 6;
+
+    // Client info
+    if (clientInfo) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Cliente:', margin, infoY);
+      doc.setFont('helvetica', 'normal');
+      doc.text(clientInfo.nombre || 'No especificado', margin + 20, infoY);
+      infoY += 5;
+
+      if (clientInfo.email) {
+        doc.text(`Email: ${clientInfo.email}`, margin, infoY);
+        infoY += 5;
+      }
+      if (clientInfo.telefono) {
+        doc.text(`Teléfono: ${clientInfo.telefono}`, margin, infoY);
+        infoY += 5;
+      }
+    }
 
     // Project info
-    doc.setFontSize(10);
-    doc.text(`Fecha: ${new Date().toLocaleDateString('es-MX')}`, 15, 45);
-    
-    // Table headers
-    let currentY = 60;
-    const rowHeight = 8;
-    const colWidths = [35, 40, 40, 25, 30, 30];
+    if (projectInfo) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Proyecto:', margin, infoY);
+      doc.setFont('helvetica', 'normal');
+      doc.text(projectInfo.project_name || 'No especificado', margin + 20, infoY);
+      infoY += 5;
+
+      if (projectInfo.project_location) {
+        doc.text(`Ubicación: ${projectInfo.project_location}`, margin, infoY);
+        infoY += 5;
+      }
+    }
+
+    // Separator line
+    infoY += 5;
+    doc.setDrawColor(51, 126, 198);
+    doc.setLineWidth(0.5);
+    doc.line(margin, infoY, pageWidth - margin, infoY);
+    infoY += 10;
+
+    // Table setup
+    const colWidths = [40, 35, 45, 25, 30, 30]; // Adjusted widths
     const headers = ['Departamento', 'Mayor', 'Partida', 'Cantidad', 'P. Unitario', 'Monto Total'];
-    
-    // Draw headers
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.setFillColor(240, 240, 240);
-    doc.rect(15, currentY, colWidths.reduce((a, b) => a + b, 0), rowHeight, 'F');
-    
-    let currentX = 15;
-    headers.forEach((header, index) => {
-      doc.text(header, currentX + 2, currentY + 5);
-      currentX += colWidths[index];
-    });
-    
-    currentY += rowHeight;
+    const rowHeight = 8;
+    let currentY = infoY;
+
+    // Function to draw table headers
+    const drawTableHeaders = (y: number) => {
+      // Header background
+      doc.setFillColor(51, 126, 198); // Primary color
+      doc.rect(margin, y, contentWidth, rowHeight, 'F');
+      
+      // Header text
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      
+      let x = margin;
+      headers.forEach((header, index) => {
+        const textX = x + (colWidths[index] / 2);
+        doc.text(header, textX, y + 5.5, { align: 'center' });
+        x += colWidths[index];
+      });
+      
+      // Reset text color
+      doc.setTextColor(0, 0, 0);
+      return y + rowHeight;
+    };
+
+    // Draw initial table headers
+    currentY = drawTableHeaders(currentY);
 
     // Data rows
     doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+
     const allItems = presupuestos.map(item => ({
       departamento: item.departamento,
-      mayor_codigo: item.mayor ? `${item.mayor.codigo}` : '',
-      partida_codigo: item.partida ? `${item.partida.codigo}` : '',
+      mayor_codigo: item.mayor ? `${item.mayor.codigo} - ${item.mayor.nombre}` : 'N/A',
+      partida_codigo: item.partida ? `${item.partida.codigo} - ${item.partida.nombre}` : 'N/A',
       cantidad_requerida: item.cantidad_requerida,
       precio_unitario: item.precio_unitario,
       monto_total: item.monto_total
     }));
-    
-    allItems.forEach((item) => {
-      // Check if we need a new page
-      if (currentY > 250) {
+
+    allItems.forEach((item, index) => {
+      // Check if we need a new page (leave space for totals)
+      if (currentY > pageHeight - 60) {
         doc.addPage();
-        currentY = 20;
-        
-        // Redraw headers on new page
-        doc.setFont('helvetica', 'bold');
-        doc.setFillColor(240, 240, 240);
-        doc.rect(15, currentY, colWidths.reduce((a, b) => a + b, 0), rowHeight, 'F');
-        
-        let headerX = 15;
-        headers.forEach((header, index) => {
-          doc.text(header, headerX + 2, currentY + 5);
-          headerX += colWidths[index];
-        });
-        
-        currentY += rowHeight;
-        doc.setFont('helvetica', 'normal');
+        currentPage++;
+        drawHeader();
+        drawFooter(currentPage, totalPages);
+        currentY = 35; // Start position on new page
+        currentY = drawTableHeaders(currentY);
       }
 
-      // Draw row
-      currentX = 15;
+      // Alternating row colors
+      if (index % 2 === 1) {
+        doc.setFillColor(248, 250, 252); // Light gray for alternating rows
+        doc.rect(margin, currentY, contentWidth, rowHeight, 'F');
+      }
+
+      // Row data
+      let x = margin;
       const rowData = [
         item.departamento,
         item.mayor_codigo,
         item.partida_codigo,
         item.cantidad_requerida.toString(),
-        `$${item.precio_unitario.toLocaleString('es-MX')}`,
-        `$${item.monto_total.toLocaleString('es-MX')}`
+        `$${item.precio_unitario.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
+        `$${item.monto_total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
       ];
 
-      rowData.forEach((data, index) => {
-        doc.text(data, currentX + 2, currentY + 5);
-        currentX += colWidths[index];
+      rowData.forEach((data, colIndex) => {
+        const cellWidth = colWidths[colIndex];
+        const textX = colIndex >= 3 ? x + cellWidth - 2 : x + 2; // Right align for numeric columns
+        const align = colIndex >= 3 ? 'right' : 'left';
+        
+        // Truncate text if too long
+        let displayText = data;
+        if (data.length > (cellWidth / 2.5)) {
+          displayText = data.substring(0, Math.floor(cellWidth / 2.5)) + '...';
+        }
+        
+        doc.text(displayText, textX, currentY + 5.5, { align });
+        x += cellWidth;
       });
-      
+
       currentY += rowHeight;
     });
 
-    // Total
+    // Totals section
     currentY += 10;
-    doc.setFont('helvetica', 'bold');
+    
+    // Total background
+    doc.setFillColor(51, 126, 198); // Primary color
+    doc.rect(margin, currentY, contentWidth, rowHeight + 2, 'F');
+    
+    // Total text
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);
-    doc.text(`TOTAL GENERAL: $${totalGeneral.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`, 
-             200, currentY, { align: 'right' });
+    doc.setFont('helvetica', 'bold');
+    doc.text('TOTAL PRESUPUESTO:', margin + 5, currentY + 7);
+    doc.text(
+      `$${totalGeneral.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
+      pageWidth - margin - 5,
+      currentY + 7,
+      { align: 'right' }
+    );
 
-    // Save PDF
-    doc.save(`Presupuesto_Parametrico_${new Date().toISOString().split('T')[0]}.pdf`);
+    // Reset text color
+    doc.setTextColor(0, 0, 0);
+
+    // Save PDF with descriptive filename
+    const filename = `Presupuesto_Parametrico_${clientInfo?.nombre || 'Cliente'}_${projectInfo?.project_name || 'Proyecto'}_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(filename);
   };
 
   return (
