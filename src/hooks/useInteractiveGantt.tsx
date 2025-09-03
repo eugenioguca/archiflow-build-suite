@@ -31,6 +31,16 @@ export interface MonthlyCalculations {
   totalPresupuesto: number;
 }
 
+export interface ManualOverride {
+  id: string;
+  cliente_id: string;
+  proyecto_id: string;
+  mes: number;
+  concepto: 'gasto_obra' | 'avance_parcial' | 'avance_acumulado' | 'ministraciones' | 'inversion_acumulada' | 'fecha_pago';
+  valor: string;
+  sobrescribe: boolean;
+}
+
 export const useInteractiveGantt = (clienteId?: string, proyectoId?: string) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -145,6 +155,26 @@ export const useInteractiveGantt = (clienteId?: string, proyectoId?: string) => 
       return data || [];
     },
     enabled: !!proyectoId,
+  });
+
+  // Fetch manual overrides for matrix
+  const manualOverridesQuery = useQuery({
+    queryKey: ['cronograma-manual-overrides', clienteId, proyectoId],
+    queryFn: async () => {
+      if (!clienteId || !proyectoId) return [];
+      
+      const { data, error } = await supabase
+        .from('cronograma_matriz_manual')
+        .select('*')
+        .eq('cliente_id', clienteId)
+        .eq('proyecto_id', proyectoId)
+        .eq('sobrescribe', true)
+        .order('mes', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!clienteId && !!proyectoId,
   });
 
   // Create Gantt bar
@@ -293,11 +323,93 @@ export const useInteractiveGantt = (clienteId?: string, proyectoId?: string) => 
     },
   });
 
+  // Save manual override
+  const saveManualOverride = useMutation({
+    mutationFn: async (data: {
+      mes: number;
+      concepto: string;
+      valor: string;
+    }) => {
+      if (!clienteId || !proyectoId) throw new Error('Cliente y Proyecto requeridos');
+
+      const { data: result, error } = await supabase
+        .from('cronograma_matriz_manual')
+        .upsert({
+          cliente_id: clienteId,
+          proyecto_id: proyectoId,
+          mes: data.mes,
+          concepto: data.concepto,
+          valor: data.valor,
+          sobrescribe: true,
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cronograma-manual-overrides'] });
+      toast({
+        title: "Valor actualizado",
+        description: "El valor manual se ha guardado exitosamente.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error saving manual override:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo guardar el valor manual.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete manual override
+  const deleteManualOverride = useMutation({
+    mutationFn: async (data: { mes: number; concepto: string }) => {
+      if (!clienteId || !proyectoId) throw new Error('Cliente y Proyecto requeridos');
+
+      const { error } = await supabase
+        .from('cronograma_matriz_manual')
+        .delete()
+        .eq('cliente_id', clienteId)
+        .eq('proyecto_id', proyectoId)
+        .eq('mes', data.mes)
+        .eq('concepto', data.concepto);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cronograma-manual-overrides'] });
+      toast({
+        title: "Valor restaurado",
+        description: "Se ha restaurado el valor automático.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error deleting manual override:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo restaurar el valor automático.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Calculate monthly values
   const calculateMonthlyData = useCallback((): MonthlyCalculations => {
     const bars = ganttBarsQuery.data || [];
     const presupuestoTotals = presupuestoQuery.data || [];
     const paymentPlans = paymentPlansQuery.data || [];
+    const manualOverrides = manualOverridesQuery.data || [];
+
+    // Create map of manual overrides for quick lookup
+    const overrideMap: Record<string, string> = {};
+    manualOverrides.forEach(override => {
+      const key = `${override.mes}-${override.concepto}`;
+      overrideMap[key] = override.valor;
+    });
 
     // Create totals by mayor
     const totalsByMayor: Record<string, number> = {};
@@ -307,8 +419,8 @@ export const useInteractiveGantt = (clienteId?: string, proyectoId?: string) => 
 
     const totalPresupuesto = Object.values(totalsByMayor).reduce((sum, val) => sum + val, 0);
 
-    // Calculate monthly spend from bars
-    const gastoPorMes: Record<number, number> = {};
+    // Calculate monthly spend from bars (automatic values)
+    const gastoPorMesAuto: Record<number, number> = {};
     bars.forEach(bar => {
       const mayorTotal = totalsByMayor[bar.mayor_id] || 0;
       if (mayorTotal === 0 || bar.duration_weeks === 0) return;
@@ -324,25 +436,59 @@ export const useInteractiveGantt = (clienteId?: string, proyectoId?: string) => 
           weeksInMonth = bar.end_week;
         }
         
-        gastoPorMes[month] = (gastoPorMes[month] || 0) + (monthlyAmount * weeksInMonth);
+        gastoPorMesAuto[month] = (gastoPorMesAuto[month] || 0) + (monthlyAmount * weeksInMonth);
       }
     });
 
-    // Calculate advance percentages
-    const avanceParcial: Record<number, number> = {};
-    const avanceAcumulado: Record<number, number> = {};
-    let acumulado = 0;
+    // Apply manual overrides for gasto_obra
+    const gastoPorMes: Record<number, number> = {};
+    Object.keys(gastoPorMesAuto).forEach(monthStr => {
+      const month = Number(monthStr);
+      const overrideKey = `${month}-gasto_obra`;
+      if (overrideMap[overrideKey]) {
+        gastoPorMes[month] = parseFloat(overrideMap[overrideKey]) || 0;
+      } else {
+        gastoPorMes[month] = gastoPorMesAuto[month];
+      }
+    });
+
+    // Calculate advance percentages (with manual overrides)
+    const avanceParcialAuto: Record<number, number> = {};
+    const avanceAcumuladoAuto: Record<number, number> = {};
+    let acumuladoAuto = 0;
 
     Object.keys(gastoPorMes).sort((a, b) => Number(a) - Number(b)).forEach(monthStr => {
       const month = Number(monthStr);
       const parcial = totalPresupuesto > 0 ? (gastoPorMes[month] / totalPresupuesto) * 100 : 0;
-      avanceParcial[month] = parcial;
-      acumulado += parcial;
-      avanceAcumulado[month] = Math.min(acumulado, 100);
+      avanceParcialAuto[month] = parcial;
+      acumuladoAuto += parcial;
+      avanceAcumuladoAuto[month] = Math.min(acumuladoAuto, 100);
     });
 
-    // Calculate ministraciones from payment plans
-    const ministraciones: Record<number, number> = {};
+    // Apply manual overrides for percentages
+    const avanceParcial: Record<number, number> = {};
+    const avanceAcumulado: Record<number, number> = {};
+    
+    Object.keys(avanceParcialAuto).forEach(monthStr => {
+      const month = Number(monthStr);
+      const parcialKey = `${month}-avance_parcial`;
+      const acumuladoKey = `${month}-avance_acumulado`;
+      
+      if (overrideMap[parcialKey]) {
+        avanceParcial[month] = parseFloat(overrideMap[parcialKey]) || 0;
+      } else {
+        avanceParcial[month] = avanceParcialAuto[month];
+      }
+      
+      if (overrideMap[acumuladoKey]) {
+        avanceAcumulado[month] = parseFloat(overrideMap[acumuladoKey]) || 0;
+      } else {
+        avanceAcumulado[month] = avanceAcumuladoAuto[month];
+      }
+    });
+
+    // Calculate ministraciones from payment plans (with manual overrides)
+    const ministracionesAuto: Record<number, number> = {};
     const fechasPago: Record<number, string[]> = {};
     
     paymentPlans.forEach(plan => {
@@ -351,7 +497,7 @@ export const useInteractiveGantt = (clienteId?: string, proyectoId?: string) => 
           if (installment.due_date) {
             const date = new Date(installment.due_date);
             const month = date.getMonth() + 1; // Convert to 1-based month
-            ministraciones[month] = (ministraciones[month] || 0) + installment.amount;
+            ministracionesAuto[month] = (ministracionesAuto[month] || 0) + installment.amount;
             
             if (!fechasPago[month]) fechasPago[month] = [];
             fechasPago[month].push(installment.installment_name || `Pago ${installment.installment_number}`);
@@ -360,14 +506,45 @@ export const useInteractiveGantt = (clienteId?: string, proyectoId?: string) => 
       }
     });
 
-    // Calculate investment percentages
-    const inversionAcumulada: Record<number, number> = {};
-    let acumuladoInversion = 0;
+    // Apply manual overrides for ministraciones and fechas
+    const ministraciones: Record<number, number> = {};
+    Object.keys(ministracionesAuto).forEach(monthStr => {
+      const month = Number(monthStr);
+      const overrideKey = `${month}-ministraciones`;
+      const fechaKey = `${month}-fecha_pago`;
+      
+      if (overrideMap[overrideKey]) {
+        ministraciones[month] = parseFloat(overrideMap[overrideKey]) || 0;
+      } else {
+        ministraciones[month] = ministracionesAuto[month];
+      }
+      
+      if (overrideMap[fechaKey]) {
+        fechasPago[month] = [overrideMap[fechaKey]];
+      }
+    });
+
+    // Calculate investment percentages (with manual overrides)
+    const inversionAcumuladaAuto: Record<number, number> = {};
+    let acumuladoInversionAuto = 0;
     
     Object.keys(ministraciones).sort((a, b) => Number(a) - Number(b)).forEach(monthStr => {
       const month = Number(monthStr);
-      acumuladoInversion += ministraciones[month];
-      inversionAcumulada[month] = totalPresupuesto > 0 ? (acumuladoInversion / totalPresupuesto) * 100 : 0;
+      acumuladoInversionAuto += ministraciones[month];
+      inversionAcumuladaAuto[month] = totalPresupuesto > 0 ? (acumuladoInversionAuto / totalPresupuesto) * 100 : 0;
+    });
+
+    // Apply manual overrides for investment percentages
+    const inversionAcumulada: Record<number, number> = {};
+    Object.keys(inversionAcumuladaAuto).forEach(monthStr => {
+      const month = Number(monthStr);
+      const overrideKey = `${month}-inversion_acumulada`;
+      
+      if (overrideMap[overrideKey]) {
+        inversionAcumulada[month] = parseFloat(overrideMap[overrideKey]) || 0;
+      } else {
+        inversionAcumulada[month] = inversionAcumuladaAuto[month];
+      }
     });
 
     return {
@@ -379,7 +556,23 @@ export const useInteractiveGantt = (clienteId?: string, proyectoId?: string) => 
       fechasPago,
       totalPresupuesto
     };
-  }, [ganttBarsQuery.data, presupuestoQuery.data, paymentPlansQuery.data]);
+  }, [ganttBarsQuery.data, presupuestoQuery.data, paymentPlansQuery.data, manualOverridesQuery.data]);
+
+  // Get manual overrides for use in matrix
+  const getManualOverrides = useCallback(() => {
+    const overrides = manualOverridesQuery.data || [];
+    const overrideMap: Record<string, { valor: string; hasOverride: boolean }> = {};
+    
+    overrides.forEach(override => {
+      const key = `${override.mes}-${override.concepto}`;
+      overrideMap[key] = { 
+        valor: override.valor, 
+        hasOverride: true 
+      };
+    });
+    
+    return overrideMap;
+  }, [manualOverridesQuery.data]);
 
   return {
     ganttBars: ganttBarsQuery.data || [],
@@ -388,14 +581,18 @@ export const useInteractiveGantt = (clienteId?: string, proyectoId?: string) => 
     isError: ganttBarsQuery.isError || mayoresQuery.isError,
     error: ganttBarsQuery.error || mayoresQuery.error,
     monthlyCalculations: calculateMonthlyData(),
+    manualOverrides: getManualOverrides(),
     createGanttBar,
     updateGanttBar,
     deleteGanttBar,
+    saveManualOverride,
+    deleteManualOverride,
     refetch: () => {
       ganttBarsQuery.refetch();
       mayoresQuery.refetch();
       presupuestoQuery.refetch();
       paymentPlansQuery.refetch();
+      manualOverridesQuery.refetch();
     }
   };
 };

@@ -24,9 +24,12 @@ export function CronogramaGantt() {
     mayores,
     isLoading,
     monthlyCalculations,
+    manualOverrides,
     createGanttBar,
-    updateGanttBar,
+    updateGanttBar, 
     deleteGanttBar,
+    saveManualOverride,
+    deleteManualOverride,
     refetch
   } = useInteractiveGantt(selectedClientId, selectedProjectId);
 
@@ -85,14 +88,15 @@ export function CronogramaGantt() {
               <Button onClick={refetch} variant="outline" size="sm">
                 <RefreshCw className="h-4 w-4" />
               </Button>
-              <GanttPDFExport
-                ganttBars={ganttBars}
-                mayores={mayores}
-                calculations={monthlyCalculations}
-                clienteId={selectedClientId}
-                proyectoId={selectedProjectId}
-                months={months}
-              />
+            <GanttPDFExport
+              ganttBars={ganttBars}
+              mayores={mayores}
+              calculations={monthlyCalculations}
+              manualOverrides={manualOverrides}
+              clienteId={selectedClientId}
+              proyectoId={selectedProjectId}
+              months={months}
+            />
             </>
           )}
         </div>
@@ -130,10 +134,17 @@ export function CronogramaGantt() {
                 months={months}
               />
               
-              <MonthlyNumericMatrix
-                calculations={monthlyCalculations}
-                months={months}
-              />
+               <MonthlyNumericMatrix
+                 calculations={monthlyCalculations}
+                 manualOverrides={manualOverrides}
+                 onSaveOverride={async (data) => {
+                   await saveManualOverride.mutateAsync(data);
+                 }}
+                 onDeleteOverride={async (data) => {
+                   await deleteManualOverride.mutateAsync(data);
+                 }}
+                 months={months}
+               />
               
               {ganttBars.length === 0 && (
                 <Card>

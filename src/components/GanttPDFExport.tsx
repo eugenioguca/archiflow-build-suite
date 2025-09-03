@@ -9,6 +9,7 @@ interface GanttPDFExportProps {
   ganttBars: GanttBar[];
   mayores: Array<{ id: string; codigo: string; nombre: string }>;
   calculations: MonthlyCalculations;
+  manualOverrides: Record<string, { valor: string; hasOverride: boolean }>;
   clienteId: string;
   proyectoId: string;
   months?: number;
@@ -19,6 +20,7 @@ export const GanttPDFExport: React.FC<GanttPDFExportProps> = ({
   ganttBars,
   mayores,
   calculations,
+  manualOverrides,
   clienteId,
   proyectoId,
   months = 12,

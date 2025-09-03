@@ -2,14 +2,23 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { MonthlyCalculations } from '@/hooks/useInteractiveGantt';
+import { EditableCell } from '@/components/EditableCell';
+import { Undo } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface MonthlyNumericMatrixProps {
   calculations: MonthlyCalculations;
+  manualOverrides: Record<string, { valor: string; hasOverride: boolean }>;
+  onSaveOverride: (data: { mes: number; concepto: string; valor: string }) => Promise<void>;
+  onDeleteOverride: (data: { mes: number; concepto: string }) => Promise<void>;
   months?: number;
 }
 
 export const MonthlyNumericMatrix: React.FC<MonthlyNumericMatrixProps> = ({
   calculations,
+  manualOverrides,
+  onSaveOverride,
+  onDeleteOverride,
   months = 12
 }) => {
   const { 
@@ -61,6 +70,60 @@ export const MonthlyNumericMatrix: React.FC<MonthlyNumericMatrixProps> = ({
     return value || '-';
   };
 
+  // Check if a cell has manual override
+  const hasOverride = (month: number, concepto: string) => {
+    const key = `${month}-${concepto}`;
+    return manualOverrides[key]?.hasOverride || false;
+  };
+
+  // Render editable cell with override indicator
+  const renderEditableCell = (
+    month: number, 
+    concepto: string, 
+    value: number | string | string[], 
+    type: 'currency' | 'percentage' | 'text',
+    validationFn?: (val: string) => boolean
+  ) => {
+    const isOverridden = hasOverride(month, concepto);
+    const displayValue = typeof value === 'number' ? 
+      (type === 'currency' ? value.toString() : 
+       type === 'percentage' ? value.toFixed(2) : 
+       value.toString()) : 
+      (Array.isArray(value) ? value.join(', ') : (value || ''));
+
+    return (
+      <TableCell className={`text-right relative ${isOverridden ? 'bg-blue-50 border-2 border-blue-200' : ''}`}>
+        <div className="flex items-center justify-between">
+          <EditableCell
+            value={displayValue}
+            onSave={(newValue) => onSaveOverride({ mes: month, concepto, valor: newValue })}
+            type={type === 'currency' || type === 'percentage' ? 'number' : 'text'}
+            className={`text-right ${isOverridden ? 'font-semibold text-blue-700' : ''}`}
+            displayTransform={(val) => {
+              if (type === 'currency') return formatCurrency(parseFloat(val) || 0);
+              if (type === 'percentage') return formatPercentage(parseFloat(val) || 0);
+              return val;
+            }}
+          />
+          {isOverridden && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onDeleteOverride({ mes: month, concepto })}
+              className="ml-1 p-1 h-6 w-6 hover:bg-blue-100"
+              title="Restaurar valor automático"
+            >
+              <Undo className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+        {isOverridden && (
+          <span className="absolute top-0 right-0 text-blue-600 text-xs">*</span>
+        )}
+      </TableCell>
+    );
+  };
+
   return (
     <Card className="mt-6">
       <CardHeader>
@@ -89,9 +152,7 @@ export const MonthlyNumericMatrix: React.FC<MonthlyNumericMatrixProps> = ({
                   GASTO EN OBRA (MXN)
                 </TableCell>
                 {monthColumns.map(month => (
-                  <TableCell key={month.number} className="text-right">
-                    {renderCell(gastoPorMes[month.number] || 0, 'currency')}
-                  </TableCell>
+                  renderEditableCell(month.number, 'gasto_obra', gastoPorMes[month.number] || 0, 'currency')
                 ))}
                 <TableCell className="text-right font-semibold bg-secondary/10">
                   {renderCell(totalGasto, 'currency')}
@@ -104,9 +165,7 @@ export const MonthlyNumericMatrix: React.FC<MonthlyNumericMatrixProps> = ({
                   % AVANCE PARCIAL
                 </TableCell>
                 {monthColumns.map(month => (
-                  <TableCell key={month.number} className="text-right">
-                    {renderCell(avanceParcial[month.number] || 0, 'percentage')}
-                  </TableCell>
+                  renderEditableCell(month.number, 'avance_parcial', avanceParcial[month.number] || 0, 'percentage')
                 ))}
                 <TableCell className="text-right font-semibold bg-secondary/10">
                   100.00%
@@ -119,9 +178,7 @@ export const MonthlyNumericMatrix: React.FC<MonthlyNumericMatrixProps> = ({
                   % AVANCE ACUMULADO
                 </TableCell>
                 {monthColumns.map(month => (
-                  <TableCell key={month.number} className="text-right">
-                    {renderCell(avanceAcumulado[month.number] || 0, 'percentage')}
-                  </TableCell>
+                  renderEditableCell(month.number, 'avance_acumulado', avanceAcumulado[month.number] || 0, 'percentage')
                 ))}
                 <TableCell className="text-right font-semibold bg-secondary/10">
                   100.00%
@@ -134,9 +191,7 @@ export const MonthlyNumericMatrix: React.FC<MonthlyNumericMatrixProps> = ({
                   MINISTRACIONES (MXN)
                 </TableCell>
                 {monthColumns.map(month => (
-                  <TableCell key={month.number} className="text-right">
-                    {renderCell(ministraciones[month.number] || 0, 'currency')}
-                  </TableCell>
+                  renderEditableCell(month.number, 'ministraciones', ministraciones[month.number] || 0, 'currency')
                 ))}
                 <TableCell className="text-right font-semibold bg-secondary/10">
                   {renderCell(totalMinistraciones, 'currency')}
@@ -149,9 +204,7 @@ export const MonthlyNumericMatrix: React.FC<MonthlyNumericMatrixProps> = ({
                   % INVERSIÓN ACUMULADA
                 </TableCell>
                 {monthColumns.map(month => (
-                  <TableCell key={month.number} className="text-right">
-                    {renderCell(inversionAcumulada[month.number] || 0, 'percentage')}
-                  </TableCell>
+                  renderEditableCell(month.number, 'inversion_acumulada', inversionAcumulada[month.number] || 0, 'percentage')
                 ))}
                 <TableCell className="text-right font-semibold bg-secondary/10">
                   {formatPercentage(totalPresupuesto > 0 ? (totalMinistraciones / totalPresupuesto) * 100 : 0)}
@@ -164,9 +217,7 @@ export const MonthlyNumericMatrix: React.FC<MonthlyNumericMatrixProps> = ({
                   FECHA TENTATIVA DE PAGO
                 </TableCell>
                 {monthColumns.map(month => (
-                  <TableCell key={month.number} className="text-center text-xs">
-                    {renderCell(fechasPago[month.number] || [], 'text')}
-                  </TableCell>
+                  renderEditableCell(month.number, 'fecha_pago', fechasPago[month.number] || [], 'text')
                 ))}
                 <TableCell className="text-center bg-secondary/10">
                   -
@@ -197,6 +248,16 @@ export const MonthlyNumericMatrix: React.FC<MonthlyNumericMatrixProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Manual overrides note */}
+        {Object.values(manualOverrides).some(override => override.hasOverride) && (
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center text-sm text-blue-700">
+              <span className="font-semibold mr-1">*</span>
+              <span>Los valores marcados con asterisco (*) han sido editados manualmente y aparecen destacados en azul.</span>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

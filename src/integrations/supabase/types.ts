@@ -2795,6 +2795,42 @@ export type Database = {
           },
         ]
       }
+      cronograma_matriz_manual: {
+        Row: {
+          cliente_id: string
+          concepto: string
+          created_at: string
+          id: string
+          mes: number
+          proyecto_id: string
+          sobrescribe: boolean
+          updated_at: string
+          valor: string
+        }
+        Insert: {
+          cliente_id: string
+          concepto: string
+          created_at?: string
+          id?: string
+          mes: number
+          proyecto_id: string
+          sobrescribe?: boolean
+          updated_at?: string
+          valor: string
+        }
+        Update: {
+          cliente_id?: string
+          concepto?: string
+          created_at?: string
+          id?: string
+          mes?: number
+          proyecto_id?: string
+          sobrescribe?: boolean
+          updated_at?: string
+          valor?: string
+        }
+        Relationships: []
+      }
       design_appointments: {
         Row: {
           appointment_date: string
