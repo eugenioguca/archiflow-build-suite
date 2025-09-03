@@ -60,62 +60,95 @@ export function PresupuestoParametrico() {
   const [rows, setRows] = useState<PresupuestoRow[]>([]);
   const [editingRow, setEditingRow] = useState<string | null>(null);
   
-  // Data states for dropdowns - same as UnifiedTransactionForm
-  const [mayores, setMayores] = useState<Option[]>([]);
-  const [partidas, setPartidas] = useState<Option[]>([]);
+  // Estados para opciones de dropdowns - usando la misma lógica que UnifiedTransactionBulkForm
+  const [departamento, setDepartamento] = useState<string>('');
+  const [mayores, setMayores] = useState<{ value: string; label: string; codigo?: string }[]>([]);
+  const [partidas, setPartidas] = useState<{ value: string; label: string; codigo?: string }[]>([]);
 
-  // Load mayores for Construction department on component mount
-  useEffect(() => {
-    loadMayores('Construcción');
-  }, []);
-
-  const loadMayores = async (departamento: string) => {
+  // Cargar el departamento "Construcción" desde la base de datos
+  const loadDepartamento = async () => {
     try {
       const { data, error } = await supabase
-        .from("chart_of_accounts_mayor")
-        .select("id, nombre, codigo")
-        .eq("departamento", departamento)
-        .eq("activo", true)
-        .order("codigo");
-      
+        .from('chart_of_accounts_departamentos')
+        .select('departamento')
+        .eq('departamento', 'Construcción')
+        .eq('activo', true)
+        .single();
+
       if (error) throw error;
-      
-      setMayores((data || []).map(item => ({ 
-        id: item.id, 
-        nombre: `${item.codigo} - ${item.nombre}`,
-        codigo: item.codigo 
-      })));
+      if (data) {
+        setDepartamento(data.departamento);
+      }
     } catch (error) {
-      console.error("Error loading mayores:", error);
+      console.error('Error loading departamento:', error);
+    }
+  };
+
+  // Cargar mayores basado en departamento seleccionado - misma lógica que UnifiedTransactionBulkForm
+  const loadMayores = async (departamentoId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('chart_of_accounts_mayor')
+        .select('id, nombre, codigo')
+        .eq('departamento', departamentoId)
+        .eq('activo', true)
+        .order('codigo');
+
+      if (error) throw error;
+
+      const options = data?.map(item => ({
+        value: item.id,
+        label: item.nombre,
+        codigo: item.codigo
+      })) || [];
+
+      setMayores(options);
+    } catch (error) {
+      console.error('Error loading mayores:', error);
       setMayores([]);
     }
   };
 
+  // Cargar partidas basado en mayor seleccionado - misma lógica que UnifiedTransactionBulkForm
   const loadPartidas = async (mayorId: string) => {
     try {
       const { data, error } = await supabase
-        .from("chart_of_accounts_partidas")
-        .select("id, nombre, codigo")
-        .eq("mayor_id", mayorId)
-        .eq("activo", true)
-        .order("codigo");
-      
+        .from('chart_of_accounts_partidas')
+        .select('id, nombre, codigo')
+        .eq('mayor_id', mayorId)
+        .eq('activo', true)
+        .order('codigo');
+
       if (error) throw error;
-      
-      setPartidas((data || []).map(item => ({ 
-        id: item.id, 
-        nombre: `${item.codigo} - ${item.nombre}`,
-        codigo: item.codigo 
-      })));
+
+      const options = data?.map(item => ({
+        value: item.id,
+        label: item.nombre,
+        codigo: item.codigo
+      })) || [];
+
+      setPartidas(options);
     } catch (error) {
-      console.error("Error loading partidas:", error);
+      console.error('Error loading partidas:', error);
       setPartidas([]);
     }
   };
 
+  // Cargar departamento al montar el componente
+  useEffect(() => {
+    loadDepartamento();
+  }, []);
+
+  // Cargar mayores cuando el departamento esté disponible
+  useEffect(() => {
+    if (departamento && hasFilters && selectedClientId && selectedProjectId) {
+      loadMayores(departamento);
+    }
+  }, [departamento, hasFilters, selectedClientId, selectedProjectId]);
+
   const addRow = () => {
     const newRow: PresupuestoRow = {
-      departamento: 'Construcción',
+      departamento: departamento || 'Construcción',
       mayor_id: '',
       partida_id: '',
       cantidad_requerida: 1,
@@ -169,7 +202,7 @@ export function PresupuestoParametrico() {
         await createPresupuesto.mutateAsync({
           cliente_id: selectedClientId,
           proyecto_id: selectedProjectId,
-          departamento: 'Construcción',
+          departamento: departamento, // Usar departamento cargado de la DB
           mayor_id: row.mayor_id,
           partida_id: row.partida_id,
           cantidad_requerida: row.cantidad_requerida,
@@ -255,8 +288,8 @@ export function PresupuestoParametrico() {
     }));
 
     const validRows = rows.filter(row => row.mayor_id && row.partida_id).map(row => {
-      const mayorData = mayores.find(m => m.id === row.mayor_id);
-      const partidaData = partidas.find(p => p.id === row.partida_id);
+      const mayorData = mayores.find(m => m.value === row.mayor_id);
+      const partidaData = partidas.find(p => p.value === row.partida_id);
       
       return {
         departamento: 'Construcción',
@@ -409,31 +442,26 @@ export function PresupuestoParametrico() {
                         <Badge variant="secondary">Construcción</Badge>
                       </TableCell>
                       <TableCell>
-                        <SearchableCombobox
-                          items={transformToComboboxItems(mayores)}
-                          value={row.mayor_id}
-                          onValueChange={(value) => handleMayorChange(index, value)}
-                          placeholder="Seleccionar Mayor..."
-                          searchPlaceholder="Buscar mayor..."
-                          emptyText="No se encontraron mayores."
-                          showCodes={true}
-                          searchFields={['label', 'codigo', 'searchText']}
-                          className="w-full min-w-[200px]"
-                        />
+                            <SearchableCombobox
+                              value={row.mayor_id}
+                              onValueChange={(value) => handleMayorChange(index, value)}
+                              items={mayores}
+                              searchPlaceholder="Buscar mayor..."
+                              emptyText="No se encontraron mayores"
+                              className="w-full"
+                              disabled={!hasFilters || !departamento}
+                            />
                       </TableCell>
                       <TableCell>
-                        <SearchableCombobox
-                          items={transformToComboboxItems(partidas)}
-                          value={row.partida_id}
-                          onValueChange={(value) => updateRow(index, 'partida_id', value)}
-                          placeholder="Seleccionar Partida..."
-                          searchPlaceholder="Buscar partida..."
-                          emptyText="No se encontraron partidas."
-                          disabled={!row.mayor_id}
-                          showCodes={true}
-                          searchFields={['label', 'codigo', 'searchText']}
-                          className="w-full min-w-[200px]"
-                        />
+                            <SearchableCombobox
+                              value={row.partida_id}
+                              onValueChange={(value) => updateRow(index, 'partida_id', value)}
+                              items={partidas}
+                              searchPlaceholder="Buscar partida..."
+                              emptyText="No se encontraron partidas"
+                              className="w-full"
+                              disabled={!hasFilters || !row.mayor_id}
+                            />
                       </TableCell>
                       <TableCell>
                         <Input

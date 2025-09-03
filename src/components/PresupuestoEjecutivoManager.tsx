@@ -28,16 +28,17 @@ interface PresupuestoEjecutivoRow {
   monto_total: number;
 }
 
+// Unidades de medida disponibles - exactamente las mismas que en UnifiedTransactionBulkForm
 const UNIDADES = [
-  { value: 'PZA', label: 'Pieza (PZA)' },
-  { value: 'M2', label: 'Metro Cuadrado (M2)' },
-  { value: 'M3', label: 'Metro Cúbico (M3)' },
-  { value: 'ML', label: 'Metro Lineal (ML)' },
-  { value: 'KG', label: 'Kilogramo (KG)' },
-  { value: 'TON', label: 'Tonelada (TON)' },
-  { value: 'LT', label: 'Litro (LT)' },
-  { value: 'GAL', label: 'Galón (GAL)' },
-  { value: 'M', label: 'Metro (M)' }
+  { value: 'PZA', label: 'PZA' },
+  { value: 'M2', label: 'M2' },
+  { value: 'M3', label: 'M3' },
+  { value: 'ML', label: 'ML' },
+  { value: 'KG', label: 'KG' },
+  { value: 'TON', label: 'TON' },
+  { value: 'LT', label: 'LT' },
+  { value: 'GAL', label: 'GAL' },
+  { value: 'M', label: 'M' }
 ];
 
 interface Option {
@@ -89,73 +90,78 @@ export function PresupuestoEjecutivoManager() {
 
   const [rows, setRows] = useState<PresupuestoEjecutivoRow[]>([]);
   
-  // Data states for dropdowns - same as UnifiedTransactionForm
-  const [subpartidas, setSubpartidas] = useState<Option[]>([]);
+  const [subpartidas, setSubpartidas] = useState<{ value: string; label: string; codigo?: string }[]>([]);
 
   const selectedPresupuesto = presupuestos.find(p => p.id === selectedPresupuestoId);
 
-  // Load subpartidas when a parametric budget is selected
+  // Cargar subpartidas basado en partida seleccionada - misma lógica que UnifiedTransactionBulkForm
+  const loadSubpartidas = async (partidaId: string) => {
+    try {
+      // Primero obtener el departamento de la partida seleccionada
+      const { data: partidaData, error: partidaError } = await supabase
+        .from('chart_of_accounts_partidas')
+        .select(`
+          mayor_id,
+          chart_of_accounts_mayor!inner(departamento)
+        `)
+        .eq('id', partidaId)
+        .single();
+
+      if (partidaError) throw partidaError;
+
+      const departamento = partidaData?.chart_of_accounts_mayor?.departamento;
+
+      // Cargar subpartidas dependientes de la partida
+      const { data: dependientes, error: dependientesError } = await supabase
+        .from('chart_of_accounts_subpartidas')
+        .select('id, nombre, codigo')
+        .eq('partida_id', partidaId)
+        .eq('activo', true)
+        .order('codigo');
+
+      if (dependientesError) throw dependientesError;
+
+      // Cargar subpartidas universales del mismo departamento
+      const { data: universales, error: universalesError } = await supabase
+        .from('chart_of_accounts_subpartidas')
+        .select('id, nombre, codigo')
+        .eq('es_global', true)
+        .eq('departamento_aplicable', departamento)
+        .eq('activo', true)
+        .order('codigo');
+
+      if (universalesError) throw universalesError;
+
+      // Combinar ambos tipos de subpartidas
+      const dependientesOptions = dependientes?.map(item => ({
+        value: item.id,
+        label: item.nombre,
+        codigo: item.codigo
+      })) || [];
+
+      const universalesOptions = universales?.map(item => ({
+        value: item.id,
+        label: `${item.nombre} (Universal)`,
+        codigo: item.codigo
+      })) || [];
+
+      // Combinar y ordenar por código
+      const allOptions = [...dependientesOptions, ...universalesOptions]
+        .sort((a, b) => a.codigo!.localeCompare(b.codigo!));
+
+      setSubpartidas(allOptions);
+    } catch (error) {
+      console.error('Error loading subpartidas:', error);
+      setSubpartidas([]);
+    }
+  };
+
+  // Cargar subpartidas cuando se selecciona un presupuesto
   useEffect(() => {
     if (selectedPresupuesto?.partida_id) {
       loadSubpartidas(selectedPresupuesto.partida_id);
     }
-  }, [selectedPresupuesto]);
-
-  const loadSubpartidas = async (partidaId: string) => {
-    try {
-      // Get the partida to check its department
-      const { data: partida } = await supabase
-        .from("chart_of_accounts_partidas")
-        .select("*, chart_of_accounts_mayor(departamento)")
-        .eq("id", partidaId)
-        .single();
-
-      // Load specific subpartidas for this partida
-      const { data: specificSubpartidas } = await supabase
-        .from("chart_of_accounts_subpartidas")
-        .select("id, nombre, codigo")
-        .eq("partida_id", partidaId)
-        .eq("activo", true)
-        .order("codigo");
-
-      let allSubpartidas = [...(specificSubpartidas || [])];
-
-      // If this is a construction partida, also load global construction subpartidas
-      const departamentoNormalizado = normalizeForComparison(partida?.chart_of_accounts_mayor?.departamento || '');
-      if (departamentoNormalizado === 'construccion') {
-        const { data: globalSubpartidas } = await supabase
-          .from("chart_of_accounts_subpartidas")
-          .select("id, nombre, codigo, departamento_aplicable")
-          .eq("es_global", true)
-          .eq("activo", true)
-          .order("codigo");
-
-        // Filter global subpartidas for construction department
-        const constructionGlobals = globalSubpartidas?.filter(item => 
-          normalizeForComparison(item.departamento_aplicable || '') === 'construccion'
-        ) || [];
-
-        if (constructionGlobals.length > 0) {
-          allSubpartidas = [
-            ...allSubpartidas,
-            ...constructionGlobals.map(item => ({
-              ...item,
-              nombre: `${item.nombre} (Global)` // Mark as global for clarity
-            }))
-          ];
-        }
-      }
-      
-      setSubpartidas(allSubpartidas.map(item => ({ 
-        id: item.id, 
-        nombre: `${item.codigo} - ${item.nombre}`,
-        codigo: item.codigo 
-      })));
-    } catch (error) {
-      console.error("Error loading subpartidas:", error);
-      setSubpartidas([]);
-    }
-  };
+  }, [selectedPresupuesto?.partida_id]);
 
 
   const addSubpartida = () => {
@@ -163,7 +169,7 @@ export function PresupuestoEjecutivoManager() {
 
     const newRow: PresupuestoEjecutivoRow = {
       presupuesto_parametrico_id: selectedPresupuestoId,
-      departamento: 'Construcción',
+      departamento: selectedPresupuesto.departamento, // Usar departamento del presupuesto paramétrico
       mayor_id: selectedPresupuesto.mayor_id,
       partida_id: selectedPresupuesto.partida_id,
       subpartida_id: '',
@@ -220,7 +226,7 @@ export function PresupuestoEjecutivoManager() {
           cliente_id: selectedClientId,
           proyecto_id: selectedProjectId,
           presupuesto_parametrico_id: selectedPresupuestoId,
-          departamento: 'Construcción',
+          departamento: selectedPresupuesto?.departamento || 'Construcción', // Usar departamento del presupuesto paramétrico
           mayor_id: row.mayor_id,
           partida_id: row.partida_id,
           subpartida_id: row.subpartida_id,
@@ -380,17 +386,14 @@ export function PresupuestoEjecutivoManager() {
                         {rows.map((row, index) => (
                           <TableRow key={index}>
                             <TableCell>
-                              <SearchableCombobox
-                                items={transformToComboboxItems(subpartidas)}
-                                value={row.subpartida_id}
-                                onValueChange={(value) => updateRow(index, 'subpartida_id', value)}
-                                placeholder="Seleccionar Subpartida..."
-                                searchPlaceholder="Buscar subpartida..."
-                                emptyText="No se encontraron subpartidas."
-                                showCodes={true}
-                                searchFields={['label', 'codigo', 'searchText']}
-                                className="w-full min-w-[200px]"
-                              />
+                            <SearchableCombobox
+                              value={row.subpartida_id}
+                              onValueChange={(value) => updateRow(index, 'subpartida_id', value)}
+                              items={subpartidas}
+                              searchPlaceholder="Buscar subpartida..."
+                              emptyText="No se encontraron subpartidas"
+                              className="w-full"
+                            />
                             </TableCell>
                             <TableCell>
                               <Select

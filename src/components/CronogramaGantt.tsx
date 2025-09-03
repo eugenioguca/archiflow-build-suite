@@ -59,39 +59,69 @@ export function CronogramaGantt() {
 
   const [rows, setRows] = useState<CronogramaRow[]>([]);
   
-  // Data states for dropdowns - same as UnifiedTransactionForm
-  const [mayores, setMayores] = useState<Option[]>([]);
+  // Estados para opciones de dropdowns - usando la misma lógica que UnifiedTransactionBulkForm
+  const [departamento, setDepartamento] = useState<string>('');
+  const [mayores, setMayores] = useState<{ value: string; label: string; codigo?: string }[]>([]);
 
-  // Load mayores for Construction department on component mount
-  useEffect(() => {
-    loadMayores('Construcción');
-  }, []);
-
-  const loadMayores = async (departamento: string) => {
+  // Cargar el departamento "Construcción" desde la base de datos
+  const loadDepartamento = async () => {
     try {
       const { data, error } = await supabase
-        .from("chart_of_accounts_mayor")
-        .select("id, nombre, codigo")
-        .eq("departamento", departamento)
-        .eq("activo", true)
-        .order("codigo");
-      
+        .from('chart_of_accounts_departamentos')
+        .select('departamento')
+        .eq('departamento', 'Construcción')
+        .eq('activo', true)
+        .single();
+
       if (error) throw error;
-      
-      setMayores((data || []).map(item => ({ 
-        id: item.id, 
-        nombre: `${item.codigo} - ${item.nombre}`,
-        codigo: item.codigo 
-      })));
+      if (data) {
+        setDepartamento(data.departamento);
+      }
     } catch (error) {
-      console.error("Error loading mayores:", error);
+      console.error('Error loading departamento:', error);
+    }
+  };
+
+  // Cargar mayores basado en departamento seleccionado - misma lógica que UnifiedTransactionBulkForm
+  const loadMayores = async (departamentoId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('chart_of_accounts_mayor')
+        .select('id, nombre, codigo')
+        .eq('departamento', departamentoId)
+        .eq('activo', true)
+        .order('codigo');
+
+      if (error) throw error;
+
+      const options = data?.map(item => ({
+        value: item.id,
+        label: item.nombre,
+        codigo: item.codigo
+      })) || [];
+
+      setMayores(options);
+    } catch (error) {
+      console.error('Error loading mayores:', error);
       setMayores([]);
     }
   };
 
+  // Cargar departamento al montar el componente
+  useEffect(() => {
+    loadDepartamento();
+  }, []);
+
+  // Cargar mayores cuando el departamento esté disponible
+  useEffect(() => {
+    if (departamento && hasFilters && selectedClientId && selectedProjectId) {
+      loadMayores(departamento);
+    }
+  }, [departamento, hasFilters, selectedClientId, selectedProjectId]);
+
   const addRow = () => {
     const newRow: CronogramaRow = {
-      departamento: 'Construcción',
+      departamento: departamento || 'Construcción',
       mayor_id: '',
       fecha_inicio: undefined,
       fecha_fin: undefined,
@@ -145,7 +175,7 @@ export function CronogramaGantt() {
         await createCronograma.mutateAsync({
           cliente_id: selectedClientId,
           proyecto_id: selectedProjectId,
-          departamento: 'Construcción',
+          departamento: departamento, // Usar departamento cargado de la DB
           mayor_id: row.mayor_id,
           fecha_inicio: format(row.fecha_inicio, 'yyyy-MM-dd'),
           fecha_fin: format(row.fecha_fin, 'yyyy-MM-dd')
@@ -335,15 +365,13 @@ export function CronogramaGantt() {
                       </TableCell>
                       <TableCell>
                         <SearchableCombobox
-                          items={transformToComboboxItems(mayores)}
                           value={row.mayor_id}
                           onValueChange={(value) => updateRow(index, 'mayor_id', value)}
-                          placeholder="Seleccionar Mayor..."
+                          items={mayores}
                           searchPlaceholder="Buscar mayor..."
-                          emptyText="No se encontraron mayores."
-                          showCodes={true}
-                          searchFields={['label', 'codigo', 'searchText']}
-                          className="w-full min-w-[200px]"
+                          emptyText="No se encontraron mayores"
+                          className="w-full"
+                          disabled={!hasFilters || !departamento}
                         />
                       </TableCell>
                       <TableCell>
