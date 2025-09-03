@@ -60,27 +60,32 @@ export function PresupuestoParametrico() {
   const [rows, setRows] = useState<PresupuestoRow[]>([]);
   const [editingRow, setEditingRow] = useState<string | null>(null);
   
-  // Estados para opciones de dropdowns - usando la misma lógica que UnifiedTransactionBulkForm
+  // Estados para opciones de dropdowns - misma lógica que UnifiedTransactionBulkForm
   const [departamentoId, setDepartamentoId] = useState<string>('');
   const [mayores, setMayores] = useState<{ value: string; label: string; codigo?: string }[]>([]);
   const [partidas, setPartidas] = useState<{ value: string; label: string; codigo?: string }[]>([]);
 
-  // Cargar el departamento "Construcción" desde la base de datos - obtener el registro real
-  const loadDepartamento = async () => {
+  // Cargar departamentos y encontrar "Construcción" - misma lógica que UnifiedTransactionBulkForm
+  const loadDepartamentos = async () => {
     try {
       const { data, error } = await supabase
         .from('chart_of_accounts_departamentos')
         .select('departamento')
-        .eq('departamento', 'Construcción')
         .eq('activo', true)
-        .single();
+        .order('departamento');
 
       if (error) throw error;
-      if (data) {
-        setDepartamentoId(data.departamento); // Store the departamento string for querying
+
+      // Evitar duplicados usando Set
+      const uniqueDepartamentos = [...new Set(data?.map(item => item.departamento) || [])];
+      
+      // Encontrar "Construcción" y establecerlo como departamento por defecto
+      const construccionDept = uniqueDepartamentos.find(dept => dept === 'Construcción');
+      if (construccionDept) {
+        setDepartamentoId(construccionDept);
       }
     } catch (error) {
-      console.error('Error loading departamento:', error);
+      console.error('Error loading departamentos:', error);
     }
   };
 
@@ -134,9 +139,9 @@ export function PresupuestoParametrico() {
     }
   };
 
-  // Cargar departamento al montar el componente
+  // Cargar departamentos al montar el componente
   useEffect(() => {
-    loadDepartamento();
+    loadDepartamentos();
   }, []);
 
   // Cargar mayores cuando el departamento esté disponible
