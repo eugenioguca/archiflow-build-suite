@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, Download } from 'lucide-react';
+import jsPDF from 'jspdf';
 import { useCronogramaGantt } from '@/hooks/useCronogramaGantt';
 import { useClientProjectFilters } from '@/hooks/useClientProjectFilters';
 import { CollapsibleFilters } from '@/components/CollapsibleFilters';
@@ -144,8 +145,71 @@ export function CronogramaGantt() {
   };
 
   const exportToPDF = () => {
-    // TODO: Implement PDF export functionality
-    console.log('Export to PDF');
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'letter'
+    });
+
+    // Header
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('DOVITA CONSTRUCCIONES', 140, 20, { align: 'center' });
+    
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'normal');
+    doc.text('CRONOGRAMA DE GANTT', 140, 30, { align: 'center' });
+
+    // Date
+    doc.setFontSize(10);
+    doc.text(`Fecha: ${new Date().toLocaleDateString('es-MX')}`, 15, 45);
+    
+    // Table
+    let currentY = 60;
+    const rowHeight = 8;
+    const colWidths = [40, 50, 40, 40, 30];
+    const headers = ['Departamento', 'Mayor', 'Fecha Inicio', 'Fecha Fin', 'Duración'];
+    
+    // Draw headers
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setFillColor(240, 240, 240);
+    doc.rect(15, currentY, colWidths.reduce((a, b) => a + b, 0), rowHeight, 'F');
+    
+    let currentX = 15;
+    headers.forEach((header, index) => {
+      doc.text(header, currentX + 2, currentY + 5);
+      currentX += colWidths[index];
+    });
+    
+    currentY += rowHeight;
+
+    // Data rows
+    doc.setFont('helvetica', 'normal');
+    cronogramas.forEach((item) => {
+      if (currentY > 180) {
+        doc.addPage();
+        currentY = 20;
+      }
+
+      currentX = 15;
+      const rowData = [
+        item.departamento,
+        item.mayor ? `${item.mayor.codigo}` : '',
+        format(new Date(item.fecha_inicio), 'dd/MM/yyyy'),
+        format(new Date(item.fecha_fin), 'dd/MM/yyyy'),
+        getDurationText(item.duracion)
+      ];
+
+      rowData.forEach((data, index) => {
+        doc.text(data, currentX + 2, currentY + 5);
+        currentX += colWidths[index];
+      });
+      
+      currentY += rowHeight;
+    });
+
+    doc.save(`Cronograma_Gantt_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   const getDurationText = (duracion: number) => {

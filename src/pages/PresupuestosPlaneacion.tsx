@@ -40,7 +40,11 @@ export default function PresupuestosPlaneacion() {
 
         <TabsContent value="pagos" className="space-y-6">
           {hasFilters && selectedClientId && selectedProjectId ? (
-            <PaymentPlanManager clientProjectId={selectedProjectId} />
+            <PaymentPlanManager 
+              clientProjectId={selectedProjectId} 
+              planType="construction_payment"
+              compact={false}
+            />
           ) : (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
