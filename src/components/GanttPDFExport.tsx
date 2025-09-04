@@ -197,17 +197,26 @@ export const GanttPDFExport: React.FC<GanttPDFExportProps> = ({
           // Calculate position based on month and week (matching InteractiveGanttChart)
           const weekWidth = cellWidth / 4; // Each month cell contains 4 weeks
           const startPosition = ((bar.start_month - 1) * 4 + (bar.start_week - 1)) * weekWidth;
-          const barWidth = bar.duration_weeks * weekWidth;
+          const barWidth = Math.max(weekWidth, bar.duration_weeks * weekWidth); // Ensure minimum width
           const startX = 75 + startPosition;
           
+          // Draw bar with rounded corners and better styling
           doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-          doc.rect(startX, currentY + 1, Math.max(barWidth, 2), rowHeight - 2, 'F');
+          doc.roundedRect(startX, currentY + 2, barWidth, rowHeight - 4, 1, 1, 'F');
           
-          // Bar text with manual override indicator
+          // Add subtle border
+          doc.setDrawColor(primaryColor[0] * 0.8, primaryColor[1] * 0.8, primaryColor[2] * 0.8);
+          doc.setLineWidth(0.5);
+          doc.roundedRect(startX, currentY + 2, barWidth, rowHeight - 4, 1, 1, 'S');
+          
+          // Bar text with better positioning
           doc.setTextColor(255, 255, 255);
-          doc.setFontSize(6);
-          if (barWidth > 10) {
-            doc.text(`${bar.duration_weeks}w`, startX + 2, currentY + 4);
+          doc.setFontSize(7);
+          const text = `${bar.duration_weeks}w`;
+          const textWidth = doc.getTextWidth(text);
+          if (barWidth > textWidth + 4) { // Only show text if there's enough space
+            const textX = startX + (barWidth - textWidth) / 2;
+            doc.text(text, textX, currentY + 5);
           }
           doc.setTextColor(0, 0, 0);
         });

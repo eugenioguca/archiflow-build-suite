@@ -80,13 +80,13 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
   const getBarStyle = (bar: GanttBar, barIndex: number = 0) => {
     const weekWidth = 24; // Match w-6 Tailwind class (24px)
     const startPosition = ((bar.start_month - 1) * 4 + (bar.start_week - 1)) * weekWidth;
-    const width = bar.duration_weeks * weekWidth;
+    const width = Math.max(24, bar.duration_weeks * weekWidth); // Ensure minimum width
     
     return {
       left: `${startPosition}px`,
       width: `${width}px`,
-      top: `${4 + (barIndex * 32)}px`, // Stack bars with more spacing
-      height: '24px', // Fixed height
+      top: `${8 + (barIndex * 36)}px`, // Better spacing for stacking
+      height: '28px', // Slightly taller bars
     };
   };
 
@@ -258,55 +258,65 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
                       )}
                     </div>
                     
-                    <div className="flex-1 relative" style={{ minWidth: `${months * 96}px`, minHeight: `${Math.max(48, mayorActivities.length * 36)}px` }}>
-                      {/* Week grid cells */}
-                      {monthHeaders.map(month =>
-                        month.weeks.map((_, weekIdx) => (
-                          <div
-                            key={`${month.number}-${weekIdx}`}
-                            className="absolute w-6 h-full border-r border-border/30 hover:bg-accent/10 cursor-pointer"
-                            style={{ left: `${((month.number - 1) * 4 + weekIdx) * 24}px` }}
-                            onClick={() => handleCellClick(month.number, weekIdx + 1, mayor.id)}
-                          />
-                        ))
-                      )}
+                     <div className="flex-1 relative overflow-x-auto" style={{ minWidth: `${months * 96}px`, minHeight: `${Math.max(60, mayorActivities.length * 40)}px` }}>
+                       {/* Week grid cells - clickable background */}
+                       {monthHeaders.map(month =>
+                         month.weeks.map((_, weekIdx) => (
+                           <div
+                             key={`${month.number}-${weekIdx}`}
+                             className="absolute w-6 h-full border-r border-border/30 hover:bg-accent/20 cursor-pointer"
+                             style={{ 
+                               left: `${((month.number - 1) * 4 + weekIdx) * 24}px`,
+                               height: '100%'
+                             }}
+                             onClick={() => handleCellClick(month.number, weekIdx + 1, mayor.id)}
+                           />
+                         ))
+                       )}
 
-                      {/* Render activity bars */}
-                      {mayorActivities.map((activity, activityIndex) => (
-                        <div
-                          key={activity.bar.id}
-                          className={cn(
-                            "absolute bg-primary text-primary-foreground rounded-sm px-1 flex items-center justify-between cursor-move select-none",
-                            "hover:bg-primary/90 transition-colors text-xs font-medium",
-                            isDragging?.barId === activity.bar.id && "opacity-60"
-                          )}
-                          style={{ 
-                            ...getBarStyle(activity.bar, activityIndex),
-                            zIndex: 10 + activityIndex
-                          }}
-                          onMouseDown={(e) => handleMouseDown(e, activity.bar.id, 'move')}
-                          title={`${mayor.codigo} - ${mayor.nombre}\nMes ${activity.bar.start_month} Sem ${activity.bar.start_week} → Mes ${activity.bar.end_month} Sem ${activity.bar.end_week}\nDuración: ${activity.bar.duration_weeks} semanas`}
-                        >
-                          <div 
-                            className="w-1 h-full bg-primary-foreground/30 cursor-ew-resize rounded-l"
-                            onMouseDown={(e) => {
-                              e.stopPropagation();
-                              handleMouseDown(e, activity.bar.id, 'resize-start');
-                            }}
-                          />
-                          <span className="truncate flex-1 text-center px-1">
-                            {activity.bar.duration_weeks}w
-                          </span>
-                          <div 
-                            className="w-1 h-full bg-primary-foreground/30 cursor-ew-resize rounded-r"
-                            onMouseDown={(e) => {
-                              e.stopPropagation();
-                              handleMouseDown(e, activity.bar.id, 'resize-end');
-                            }}
-                          />
-                        </div>
-                      ))}
-                    </div>
+                       {/* Render activity bars */}
+                       {mayorActivities.map((activity, activityIndex) => {
+                         const barStyle = getBarStyle(activity.bar, activityIndex);
+                         return (
+                           <div
+                             key={activity.bar.id}
+                             className={cn(
+                               "absolute bg-primary text-primary-foreground rounded-sm px-2 py-1",
+                               "flex items-center justify-center cursor-move select-none",
+                               "hover:bg-primary/90 transition-colors text-xs font-medium shadow-sm",
+                               "border border-primary-foreground/20",
+                               isDragging?.barId === activity.bar.id && "opacity-60"
+                             )}
+                             style={{ 
+                               ...barStyle,
+                               zIndex: 20 + activityIndex,
+                               minWidth: '24px', // Ensure minimum visibility
+                               minHeight: '28px'
+                             }}
+                             onMouseDown={(e) => handleMouseDown(e, activity.bar.id, 'move')}
+                             title={`${activity.bar.mayor?.codigo || 'N/A'} - ${activity.bar.mayor?.nombre || 'Sin nombre'}\nMes ${activity.bar.start_month} Sem ${activity.bar.start_week} → Mes ${activity.bar.end_month} Sem ${activity.bar.end_week}\nDuración: ${activity.bar.duration_weeks} semanas`}
+                           >
+                             <div 
+                               className="absolute left-0 top-0 w-1 h-full bg-primary-foreground/40 cursor-ew-resize rounded-l"
+                               onMouseDown={(e) => {
+                                 e.stopPropagation();
+                                 handleMouseDown(e, activity.bar.id, 'resize-start');
+                               }}
+                             />
+                             <span className="truncate text-center flex-1 px-1">
+                               {activity.bar.duration_weeks}w
+                             </span>
+                             <div 
+                               className="absolute right-0 top-0 w-1 h-full bg-primary-foreground/40 cursor-ew-resize rounded-r"
+                               onMouseDown={(e) => {
+                                 e.stopPropagation();
+                                 handleMouseDown(e, activity.bar.id, 'resize-end');
+                               }}
+                             />
+                           </div>
+                         );
+                       })}
+                     </div>
                   </div>
                 );
               })}
