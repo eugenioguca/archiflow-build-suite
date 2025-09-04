@@ -2,7 +2,7 @@ import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { getCurrentMonth, formatDateToYYYYMM } from '@/utils/cronogramaWeekUtils';
+import { getCurrentMonth, formatDateToYYYYMM, calculateDateFromMonthWeek } from '@/utils/cronogramaWeekUtils';
 import { calculateGanttMatrix } from '@/utils/ganttCalculations';
 
 export interface ModernGanttActivity {
@@ -222,6 +222,10 @@ export const useModernCronograma = (clienteId?: string, proyectoId?: string) => 
       const endYear = parseInt(activityData.end_month.split('-')[0]);
       const endMonth = parseInt(activityData.end_month.split('-')[1]);
 
+      // Calculate precise dates based on month and week
+      const fechaInicio = calculateDateFromMonthWeek(activityData.start_month, activityData.start_week);
+      const fechaFin = calculateDateFromMonthWeek(activityData.end_month, activityData.end_week);
+
       const { data, error } = await supabase
         .from('cronograma_gantt')
         .insert([{
@@ -234,10 +238,10 @@ export const useModernCronograma = (clienteId?: string, proyectoId?: string) => 
           end_month: endYear * 100 + endMonth,
           end_week: activityData.end_week,
           duration_weeks: activityData.duration_weeks,
-          // Convert to legacy date fields for compatibility
-          fecha_inicio: `${activityData.start_month}-01`,
-          fecha_fin: `${activityData.end_month}-28`,
-          duracion: activityData.duration_weeks * 7,
+          // Convert to precise date fields for compatibility
+          // The duracion column will be automatically calculated by PostgreSQL
+          fecha_inicio: fechaInicio,
+          fecha_fin: fechaFin,
           created_by: user.id
         }])
         .select()

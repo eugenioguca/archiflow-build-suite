@@ -159,6 +159,42 @@ export function formatDateToYYYYMM(date: Date): string {
 }
 
 /**
+ * Calculate precise date from YYYY-MM month and week number (1-4)
+ * Week 1 = day 1-7, Week 2 = day 8-14, Week 3 = day 15-21, Week 4 = day 22-end of month
+ */
+export function calculateDateFromMonthWeek(monthStr: string, week: number): string {
+  const [year, month] = monthStr.split('-').map(Number);
+  const date = new Date(year, month - 1, 1); // First day of the month
+  
+  // Calculate the starting day for the given week
+  let targetDay: number;
+  switch (week) {
+    case 1:
+      targetDay = 1;
+      break;
+    case 2:
+      targetDay = 8;
+      break;
+    case 3:
+      targetDay = 15;
+      break;
+    case 4:
+      targetDay = 22;
+      break;
+    default:
+      targetDay = 1;
+  }
+  
+  // Set the day and ensure it doesn't exceed the month
+  const lastDayOfMonth = new Date(year, month, 0).getDate();
+  const finalDay = Math.min(targetDay, lastDayOfMonth);
+  date.setDate(finalDay);
+  
+  // Return in YYYY-MM-DD format
+  return date.toISOString().split('T')[0];
+}
+
+/**
  * Generate month range for Gantt display
  */
 export function generateMonthRange(startOffset: number = 0, count: number = 12): string[] {
