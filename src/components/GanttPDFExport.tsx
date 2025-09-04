@@ -194,10 +194,11 @@ export const GanttPDFExport: React.FC<GanttPDFExportProps> = ({
         // Draw bars for this mayor using month+week positioning
         const mayorBars = ganttBars.filter(bar => bar.mayor_id === mayor.id);
         mayorBars.forEach(bar => {
-          // Calculate position based on month and week
-          const startPosition = ((bar.start_month - 1) * 4 + (bar.start_week - 1)) / 4; // Convert to month position
-          const barWidth = (bar.duration_weeks / 4) * cellWidth; // Convert weeks to width
-          const startX = 75 + (startPosition * cellWidth);
+          // Calculate position based on month and week (matching InteractiveGanttChart)
+          const weekWidth = cellWidth / 4; // Each month cell contains 4 weeks
+          const startPosition = ((bar.start_month - 1) * 4 + (bar.start_week - 1)) * weekWidth;
+          const barWidth = bar.duration_weeks * weekWidth;
+          const startX = 75 + startPosition;
           
           doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
           doc.rect(startX, currentY + 1, Math.max(barWidth, 2), rowHeight - 2, 'F');

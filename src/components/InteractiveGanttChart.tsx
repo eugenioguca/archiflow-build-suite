@@ -78,13 +78,15 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
 
   // Calculate bar position and width for continuous bars
   const getBarStyle = (bar: GanttBar, barIndex: number = 0) => {
-    const startPosition = ((bar.start_month - 1) * 4 + (bar.start_week - 1)) * 25; // 25px per week
-    const width = bar.duration_weeks * 25;
+    const weekWidth = 24; // Match w-6 Tailwind class (24px)
+    const startPosition = ((bar.start_month - 1) * 4 + (bar.start_week - 1)) * weekWidth;
+    const width = bar.duration_weeks * weekWidth;
     
     return {
       left: `${startPosition}px`,
       width: `${width}px`,
-      top: `${4 + (barIndex * 10)}px`, // Stack bars vertically if multiple
+      top: `${4 + (barIndex * 32)}px`, // Stack bars with more spacing
+      height: '24px', // Fixed height
     };
   };
 
@@ -103,7 +105,8 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
 
     const rect = chartRef.current.getBoundingClientRect();
     const relativeX = e.clientX - rect.left;
-    const weekPosition = Math.floor(relativeX / 25); // 25px per week
+    const weekWidth = 24; // Match CSS width
+    const weekPosition = Math.floor(relativeX / weekWidth);
     
     const bar = ganttBars.find(b => b.id === isDragging.barId);
     if (!bar) return;
@@ -222,7 +225,7 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
                      <div className="flex">
                       {month.weeks.map((week, weekIdx) => (
                         <div key={`${month.number}-${weekIdx}`} 
-                             className="w-6 p-1 bg-muted text-center text-xs border-r border-border last:border-r-0">
+                             className="w-6 p-1 bg-muted text-center text-xs border-r border-border last:border-r-0 min-w-6">
                           {week}
                         </div>
                       ))}
@@ -255,14 +258,14 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
                       )}
                     </div>
                     
-                    <div className="flex-1 relative" style={{ minWidth: `${months * 100}px`, minHeight: `${Math.max(48, mayorActivities.length * 12)}px` }}>
+                    <div className="flex-1 relative" style={{ minWidth: `${months * 96}px`, minHeight: `${Math.max(48, mayorActivities.length * 36)}px` }}>
                       {/* Week grid cells */}
                       {monthHeaders.map(month =>
                         month.weeks.map((_, weekIdx) => (
                           <div
                             key={`${month.number}-${weekIdx}`}
                             className="absolute w-6 h-full border-r border-border/30 hover:bg-accent/10 cursor-pointer"
-                            style={{ left: `${((month.number - 1) * 4 + weekIdx) * 25}px` }}
+                            style={{ left: `${((month.number - 1) * 4 + weekIdx) * 24}px` }}
                             onClick={() => handleCellClick(month.number, weekIdx + 1, mayor.id)}
                           />
                         ))
@@ -273,8 +276,8 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
                         <div
                           key={activity.bar.id}
                           className={cn(
-                            "absolute h-8 bg-primary text-primary-foreground rounded px-2 flex items-center justify-between cursor-move select-none",
-                            "hover:bg-primary/90 transition-colors",
+                            "absolute bg-primary text-primary-foreground rounded-sm px-1 flex items-center justify-between cursor-move select-none",
+                            "hover:bg-primary/90 transition-colors text-xs font-medium",
                             isDragging?.barId === activity.bar.id && "opacity-60"
                           )}
                           style={{ 
@@ -282,20 +285,20 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
                             zIndex: 10 + activityIndex
                           }}
                           onMouseDown={(e) => handleMouseDown(e, activity.bar.id, 'move')}
-                          title={`${mayor.nombre} - Mes ${activity.bar.start_month} Sem ${activity.bar.start_week} a Mes ${activity.bar.end_month} Sem ${activity.bar.end_week}, Duración: ${activity.bar.duration_weeks} semanas`}
+                          title={`${mayor.codigo} - ${mayor.nombre}\nMes ${activity.bar.start_month} Sem ${activity.bar.start_week} → Mes ${activity.bar.end_month} Sem ${activity.bar.end_week}\nDuración: ${activity.bar.duration_weeks} semanas`}
                         >
                           <div 
-                            className="w-2 h-full bg-primary-foreground/20 cursor-ew-resize rounded-l"
+                            className="w-1 h-full bg-primary-foreground/30 cursor-ew-resize rounded-l"
                             onMouseDown={(e) => {
                               e.stopPropagation();
                               handleMouseDown(e, activity.bar.id, 'resize-start');
                             }}
                           />
-                          <span className="text-xs font-medium truncate flex-1 text-center">
+                          <span className="truncate flex-1 text-center px-1">
                             {activity.bar.duration_weeks}w
                           </span>
                           <div 
-                            className="w-2 h-full bg-primary-foreground/20 cursor-ew-resize rounded-r"
+                            className="w-1 h-full bg-primary-foreground/30 cursor-ew-resize rounded-r"
                             onMouseDown={(e) => {
                               e.stopPropagation();
                               handleMouseDown(e, activity.bar.id, 'resize-end');
