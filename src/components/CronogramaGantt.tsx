@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { RefreshCw, Calendar, BarChart3 } from 'lucide-react';
-import { useInteractiveGantt } from '@/hooks/useInteractiveGantt';
+import { useCronogramaGantt } from '@/hooks/useCronogramaGantt';
 import { useClientProjectFilters } from '@/hooks/useClientProjectFilters';
 import { CollapsibleFilters } from '@/components/CollapsibleFilters';
 import { InteractiveGanttChart } from '@/components/InteractiveGanttChart';
@@ -20,41 +20,12 @@ export function CronogramaGantt() {
   } = useClientProjectFilters();
 
   const {
-    ganttBars,
+    activities,
     mayores,
-    isLoading,
-    monthlyCalculations,
-    manualOverrides,
-    createGanttBar,
-    updateGanttBar, 
-    deleteGanttBar,
-    saveManualOverride,
-    deleteManualOverride,
-    refetch
-  } = useInteractiveGantt(selectedClientId, selectedProjectId);
+    isLoading
+  } = useCronogramaGantt(selectedClientId, selectedProjectId);
 
   const [months, setMonths] = useState(12);
-
-  // Handle bar creation from form
-  const handleCreateBar = async (data: any) => {
-    if (!selectedClientId || !selectedProjectId) return;
-    
-    await createGanttBar.mutateAsync({
-      ...data,
-      cliente_id: selectedClientId,
-      proyecto_id: selectedProjectId
-    });
-  };
-
-  // Handle bar update
-  const handleUpdateBar = async (id: string, data: any) => {
-    await updateGanttBar.mutateAsync({ id, data });
-  };
-
-  // Handle bar deletion
-  const handleDeleteBar = async (id: string) => {
-    await deleteGanttBar.mutateAsync(id);
-  };
 
   return (
     <div className="space-y-6">
@@ -85,14 +56,26 @@ export function CronogramaGantt() {
                   <option value={24}>24 meses</option>
                 </select>
               </div>
-              <Button onClick={refetch} variant="outline" size="sm">
+              <Button onClick={() => window.location.reload()} variant="outline" size="sm">
                 <RefreshCw className="h-4 w-4" />
               </Button>
             <GanttPDFExport
-              ganttBars={ganttBars}
+              ganttBars={activities.map(a => ({
+                ...a,
+                departamento_id: a.departamento,
+                mayor: a.mayor || { codigo: '', nombre: '' }
+              }))}
               mayores={mayores}
-              calculations={monthlyCalculations}
-              manualOverrides={manualOverrides}
+              calculations={{
+                gastoPorMes: {},
+                avanceParcial: {},
+                avanceAcumulado: {},
+                ministraciones: {},
+                inversionAcumulada: {},
+                fechasPago: {},
+                totalPresupuesto: 0
+              }}
+              manualOverrides={{}}
               clienteId={selectedClientId}
               proyectoId={selectedProjectId}
               months={months}
@@ -124,29 +107,28 @@ export function CronogramaGantt() {
           ) : (
             <>
               <InteractiveGanttChart
-                ganttBars={ganttBars}
-                mayores={mayores}
-                onCreateBar={handleCreateBar}
-                onUpdateBar={handleUpdateBar}
-                onDeleteBar={handleDeleteBar}
                 clienteId={selectedClientId}
                 proyectoId={selectedProjectId}
                 months={months}
               />
               
-               <MonthlyNumericMatrix
-                 calculations={monthlyCalculations}
-                 manualOverrides={manualOverrides}
-                 onSaveOverride={async (data) => {
-                   await saveManualOverride.mutateAsync(data);
-                 }}
-                 onDeleteOverride={async (data) => {
-                   await deleteManualOverride.mutateAsync(data);
-                 }}
-                 months={months}
-               />
+              <MonthlyNumericMatrix
+                calculations={{
+                  gastoPorMes: {},
+                  avanceParcial: {},
+                  avanceAcumulado: {},
+                  ministraciones: {},
+                  inversionAcumulada: {},
+                  fechasPago: {},
+                  totalPresupuesto: 0
+                }}
+                manualOverrides={{}}
+                onSaveOverride={async () => {}}
+                onDeleteOverride={async () => {}}
+                months={months}
+              />
               
-              {ganttBars.length === 0 && (
+              {activities.length === 0 && (
                 <Card>
                   <CardContent className="flex flex-col items-center justify-center py-16 text-center">
                     <BarChart3 className="h-12 w-12 text-muted-foreground mb-4" />

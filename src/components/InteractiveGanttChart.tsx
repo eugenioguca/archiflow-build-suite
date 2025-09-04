@@ -2,32 +2,33 @@ import React, { useState, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2 } from 'lucide-react';
-import { GanttBar } from '@/hooks/useInteractiveGantt';
 import { cn } from '@/lib/utils';
 import { CronogramaGanttFormModal } from '@/components/modals/CronogramaGanttFormModal';
-import { expandRangeToMonthWeekCells, weeksBetween } from '@/utils/cronogramaWeekUtils';
+import { useCronogramaGantt, GanttActivity } from '@/hooks/useCronogramaGantt';
+import { groupActivitiesByMayor, isCellFilled } from '@/utils/expandRangeToCells';
 
 interface InteractiveGanttChartProps {
-  ganttBars: GanttBar[];
-  mayores: Array<{ id: string; codigo: string; nombre: string }>;
-  onCreateBar: (data: Omit<GanttBar, 'id' | 'created_at' | 'updated_at' | 'created_by' | 'mayor'>) => void;
-  onUpdateBar: (id: string, data: Partial<GanttBar>) => void;
-  onDeleteBar: (id: string) => void;
   clienteId: string;
   proyectoId: string;
   months?: number;
 }
 
 export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
-  ganttBars,
-  mayores,
-  onCreateBar,
-  onUpdateBar,
-  onDeleteBar,
   clienteId,
   proyectoId,
   months = 12
 }) => {
+  // Use the dedicated Gantt hook
+  const {
+    activities,
+    mayores,
+    isLoading,
+    createActivity,
+    updateActivity,
+    deleteActivity,
+    refetch
+  } = useCronogramaGantt(clienteId, proyectoId);
+  
   const [selectedMayor, setSelectedMayor] = useState<string>('');
   const [isDragging, setIsDragging] = useState<{
     barId: string;
@@ -37,155 +38,102 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
   
   const chartRef = useRef<HTMLDivElement>(null);
 
-  // Generate month headers
+  // Generate month headers starting from current month
   const monthHeaders = Array.from({ length: months }, (_, i) => {
     const date = new Date();
     date.setMonth(date.getMonth() + i);
     return {
       number: i + 1,
       name: date.toLocaleDateString('es-MX', { month: 'short', year: 'numeric' }),
-      weeks: ['W1', 'W2', 'W3', 'W4']
+      weeks: ['W1', 'W2', 'W3', 'W4'],
+      actualMonth: date.getMonth() + 1 // 1-12
     };
   });
 
-  // Expand activities into individual cells for rendering
-  const expandedCells = React.useMemo(() => {
-    const cellsMap: Record<string, Array<{
-      bar: GanttBar;
-      cells: Array<{month: number; week: number}>;
-      barIndex: number;
-    }>> = {};
-    
-    ganttBars.forEach((bar, barIndex) => {
-      const cells = expandRangeToMonthWeekCells(
-        { month: bar.start_month, week: bar.start_week },
-        { month: bar.end_month, week: bar.end_week }
-      );
-      
-      if (!cellsMap[bar.mayor_id]) {
-        cellsMap[bar.mayor_id] = [];
-      }
-      
-      cellsMap[bar.mayor_id].push({
-        bar,
-        cells,
-        barIndex
-      });
-    });
-    
-    return cellsMap;
-  }, [ganttBars]);
+  // Get base month for grid positioning
+  const baseMonth = new Date().getMonth() + 1;
 
-  // Calculate bar position and width for continuous bars
-  const getBarStyle = (bar: GanttBar, barIndex: number = 0) => {
+  // Group activities by mayor with proper grid positioning
+  const activitiesByMayor = React.useMemo(() => {
+    return groupActivitiesByMayor(activities, baseMonth);
+  }, [activities, baseMonth]);
+
+  // Calculate bar position and width for continuous bars  
+  const getBarStyle = (activity: any, barIndex: number = 0) => {
     const weekWidth = 24; // Match w-6 Tailwind class (24px)
-    const startPosition = ((bar.start_month - 1) * 4 + (bar.start_week - 1)) * weekWidth;
-    const width = Math.max(24, bar.duration_weeks * weekWidth); // Ensure minimum width
+    
+    // Convert actual months to grid positions
+    const gridStartMonth = Math.max(1, activity.start_month - baseMonth + 1);
+    const gridEndMonth = Math.max(1, activity.end_month - baseMonth + 1);
+    
+    // Handle year wrapping
+    const adjustedGridStartMonth = gridStartMonth <= 0 ? gridStartMonth + 12 : gridStartMonth;
+    const adjustedGridEndMonth = gridEndMonth <= 0 ? gridEndMonth + 12 : gridEndMonth;
+    
+    const startPosition = ((adjustedGridStartMonth - 1) * 4 + (activity.start_week - 1)) * weekWidth;
+    const width = Math.max(24, activity.duration_weeks * weekWidth);
     
     return {
       left: `${startPosition}px`,
       width: `${width}px`,
-      top: `${8 + (barIndex * 36)}px`, // Better spacing for stacking
-      height: '28px', // Slightly taller bars
+      top: `${8 + (barIndex * 36)}px`,
+      height: '28px',
     };
   };
 
-  // Handle mouse events for dragging
-  const handleMouseDown = (e: React.MouseEvent, barId: string, type: 'move' | 'resize-start' | 'resize-end') => {
+  // Handle mouse events for dragging (simplified for now)
+  const handleMouseDown = (e: React.MouseEvent, activityId: string, type: 'move' | 'resize-start' | 'resize-end') => {
     e.preventDefault();
-    setIsDragging({
-      barId,
-      type,
-      startX: e.clientX
-    });
+    // Disable dragging for now - focus on display first
+    console.log('Dragging disabled - showing data first');
   };
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging || !chartRef.current) return;
-
-    const rect = chartRef.current.getBoundingClientRect();
-    const relativeX = e.clientX - rect.left;
-    const weekWidth = 24; // Match CSS width
-    const weekPosition = Math.floor(relativeX / weekWidth);
-    
-    const bar = ganttBars.find(b => b.id === isDragging.barId);
-    if (!bar) return;
-
-    const newMonth = Math.floor(weekPosition / 4) + 1;
-    const newWeek = (weekPosition % 4) + 1;
-
-    let updates: Partial<GanttBar> = {};
-
-    if (isDragging.type === 'move') {
-      updates = {
-        start_month: Math.max(1, Math.min(months, newMonth)),
-        start_week: Math.max(1, Math.min(4, newWeek)),
-        end_month: Math.max(1, Math.min(months, newMonth + Math.floor((bar.duration_weeks - 1) / 4))),
-        end_week: Math.max(1, Math.min(4, newWeek + ((bar.duration_weeks - 1) % 4)))
-      };
-    } else if (isDragging.type === 'resize-start') {
-      const endPosition = (bar.end_month - 1) * 4 + bar.end_week - 1;
-      const newDuration = Math.max(1, endPosition - weekPosition + 1);
-      updates = {
-        start_month: Math.max(1, Math.min(months, newMonth)),
-        start_week: Math.max(1, Math.min(4, newWeek)),
-        duration_weeks: newDuration
-      };
-    } else if (isDragging.type === 'resize-end') {
-      const startPosition = (bar.start_month - 1) * 4 + bar.start_week - 1;
-      const newDuration = Math.max(1, weekPosition - startPosition + 1);
-      updates = {
-        duration_weeks: newDuration,
-        end_month: Math.max(1, Math.min(months, newMonth)),
-        end_week: Math.max(1, Math.min(4, newWeek))
-      };
-    }
-
-    onUpdateBar(isDragging.barId, updates);
-  }, [isDragging, ganttBars, onUpdateBar, months]);
-
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(null);
-  }, []);
-
-  // Add event listeners
-  React.useEffect(() => {
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [isDragging, handleMouseMove, handleMouseUp]);
-
-  // Create new bar modal
+  // Create new activity modal
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newBarData, setNewBarData] = useState<{month: number, week: number, mayorId: string} | null>(null);
+  const [newActivityData, setNewActivityData] = useState<{month: number, week: number, mayorId: string} | null>(null);
 
-  // Handle cell click to create new bar
+  // Handle cell click to create new activity
   const handleCellClick = (month: number, week: number, mayorId: string) => {
-    if (!selectedMayor || isDragging) return;
+    if (isDragging) return;
     
-    setNewBarData({ month, week, mayorId });
+    setNewActivityData({ month, week, mayorId });
     setShowCreateModal(true);
   };
 
-  const handleCreateNewBar = async (formData: any) => {
-    // Pass form data directly to onCreateBar - the hook will handle the format detection
-    await onCreateBar(formData);
+  const handleCreateNewActivity = async (formData: any) => {
+    await createActivity.mutateAsync({
+      ...formData,
+      cliente_id: clienteId,
+      proyecto_id: proyectoId
+    });
     
     setShowCreateModal(false);
-    setNewBarData(null);
+    setNewActivityData(null);
   };
+
+  const handleDeleteActivity = async (activityId: string) => {
+    await deleteActivity.mutateAsync(activityId);
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-16">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-muted-foreground">Cargando cronograma...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Cronograma Interactivo de Gantt</span>
-                  <div className="flex gap-2">
+          <div className="flex gap-2">
             <Button
               onClick={() => setShowCreateModal(true)}
               variant="default"
@@ -222,14 +170,14 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
                   <div className="p-2 bg-primary text-primary-foreground text-center font-semibold text-sm">
                     {month.name}
                   </div>
-                     <div className="flex">
-                      {month.weeks.map((week, weekIdx) => (
-                        <div key={`${month.number}-${weekIdx}`} 
-                             className="w-6 p-1 bg-muted text-center text-xs border-r border-border last:border-r-0 min-w-6">
-                          {week}
-                        </div>
-                      ))}
-                    </div>
+                  <div className="flex">
+                    {month.weeks.map((week, weekIdx) => (
+                      <div key={`${month.number}-${weekIdx}`} 
+                           className="w-6 p-1 bg-muted text-center text-xs border-r border-border last:border-r-0 min-w-6">
+                        {week}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
@@ -237,10 +185,10 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
             {/* Gantt rows */}
             <div ref={chartRef} className="relative">
               {mayores.map(mayor => {
-                const mayorActivities = expandedCells[mayor.id] || [];
+                const mayorActivities = activitiesByMayor[mayor.id] || [];
                 
                 return (
-                  <div key={mayor.id} className="flex border-b border-border min-h-12 hover:bg-muted/30">
+                  <div key={mayor.id} className="flex border-b border-border min-h-16 hover:bg-muted/30">
                     <div className="w-48 p-2 border-r border-border flex items-center justify-between">
                       <div className="flex-1">
                         <div className="font-medium text-sm">{mayor.codigo}</div>
@@ -250,7 +198,7 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => mayorActivities.forEach(activity => onDeleteBar(activity.bar.id))}
+                          onClick={() => mayorActivities.forEach(item => handleDeleteActivity(item.activity.id))}
                           className="text-destructive hover:text-destructive p-1 h-auto"
                         >
                           <Trash2 className="h-3 w-3" />
@@ -258,65 +206,62 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
                       )}
                     </div>
                     
-                     <div className="flex-1 relative overflow-x-auto" style={{ minWidth: `${months * 96}px`, minHeight: `${Math.max(60, mayorActivities.length * 40)}px` }}>
-                       {/* Week grid cells - clickable background */}
-                       {monthHeaders.map(month =>
-                         month.weeks.map((_, weekIdx) => (
-                           <div
-                             key={`${month.number}-${weekIdx}`}
-                             className="absolute w-6 h-full border-r border-border/30 hover:bg-accent/20 cursor-pointer"
-                             style={{ 
-                               left: `${((month.number - 1) * 4 + weekIdx) * 24}px`,
-                               height: '100%'
-                             }}
-                             onClick={() => handleCellClick(month.number, weekIdx + 1, mayor.id)}
-                           />
-                         ))
-                       )}
+                    <div className="flex-1 relative overflow-x-auto" style={{ minWidth: `${months * 96}px`, minHeight: `${Math.max(60, mayorActivities.length * 40)}px` }}>
+                      {/* Week grid cells - clickable background */}
+                      {monthHeaders.map(month =>
+                        month.weeks.map((_, weekIdx) => {
+                          const cellIsFilled = mayorActivities.some(item => 
+                            isCellFilled(month.number, weekIdx + 1, item.gridCells)
+                          );
+                          
+                          return (
+                            <div
+                              key={`${month.number}-${weekIdx}`}
+                              className={cn(
+                                "absolute w-6 h-full border-r border-border/30 cursor-pointer transition-all",
+                                cellIsFilled 
+                                  ? "bg-primary hover:bg-primary/80" 
+                                  : "hover:bg-accent/20"
+                              )}
+                              style={{ 
+                                left: `${((month.number - 1) * 4 + weekIdx) * 24}px`,
+                                height: '100%'
+                              }}
+                              onClick={() => handleCellClick(month.number, weekIdx + 1, mayor.id)}
+                              title={cellIsFilled ? `Actividad programada` : `Clic para agregar actividad`}
+                            />
+                          );
+                        })
+                      )}
 
-                       {/* Render activity bars */}
-                       {mayorActivities.map((activity, activityIndex) => {
-                         const barStyle = getBarStyle(activity.bar, activityIndex);
-                         return (
-                           <div
-                             key={activity.bar.id}
-                             className={cn(
-                               "absolute bg-primary text-primary-foreground rounded-sm px-2 py-1",
-                               "flex items-center justify-center cursor-move select-none",
-                               "hover:bg-primary/90 transition-colors text-xs font-medium shadow-sm",
-                               "border border-primary-foreground/20",
-                               isDragging?.barId === activity.bar.id && "opacity-60"
-                             )}
-                             style={{ 
-                               ...barStyle,
-                               zIndex: 20 + activityIndex,
-                               minWidth: '24px', // Ensure minimum visibility
-                               minHeight: '28px'
-                             }}
-                             onMouseDown={(e) => handleMouseDown(e, activity.bar.id, 'move')}
-                             title={`${activity.bar.mayor?.codigo || 'N/A'} - ${activity.bar.mayor?.nombre || 'Sin nombre'}\nMes ${activity.bar.start_month} Sem ${activity.bar.start_week} → Mes ${activity.bar.end_month} Sem ${activity.bar.end_week}\nDuración: ${activity.bar.duration_weeks} semanas`}
-                           >
-                             <div 
-                               className="absolute left-0 top-0 w-1 h-full bg-primary-foreground/40 cursor-ew-resize rounded-l"
-                               onMouseDown={(e) => {
-                                 e.stopPropagation();
-                                 handleMouseDown(e, activity.bar.id, 'resize-start');
-                               }}
-                             />
-                             <span className="truncate text-center flex-1 px-1">
-                               {activity.bar.duration_weeks}w
-                             </span>
-                             <div 
-                               className="absolute right-0 top-0 w-1 h-full bg-primary-foreground/40 cursor-ew-resize rounded-r"
-                               onMouseDown={(e) => {
-                                 e.stopPropagation();
-                                 handleMouseDown(e, activity.bar.id, 'resize-end');
-                               }}
-                             />
-                           </div>
-                         );
-                       })}
-                     </div>
+                      {/* Activity labels and info */}
+                      {mayorActivities.map((item, activityIndex) => {
+                        const barStyle = getBarStyle(item.activity, activityIndex);
+                        return (
+                          <div
+                            key={item.activity.id}
+                            className={cn(
+                              "absolute bg-primary/90 text-primary-foreground rounded-sm px-2 py-1",
+                              "flex items-center justify-center cursor-pointer select-none",
+                              "hover:bg-primary transition-colors text-xs font-medium shadow-sm",
+                              "border border-primary-foreground/20 backdrop-blur-sm"
+                            )}
+                            style={{ 
+                              ...barStyle,
+                              zIndex: 20 + activityIndex,
+                              minWidth: '24px',
+                              minHeight: '28px'
+                            }}
+                            onClick={() => handleDeleteActivity(item.activity.id)}
+                            title={`${mayor.codigo} - ${mayor.nombre}\nMes ${item.activity.start_month} Sem ${item.activity.start_week} → Mes ${item.activity.end_month} Sem ${item.activity.end_week}\nDuración: ${item.activity.duration_weeks} semanas\nClic para eliminar`}
+                          >
+                            <span className="truncate text-center flex-1 px-1">
+                              {item.activity.duration_weeks}w
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 );
               })}
@@ -324,7 +269,7 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
           </div>
         </div>
 
-        {ganttBars.length === 0 && (
+        {activities.length === 0 && !isLoading && (
           <div className="text-center py-8 text-muted-foreground">
             <p>No hay actividades programadas.</p>
             <p className="text-sm">Selecciona un Mayor y haz clic en las celdas de semanas para crear barras.</p>
@@ -335,7 +280,7 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
         <CronogramaGanttFormModal
           open={showCreateModal}
           onOpenChange={setShowCreateModal}
-          onSubmit={handleCreateNewBar}
+          onSubmit={handleCreateNewActivity}
           clienteId={clienteId}
           proyectoId={proyectoId}
           title="Nueva Actividad - Cronograma de Gantt"
