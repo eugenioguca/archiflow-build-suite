@@ -109,6 +109,12 @@ export const ModernGanttGrid: React.FC<ModernGanttGridProps> = ({
     onDeleteActivity(activityId);
   }, [onDeleteActivity]);
 
+  // Check if a cell belongs to an activity
+  const isCellActive = useCallback((processedActivity: any, monthStr: string, week: number) => {
+    const { cells } = processedActivity;
+    return isCellFilled(monthStr, week, cells);
+  }, []);
+
   // Render activity bar within a cell for individual activity rows
   const renderActivityBar = useCallback((processedActivity: any, monthStr: string, week: number) => {
     const { activity, cells } = processedActivity;
@@ -123,43 +129,22 @@ export const ModernGanttGrid: React.FC<ModernGanttGridProps> = ({
       <div
         key={`${activity.id}-${monthStr}-${week}`}
         className={cn(
-          "absolute inset-1 rounded-sm cursor-pointer transition-all duration-200",
-          "bg-primary hover:bg-primary/80 border border-primary-foreground/20",
+          "absolute inset-0 cursor-pointer transition-all duration-200",
           "flex items-center justify-center text-xs font-medium text-primary-foreground",
           "hover:shadow-md hover:z-10",
-          isSelected && "ring-2 ring-ring ring-offset-1 z-20",
-          isFirstCell && "rounded-l-md",
-          isLastCell && "rounded-r-md"
+          isSelected && "ring-2 ring-ring ring-offset-1 z-20"
         )}
         onClick={(e) => handleActivityClick(activity, e)}
         title={`${activity.start_month} S${activity.start_week} → ${activity.end_month} S${activity.end_week}\nDuración: ${activity.duration_weeks} semanas`}
       >
         {isFirstCell && (
-          <div className="flex items-center gap-1 px-1 w-full justify-between">
-            <span className="truncate text-xs font-medium">{activity.duration_weeks}s</span>
-            <div className="flex gap-1">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-4 w-4 p-0 hover:bg-primary-foreground/20"
-                onClick={(e) => handleEditClick(activity, e)}
-              >
-                <Edit className="h-3 w-3" />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-4 w-4 p-0 hover:bg-destructive/20 text-destructive-foreground"
-                onClick={(e) => handleDeleteClick(activity.id, e)}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            </div>
-          </div>
+          <span className="text-xs font-medium text-white drop-shadow-sm">
+            {activity.duration_weeks}s
+          </span>
         )}
       </div>
     );
-  }, [selectedActivity, handleActivityClick, handleEditClick, handleDeleteClick]);
+  }, [selectedActivity, handleActivityClick]);
 
   if (isLoading) {
     return (
@@ -273,14 +258,40 @@ export const ModernGanttGrid: React.FC<ModernGanttGridProps> = ({
                     style={{ height: '48px' }} // Fixed compact height
                   >
                     {/* Mayor info column */}
-                    <div className="w-56 p-3 border-r border-border flex items-center sticky left-0 z-20 bg-inherit">
+                    <div className="w-56 p-3 border-r border-border flex items-center justify-between sticky left-0 z-20 bg-inherit">
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold text-sm truncate">
-                          {mayor?.codigo || 'N/A'}
-                        </div>
-                        <div className="text-xs text-muted-foreground truncate">
                           {mayor?.nombre || 'Mayor no encontrado'}
                         </div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {activity.start_month} S{activity.start_week} → {activity.end_month} S{activity.end_week}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 ml-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 w-6 p-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditClick(activity, e);
+                          }}
+                          title="Editar actividad"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(activity.id, e);
+                          }}
+                          title="Eliminar actividad"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
                       </div>
                     </div>
                     
@@ -294,7 +305,10 @@ export const ModernGanttGrid: React.FC<ModernGanttGridProps> = ({
                               className={cn(
                                 "relative border-r border-border/30",
                                 cellDims.width,
-                                "h-full"
+                                "h-full",
+                                isCellActive(processedActivity, monthStr, week) 
+                                  ? "bg-blue-500/80 border-blue-600" 
+                                  : "bg-background hover:bg-accent/20"
                               )}
                             >
                               {/* Render activity bar for this cell */}
