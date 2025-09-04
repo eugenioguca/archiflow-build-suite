@@ -87,7 +87,7 @@ export const useModernCronograma = (clienteId?: string, proyectoId?: string) => 
       const { data, error } = await supabase
         .from('chart_of_accounts_mayor')
         .select('id, nombre, codigo, departamento')
-        .eq('departamento', 'Construcción')
+        .eq('departamento', 'CONSTRUCCIÓN')
         .eq('activo', true)
         .order('codigo');
 
