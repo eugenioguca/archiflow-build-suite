@@ -68,8 +68,12 @@ export const useModernCronograma = (clienteId?: string, proyectoId?: string) => 
       // Convert database format to our string format
       return (data || []).map(item => ({
         ...item,
-        start_month: formatDateToYYYYMM(new Date(item.start_month, 0)),
-        end_month: formatDateToYYYYMM(new Date(item.end_month, 0))
+        start_month: typeof item.start_month === 'number' 
+          ? formatDateToYYYYMM(new Date(item.start_month, 0))
+          : item.start_month,
+        end_month: typeof item.end_month === 'number'
+          ? formatDateToYYYYMM(new Date(item.end_month, 0))
+          : item.end_month
       })) as ModernGanttActivity[];
     },
     enabled: !!clienteId && !!proyectoId,
@@ -108,7 +112,9 @@ export const useModernCronograma = (clienteId?: string, proyectoId?: string) => 
       // Convert database format to our string format  
       return (data || []).map(item => ({
         ...item,
-        mes: formatDateToYYYYMM(new Date(item.mes, 0))
+        mes: typeof item.mes === 'number'
+          ? formatDateToYYYYMM(new Date(item.mes, 0))
+          : item.mes
       })) as MatrixOverride[];
     },
     enabled: !!clienteId && !!proyectoId,
@@ -222,6 +228,12 @@ export const useModernCronograma = (clienteId?: string, proyectoId?: string) => 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuario no autenticado');
 
+      // Convert string months to numbers for database
+      const startYear = parseInt(activityData.start_month.split('-')[0]);
+      const startMonth = parseInt(activityData.start_month.split('-')[1]);
+      const endYear = parseInt(activityData.end_month.split('-')[0]);
+      const endMonth = parseInt(activityData.end_month.split('-')[1]);
+
       const { data, error } = await supabase
         .from('cronograma_gantt')
         .insert([{
@@ -229,9 +241,9 @@ export const useModernCronograma = (clienteId?: string, proyectoId?: string) => 
           proyecto_id: proyectoId,
           departamento: activityData.departamento_id,
           mayor_id: activityData.mayor_id,
-          start_month: activityData.start_month,
+          start_month: startYear * 100 + startMonth,
           start_week: activityData.start_week,
-          end_month: activityData.end_month,
+          end_month: endYear * 100 + endMonth,
           end_week: activityData.end_week,
           duration_weeks: activityData.duration_weeks,
           // Convert to legacy date fields for compatibility
@@ -265,9 +277,20 @@ export const useModernCronograma = (clienteId?: string, proyectoId?: string) => 
   // Update activity mutation
   const updateActivity = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<ModernGanttActivity> }) => {
+      // Convert string months to numbers for database if present
+      const updateData: any = { ...data };
+      if (data.start_month) {
+        const [year, month] = data.start_month.split('-').map(Number);
+        updateData.start_month = year * 100 + month;
+      }
+      if (data.end_month) {
+        const [year, month] = data.end_month.split('-').map(Number);
+        updateData.end_month = year * 100 + month;
+      }
+
       const { error } = await supabase
         .from('cronograma_gantt')
-        .update(data)
+        .update(updateData)
         .eq('id', id);
 
       if (error) throw error;
@@ -328,15 +351,19 @@ export const useModernCronograma = (clienteId?: string, proyectoId?: string) => 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuario no autenticado');
 
-      const dataToInsert = overrides.map(override => ({
-        cliente_id: clienteId,
-        proyecto_id: proyectoId,
-        mes: override.mes,
-        concepto: override.concepto,
-        valor: override.valor,
-        sobrescribe: override.sobrescribe,
-        created_by: user.id
-      }));
+      const dataToInsert = overrides.map(override => {
+        // Convert string month to number for database
+        const [year, month] = override.mes.split('-').map(Number);
+        return {
+          cliente_id: clienteId,
+          proyecto_id: proyectoId,
+          mes: year * 100 + month,
+          concepto: override.concepto,
+          valor: override.valor,
+          sobrescribe: override.sobrescribe,
+          created_by: user.id
+        };
+      });
 
       const { error } = await supabase
         .from('cronograma_matriz_manual')
@@ -367,12 +394,16 @@ export const useModernCronograma = (clienteId?: string, proyectoId?: string) => 
     mutationFn: async ({ mes, concepto }: { mes: string; concepto: string }) => {
       if (!clienteId || !proyectoId) throw new Error('Cliente y proyecto requeridos');
 
+      // Convert string month to number for database
+      const [year, month] = mes.split('-').map(Number);
+      const mesNumber = year * 100 + month;
+
       const { error } = await supabase
         .from('cronograma_matriz_manual')
         .delete()
         .eq('cliente_id', clienteId)
         .eq('proyecto_id', proyectoId)
-        .eq('mes', mes)
+        .eq('mes', mesNumber)
         .eq('concepto', concepto);
 
       if (error) throw error;

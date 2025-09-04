@@ -14,15 +14,30 @@ import {
   TUMayorField,
   useTUCascadingData
 } from '@/components/shared/TUFieldComponents';
-import { weeksBetween, validateMonthWeekRange, formatMonth } from '@/utils/cronogramaWeekUtils';
+import { weeksBetween, validateMonthWeekRange, formatDateToYYYYMM, getCurrentMonth } from '@/utils/cronogramaWeekUtils';
+
+// Generate month options for the next 24 months starting from current month
+const generateMonthOptions = () => {
+  const options = [];
+  const currentDate = new Date();
+  
+  for (let i = 0; i < 24; i++) {
+    const date = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
+    const value = formatDateToYYYYMM(date);
+    const label = date.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+    options.push({ value, label });
+  }
+  
+  return options;
+};
 
 // Schema validation for Cronograma form with month+week model
 const cronogramaFormSchema = z.object({
   departamento_id: z.string().min(1, 'El departamento es requerido'),
   mayor_id: z.string().min(1, 'El mayor es requerido'),
-  start_month: z.number().min(1, 'El mes de inicio es requerido'),
+  start_month: z.string().min(1, 'El mes de inicio es requerido'),
   start_week: z.number().min(1).max(4, 'La semana debe estar entre 1 y 4'),
-  end_month: z.number().min(1, 'El mes de fin es requerido'),
+  end_month: z.string().min(1, 'El mes de fin es requerido'),
   end_week: z.number().min(1).max(4, 'La semana debe estar entre 1 y 4'),
   duration_weeks: z.number().min(1, 'La duración debe ser mayor a 0').default(1),
 }).refine(
@@ -67,14 +82,16 @@ export function CronogramaGanttFormModal({
   // TU cascading data hook
   const { loadDepartamentos } = useTUCascadingData();
 
+  const currentMonth = getCurrentMonth();
+
   const form = useForm<CronogramaFormData>({
     resolver: zodResolver(cronogramaFormSchema),
     defaultValues: {
       departamento_id: '',
       mayor_id: '',
-      start_month: 1,
+      start_month: currentMonth,
       start_week: 1,
-      end_month: 1,
+      end_month: currentMonth,
       end_week: 1,
       duration_weeks: 1,
     },
@@ -90,9 +107,9 @@ export function CronogramaGanttFormModal({
         form.reset({
           departamento_id: initialData.departamento_id || '',
           mayor_id: initialData.mayor_id || '',
-          start_month: initialData.start_month || 1,
+          start_month: initialData.start_month || currentMonth,
           start_week: initialData.start_week || 1,
-          end_month: initialData.end_month || 1,
+          end_month: initialData.end_month || currentMonth,
           end_week: initialData.end_week || 1,
           duration_weeks: initialData.duration_weeks || 1,
         });
@@ -105,7 +122,7 @@ export function CronogramaGanttFormModal({
         }, 500);
       }
     }
-  }, [open, initialData, form]);
+  }, [open, initialData, form, currentMonth]);
 
   // Auto-calculate duration when month/week changes
   const startMonth = form.watch('start_month');
@@ -247,8 +264,8 @@ export function CronogramaGanttFormModal({
                   <FormItem>
                     <FormLabel>Mes de Inicio *</FormLabel>
                     <Select 
-                      value={field.value?.toString() || "1"} 
-                      onValueChange={(value) => field.onChange(parseInt(value))}
+                      value={field.value || currentMonth} 
+                      onValueChange={field.onChange}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -256,9 +273,9 @@ export function CronogramaGanttFormModal({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {Array.from({ length: 24 }, (_, i) => i + 1).map(month => (
-                          <SelectItem key={month} value={month.toString()}>
-                            Mes {month} - {formatMonth(month)}
+                        {generateMonthOptions().map(({ value, label }) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -305,8 +322,8 @@ export function CronogramaGanttFormModal({
                   <FormItem>
                     <FormLabel>Mes de Fin *</FormLabel>
                     <Select 
-                      value={field.value?.toString() || "1"} 
-                      onValueChange={(value) => field.onChange(parseInt(value))}
+                      value={field.value || currentMonth} 
+                      onValueChange={field.onChange}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -314,9 +331,9 @@ export function CronogramaGanttFormModal({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {Array.from({ length: 24 }, (_, i) => i + 1).map(month => (
-                          <SelectItem key={month} value={month.toString()}>
-                            Mes {month} - {formatMonth(month)}
+                        {generateMonthOptions().map(({ value, label }) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
                           </SelectItem>
                         ))}
                       </SelectContent>

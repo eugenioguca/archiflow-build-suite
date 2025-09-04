@@ -144,9 +144,11 @@ export const GanttPDFExport: React.FC<GanttPDFExportProps> = ({
       doc.text('CRONOGRAMA VISUAL', 15, currentY);
       currentY += 10;
 
-      // Month headers - use formatMonth for consistent naming
+      // Month headers - use proper month formatting for string months
       const monthHeaders = Array.from({ length: months }, (_, i) => {
-        return formatMonth(i + 1);
+        const currentDate = new Date();
+        const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
+        return monthDate.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' });
       });
 
       const cellWidth = Math.min(20, (pageWidth - 80) / months);
