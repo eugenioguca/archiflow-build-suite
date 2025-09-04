@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { GanttBar, MonthlyCalculations } from '@/hooks/useInteractiveGantt';
 import { supabase } from '@/integrations/supabase/client';
+import { formatMonth } from '@/utils/cronogramaWeekUtils';
 
 interface GanttPDFExportProps {
   ganttBars: GanttBar[];
@@ -143,11 +144,9 @@ export const GanttPDFExport: React.FC<GanttPDFExportProps> = ({
       doc.text('CRONOGRAMA VISUAL', 15, currentY);
       currentY += 10;
 
-      // Month headers
+      // Month headers - use formatMonth for consistent naming
       const monthHeaders = Array.from({ length: months }, (_, i) => {
-        const date = new Date();
-        date.setMonth(date.getMonth() + i);
-        return date.toLocaleDateString('es-MX', { month: 'short', year: 'numeric' });
+        return formatMonth(i + 1);
       });
 
       const cellWidth = Math.min(20, (pageWidth - 80) / months);
@@ -192,16 +191,18 @@ export const GanttPDFExport: React.FC<GanttPDFExportProps> = ({
           doc.rect(x, currentY, cellWidth, rowHeight, 'S');
         });
 
-        // Draw bars for this mayor
+        // Draw bars for this mayor using month+week positioning
         const mayorBars = ganttBars.filter(bar => bar.mayor_id === mayor.id);
         mayorBars.forEach(bar => {
-          const startX = 75 + ((bar.start_month - 1) * cellWidth);
-          const barWidth = bar.duration_weeks * (cellWidth / 4); // 4 weeks per month
+          // Calculate position based on month and week
+          const startPosition = ((bar.start_month - 1) * 4 + (bar.start_week - 1)) / 4; // Convert to month position
+          const barWidth = (bar.duration_weeks / 4) * cellWidth; // Convert weeks to width
+          const startX = 75 + (startPosition * cellWidth);
           
           doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-          doc.rect(startX, currentY + 1, barWidth, rowHeight - 2, 'F');
+          doc.rect(startX, currentY + 1, Math.max(barWidth, 2), rowHeight - 2, 'F');
           
-          // Bar text
+          // Bar text with manual override indicator
           doc.setTextColor(255, 255, 255);
           doc.setFontSize(6);
           if (barWidth > 10) {
@@ -315,7 +316,17 @@ export const GanttPDFExport: React.FC<GanttPDFExportProps> = ({
             displayValue = value > 0 ? `${value.toFixed(1)}%` : '-';
           }
           
-          doc.text(displayValue, x + matrixCellWidth - 2, currentY + 5, { align: 'right' });
+          // Check for manual overrides and add asterisk
+          const overrideKey = `${monthIdx + 1}-${row.label.includes('GASTO') ? 'gasto_obra' : 
+                                                  row.label.includes('PARCIAL') ? 'avance_parcial' :
+                                                  row.label.includes('ACUMULADO') && row.label.includes('AVANCE') ? 'avance_acumulado' :
+                                                  row.label.includes('MINISTRACIONES') ? 'ministraciones' :
+                                                  row.label.includes('INVERSIÓN') ? 'inversion_acumulada' : ''}`;
+          
+          const hasOverride = manualOverrides[overrideKey]?.hasOverride;
+          const displayText = hasOverride ? `${displayValue}*` : displayValue;
+          
+          doc.text(displayText, x + matrixCellWidth - 2, currentY + 5, { align: 'right' });
         });
 
         // Total cell
@@ -335,6 +346,15 @@ export const GanttPDFExport: React.FC<GanttPDFExportProps> = ({
 
         currentY += rowHeight;
       });
+
+      // Add footnote for manual overrides
+      const hasAnyOverrides = Object.values(manualOverrides).some(override => override.hasOverride);
+      if (hasAnyOverrides) {
+        currentY += 10;
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'italic');
+        doc.text('* Valores editados manualmente por el usuario', 15, currentY);
+      }
 
       // Footer
       const addFooter = (pageNum: number, totalPages: number) => {

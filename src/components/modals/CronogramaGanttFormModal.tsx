@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Form, FormField, FormControl, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { DatePicker } from '@/components/DatePicker';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import {
@@ -14,19 +14,28 @@ import {
   TUMayorField,
   useTUCascadingData
 } from '@/components/shared/TUFieldComponents';
+import { weeksBetween, validateMonthWeekRange, formatMonth } from '@/utils/cronogramaWeekUtils';
 
-// Schema validation for Cronograma form
+// Schema validation for Cronograma form with month+week model
 const cronogramaFormSchema = z.object({
   departamento_id: z.string().min(1, 'El departamento es requerido'),
   mayor_id: z.string().min(1, 'El mayor es requerido'),
-  fecha_inicio: z.date({ required_error: 'La fecha de inicio es requerida' }),
-  fecha_fin: z.date({ required_error: 'La fecha de fin es requerida' }),
-  duracion_dias: z.number().min(1, 'La duración debe ser mayor a 0').default(1),
+  start_month: z.number().min(1, 'El mes de inicio es requerido'),
+  start_week: z.number().min(1).max(4, 'La semana debe estar entre 1 y 4'),
+  end_month: z.number().min(1, 'El mes de fin es requerido'),
+  end_week: z.number().min(1).max(4, 'La semana debe estar entre 1 y 4'),
+  duration_weeks: z.number().min(1, 'La duración debe ser mayor a 0').default(1),
 }).refine(
-  (data) => data.fecha_fin >= data.fecha_inicio,
+  (data) => {
+    const validation = validateMonthWeekRange(
+      { month: data.start_month, week: data.start_week },
+      { month: data.end_month, week: data.end_week }
+    );
+    return validation.isValid;
+  },
   {
     message: "La fecha de fin debe ser posterior o igual a la fecha de inicio",
-    path: ["fecha_fin"],
+    path: ["end_month"],
   }
 );
 
@@ -63,9 +72,11 @@ export function CronogramaGanttFormModal({
     defaultValues: {
       departamento_id: '',
       mayor_id: '',
-      fecha_inicio: new Date(),
-      fecha_fin: new Date(),
-      duracion_dias: 1,
+      start_month: 1,
+      start_week: 1,
+      end_month: 1,
+      end_week: 1,
+      duration_weeks: 1,
     },
   });
 
@@ -79,13 +90,15 @@ export function CronogramaGanttFormModal({
         form.reset({
           departamento_id: initialData.departamento_id || '',
           mayor_id: initialData.mayor_id || '',
-          fecha_inicio: initialData.fecha_inicio || new Date(),
-          fecha_fin: initialData.fecha_fin || new Date(),
-          duracion_dias: initialData.duracion_dias || 1,
+          start_month: initialData.start_month || 1,
+          start_week: initialData.start_week || 1,
+          end_month: initialData.end_month || 1,
+          end_week: initialData.end_week || 1,
+          duration_weeks: initialData.duration_weeks || 1,
         });
       }
       
-      // Auto-select "Construcción" if no initial data
+      // Auto-select "Construcción" departamento
       if (!initialData?.departamento_id) {
         setTimeout(() => {
           form.setValue('departamento_id', 'Construcción');
@@ -94,17 +107,21 @@ export function CronogramaGanttFormModal({
     }
   }, [open, initialData, form]);
 
-  // Auto-calculate duration when dates change
-  const fechaInicio = form.watch('fecha_inicio');
-  const fechaFin = form.watch('fecha_fin');
+  // Auto-calculate duration when month/week changes
+  const startMonth = form.watch('start_month');
+  const startWeek = form.watch('start_week');
+  const endMonth = form.watch('end_month');
+  const endWeek = form.watch('end_week');
   
   useEffect(() => {
-    if (fechaInicio && fechaFin) {
-      const diffTime = Math.abs(fechaFin.getTime() - fechaInicio.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end days
-      form.setValue('duracion_dias', diffDays);
+    if (startMonth && startWeek && endMonth && endWeek) {
+      const duration = weeksBetween(
+        { month: startMonth, week: startWeek },
+        { month: endMonth, week: endWeek }
+      );
+      form.setValue('duration_weeks', duration);
     }
-  }, [fechaInicio, fechaFin, form]);
+  }, [startMonth, startWeek, endMonth, endWeek, form]);
 
   // Reset mayor when departamento changes
   const departamentoId = form.watch('departamento_id');
@@ -221,21 +238,89 @@ export function CronogramaGanttFormModal({
               />
             </div>
 
-            {/* Second row: Fecha Inicio | Fecha Fin | Duración */}
+            {/* Second row: Start Month | Start Week */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="start_month"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mes de Inicio *</FormLabel>
+                    <Select 
+                      value={field.value?.toString() || "1"} 
+                      onValueChange={(value) => field.onChange(parseInt(value))}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar mes" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Array.from({ length: 24 }, (_, i) => i + 1).map(month => (
+                          <SelectItem key={month} value={month.toString()}>
+                            Mes {month} - {formatMonth(month)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="start_week"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Semana de Inicio *</FormLabel>
+                    <Select 
+                      value={field.value?.toString() || "1"} 
+                      onValueChange={(value) => field.onChange(parseInt(value))}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Semana" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="1">W1 - Semana 1</SelectItem>
+                        <SelectItem value="2">W2 - Semana 2</SelectItem>
+                        <SelectItem value="3">W3 - Semana 3</SelectItem>
+                        <SelectItem value="4">W4 - Semana 4</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Third row: End Month | End Week | Duration */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FormField
                 control={form.control}
-                name="fecha_inicio"
+                name="end_month"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Fecha de Inicio *</FormLabel>
-                    <FormControl>
-                      <DatePicker 
-                        date={field.value} 
-                        onDateChange={field.onChange}
-                        className="w-full"
-                      />
-                    </FormControl>
+                    <FormLabel>Mes de Fin *</FormLabel>
+                    <Select 
+                      value={field.value?.toString() || "1"} 
+                      onValueChange={(value) => field.onChange(parseInt(value))}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar mes" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Array.from({ length: 24 }, (_, i) => i + 1).map(month => (
+                          <SelectItem key={month} value={month.toString()}>
+                            Mes {month} - {formatMonth(month)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -243,17 +328,26 @@ export function CronogramaGanttFormModal({
 
               <FormField
                 control={form.control}
-                name="fecha_fin"
+                name="end_week"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Fecha de Fin *</FormLabel>
-                    <FormControl>
-                      <DatePicker 
-                        date={field.value} 
-                        onDateChange={field.onChange}
-                        className="w-full"
-                      />
-                    </FormControl>
+                    <FormLabel>Semana de Fin *</FormLabel>
+                    <Select 
+                      value={field.value?.toString() || "1"} 
+                      onValueChange={(value) => field.onChange(parseInt(value))}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Semana" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="1">W1 - Semana 1</SelectItem>
+                        <SelectItem value="2">W2 - Semana 2</SelectItem>
+                        <SelectItem value="3">W3 - Semana 3</SelectItem>
+                        <SelectItem value="4">W4 - Semana 4</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -261,10 +355,10 @@ export function CronogramaGanttFormModal({
 
               <FormField
                 control={form.control}
-                name="duracion_dias"
+                name="duration_weeks"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Duración (días)</FormLabel>
+                    <FormLabel>Duración (semanas)</FormLabel>
                     <FormControl>
                       <Input
                         type="number"

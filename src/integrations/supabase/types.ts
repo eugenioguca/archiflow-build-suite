@@ -2731,11 +2731,16 @@ export type Database = {
           created_by: string
           departamento: string
           duracion: number | null
+          duration_weeks: number | null
+          end_month: number | null
+          end_week: number | null
           fecha_fin: string
           fecha_inicio: string
           id: string
           mayor_id: string
           proyecto_id: string
+          start_month: number | null
+          start_week: number | null
           updated_at: string
         }
         Insert: {
@@ -2744,11 +2749,16 @@ export type Database = {
           created_by: string
           departamento?: string
           duracion?: number | null
+          duration_weeks?: number | null
+          end_month?: number | null
+          end_week?: number | null
           fecha_fin: string
           fecha_inicio: string
           id?: string
           mayor_id: string
           proyecto_id: string
+          start_month?: number | null
+          start_week?: number | null
           updated_at?: string
         }
         Update: {
@@ -2757,11 +2767,16 @@ export type Database = {
           created_by?: string
           departamento?: string
           duracion?: number | null
+          duration_weeks?: number | null
+          end_month?: number | null
+          end_week?: number | null
           fecha_fin?: string
           fecha_inicio?: string
           id?: string
           mayor_id?: string
           proyecto_id?: string
+          start_month?: number | null
+          start_week?: number | null
           updated_at?: string
         }
         Relationships: [

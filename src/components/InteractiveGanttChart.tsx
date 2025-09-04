@@ -189,14 +189,14 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
                   <div className="p-2 bg-primary text-primary-foreground text-center font-semibold text-sm">
                     {month.name}
                   </div>
-                  <div className="flex">
-                    {month.weeks.map((week, weekIdx) => (
-                      <div key={`${month.number}-${weekIdx}`} 
-                           className="w-6 p-1 bg-muted text-center text-xs border-r border-border last:border-r-0">
-                        {week}
-                      </div>
-                    ))}
-                  </div>
+                     <div className="flex">
+                      {month.weeks.map((week, weekIdx) => (
+                        <div key={`${month.number}-${weekIdx}`} 
+                             className="w-6 p-1 bg-muted text-center text-xs border-r border-border last:border-r-0">
+                          {week}
+                        </div>
+                      ))}
+                    </div>
                 </div>
               ))}
             </div>
@@ -226,7 +226,7 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
                     </div>
                     
                     <div className="flex-1 relative" style={{ minWidth: `${months * 100}px` }}>
-                      {/* Week grid */}
+                      {/* Week grid - Updated cell width */}
                       {monthHeaders.map(month =>
                         month.weeks.map((_, weekIdx) => (
                           <div
