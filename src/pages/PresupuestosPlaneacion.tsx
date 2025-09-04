@@ -3,6 +3,7 @@ import { PresupuestoParametrico } from '@/components/PresupuestoParametrico';
 import { ModernCronogramaGantt } from '@/components/ModernCronogramaGantt';
 import { PresupuestoEjecutivoManager } from '@/components/PresupuestoEjecutivoManager';
 import { PaymentPlanManager } from '@/components/PaymentPlanManager';
+import { ClientProjectSelector } from '@/components/ClientProjectSelector';
 import { useClientProjectFilters } from '@/hooks/useClientProjectFilters';
 import { DollarSign } from 'lucide-react';
 
@@ -10,6 +11,9 @@ export default function PresupuestosPlaneacion() {
   const {
     selectedClientId,
     selectedProjectId,
+    setClientId,
+    setProjectId,
+    clearFilters,
     hasFilters
   } = useClientProjectFilters();
 
@@ -22,6 +26,15 @@ export default function PresupuestosPlaneacion() {
         </p>
       </div>
 
+      <ClientProjectSelector
+        selectedClientId={selectedClientId}
+        selectedProjectId={selectedProjectId}
+        onClientChange={setClientId}
+        onProjectChange={setProjectId}
+        showAllOption={false}
+        showProjectFilter={true}
+      />
+
       <Tabs defaultValue="parametrico" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="parametrico">Presupuesto Paramétrico</TabsTrigger>
@@ -31,11 +44,17 @@ export default function PresupuestosPlaneacion() {
         </TabsList>
 
         <TabsContent value="parametrico" className="space-y-6">
-          <PresupuestoParametrico />
+          <PresupuestoParametrico 
+            selectedClientId={selectedClientId}
+            selectedProjectId={selectedProjectId}
+          />
         </TabsContent>
 
         <TabsContent value="gantt" className="space-y-6">
-          <ModernCronogramaGantt />
+          <ModernCronogramaGantt 
+            selectedClientId={selectedClientId}
+            selectedProjectId={selectedProjectId}
+          />
         </TabsContent>
 
         <TabsContent value="pagos" className="space-y-6">
@@ -73,7 +92,10 @@ export default function PresupuestosPlaneacion() {
         </TabsContent>
 
         <TabsContent value="ejecutivo" className="space-y-6">
-          <PresupuestoEjecutivoManager />
+          <PresupuestoEjecutivoManager 
+            selectedClientId={selectedClientId}
+            selectedProjectId={selectedProjectId}
+          />
         </TabsContent>
       </Tabs>
     </div>

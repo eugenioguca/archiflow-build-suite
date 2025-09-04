@@ -12,15 +12,31 @@ import { MatrixBulkEditorModal } from '@/components/modals/MatrixBulkEditorModal
 import { useModernCronograma, MatrixOverride } from '@/hooks/useModernCronograma';
 import { getCurrentMonth } from '@/utils/cronogramaWeekUtils';
 
-export function ModernCronogramaGantt() {
-  const {
-    selectedClientId,
-    selectedProjectId,
-    setClientId,
-    setProjectId,
-    clearFilters,
-    hasFilters
-  } = useClientProjectFilters();
+interface Activity {
+  id: string;
+  partida: string;
+  description: string;
+  start_date: string;
+  end_date: string;
+  duration: number;
+  mayor_id: string;
+  status: string;
+}
+
+interface ModernCronogramaGanttProps {
+  selectedClientId?: string;
+  selectedProjectId?: string;
+}
+
+export function ModernCronogramaGantt({ 
+  selectedClientId: propClientId, 
+  selectedProjectId: propProjectId 
+}: ModernCronogramaGanttProps = {}) {
+  // Use props if provided, otherwise fall back to hook
+  const hookFilters = useClientProjectFilters();
+  const selectedClientId = propClientId || hookFilters.selectedClientId;
+  const selectedProjectId = propProjectId || hookFilters.selectedProjectId;
+  const hasFilters = selectedClientId !== '' && selectedProjectId !== '';
 
   const {
     activities,
@@ -118,28 +134,20 @@ export function ModernCronogramaGantt() {
         </div>
       </div>
 
-      {/* Fixed Filters - Always visible when needed */}
-      {!hasFilters ? (
-        <CollapsibleFilters
-          selectedClientId={selectedClientId}
-          selectedProjectId={selectedProjectId}
-          onClientChange={setClientId}
-          onProjectChange={setProjectId}
-          onClearFilters={clearFilters}
-        />
-      ) : (
-        <div className="bg-muted/30 p-4 rounded-lg border">
-          <CollapsibleFilters
-            selectedClientId={selectedClientId}
-            selectedProjectId={selectedProjectId}
-            onClientChange={setClientId}
-            onProjectChange={setProjectId}
-            onClearFilters={clearFilters}
-          />
-        </div>
+      {/* Show empty state if no filters */}
+      {!hasFilters && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Selecciona un proyecto</h3>
+            <p className="text-muted-foreground">
+              Selecciona un cliente y proyecto para ver y gestionar el cronograma de Gantt moderno.
+            </p>
+          </CardContent>
+        </Card>
       )}
 
-      {hasFilters && selectedClientId && selectedProjectId ? (
+      {hasFilters && selectedClientId && selectedProjectId && (
         <div className="space-y-6">
           {/* Visual Gantt Grid */}
           <ModernGanttGrid
@@ -178,16 +186,6 @@ export function ModernCronogramaGantt() {
             </div>
           )}
         </div>
-      ) : (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Selecciona un proyecto</h3>
-            <p className="text-muted-foreground">
-              Selecciona un cliente y proyecto para ver y gestionar el cronograma de Gantt moderno.
-            </p>
-          </CardContent>
-        </Card>
       )}
 
       {/* Activity Modal */}

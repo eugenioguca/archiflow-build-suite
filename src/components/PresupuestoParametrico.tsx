@@ -22,15 +22,20 @@ interface PresupuestoFormData {
   monto_total: number;
 }
 
-export function PresupuestoParametrico() {
-  const {
-    selectedClientId,
-    selectedProjectId,
-    setClientId,
-    setProjectId,
-    clearFilters,
-    hasFilters
-  } = useClientProjectFilters();
+interface PresupuestoParametricoProps {
+  selectedClientId?: string;
+  selectedProjectId?: string;
+}
+
+export function PresupuestoParametrico({ 
+  selectedClientId: propClientId, 
+  selectedProjectId: propProjectId 
+}: PresupuestoParametricoProps) {
+  // Use props if provided, otherwise fall back to hook
+  const hookFilters = useClientProjectFilters();
+  const selectedClientId = propClientId || hookFilters.selectedClientId;
+  const selectedProjectId = propProjectId || hookFilters.selectedProjectId;
+  const hasFilters = selectedClientId !== '' && selectedProjectId !== '';
 
   const {
     presupuestos,
@@ -402,13 +407,6 @@ export function PresupuestoParametrico() {
         </div>
       </div>
 
-      <CollapsibleFilters
-        selectedClientId={selectedClientId}
-        selectedProjectId={selectedProjectId}
-        onClientChange={setClientId}
-        onProjectChange={setProjectId}
-        onClearFilters={clearFilters}
-      />
 
       {hasFilters && (
         <Card>

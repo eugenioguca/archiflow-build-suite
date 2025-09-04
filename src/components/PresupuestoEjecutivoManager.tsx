@@ -67,15 +67,20 @@ const normalizeForComparison = (text: string): string => {
     .replace(/_/g, ' ');
 };
 
-export function PresupuestoEjecutivoManager() {
-  const {
-    selectedClientId,
-    selectedProjectId,
-    setClientId,
-    setProjectId,
-    clearFilters,
-    hasFilters
-  } = useClientProjectFilters();
+interface PresupuestoEjecutivoManagerProps {
+  selectedClientId?: string;
+  selectedProjectId?: string;
+}
+
+export function PresupuestoEjecutivoManager({ 
+  selectedClientId: propClientId, 
+  selectedProjectId: propProjectId 
+}: PresupuestoEjecutivoManagerProps) {
+  // Use props if provided, otherwise fall back to hook
+  const hookFilters = useClientProjectFilters();
+  const selectedClientId = propClientId || hookFilters.selectedClientId;
+  const selectedProjectId = propProjectId || hookFilters.selectedProjectId;
+  const hasFilters = selectedClientId !== '' && selectedProjectId !== '';
 
   const { presupuestos } = usePresupuestoParametrico(selectedClientId, selectedProjectId);
   
@@ -272,13 +277,6 @@ export function PresupuestoEjecutivoManager() {
         </div>
       </div>
 
-      <CollapsibleFilters
-        selectedClientId={selectedClientId}
-        selectedProjectId={selectedProjectId}
-        onClientChange={setClientId}
-        onProjectChange={setProjectId}
-        onClearFilters={clearFilters}
-      />
 
       {hasFilters && (
         <>
