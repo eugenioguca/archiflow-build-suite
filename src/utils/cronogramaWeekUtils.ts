@@ -74,33 +74,38 @@ export function calculateDateFromMonthWeek(monthStr: string, week: number): stri
 /**
  * Expand a YYYYMM range into individual month+week cells (simplified, no Date objects)
  */
+// Devuelve todas las celdas {month, week} que cubre una actividad
 export function expandRangeToMonthWeekCells(
-  startMonth: string,
-  startWeek: number,
-  endMonth: string,
-  endWeek: number
+  startMonth: string,  // ej: "202509"
+  startWeek: number,   // ej: 1
+  endMonth: string,    // ej: "202510"
+  endWeek: number      // ej: 3
 ): { month: string; week: number }[] {
   const result: { month: string; week: number }[] = [];
-  const startNum = parseInt(startMonth, 10);
-  const endNum   = parseInt(endMonth, 10);
+  let current = parseInt(startMonth, 10);
+  const end = parseInt(endMonth, 10);
 
-  let current = startNum;
   while (true) {
-    const isStart = current === startNum;
-    const isEnd   = current === endNum;
+    const isStart = current === parseInt(startMonth, 10);
+    const isEnd   = current === end;
 
     const minW = isStart ? startWeek : 1;
     const maxW = isEnd   ? endWeek   : 4;
 
-    for (let w = minW; w <= maxW; w++) result.push({ month: String(current), week: w });
+    for (let w = minW; w <= maxW; w++) {
+      result.push({ month: String(current), week: w });
+    }
+
     if (isEnd) break;
 
-    // ++YYYYMM
+    // incrementar mes YYYYMM
     let y = Math.floor(current / 100);
     let m = current % 100;
-    m++; if (m > 12) { m = 1; y++; }
+    m++;
+    if (m > 12) { m = 1; y++; }
     current = y * 100 + m;
   }
+
   return result;
 }
 

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { ModernGanttActivity, MonthlyCalculations, MatrixOverride } from '@/hooks/useModernCronograma';
 import { supabase } from '@/integrations/supabase/client';
-import { formatMonth, generateMonthRange } from '@/utils/cronogramaWeekUtils';
+import { formatMonth, generateMonthRange, expandRangeToMonthWeekCells } from '@/utils/cronogramaWeekUtils';
 
 interface ModernGanttPDFExportProps {
   activities: ModernGanttActivity[];
@@ -204,32 +204,47 @@ export const ModernGanttPDFExport: React.FC<ModernGanttPDFExportProps> = ({
           doc.rect(x, currentY, cellWidth, rowHeight, 'S');
         });
 
-        // Draw activity bars for this mayor
+        // Draw activity bars for this mayor using week-based cells
         const mayorActivities = activities.filter(activity => activity.mayor_id === mayor.id);
         mayorActivities.forEach(activity => {
-          // Find start and end positions
-          const startMonthIndex = monthRange.indexOf(activity.start_month);
-          const endMonthIndex = monthRange.indexOf(activity.end_month);
+          // Use expandRangeToMonthWeekCells to get exact cells to paint
+          const cells = expandRangeToMonthWeekCells(
+            activity.start_month,
+            activity.start_week,
+            activity.end_month,
+            activity.end_week
+          );
           
-          if (startMonthIndex !== -1 && endMonthIndex !== -1) {
-            const startX = 15 + mayorColumnWidth + startMonthIndex * cellWidth;
-            const barWidth = Math.max(cellWidth * 0.8, (endMonthIndex - startMonthIndex + 1) * cellWidth * 0.8);
-            
-            // Activity bar
-            doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-            doc.roundedRect(startX + 1, currentY + 1.5, barWidth, rowHeight - 3, 1, 1, 'F');
-            
-            // Duration text if there's space
-            if (barWidth > 10) {
-              doc.setTextColor(255, 255, 255);
-              doc.setFontSize(7);
-              const durationText = `${activity.duration_weeks}s`;
-              const textWidth = doc.getTextWidth(durationText);
-              if (barWidth > textWidth + 2) {
-                doc.text(durationText, startX + (barWidth - textWidth) / 2, currentY + 5);
-              }
+          // Paint each cell that this activity covers
+          cells.forEach(cell => {
+            const monthIndex = monthRange.indexOf(cell.month);
+            if (monthIndex !== -1) {
+              // Calculate position for this specific week within the month
+              const weekCellWidth = cellWidth / 4; // Divide month into 4 weeks
+              const weekOffset = (cell.week - 1) * weekCellWidth;
+              const startX = 15 + mayorColumnWidth + monthIndex * cellWidth + weekOffset;
+              
+              // Activity bar for this week
+              doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+              doc.roundedRect(startX + 0.5, currentY + 1.5, weekCellWidth - 1, rowHeight - 3, 0.5, 0.5, 'F');
             }
-            doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+          });
+          
+          // Add duration text on first cell if there's space
+          if (cells.length > 0) {
+            const firstCell = cells[0];
+            const firstMonthIndex = monthRange.indexOf(firstCell.month);
+            if (firstMonthIndex !== -1 && cellWidth > 10) {
+              const weekCellWidth = cellWidth / 4;
+              const weekOffset = (firstCell.week - 1) * weekCellWidth;
+              const textX = 15 + mayorColumnWidth + firstMonthIndex * cellWidth + weekOffset;
+              
+              doc.setTextColor(255, 255, 255);
+              doc.setFontSize(6);
+              const durationText = `${activity.duration_weeks}s`;
+              doc.text(durationText, textX + 1, currentY + 4);
+              doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+            }
           }
         });
 

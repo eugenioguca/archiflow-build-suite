@@ -63,22 +63,21 @@ export const ModernGanttGrid: React.FC<ModernGanttGridProps> = ({
   // Generate month headers
   const monthHeaders = generateMonthRange(0, months);
   
-  // Process activities for individual row display
-  const processedActivities = React.useMemo(() => {
-    return activities.map(activity => {
-      const cells = expandRangeToMonthWeekCells(
-        activity.start_month,
-        activity.start_week,
-        activity.end_month,
-        activity.end_week
-      );
-      
-      return {
-        activity,
-        cells,
-        mayor: activity.mayor || mayores.find(m => m.id === activity.mayor_id)
-      };
+  // Group activities by mayor for proper cronograma display
+  const groupedByMayor = React.useMemo(() => {
+    const grouped: Record<string, { mayor: Mayor; activities: GanttActivity[] }> = {};
+    
+    activities.forEach(activity => {
+      const mayor = activity.mayor || mayores.find(m => m.id === activity.mayor_id);
+      if (mayor) {
+        if (!grouped[mayor.id]) {
+          grouped[mayor.id] = { mayor, activities: [] };
+        }
+        grouped[mayor.id].activities.push(activity);
+      }
     });
+    
+    return Object.values(grouped);
   }, [activities, mayores]);
 
   // Get cell dimensions based on zoom level
@@ -113,42 +112,42 @@ export const ModernGanttGrid: React.FC<ModernGanttGridProps> = ({
     onDeleteActivity(activityId);
   }, [onDeleteActivity]);
 
-  // Check if a cell belongs to an activity
-  const isCellActive = useCallback((processedActivity: any, monthStr: string, week: number) => {
-    const { cells } = processedActivity;
-    return isCellFilled(monthStr, week, cells);
+  // Check if any activity in a mayor covers a specific cell
+  const getActivitiesInCell = useCallback((mayorActivities: GanttActivity[], monthStr: string, week: number) => {
+    return mayorActivities.filter(activity => {
+      const cells = expandRangeToMonthWeekCells(
+        activity.start_month,
+        activity.start_week,
+        activity.end_month,
+        activity.end_week
+      );
+      return cells.some(c => c.month === monthStr && c.week === week);
+    });
   }, []);
 
-  // Render activity bar within a cell for individual activity rows
-  const renderActivityBar = useCallback((processedActivity: any, monthStr: string, week: number) => {
-    const { activity, cells } = processedActivity;
-    const isInCell = isCellFilled(monthStr, week, cells);
-    if (!isInCell) return null;
-
-    const isSelected = selectedActivity === activity.id;
-    const isFirstCell = cells[0]?.month === monthStr && cells[0]?.week === week;
-    const isLastCell = cells[cells.length - 1]?.month === monthStr && cells[cells.length - 1]?.week === week;
+  // Render stacked activity blocks in a cell
+  const renderCellActivities = useCallback((mayorActivities: GanttActivity[], monthStr: string, week: number) => {
+    const activitiesInCell = getActivitiesInCell(mayorActivities, monthStr, week);
+    
+    if (activitiesInCell.length === 0) return null;
 
     return (
-      <div
-        key={`${activity.id}-${monthStr}-${week}`}
-        className={cn(
-          "absolute inset-0 cursor-pointer transition-all duration-200",
-          "flex items-center justify-center text-xs font-medium text-primary-foreground",
-          "hover:shadow-md hover:z-10",
-          isSelected && "ring-2 ring-ring ring-offset-1 z-20"
-        )}
-        onClick={(e) => handleActivityClick(activity, e)}
-        title={`${activity.start_month} S${activity.start_week} → ${activity.end_month} S${activity.end_week}\nDuración: ${activity.duration_weeks} semanas`}
-      >
-        {isFirstCell && (
-          <span className="text-xs font-medium text-white drop-shadow-sm">
-            {activity.duration_weeks}s
-          </span>
-        )}
+      <div className="absolute inset-0 flex flex-col justify-start p-0.5 gap-0.5">
+        {activitiesInCell.map((activity, idx) => (
+          <div
+            key={`${activity.id}-${idx}`}
+            className={cn(
+              "bg-blue-500 rounded-sm cursor-pointer transition-all hover:bg-blue-600",
+              activitiesInCell.length === 1 ? "h-full" : "h-2 min-h-[6px]",
+              selectedActivity === activity.id && "ring-1 ring-white"
+            )}
+            onClick={(e) => handleActivityClick(activity, e)}
+            title={`${activity.start_month} S${activity.start_week} → ${activity.end_month} S${activity.end_week}\nDuración: ${activity.duration_weeks} semanas`}
+          />
+        ))}
       </div>
     );
-  }, [selectedActivity, handleActivityClick]);
+  }, [getActivitiesInCell, selectedActivity, handleActivityClick]);
 
   if (isLoading) {
     return (
@@ -247,17 +246,17 @@ export const ModernGanttGrid: React.FC<ModernGanttGridProps> = ({
               </div>
             </div>
 
-            {/* Gantt rows - One row per activity */}
+            {/* Gantt rows - One row per mayor */}
             <div className="relative">
-              {processedActivities.map((processedActivity, activityIndex) => {
-                const { activity, mayor } = processedActivity;
+              {groupedByMayor.map((mayorGroup, mayorIndex) => {
+                const { mayor, activities: mayorActivities } = mayorGroup;
                 
                 return (
                   <div 
-                    key={activity.id} 
+                    key={mayor.id} 
                     className={cn(
                       "flex border-b border-border hover:bg-accent/30 transition-colors",
-                      activityIndex % 2 === 0 ? "bg-background" : "bg-accent/10"
+                      mayorIndex % 2 === 0 ? "bg-background" : "bg-accent/10"
                     )}
                     style={{ height: '48px' }} // Fixed compact height
                   >
@@ -265,7 +264,10 @@ export const ModernGanttGrid: React.FC<ModernGanttGridProps> = ({
                     <div className="w-56 p-3 border-r border-border flex items-center justify-between sticky left-0 z-20 bg-inherit">
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold text-sm truncate">
-                          {mayor?.nombre || 'Mayor no encontrado'}
+                          {mayor.nombre}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {mayorActivities.length} actividad{mayorActivities.length !== 1 ? 'es' : ''}
                         </div>
                       </div>
                       <div className="flex items-center gap-1 ml-2">
@@ -273,25 +275,10 @@ export const ModernGanttGrid: React.FC<ModernGanttGridProps> = ({
                           size="sm"
                           variant="outline"
                           className="h-6 w-6 p-0"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditClick(activity, e);
-                          }}
-                          title="Editar actividad"
+                          onClick={() => onAddActivity(monthHeaders[0] || getCurrentMonth(), 1, mayor.id)}
+                          title="Añadir actividad a este mayor"
                         >
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteClick(activity.id, e);
-                          }}
-                          title="Eliminar actividad"
-                        >
-                          <Trash2 className="h-3 w-3" />
+                          <Plus className="h-3 w-3" />
                         </Button>
                       </div>
                     </div>
@@ -300,22 +287,31 @@ export const ModernGanttGrid: React.FC<ModernGanttGridProps> = ({
                     <div className="flex-1 relative h-full">
                       <div className="flex h-full">
                         {monthHeaders.map(monthStr =>
-                          [1, 2, 3, 4].map(week => (
-                            <div
-                              key={`${monthStr}-${week}`}
-                              className={cn(
-                                "relative border-r border-border/30",
-                                cellDims.width,
-                                "h-full",
-                                isCellActive(processedActivity, monthStr, week) 
-                                  ? "bg-blue-500/80 border-blue-600" 
-                                  : "bg-background hover:bg-accent/20"
-                              )}
-                            >
-                              {/* Render activity bar for this cell */}
-                              {renderActivityBar(processedActivity, monthStr, week)}
-                            </div>
-                          ))
+                          [1, 2, 3, 4].map(week => {
+                            const activitiesInCell = getActivitiesInCell(mayorActivities, monthStr, week);
+                            
+                            return (
+                              <div
+                                key={`${monthStr}-${week}`}
+                                className={cn(
+                                  "relative border-r border-border/30",
+                                  cellDims.width,
+                                  "h-full",
+                                  activitiesInCell.length > 0 
+                                    ? "bg-blue-100 border-blue-200" 
+                                    : "bg-background hover:bg-accent/20"
+                                )}
+                                onClick={() => {
+                                  if (activitiesInCell.length === 0) {
+                                    onAddActivity(monthStr, week, mayor.id);
+                                  }
+                                }}
+                              >
+                                {/* Render stacked activity blocks */}
+                                {renderCellActivities(mayorActivities, monthStr, week)}
+                              </div>
+                            )
+                          })
                         )}
                       </div>
                     </div>
