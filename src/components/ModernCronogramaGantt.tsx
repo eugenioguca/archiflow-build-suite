@@ -74,26 +74,26 @@ export function ModernCronogramaGantt() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between bg-card p-6 rounded-lg border shadow-sm">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
             <Calendar className="h-8 w-8 text-primary" />
-            Cronograma de Gantt Moderno
+            Cronograma de Gantt
           </h1>
-          <p className="text-muted-foreground">
-            Cronograma visual interactivo con matriz de flujo de caja y ministraciones
+          <p className="text-muted-foreground mt-1">
+            Cronograma visual interactivo con matriz de flujo de caja
           </p>
         </div>
         <div className="flex gap-2">
           {hasFilters && selectedClientId && selectedProjectId && (
             <>
               <div className="flex items-center gap-2 text-sm">
-                <label htmlFor="months-select">Meses:</label>
+                <label htmlFor="months-select" className="font-medium">Meses:</label>
                 <select
                   id="months-select"
                   value={months}
                   onChange={(e) => setMonths(Number(e.target.value))}
-                  className="px-3 py-1 border rounded text-sm"
+                  className="px-3 py-2 border rounded-md bg-background"
                 >
                   <option value={6}>6 meses</option>
                   <option value={12}>12 meses</option>
@@ -105,8 +105,9 @@ export function ModernCronogramaGantt() {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowMatrixModal(true)}
+                className="gap-2"
               >
-                <Calculator className="h-4 w-4 mr-1" />
+                <Calculator className="h-4 w-4" />
                 Editar Matriz
               </Button>
               <Button onClick={() => window.location.reload()} variant="outline" size="sm">
@@ -117,16 +118,30 @@ export function ModernCronogramaGantt() {
         </div>
       </div>
 
-      <CollapsibleFilters
-        selectedClientId={selectedClientId}
-        selectedProjectId={selectedProjectId}
-        onClientChange={setClientId}
-        onProjectChange={setProjectId}
-        onClearFilters={clearFilters}
-      />
+      {/* Fixed Filters - Always visible when needed */}
+      {!hasFilters ? (
+        <CollapsibleFilters
+          selectedClientId={selectedClientId}
+          selectedProjectId={selectedProjectId}
+          onClientChange={setClientId}
+          onProjectChange={setProjectId}
+          onClearFilters={clearFilters}
+        />
+      ) : (
+        <div className="bg-muted/30 p-4 rounded-lg border">
+          <CollapsibleFilters
+            selectedClientId={selectedClientId}
+            selectedProjectId={selectedProjectId}
+            onClientChange={setClientId}
+            onProjectChange={setProjectId}
+            onClearFilters={clearFilters}
+          />
+        </div>
+      )}
 
       {hasFilters && selectedClientId && selectedProjectId ? (
         <div className="space-y-6">
+          {/* Visual Gantt Grid */}
           <ModernGanttGrid
             activities={activities}
             mayores={mayores}
@@ -137,6 +152,7 @@ export function ModernCronogramaGantt() {
             onDeleteActivity={(id) => deleteActivity.mutateAsync(id)}
           />
           
+          {/* Monthly Numeric Matrix */}
           <MonthlyNumericMatrix
             calculations={calculations}
             manualOverrides={{}}
@@ -144,6 +160,15 @@ export function ModernCronogramaGantt() {
             onDeleteOverride={async () => {}}
             months={months}
           />
+          
+          {/* PDF Export - Temporarily disabled during redesign */}
+          {activities.length > 0 && (
+            <div className="flex justify-end">
+              <Button variant="outline" disabled>
+                Exportar PDF (En desarrollo)
+              </Button>
+            </div>
+          )}
         </div>
       ) : (
         <Card>

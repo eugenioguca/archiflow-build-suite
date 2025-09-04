@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { getCurrentMonth, formatDateToYYYYMM } from '@/utils/cronogramaWeekUtils';
+import { calculateGanttMatrix } from '@/utils/ganttCalculations';
 
 export interface ModernGanttActivity {
   id: string;
@@ -150,34 +151,14 @@ export const useModernCronograma = (clienteId?: string, proyectoId?: string) => 
     enabled: !!clienteId && !!proyectoId,
   });
 
-  // Fetch payment plans
-  const paymentPlansQuery = useQuery({
-    queryKey: ['payment-plans', clienteId, proyectoId],
-    queryFn: async () => {
-      if (!clienteId || !proyectoId) return [];
-
-      const { data, error } = await supabase
-        .from('payment_plans')
-        .select(`
-          *,
-          installments:payment_installments(*)
-        `)
-        .eq('client_project_id', proyectoId)
-        .eq('is_current_plan', true)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!clienteId && !!proyectoId,
-  });
+  // No payment plans integration - standalone matrix calculations
 
   // Calculate monthly values
   const calculations = React.useMemo((): MonthlyCalculations => {
     const activities = activitiesQuery.data || [];
     const overrides = matrixOverridesQuery.data || [];
     const parametricoTotals = parametricoTotalsQuery.data;
-    const paymentPlans = paymentPlansQuery.data || [];
+    // Standalone calculations without payment plans dependency
 
     // Create override lookup
     const overrideLookup: Record<string, string> = {};
@@ -197,19 +178,26 @@ export const useModernCronograma = (clienteId?: string, proyectoId?: string) => 
     // Get total budget
     const totalPresupuesto = parametricoTotals?.totalGeneral || 0;
 
-    // Calculate monthly values (simplified - in real implementation would be more complex)
-    // This would need to implement the calculation logic based on activities and parametric budget
+    // Use independent calculation engine
+    if (!parametricoTotals || activities.length === 0) {
+      return {
+        gastoPorMes: {},
+        avanceParcial: {},
+        avanceAcumulado: {},
+        ministraciones: {},
+        inversionAcumulada: {},
+        fechasPago: {},
+        totalPresupuesto: parametricoTotals?.totalGeneral || 0
+      };
+    }
 
-    return {
-      gastoPorMes,
-      avanceParcial,
-      avanceAcumulado,
-      ministraciones,
-      inversionAcumulada,
-      fechasPago,
-      totalPresupuesto
-    };
-  }, [activitiesQuery.data, matrixOverridesQuery.data, parametricoTotalsQuery.data, paymentPlansQuery.data]);
+    return calculateGanttMatrix({
+      activities,
+      overrides,
+      parametricoTotals,
+      months: 12 // Default to 12 months, can be made configurable
+    });
+  }, [activitiesQuery.data, matrixOverridesQuery.data, parametricoTotalsQuery.data]);
 
   // Create activity mutation
   const createActivity = useMutation({
@@ -447,7 +435,7 @@ export const useModernCronograma = (clienteId?: string, proyectoId?: string) => 
       activitiesQuery.refetch();
       matrixOverridesQuery.refetch();
       parametricoTotalsQuery.refetch();
-      paymentPlansQuery.refetch();
+      // No payment plans refetch needed
     }
   };
 };

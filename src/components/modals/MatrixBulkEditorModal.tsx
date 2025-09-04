@@ -138,13 +138,7 @@ export function MatrixBulkEditorModal({
     });
   };
 
-  const handleImportFromPaymentPlans = async () => {
-    // TODO: Import from payment plans (integrate with existing payment plans data)
-    toast({
-      title: "Funcionalidad en desarrollo",
-      description: "La importación desde planes de pago estará disponible próximamente."
-    });
-  };
+  // Payment plans integration removed - matrix is fully independent
 
   // Handle input changes
   const handleInputChange = (month: string, concepto: string, value: string) => {
@@ -329,15 +323,7 @@ export function MatrixBulkEditorModal({
               <Calculator className="h-4 w-4" />
               Calcular Avances
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleImportFromPaymentPlans}
-              className="flex items-center gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Importar Planes de Pago
-            </Button>
+            {/* Payment plans integration removed */}
             <Button
               variant="outline"
               size="sm"
