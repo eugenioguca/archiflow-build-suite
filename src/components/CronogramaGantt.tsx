@@ -112,21 +112,21 @@ export function CronogramaGantt() {
                 months={months}
               />
               
-              <MonthlyNumericMatrix
-                calculations={{
-                  gastoPorMes: {},
-                  avanceParcial: {},
-                  avanceAcumulado: {},
-                  ministraciones: {},
-                  inversionAcumulada: {},
-                  fechasPago: {},
-                  totalPresupuesto: 0
-                }}
-                manualOverrides={{}}
-                onSaveOverride={async () => {}}
-                onDeleteOverride={async () => {}}
-                months={months}
-              />
+            <MonthlyNumericMatrix
+              calculations={{
+                gastoPorMes: {},
+                avanceParcial: {},
+                avanceAcumulado: {},
+                ministraciones: {},
+                inversionAcumulada: {},
+                fechasPago: {},
+                totalPresupuesto: 0
+              }}
+              matrixOverrides={[]}
+              onSaveOverride={async () => {}}
+              onDeleteOverride={async () => {}}
+              months={months}
+            />
               
               {activities.length === 0 && (
                 <Card>

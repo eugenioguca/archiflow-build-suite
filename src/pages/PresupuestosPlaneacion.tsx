@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PresupuestoParametrico } from '@/components/PresupuestoParametrico';
-import { CronogramaGantt } from '@/components/CronogramaGantt';
+import { ModernCronogramaGantt } from '@/components/ModernCronogramaGantt';
 import { PresupuestoEjecutivoManager } from '@/components/PresupuestoEjecutivoManager';
 import { PaymentPlanManager } from '@/components/PaymentPlanManager';
 import { useClientProjectFilters } from '@/hooks/useClientProjectFilters';
@@ -35,7 +35,7 @@ export default function PresupuestosPlaneacion() {
         </TabsContent>
 
         <TabsContent value="gantt" className="space-y-6">
-          <CronogramaGantt />
+          <ModernCronogramaGantt />
         </TabsContent>
 
         <TabsContent value="pagos" className="space-y-6">

@@ -1,26 +1,30 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MonthlyCalculations } from '@/hooks/useInteractiveGantt';
-import { EditableCell } from '@/components/EditableCell';
-import { Undo } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Calculator, Edit, TrendingUp, DollarSign, Calendar } from 'lucide-react';
+import { formatMonth, generateMonthRange } from '@/utils/cronogramaWeekUtils';
+import { MonthlyCalculations, MatrixOverride } from '@/hooks/useModernCronograma';
 
 interface MonthlyNumericMatrixProps {
   calculations: MonthlyCalculations;
-  manualOverrides: Record<string, { valor: string; hasOverride: boolean }>;
-  onSaveOverride: (data: { mes: number; concepto: string; valor: string }) => Promise<void>;
-  onDeleteOverride: (data: { mes: number; concepto: string }) => Promise<void>;
-  months?: number;
+  matrixOverrides: MatrixOverride[];
+  onSaveOverride: (mes: string, concepto: string, valor: string) => Promise<void>;
+  onDeleteOverride: (mes: string, concepto: string) => Promise<void>;
+  months: number;
+  showEditButton?: boolean;
+  onOpenEditor?: () => void;
 }
 
-export const MonthlyNumericMatrix: React.FC<MonthlyNumericMatrixProps> = ({
+export function MonthlyNumericMatrix({
   calculations,
-  manualOverrides,
+  matrixOverrides,
   onSaveOverride,
   onDeleteOverride,
-  months = 12
-}) => {
+  months = 12,
+  showEditButton = false,
+  onOpenEditor
+}: MonthlyNumericMatrixProps) {
   const { 
     gastoPorMes, 
     avanceParcial, 
@@ -31,20 +35,22 @@ export const MonthlyNumericMatrix: React.FC<MonthlyNumericMatrixProps> = ({
     totalPresupuesto 
   } = calculations;
 
-  // Generate month columns
-  const monthColumns = Array.from({ length: months }, (_, i) => {
-    const date = new Date();
-    date.setMonth(date.getMonth() + i);
-    return {
-      number: i + 1,
-      name: date.toLocaleDateString('es-MX', { month: 'short' }),
-      fullName: date.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })
-    };
-  });
+  // Generate month range using the same utility as other components
+  const monthRange = generateMonthRange(0, months);
+
+  // Create override lookup for visual indicators
+  const overrideLookup = React.useMemo(() => {
+    const lookup: Record<string, boolean> = {};
+    matrixOverrides.forEach(override => {
+      const key = `${override.mes}-${override.concepto}`;
+      lookup[key] = true;
+    });
+    return lookup;
+  }, [matrixOverrides]);
 
   // Calculate totals
-  const totalGasto = Object.values(gastoPorMes).reduce((sum, val) => sum + val, 0);
-  const totalMinistraciones = Object.values(ministraciones).reduce((sum, val) => sum + val, 0);
+  const totalGasto = Object.values(calculations.gastoPorMes).reduce((sum, val) => sum + val, 0);
+  const totalMinistraciones = Object.values(calculations.ministraciones).reduce((sum, val) => sum + val, 0);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('es-MX', {
@@ -55,210 +61,255 @@ export const MonthlyNumericMatrix: React.FC<MonthlyNumericMatrixProps> = ({
     }).format(value);
   };
 
+  // Format percentage with single decimal
   const formatPercentage = (value: number) => {
-    return `${value.toFixed(2)}%`;
-  };
-
-  const renderCell = (value: number | string | string[], type: 'currency' | 'percentage' | 'text') => {
-    if (type === 'currency') {
-      return formatCurrency(typeof value === 'number' ? value : 0);
-    } else if (type === 'percentage') {
-      return formatPercentage(typeof value === 'number' ? value : 0);
-    } else if (Array.isArray(value)) {
-      return value.join(', ');
-    }
-    return value || '-';
-  };
-
-  // Check if a cell has manual override
-  const hasOverride = (month: number, concepto: string) => {
-    const key = `${month}-${concepto}`;
-    return manualOverrides[key]?.hasOverride || false;
-  };
-
-  // Render editable cell with override indicator
-  const renderEditableCell = (
-    month: number, 
-    concepto: string, 
-    value: number | string | string[], 
-    type: 'currency' | 'percentage' | 'text',
-    validationFn?: (val: string) => boolean
-  ) => {
-    const isOverridden = hasOverride(month, concepto);
-    const displayValue = typeof value === 'number' ? 
-      (type === 'currency' ? value.toString() : 
-       type === 'percentage' ? value.toFixed(2) : 
-       value.toString()) : 
-      (Array.isArray(value) ? value.join(', ') : (value || ''));
-
-    return (
-      <TableCell className={`text-right relative ${isOverridden ? 'bg-blue-50 border-2 border-blue-200' : ''}`}>
-        <div className="flex items-center justify-between">
-          <EditableCell
-            value={displayValue}
-            onSave={(newValue) => onSaveOverride({ mes: month, concepto, valor: newValue })}
-            type={type === 'currency' || type === 'percentage' ? 'number' : 'text'}
-            className={`text-right ${isOverridden ? 'font-semibold text-blue-700' : ''}`}
-            displayTransform={(val) => {
-              if (type === 'currency') return formatCurrency(parseFloat(val) || 0);
-              if (type === 'percentage') return formatPercentage(parseFloat(val) || 0);
-              return val;
-            }}
-          />
-          {isOverridden && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onDeleteOverride({ mes: month, concepto })}
-              className="ml-1 p-1 h-6 w-6 hover:bg-blue-100"
-              title="Restaurar valor automático"
-            >
-              <Undo className="h-3 w-3" />
-            </Button>
-          )}
-        </div>
-        {isOverridden && (
-          <span className="absolute top-0 right-0 text-blue-600 text-xs">*</span>
-        )}
-      </TableCell>
-    );
+    return `${value.toFixed(1)}%`;
   };
 
   return (
-    <Card className="mt-6">
-      <CardHeader>
-        <CardTitle>Matriz Numérica Mensual</CardTitle>
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Calculator className="h-5 w-5 text-primary" />
+            <CardTitle>Matriz Numérica Mensual</CardTitle>
+          </div>
+          {showEditButton && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onOpenEditor}
+              className="gap-2"
+            >
+              <Edit className="h-4 w-4" />
+              Editar Matriz
+            </Button>
+          )}
+        </div>
       </CardHeader>
-      <CardContent>
+      
+      <CardContent className="p-0">
         <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-48 bg-muted font-semibold">Concepto</TableHead>
-                {monthColumns.map(month => (
-                  <TableHead key={month.number} className="text-center bg-primary/10 font-semibold min-w-24">
-                    {month.name}
-                  </TableHead>
-                ))}
-                <TableHead className="text-center bg-secondary/20 font-semibold min-w-24">
-                  TOTAL
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {/* GASTO EN OBRA */}
-              <TableRow className="hover:bg-muted/30">
-                <TableCell className="font-medium bg-muted/30">
-                  GASTO EN OBRA (MXN)
-                </TableCell>
-                {monthColumns.map(month => (
-                  renderEditableCell(month.number, 'gasto_obra', gastoPorMes[month.number] || 0, 'currency')
-                ))}
-                <TableCell className="text-right font-semibold bg-secondary/10">
-                  {renderCell(totalGasto, 'currency')}
-                </TableCell>
-              </TableRow>
+          <div className="min-w-max">
+            {/* Header */}
+            <div className="flex border-b bg-muted/30">
+              <div className="w-48 px-4 py-3 border-r font-semibold text-sm bg-card">
+                Concepto
+              </div>
+              {monthRange.map(month => (
+                <div
+                  key={month}
+                  className="w-32 px-2 py-3 border-r text-center font-medium text-xs bg-card"
+                >
+                  {formatMonth(month)}
+                </div>
+              ))}
+              <div className="w-32 px-2 py-3 text-center font-semibold text-xs bg-primary/10">
+                Total
+              </div>
+            </div>
 
-              {/* % AVANCE PARCIAL */}
-              <TableRow className="hover:bg-muted/30">
-                <TableCell className="font-medium bg-muted/30">
-                  % AVANCE PARCIAL
-                </TableCell>
-                {monthColumns.map(month => (
-                  renderEditableCell(month.number, 'avance_parcial', avanceParcial[month.number] || 0, 'percentage')
-                ))}
-                <TableCell className="text-right font-semibold bg-secondary/10">
-                  100.00%
-                </TableCell>
-              </TableRow>
+            {/* Gasto en Obra */}
+            <div className="flex border-b hover:bg-muted/20">
+              <div className="w-48 px-4 py-3 border-r flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-green-600" />
+                <span className="font-medium text-sm">Gasto en Obra</span>
+              </div>
+              {monthRange.map(month => {
+                const value = calculations.gastoPorMes[month] || 0;
+                const hasOverride = overrideLookup[`${month}-gasto_obra`];
+                return (
+                  <div
+                    key={month}
+                    className="w-32 px-2 py-3 border-r text-right text-xs relative"
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      {formatCurrency(value)}
+                      {hasOverride && (
+                        <Edit className="h-3 w-3 text-primary opacity-60" />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="w-32 px-2 py-3 text-right font-medium text-xs bg-primary/5">
+                {formatCurrency(totalGasto)}
+              </div>
+            </div>
 
-              {/* % AVANCE ACUMULADO */}
-              <TableRow className="hover:bg-muted/30">
-                <TableCell className="font-medium bg-muted/30">
-                  % AVANCE ACUMULADO
-                </TableCell>
-                {monthColumns.map(month => (
-                  renderEditableCell(month.number, 'avance_acumulado', avanceAcumulado[month.number] || 0, 'percentage')
-                ))}
-                <TableCell className="text-right font-semibold bg-secondary/10">
-                  100.00%
-                </TableCell>
-              </TableRow>
+            {/* % Avance Parcial */}
+            <div className="flex border-b hover:bg-muted/20">
+              <div className="w-48 px-4 py-3 border-r flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-blue-600" />
+                <span className="font-medium text-sm">% Avance Parcial</span>
+              </div>
+              {monthRange.map(month => {
+                const value = calculations.avanceParcial[month] || 0;
+                const hasOverride = overrideLookup[`${month}-avance_parcial`];
+                return (
+                  <div
+                    key={month}
+                    className="w-32 px-2 py-3 border-r text-right text-xs relative"
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      {formatPercentage(value)}
+                      {hasOverride && (
+                        <Edit className="h-3 w-3 text-primary opacity-60" />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="w-32 px-2 py-3 text-right font-medium text-xs bg-primary/5">
+                100.0%
+              </div>
+            </div>
 
-              {/* MINISTRACIONES */}
-              <TableRow className="hover:bg-muted/30 border-t-2 border-border">
-                <TableCell className="font-medium bg-muted/30">
-                  MINISTRACIONES (MXN)
-                </TableCell>
-                {monthColumns.map(month => (
-                  renderEditableCell(month.number, 'ministraciones', ministraciones[month.number] || 0, 'currency')
-                ))}
-                <TableCell className="text-right font-semibold bg-secondary/10">
-                  {renderCell(totalMinistraciones, 'currency')}
-                </TableCell>
-              </TableRow>
+            {/* % Avance Acumulado */}
+            <div className="flex border-b hover:bg-muted/20">
+              <div className="w-48 px-4 py-3 border-r flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-purple-600" />
+                <span className="font-medium text-sm">% Avance Acumulado</span>
+              </div>
+              {monthRange.map(month => {
+                const value = calculations.avanceAcumulado[month] || 0;
+                const hasOverride = overrideLookup[`${month}-avance_acumulado`];
+                return (
+                  <div
+                    key={month}
+                    className="w-32 px-2 py-3 border-r text-right text-xs relative"
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      {formatPercentage(value)}
+                      {hasOverride && (
+                        <Edit className="h-3 w-3 text-primary opacity-60" />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="w-32 px-2 py-3 text-right font-medium text-xs bg-primary/5">
+                {formatPercentage(Math.max(...Object.values(calculations.avanceAcumulado)))}
+              </div>
+            </div>
 
-              {/* % INVERSIÓN ACUMULADA */}
-              <TableRow className="hover:bg-muted/30">
-                <TableCell className="font-medium bg-muted/30">
-                  % INVERSIÓN ACUMULADA
-                </TableCell>
-                {monthColumns.map(month => (
-                  renderEditableCell(month.number, 'inversion_acumulada', inversionAcumulada[month.number] || 0, 'percentage')
-                ))}
-                <TableCell className="text-right font-semibold bg-secondary/10">
-                  {formatPercentage(totalPresupuesto > 0 ? (totalMinistraciones / totalPresupuesto) * 100 : 0)}
-                </TableCell>
-              </TableRow>
+            {/* Ministraciones */}
+            <div className="flex border-b hover:bg-muted/20">
+              <div className="w-48 px-4 py-3 border-r flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-orange-600" />
+                <span className="font-medium text-sm">Ministraciones</span>
+              </div>
+              {monthRange.map(month => {
+                const value = calculations.ministraciones[month] || 0;
+                const hasOverride = overrideLookup[`${month}-ministraciones`];
+                return (
+                  <div
+                    key={month}
+                    className="w-32 px-2 py-3 border-r text-right text-xs relative"
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      {formatCurrency(value)}
+                      {hasOverride && (
+                        <Edit className="h-3 w-3 text-primary opacity-60" />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="w-32 px-2 py-3 text-right font-medium text-xs bg-primary/5">
+                {formatCurrency(totalMinistraciones)}
+              </div>
+            </div>
 
-              {/* FECHA TENTATIVA DE PAGO */}
-              <TableRow className="hover:bg-muted/30">
-                <TableCell className="font-medium bg-muted/30">
-                  FECHA TENTATIVA DE PAGO
-                </TableCell>
-                {monthColumns.map(month => (
-                  renderEditableCell(month.number, 'fecha_pago', fechasPago[month.number] || [], 'text')
-                ))}
-                <TableCell className="text-center bg-secondary/10">
-                  -
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+            {/* % Inversión Acumulada */}
+            <div className="flex border-b hover:bg-muted/20">
+              <div className="w-48 px-4 py-3 border-r flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-red-600" />
+                <span className="font-medium text-sm">% Inversión Acumulada</span>
+              </div>
+              {monthRange.map(month => {
+                const value = calculations.inversionAcumulada[month] || 0;
+                const hasOverride = overrideLookup[`${month}-inversion_acumulada`];
+                return (
+                  <div
+                    key={month}
+                    className="w-32 px-2 py-3 border-r text-right text-xs relative"
+                  >
+                    <div className="flex items-center justify-end gap-1">
+                      {formatPercentage(value)}
+                      {hasOverride && (
+                        <Edit className="h-3 w-3 text-primary opacity-60" />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="w-32 px-2 py-3 text-right font-medium text-xs bg-primary/5">
+                {formatPercentage(Math.max(...Object.values(calculations.inversionAcumulada)))}
+              </div>
+            </div>
+
+            {/* Fechas de Pago */}
+            <div className="flex hover:bg-muted/20">
+              <div className="w-48 px-4 py-3 border-r flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-indigo-600" />
+                <span className="font-medium text-sm">Fechas de Pago</span>
+              </div>
+              {monthRange.map(month => {
+                const fechas = calculations.fechasPago[month] || [];
+                const hasOverride = overrideLookup[`${month}-fecha_pago`];
+                return (
+                  <div
+                    key={month}
+                    className="w-32 px-2 py-3 border-r text-xs relative"
+                  >
+                    <div className="flex items-start justify-center gap-1">
+                      {fechas.length > 0 ? (
+                        <div className="text-center">
+                          {fechas.map((fecha, idx) => (
+                            <div key={idx} className="truncate">
+                              {fecha}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                      {hasOverride && (
+                        <Edit className="h-3 w-3 text-primary opacity-60 mt-0.5" />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="w-32 px-2 py-3 text-center text-xs bg-primary/5 text-muted-foreground">
+                -
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Summary info */}
-        <div className="mt-4 p-4 bg-muted/30 rounded-lg grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-          <div>
-            <span className="font-semibold">Total Presupuesto:</span>
-            <div className="text-lg font-bold text-primary">
-              {formatCurrency(totalPresupuesto)}
+        {/* Legend */}
+        <div className="border-t bg-muted/30 p-4">
+          <div className="flex items-center gap-6 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Edit className="h-3 w-3 text-primary" />
+              <span>Valor editado manualmente</span>
             </div>
-          </div>
-          <div>
-            <span className="font-semibold">Total Gasto Programado:</span>
-            <div className="text-lg font-bold text-secondary">
-              {formatCurrency(totalGasto)}
+            <div className="flex items-center gap-2">
+              <Calculator className="h-3 w-3" />
+              <span>Calculado automáticamente desde Gantt</span>
             </div>
-          </div>
-          <div>
-            <span className="font-semibold">Total Ministraciones:</span>
-            <div className="text-lg font-bold text-accent">
-              {formatCurrency(totalMinistraciones)}
-            </div>
+            {showEditButton && (
+              <div className="ml-auto">
+                <Badge variant="outline" className="text-xs">
+                  {matrixOverrides.length} valores personalizados
+                </Badge>
+              </div>
+            )}
           </div>
         </div>
-
-        {/* Manual overrides note */}
-        {Object.values(manualOverrides).some(override => override.hasOverride) && (
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-center text-sm text-blue-700">
-              <span className="font-semibold mr-1">*</span>
-              <span>Los valores marcados con asterisco (*) han sido editados manualmente y aparecen destacados en azul.</span>
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
-};
+}

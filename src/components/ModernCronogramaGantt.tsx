@@ -6,10 +6,10 @@ import { useClientProjectFilters } from '@/hooks/useClientProjectFilters';
 import { CollapsibleFilters } from '@/components/CollapsibleFilters';
 import { ModernGanttGrid } from '@/components/ModernGanttGrid';
 import { MonthlyNumericMatrix } from '@/components/MonthlyNumericMatrix';
-import { GanttPDFExport } from '@/components/GanttPDFExport';
+import { ModernGanttPDFExport } from '@/components/ModernGanttPDFExport';
 import { ModernGanttActivityModal } from '@/components/modals/ModernGanttActivityModal';
 import { MatrixBulkEditorModal } from '@/components/modals/MatrixBulkEditorModal';
-import { useModernCronograma } from '@/hooks/useModernCronograma';
+import { useModernCronograma, MatrixOverride } from '@/hooks/useModernCronograma';
 import { getCurrentMonth } from '@/utils/cronogramaWeekUtils';
 
 export function ModernCronogramaGantt() {
@@ -155,18 +155,26 @@ export function ModernCronogramaGantt() {
           {/* Monthly Numeric Matrix */}
           <MonthlyNumericMatrix
             calculations={calculations}
-            manualOverrides={{}}
+            matrixOverrides={matrixOverrides}
             onSaveOverride={async () => {}}
             onDeleteOverride={async () => {}}
             months={months}
+            showEditButton={true}
+            onOpenEditor={() => setShowMatrixModal(true)}
           />
           
-          {/* PDF Export - Temporarily disabled during redesign */}
+          {/* Modern PDF Export */}
           {activities.length > 0 && (
             <div className="flex justify-end">
-              <Button variant="outline" disabled>
-                Exportar PDF (En desarrollo)
-              </Button>
+              <ModernGanttPDFExport
+                activities={activities}
+                mayores={mayores}
+                calculations={calculations}
+                matrixOverrides={matrixOverrides}
+                clienteId={selectedClientId}
+                proyectoId={selectedProjectId}
+                months={months}
+              />
             </div>
           )}
         </div>
@@ -215,7 +223,11 @@ export function ModernCronogramaGantt() {
           clienteId={selectedClientId}
           proyectoId={selectedProjectId}
           months={months}
-          existingOverrides={{}}
+          existingOverrides={matrixOverrides.reduce((acc, override) => {
+            const key = `${override.mes}-${override.concepto}`;
+            acc[key] = override;
+            return acc;
+          }, {} as Record<string, MatrixOverride>)}
           calculations={calculations}
           onSaveOverrides={handleSaveMatrixOverrides}
           onDeleteOverride={handleDeleteMatrixOverride}
