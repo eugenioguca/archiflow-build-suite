@@ -97,10 +97,14 @@ export const useModernCronograma = (clienteId?: string, proyectoId?: string) => 
   const mayoresQuery = useQuery({
     queryKey: ['mayores-construccion'],
     queryFn: async () => {
+      // Normalize departamento to uppercase for cronograma only
+      const departamentoNombre = 'Construcción';
+      const d = (departamentoNombre ?? "").toUpperCase();
+
       const { data, error } = await supabase
         .from('chart_of_accounts_mayor')
         .select('id, nombre, codigo, departamento')
-        .eq('departamento', 'CONSTRUCCIÓN')
+        .eq('departamento', d)
         .eq('activo', true)
         .order('codigo');
 
@@ -229,13 +233,16 @@ export const useModernCronograma = (clienteId?: string, proyectoId?: string) => 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuario no autenticado');
 
-      // Convert string months to numbers for database using helper function
-      const startDbMonth = convertStringToDbMonth(activityData.start_month);
-      const endDbMonth = convertStringToDbMonth(activityData.end_month);
+      // Normalize month format and convert to database format
+      const normalizedStartMonth = activityData.start_month.replace('-', '');
+      const normalizedEndMonth = activityData.end_month.replace('-', '');
+      
+      const startDbMonth = parseInt(normalizedStartMonth, 10);
+      const endDbMonth = parseInt(normalizedEndMonth, 10);
 
       // Calculate precise dates based on month and week
-      const fechaInicio = calculateDateFromMonthWeek(activityData.start_month, activityData.start_week);
-      const fechaFin = calculateDateFromMonthWeek(activityData.end_month, activityData.end_week);
+      const fechaInicio = calculateDateFromMonthWeek(normalizedStartMonth, activityData.start_week);
+      const fechaFin = calculateDateFromMonthWeek(normalizedEndMonth, activityData.end_week);
 
       const { data, error } = await supabase
         .from('cronograma_gantt')
@@ -280,13 +287,15 @@ export const useModernCronograma = (clienteId?: string, proyectoId?: string) => 
   // Update activity mutation
   const updateActivity = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<ModernGanttActivity> }) => {
-      // Convert string months to numbers for database if present using helper function
+      // Normalize month format and convert to database format
       const updateData: any = { ...data };
       if (data.start_month) {
-        updateData.start_month = convertStringToDbMonth(data.start_month);
+        const normalizedStart = data.start_month.replace('-', '');
+        updateData.start_month = parseInt(normalizedStart, 10);
       }
       if (data.end_month) {
-        updateData.end_month = convertStringToDbMonth(data.end_month);
+        const normalizedEnd = data.end_month.replace('-', '');
+        updateData.end_month = parseInt(normalizedEnd, 10);
       }
 
       const { error } = await supabase
@@ -353,11 +362,12 @@ export const useModernCronograma = (clienteId?: string, proyectoId?: string) => 
       if (!user) throw new Error('Usuario no autenticado');
 
       const dataToInsert = overrides.map(override => {
-        // Convert string month to number for database using helper function
+        // Normalize month format and convert to database format
+        const normalizedMes = override.mes.replace('-', '');
         return {
           cliente_id: clienteId,
           proyecto_id: proyectoId,
-          mes: convertStringToDbMonth(override.mes),
+          mes: parseInt(normalizedMes, 10),
           concepto: override.concepto,
           valor: override.valor,
           sobrescribe: override.sobrescribe,
@@ -394,8 +404,9 @@ export const useModernCronograma = (clienteId?: string, proyectoId?: string) => 
     mutationFn: async ({ mes, concepto }: { mes: string; concepto: string }) => {
       if (!clienteId || !proyectoId) throw new Error('Cliente y proyecto requeridos');
 
-      // Convert string month to number for database using helper function
-      const mesNumber = convertStringToDbMonth(mes);
+      // Normalize month format and convert to database format
+      const normalizedMes = mes.replace('-', '');
+      const mesNumber = parseInt(normalizedMes, 10);
 
       const { error } = await supabase
         .from('cronograma_matriz_manual')

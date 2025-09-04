@@ -74,34 +74,50 @@ export function calculateDateFromMonthWeek(monthStr: string, week: number): stri
 /**
  * Expand a YYYYMM range into individual month+week cells (simplified, no Date objects)
  */
-export function expandRangeToMonthWeekCells(start: MonthWeek, end: MonthWeek): GanttCell[] {
-  const result: GanttCell[] = [];
-  let current = parseInt(start.month);  // Convert "202508" to 202508
-  const endNum = parseInt(end.month);   // Convert "202508" to 202508
+export function expandRangeToMonthWeekCells(
+  startMonth: string,
+  startWeek: number,
+  endMonth: string,
+  endWeek: number
+): { month: string; week: number }[] {
+  const result: { month: string; week: number }[] = [];
+  const startNum = parseInt(startMonth, 10);
+  const endNum   = parseInt(endMonth, 10);
 
-  while (current < endNum || (current === endNum)) {
-    const maxWeek = (current === endNum) ? end.week : 4;
-    const minWeek = (current === parseInt(start.month)) ? start.week : 1;
+  let current = startNum;
+  while (true) {
+    const isStart = current === startNum;
+    const isEnd   = current === endNum;
 
-    for (let w = minWeek; w <= maxWeek; w++) {
-      result.push({ month: current.toString(), week: w });
-    }
+    const minW = isStart ? startWeek : 1;
+    const maxW = isEnd   ? endWeek   : 4;
 
-    if (current === endNum) break;
-    
-    // Increment month: 202508 -> 202509, 202512 -> 202601
-    let year = Math.floor(current / 100);
-    let month = current % 100;
-    month++;
-    if (month > 12) { 
-      month = 1; 
-      year++; 
-    }
-    current = year * 100 + month;
+    for (let w = minW; w <= maxW; w++) result.push({ month: String(current), week: w });
+    if (isEnd) break;
+
+    // ++YYYYMM
+    let y = Math.floor(current / 100);
+    let m = current % 100;
+    m++; if (m > 12) { m = 1; y++; }
+    current = y * 100 + m;
   }
-  
   return result;
 }
+
+/**
+ * Helper functions for YYYYMM arithmetic (no dates)
+ */
+export const incrementYYYYMM = (val: string): string => {
+  let n = parseInt(val, 10), y = Math.floor(n/100), m = n%100;
+  m++; if (m>12){m=1;y++}
+  return String(y*100 + m);
+};
+
+export const formatYYYYMMToLabel = (val: string, locale='es-MX'): string => {
+  const y = parseInt(val.slice(0,4),10);
+  const m = parseInt(val.slice(4,6),10);
+  return new Date(y, m-1, 1).toLocaleDateString(locale, { month: 'long', year: 'numeric' });
+};
 
 /**
  * Convert activities with YYYYMM ranges to a map structure
@@ -118,8 +134,10 @@ export function toMonthlyWeekMap(activities: Array<{
   
   activities.forEach(activity => {
     const cells = expandRangeToMonthWeekCells(
-      { month: activity.start_month, week: activity.start_week },
-      { month: activity.end_month, week: activity.end_week }
+      activity.start_month,
+      activity.start_week,
+      activity.end_month,
+      activity.end_week
     );
     
     const key = `${activity.mayor_id}`;
@@ -221,6 +239,26 @@ export function generateMonthRange(startOffset: number = 0, count: number = 12):
 }
 
 /**
+ * Generate month options for form dropdowns with value and label
+ */
+export function generateMonthOptions(startOffset: number = 0, count: number = 12): Array<{ value: string; label: string }> {
+  const months: Array<{ value: string; label: string }> = [];
+  const current = new Date();
+  current.setMonth(current.getMonth() + startOffset);
+  
+  for (let i = 0; i < count; i++) {
+    const yyyymm = formatDateToYYYYMM(current);
+    months.push({
+      value: yyyymm,
+      label: formatYYYYMMToLabel(yyyymm)
+    });
+    current.setMonth(current.getMonth() + 1);
+  }
+  
+  return months;
+}
+
+/**
  * Check if a cell should be filled based on activities
  */
 export function isCellFilled(
@@ -255,8 +293,10 @@ export function groupActivitiesByMayor(
 
   activities.forEach(activity => {
     const cells = expandRangeToMonthWeekCells(
-      { month: activity.start_month, week: activity.start_week },
-      { month: activity.end_month, week: activity.end_week }
+      activity.start_month,
+      activity.start_week,
+      activity.end_month,
+      activity.end_week
     );
 
     if (!grouped[activity.mayor_id]) {

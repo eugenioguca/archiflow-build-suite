@@ -8,6 +8,8 @@ import {
   formatMonthShort, 
   expandRangeToMonthWeekCells,
   isCellFilled,
+  formatYYYYMMToLabel,
+  getCurrentMonth,
   GanttCell
 } from '@/utils/cronogramaWeekUtils';
 
@@ -65,8 +67,10 @@ export const ModernGanttGrid: React.FC<ModernGanttGridProps> = ({
   const processedActivities = React.useMemo(() => {
     return activities.map(activity => {
       const cells = expandRangeToMonthWeekCells(
-        { month: activity.start_month, week: activity.start_week },
-        { month: activity.end_month, week: activity.end_week }
+        activity.start_month,
+        activity.start_week,
+        activity.end_month,
+        activity.end_week
       );
       
       return {
@@ -170,7 +174,7 @@ export const ModernGanttGrid: React.FC<ModernGanttGridProps> = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onAddActivity(monthHeaders[0], 1, mayores[0]?.id || '')}
+              onClick={() => onAddActivity(monthHeaders[0] || getCurrentMonth(), 1, mayores[0]?.id || '')}
               className="flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />
@@ -335,7 +339,7 @@ export const ModernGanttGrid: React.FC<ModernGanttGridProps> = ({
                 horizontales que se pueden editar y eliminar directamente desde el cronograma.
               </p>
               <Button
-                onClick={() => onAddActivity(monthHeaders[0], 1, mayores[0]?.id || '')}
+                onClick={() => onAddActivity(monthHeaders[0] || getCurrentMonth(), 1, mayores[0]?.id || '')}
                 className="flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" />

@@ -16,18 +16,20 @@ import {
 import {
   weeksBetween,
   validateMonthWeekRange,
-  formatMonth,
-  generateMonthRange,
+  formatYYYYMMToLabel,
+  generateMonthOptions,
   getCurrentMonth
 } from '@/utils/cronogramaWeekUtils';
 
-// Schema validation for modern Gantt activity with YYYY-MM format
+// Schema validation for modern Gantt activity with YYYYMM format
+const yyyyMm = /^(19|20)\d{2}(0[1-9]|1[0-2])$/;
+
 const ganttActivitySchema = z.object({
   departamento_id: z.string().min(1, 'El departamento es requerido'),
   mayor_id: z.string().min(1, 'El mayor es requerido'),
-  start_month: z.string().regex(/^\d{4}-\d{2}$/, 'Formato de mes inválido'),
+  start_month: z.string().regex(yyyyMm, 'Formato de mes inválido'),
   start_week: z.number().min(1).max(4, 'La semana debe estar entre 1 y 4'),
-  end_month: z.string().regex(/^\d{4}-\d{2}$/, 'Formato de mes inválido'),
+  end_month: z.string().regex(yyyyMm, 'Formato de mes inválido'),
   end_week: z.number().min(1).max(4, 'La semana debe estar entre 1 y 4'),
   duration_weeks: z.number().min(1, 'La duración debe ser mayor a 0').default(1),
 }).refine(
@@ -72,8 +74,8 @@ export function ModernGanttActivityModal({
   // TU cascading data hook
   const { loadDepartamentos } = useTUCascadingData();
 
-  // Generate 24 months starting from current month
-  const monthOptions = generateMonthRange(0, 24);
+  // Generate 24 months starting from current month - returns { value: "YYYYMM", label: "month year" }
+  const monthOptions = generateMonthOptions(0, 24);
 
   const form = useForm<GanttActivityFormData>({
     resolver: zodResolver(ganttActivitySchema),
@@ -266,8 +268,8 @@ export function ModernGanttActivityModal({
                       </FormControl>
                       <SelectContent>
                         {monthOptions.map(month => (
-                          <SelectItem key={month} value={month}>
-                            {formatMonth(month)}
+                          <SelectItem key={month.value} value={month.value}>
+                            {month.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -324,8 +326,8 @@ export function ModernGanttActivityModal({
                       </FormControl>
                       <SelectContent>
                         {monthOptions.map(month => (
-                          <SelectItem key={month} value={month}>
-                            {formatMonth(month)}
+                          <SelectItem key={month.value} value={month.value}>
+                            {month.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -397,7 +399,7 @@ export function ModernGanttActivityModal({
                 <div className="text-sm space-y-1">
                   <div>
                     <span className="font-medium">Período:</span>{' '}
-                    {formatMonth(startMonth)} S{startWeek} → {formatMonth(endMonth)} S{endWeek}
+                    {formatYYYYMMToLabel(startMonth)} S{startWeek} → {formatYYYYMMToLabel(endMonth)} S{endWeek}
                   </div>
                   <div>
                     <span className="font-medium">Duración:</span>{' '}
