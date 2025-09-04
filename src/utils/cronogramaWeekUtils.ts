@@ -1,10 +1,10 @@
 /**
- * Utility functions for Cronograma Gantt week-based calculations
+ * Modern Cronograma Gantt utilities with YYYY-MM month handling
  */
 
 export interface MonthWeek {
-  month: number;
-  week: number;
+  month: string; // YYYY-MM format
+  week: number; // 1-4
 }
 
 export interface MonthWeekRange {
@@ -12,45 +12,69 @@ export interface MonthWeekRange {
   end: MonthWeek;
 }
 
+export interface GanttCell {
+  month: string; // YYYY-MM format
+  week: number; // 1-4
+}
+
 /**
- * Calculate the number of weeks between two month+week positions (inclusive)
+ * Calculate the number of weeks between two YYYY-MM month+week positions (inclusive)
  */
 export function weeksBetween(start: MonthWeek, end: MonthWeek): number {
-  const startPosition = (start.month - 1) * 4 + start.week;
-  const endPosition = (end.month - 1) * 4 + end.week;
+  const startDate = new Date(start.month);
+  const endDate = new Date(end.month);
+  
+  const startYear = startDate.getFullYear();
+  const startMonth = startDate.getMonth();
+  const endYear = endDate.getFullYear();
+  const endMonth = endDate.getMonth();
+  
+  const startPosition = (startYear * 12 + startMonth) * 4 + start.week;
+  const endPosition = (endYear * 12 + endMonth) * 4 + end.week;
+  
   return Math.max(1, endPosition - startPosition + 1);
 }
 
 /**
- * Expand a range into individual month+week cells
+ * Expand a YYYY-MM range into individual month+week cells
  */
-export function expandRangeToMonthWeekCells(start: MonthWeek, end: MonthWeek): MonthWeek[] {
-  const cells: MonthWeek[] = [];
+export function expandRangeToMonthWeekCells(start: MonthWeek, end: MonthWeek): GanttCell[] {
+  const cells: GanttCell[] = [];
+  const startDate = new Date(start.month);
+  const endDate = new Date(end.month);
   
-  for (let month = start.month; month <= end.month; month++) {
-    const startWeek = month === start.month ? start.week : 1;
-    const endWeek = month === end.month ? end.week : 4;
+  const current = new Date(startDate);
+  
+  while (current <= endDate) {
+    const monthStr = formatDateToYYYYMM(current);
+    const isStartMonth = monthStr === start.month;
+    const isEndMonth = monthStr === end.month;
+    
+    const startWeek = isStartMonth ? start.week : 1;
+    const endWeek = isEndMonth ? end.week : 4;
     
     for (let week = startWeek; week <= endWeek; week++) {
-      cells.push({ month, week });
+      cells.push({ month: monthStr, week });
     }
+    
+    current.setMonth(current.getMonth() + 1);
   }
   
   return cells;
 }
 
 /**
- * Convert activities with month+week ranges to a map structure
+ * Convert activities with YYYY-MM ranges to a map structure
  */
 export function toMonthlyWeekMap(activities: Array<{
   id: string;
   mayor_id: string;
-  start_month: number;
+  start_month: string;
   start_week: number;
-  end_month: number;
+  end_month: string;
   end_week: number;
-}>): Record<string, MonthWeek[]> {
-  const map: Record<string, MonthWeek[]> = {};
+}>): Record<string, GanttCell[]> {
+  const map: Record<string, GanttCell[]> = {};
   
   activities.forEach(activity => {
     const cells = expandRangeToMonthWeekCells(
@@ -69,7 +93,7 @@ export function toMonthlyWeekMap(activities: Array<{
 }
 
 /**
- * Validate month+week range
+ * Validate YYYY-MM month+week range
  */
 export function validateMonthWeekRange(start: MonthWeek, end: MonthWeek): {
   isValid: boolean;
@@ -83,18 +107,18 @@ export function validateMonthWeekRange(start: MonthWeek, end: MonthWeek): {
     return { isValid: false, error: 'Semana de fin debe estar entre 1 y 4' };
   }
   
-  if (start.month < 1) {
-    return { isValid: false, error: 'Mes de inicio debe ser mayor a 0' };
+  if (!start.month.match(/^\d{4}-\d{2}$/)) {
+    return { isValid: false, error: 'Formato de mes de inicio inválido (usar YYYY-MM)' };
   }
   
-  if (end.month < 1) {
-    return { isValid: false, error: 'Mes de fin debe ser mayor a 0' };
+  if (!end.month.match(/^\d{4}-\d{2}$/)) {
+    return { isValid: false, error: 'Formato de mes de fin inválido (usar YYYY-MM)' };
   }
   
-  const startPosition = (start.month - 1) * 4 + start.week;
-  const endPosition = (end.month - 1) * 4 + end.week;
+  const startDate = new Date(start.month);
+  const endDate = new Date(end.month);
   
-  if (startPosition > endPosition) {
+  if (startDate > endDate) {
     return { isValid: false, error: 'La fecha de fin debe ser posterior o igual a la fecha de inicio' };
   }
   
@@ -102,17 +126,102 @@ export function validateMonthWeekRange(start: MonthWeek, end: MonthWeek): {
 }
 
 /**
- * Format month number to month name
+ * Format YYYY-MM month to display name
  */
-export function formatMonth(monthNumber: number): string {
-  const date = new Date();
-  date.setMonth(date.getMonth() + monthNumber - 1);
+export function formatMonth(monthStr: string): string {
+  const date = new Date(monthStr);
   return date.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
 }
 
 /**
- * Get current month number (1-based)
+ * Format YYYY-MM month to short display name
  */
-export function getCurrentMonth(): number {
-  return new Date().getMonth() + 1;
+export function formatMonthShort(monthStr: string): string {
+  const date = new Date(monthStr);
+  return date.toLocaleDateString('es-MX', { month: 'short' });
+}
+
+/**
+ * Get current month in YYYY-MM format
+ */
+export function getCurrentMonth(): string {
+  const now = new Date();
+  return formatDateToYYYYMM(now);
+}
+
+/**
+ * Format Date to YYYY-MM string
+ */
+export function formatDateToYYYYMM(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+/**
+ * Generate month range for Gantt display
+ */
+export function generateMonthRange(startOffset: number = 0, count: number = 12): string[] {
+  const months: string[] = [];
+  const current = new Date();
+  current.setMonth(current.getMonth() + startOffset);
+  
+  for (let i = 0; i < count; i++) {
+    months.push(formatDateToYYYYMM(current));
+    current.setMonth(current.getMonth() + 1);
+  }
+  
+  return months;
+}
+
+/**
+ * Check if a cell should be filled based on activities
+ */
+export function isCellFilled(
+  targetMonth: string, 
+  targetWeek: number, 
+  cells: GanttCell[]
+): boolean {
+  return cells.some(cell => cell.month === targetMonth && cell.week === targetWeek);
+}
+
+/**
+ * Group activities by mayor for rendering
+ */
+export function groupActivitiesByMayor(
+  activities: Array<{
+    id: string;
+    mayor_id: string;
+    start_month: string;
+    start_week: number;
+    end_month: string;
+    end_week: number;
+    duration_weeks: number;
+  }>
+): Record<string, Array<{
+  activity: any;
+  cells: GanttCell[];
+}>> {
+  const grouped: Record<string, Array<{
+    activity: any;
+    cells: GanttCell[];
+  }>> = {};
+
+  activities.forEach(activity => {
+    const cells = expandRangeToMonthWeekCells(
+      { month: activity.start_month, week: activity.start_week },
+      { month: activity.end_month, week: activity.end_week }
+    );
+
+    if (!grouped[activity.mayor_id]) {
+      grouped[activity.mayor_id] = [];
+    }
+
+    grouped[activity.mayor_id].push({
+      activity,
+      cells
+    });
+  });
+
+  return grouped;
 }
