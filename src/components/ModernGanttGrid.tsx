@@ -263,9 +263,6 @@ export const ModernGanttGrid: React.FC<ModernGanttGridProps> = ({
                         <div className="font-semibold text-sm truncate">
                           {mayor?.nombre || 'Mayor no encontrado'}
                         </div>
-                        <div className="text-xs text-muted-foreground truncate">
-                          {activity.start_month} S{activity.start_week} → {activity.end_month} S{activity.end_week}
-                        </div>
                       </div>
                       <div className="flex items-center gap-1 ml-2">
                         <Button
