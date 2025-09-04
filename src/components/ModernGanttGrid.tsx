@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { 
   generateMonthRange, 
   formatMonthShort, 
-  groupActivitiesByMayor,
+  expandRangeToMonthWeekCells,
   isCellFilled,
   GanttCell
 } from '@/utils/cronogramaWeekUtils';
@@ -54,7 +54,6 @@ export const ModernGanttGrid: React.FC<ModernGanttGridProps> = ({
   onDeleteActivity
 }) => {
   const [zoom, setZoom] = useState<'normal' | 'compact' | 'wide'>('normal');
-  const [hoveredCell, setHoveredCell] = useState<{month: string, week: number, mayorId: string} | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
   
   const gridRef = useRef<HTMLDivElement>(null);
@@ -62,10 +61,21 @@ export const ModernGanttGrid: React.FC<ModernGanttGridProps> = ({
   // Generate month headers
   const monthHeaders = generateMonthRange(0, months);
   
-  // Group activities by mayor
-  const activitiesByMayor = React.useMemo(() => {
-    return groupActivitiesByMayor(activities);
-  }, [activities]);
+  // Process activities for individual row display
+  const processedActivities = React.useMemo(() => {
+    return activities.map(activity => {
+      const cells = expandRangeToMonthWeekCells(
+        { month: activity.start_month, week: activity.start_week },
+        { month: activity.end_month, week: activity.end_week }
+      );
+      
+      return {
+        activity,
+        cells,
+        mayor: activity.mayor || mayores.find(m => m.id === activity.mayor_id)
+      };
+    });
+  }, [activities, mayores]);
 
   // Get cell dimensions based on zoom level
   const getCellDimensions = useCallback(() => {
@@ -80,19 +90,6 @@ export const ModernGanttGrid: React.FC<ModernGanttGridProps> = ({
   }, [zoom]);
 
   const cellDims = getCellDimensions();
-
-  // Handle cell click for adding new activity
-  const handleCellClick = useCallback((monthStr: string, week: number, mayorId: string) => {
-    // Check if there's already an activity in this cell
-    const mayorActivities = activitiesByMayor[mayorId] || [];
-    const hasActivity = mayorActivities.some(item => 
-      isCellFilled(monthStr, week, item.cells)
-    );
-    
-    if (!hasActivity) {
-      onAddActivity(monthStr, week, mayorId);
-    }
-  }, [activitiesByMayor, onAddActivity]);
 
   // Handle activity bar click for editing
   const handleActivityClick = useCallback((activity: GanttActivity, e: React.MouseEvent) => {
@@ -112,8 +109,9 @@ export const ModernGanttGrid: React.FC<ModernGanttGridProps> = ({
     onDeleteActivity(activityId);
   }, [onDeleteActivity]);
 
-  // Render activity bar within a cell
-  const renderActivityBar = useCallback((activity: GanttActivity, cells: GanttCell[], monthStr: string, week: number) => {
+  // Render activity bar within a cell for individual activity rows
+  const renderActivityBar = useCallback((processedActivity: any, monthStr: string, week: number) => {
+    const { activity, cells } = processedActivity;
     const isInCell = isCellFilled(monthStr, week, cells);
     if (!isInCell) return null;
 
@@ -134,12 +132,12 @@ export const ModernGanttGrid: React.FC<ModernGanttGridProps> = ({
           isLastCell && "rounded-r-md"
         )}
         onClick={(e) => handleActivityClick(activity, e)}
-        title={`${activity.mayor?.codigo} - ${activity.mayor?.nombre}\n${activity.start_month} S${activity.start_week} → ${activity.end_month} S${activity.end_week}\nDuración: ${activity.duration_weeks} semanas`}
+        title={`${activity.start_month} S${activity.start_week} → ${activity.end_month} S${activity.end_week}\nDuración: ${activity.duration_weeks} semanas`}
       >
         {isFirstCell && (
-          <div className="flex items-center gap-1 px-1">
-            <span className="truncate">{activity.duration_weeks}s</span>
-            <div className="flex gap-1 ml-auto">
+          <div className="flex items-center gap-1 px-1 w-full justify-between">
+            <span className="truncate text-xs font-medium">{activity.duration_weeks}s</span>
+            <div className="flex gap-1">
               <Button
                 size="sm"
                 variant="ghost"
@@ -230,7 +228,7 @@ export const ModernGanttGrid: React.FC<ModernGanttGridProps> = ({
             <div className="sticky top-0 z-30 bg-background border-b-2 border-border">
               <div className="flex">
                 <div className="w-56 p-3 bg-muted font-semibold border-r border-border sticky left-0 z-40">
-                  <div className="text-sm font-bold">Mayor de Obra</div>
+                  <div className="text-sm font-bold">Actividades</div>
                   <div className="text-xs text-muted-foreground">
                     {activities.length} actividad{activities.length !== 1 ? 'es' : ''}
                   </div>
@@ -260,80 +258,51 @@ export const ModernGanttGrid: React.FC<ModernGanttGridProps> = ({
               </div>
             </div>
 
-            {/* Gantt rows */}
+            {/* Gantt rows - One row per activity */}
             <div className="relative">
-              {mayores.map((mayor, mayorIndex) => {
-                const mayorActivities = activitiesByMayor[mayor.id] || [];
-                const rowHeight = mayorActivities.length > 0 ? Math.max(60, mayorActivities.length * 40) : 60;
+              {processedActivities.map((processedActivity, activityIndex) => {
+                const { activity, mayor } = processedActivity;
                 
                 return (
                   <div 
-                    key={mayor.id} 
+                    key={activity.id} 
                     className={cn(
                       "flex border-b border-border hover:bg-accent/30 transition-colors",
-                      mayorIndex % 2 === 0 ? "bg-background" : "bg-accent/10"
+                      activityIndex % 2 === 0 ? "bg-background" : "bg-accent/10"
                     )}
-                    style={{ minHeight: `${rowHeight}px` }}
+                    style={{ height: '48px' }} // Fixed compact height
                   >
                     {/* Mayor info column */}
-                    <div className="w-56 p-3 border-r border-border flex items-center justify-between sticky left-0 z-20 bg-inherit">
+                    <div className="w-56 p-3 border-r border-border flex items-center sticky left-0 z-20 bg-inherit">
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold text-sm truncate">
-                          {mayor.codigo}
+                          {mayor?.codigo || 'N/A'}
                         </div>
                         <div className="text-xs text-muted-foreground truncate">
-                          {mayor.nombre}
+                          {mayor?.nombre || 'Mayor no encontrado'}
                         </div>
-                        {mayorActivities.length > 0 && (
-                          <div className="text-xs text-primary font-medium mt-1">
-                            {mayorActivities.length} actividad{mayorActivities.length !== 1 ? 'es' : ''}
-                          </div>
-                        )}
                       </div>
                     </div>
                     
                     {/* Timeline cells */}
-                    <div className="flex-1 relative" style={{ minHeight: `${rowHeight}px` }}>
-                      {monthHeaders.map(monthStr =>
-                        [1, 2, 3, 4].map(week => {
-                          const hasActivity = mayorActivities.some(item => 
-                            isCellFilled(monthStr, week, item.cells)
-                          );
-                          const isHovered = hoveredCell?.month === monthStr && 
-                                           hoveredCell?.week === week && 
-                                           hoveredCell?.mayorId === mayor.id;
-                          
-                          return (
+                    <div className="flex-1 relative h-full">
+                      <div className="flex h-full">
+                        {monthHeaders.map(monthStr =>
+                          [1, 2, 3, 4].map(week => (
                             <div
                               key={`${monthStr}-${week}`}
                               className={cn(
-                                "relative border-r border-border/30 cursor-pointer transition-all duration-200",
+                                "relative border-r border-border/30",
                                 cellDims.width,
-                                "hover:bg-primary/10",
-                                hasActivity ? "bg-primary/5" : "hover:bg-accent/20",
-                                isHovered && "bg-primary/20 ring-1 ring-primary/30"
+                                "h-full"
                               )}
-                              style={{ height: '100%', minHeight: `${rowHeight}px` }}
-                              onClick={() => handleCellClick(monthStr, week, mayor.id)}
-                              onMouseEnter={() => setHoveredCell({month: monthStr, week, mayorId: mayor.id})}
-                              onMouseLeave={() => setHoveredCell(null)}
-                              title={hasActivity ? `Actividad programada` : `Clic para agregar actividad`}
                             >
-                              {/* Render activity bars for this cell */}
-                              {mayorActivities.map(item => 
-                                renderActivityBar(item.activity, item.cells, monthStr, week)
-                              )}
-                              
-                              {/* Add indicator for empty cells on hover */}
-                              {!hasActivity && isHovered && (
-                                <div className="absolute inset-2 border-2 border-dashed border-primary/50 rounded-sm flex items-center justify-center">
-                                  <Plus className="h-4 w-4 text-primary/60" />
-                                </div>
-                              )}
+                              {/* Render activity bar for this cell */}
+                              {renderActivityBar(processedActivity, monthStr, week)}
                             </div>
-                          );
-                        })
-                      )}
+                          ))
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -351,8 +320,8 @@ export const ModernGanttGrid: React.FC<ModernGanttGridProps> = ({
               </div>
               <h3 className="text-lg font-semibold mb-2">Sin actividades programadas</h3>
               <p className="text-muted-foreground text-sm mb-4">
-                Para comenzar, haz clic en cualquier celda de la matriz para crear una nueva actividad. 
-                Las barras se pueden editar y eliminar directamente desde el cronograma.
+                Comienza creando tu primera actividad. Las actividades se mostrarán como barras 
+                horizontales que se pueden editar y eliminar directamente desde el cronograma.
               </p>
               <Button
                 onClick={() => onAddActivity(monthHeaders[0], 1, mayores[0]?.id || '')}
@@ -373,20 +342,16 @@ export const ModernGanttGrid: React.FC<ModernGanttGridProps> = ({
               <span>Actividad programada</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-3 border-2 border-dashed border-primary/50 rounded-sm"></div>
-              <span>Celda disponible (hover)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              <span>Clic para añadir actividad</span>
-            </div>
-            <div className="flex items-center gap-2">
               <Edit className="h-4 w-4" />
               <span>Editar actividad</span>
             </div>
             <div className="flex items-center gap-2">
               <Trash2 className="h-4 w-4" />
               <span>Eliminar actividad</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              <span>Usar botón "Añadir Actividad" para crear nueva</span>
             </div>
           </div>
         </div>
