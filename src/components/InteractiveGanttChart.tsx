@@ -5,6 +5,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { GanttBar } from '@/hooks/useInteractiveGantt';
 import { cn } from '@/lib/utils';
 import { CronogramaGanttFormModal } from '@/components/modals/CronogramaGanttFormModal';
+import { expandRangeToMonthWeekCells, weeksBetween } from '@/utils/cronogramaWeekUtils';
 
 interface InteractiveGanttChartProps {
   ganttBars: GanttBar[];
@@ -47,14 +48,43 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
     };
   });
 
-  // Calculate bar position and width
-  const getBarStyle = (bar: GanttBar) => {
+  // Expand activities into individual cells for rendering
+  const expandedCells = React.useMemo(() => {
+    const cellsMap: Record<string, Array<{
+      bar: GanttBar;
+      cells: Array<{month: number; week: number}>;
+      barIndex: number;
+    }>> = {};
+    
+    ganttBars.forEach((bar, barIndex) => {
+      const cells = expandRangeToMonthWeekCells(
+        { month: bar.start_month, week: bar.start_week },
+        { month: bar.end_month, week: bar.end_week }
+      );
+      
+      if (!cellsMap[bar.mayor_id]) {
+        cellsMap[bar.mayor_id] = [];
+      }
+      
+      cellsMap[bar.mayor_id].push({
+        bar,
+        cells,
+        barIndex
+      });
+    });
+    
+    return cellsMap;
+  }, [ganttBars]);
+
+  // Calculate bar position and width for continuous bars
+  const getBarStyle = (bar: GanttBar, barIndex: number = 0) => {
     const startPosition = ((bar.start_month - 1) * 4 + (bar.start_week - 1)) * 25; // 25px per week
     const width = bar.duration_weeks * 25;
     
     return {
       left: `${startPosition}px`,
       width: `${width}px`,
+      top: `${4 + (barIndex * 10)}px`, // Stack bars vertically if multiple
     };
   };
 
@@ -204,7 +234,7 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
             {/* Gantt rows */}
             <div ref={chartRef} className="relative">
               {mayores.map(mayor => {
-                const mayorBars = ganttBars.filter(bar => bar.mayor_id === mayor.id);
+                const mayorActivities = expandedCells[mayor.id] || [];
                 
                 return (
                   <div key={mayor.id} className="flex border-b border-border min-h-12 hover:bg-muted/30">
@@ -213,11 +243,11 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
                         <div className="font-medium text-sm">{mayor.codigo}</div>
                         <div className="text-xs text-muted-foreground truncate">{mayor.nombre}</div>
                       </div>
-                      {mayorBars.length > 0 && (
+                      {mayorActivities.length > 0 && (
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => mayorBars.forEach(bar => onDeleteBar(bar.id))}
+                          onClick={() => mayorActivities.forEach(activity => onDeleteBar(activity.bar.id))}
                           className="text-destructive hover:text-destructive p-1 h-auto"
                         >
                           <Trash2 className="h-3 w-3" />
@@ -225,8 +255,8 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
                       )}
                     </div>
                     
-                    <div className="flex-1 relative" style={{ minWidth: `${months * 100}px` }}>
-                      {/* Week grid - Updated cell width */}
+                    <div className="flex-1 relative" style={{ minWidth: `${months * 100}px`, minHeight: `${Math.max(48, mayorActivities.length * 12)}px` }}>
+                      {/* Week grid cells */}
                       {monthHeaders.map(month =>
                         month.weeks.map((_, weekIdx) => (
                           <div
@@ -238,38 +268,37 @@ export const InteractiveGanttChart: React.FC<InteractiveGanttChartProps> = ({
                         ))
                       )}
 
-                      {/* Gantt bars */}
-                      {mayorBars.map(bar => (
+                      {/* Render activity bars */}
+                      {mayorActivities.map((activity, activityIndex) => (
                         <div
-                          key={bar.id}
+                          key={activity.bar.id}
                           className={cn(
                             "absolute h-8 bg-primary text-primary-foreground rounded px-2 flex items-center justify-between cursor-move select-none",
                             "hover:bg-primary/90 transition-colors",
-                            isDragging?.barId === bar.id && "opacity-60"
+                            isDragging?.barId === activity.bar.id && "opacity-60"
                           )}
                           style={{ 
-                            ...getBarStyle(bar),
-                            top: '4px',
-                            zIndex: 10
+                            ...getBarStyle(activity.bar, activityIndex),
+                            zIndex: 10 + activityIndex
                           }}
-                          onMouseDown={(e) => handleMouseDown(e, bar.id, 'move')}
-                          title={`${mayor.nombre} - Semana ${bar.start_week} a Semana ${bar.end_week}, Duración: ${bar.duration_weeks} semanas`}
+                          onMouseDown={(e) => handleMouseDown(e, activity.bar.id, 'move')}
+                          title={`${mayor.nombre} - Mes ${activity.bar.start_month} Sem ${activity.bar.start_week} a Mes ${activity.bar.end_month} Sem ${activity.bar.end_week}, Duración: ${activity.bar.duration_weeks} semanas`}
                         >
                           <div 
                             className="w-2 h-full bg-primary-foreground/20 cursor-ew-resize rounded-l"
                             onMouseDown={(e) => {
                               e.stopPropagation();
-                              handleMouseDown(e, bar.id, 'resize-start');
+                              handleMouseDown(e, activity.bar.id, 'resize-start');
                             }}
                           />
                           <span className="text-xs font-medium truncate flex-1 text-center">
-                            {bar.duration_weeks}w
+                            {activity.bar.duration_weeks}w
                           </span>
                           <div 
                             className="w-2 h-full bg-primary-foreground/20 cursor-ew-resize rounded-r"
                             onMouseDown={(e) => {
                               e.stopPropagation();
-                              handleMouseDown(e, bar.id, 'resize-end');
+                              handleMouseDown(e, activity.bar.id, 'resize-end');
                             }}
                           />
                         </div>
