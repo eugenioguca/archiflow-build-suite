@@ -73,7 +73,16 @@ export function ModernCronogramaGantt({
 
   // Handle activity form submission
   const handleActivitySubmit = async (formData: any) => {
-    await createActivity.mutateAsync(formData);
+    if (editingActivity) {
+      // Update existing activity
+      await updateActivity.mutateAsync({ 
+        id: editingActivity.id, 
+        data: formData 
+      });
+    } else {
+      // Create new activity
+      await createActivity.mutateAsync(formData);
+    }
     setShowActivityModal(false);
     setNewActivityData(null);
     setEditingActivity(null);
