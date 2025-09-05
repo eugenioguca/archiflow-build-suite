@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
   },
 });
 
-interface GanttPdfDocumentProps {
+interface GanttPdfContentProps {
   plan: GanttPlan;
   lines: GanttLine[];
   mayores: Mayor[];
@@ -275,7 +275,7 @@ interface GanttPdfDocumentProps {
   companyBranding: any;
 }
 
-export const GanttPdfDocument: React.FC<GanttPdfDocumentProps> = ({
+const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
   plan,
   lines,
   mayores,
@@ -714,4 +714,9 @@ export const GanttPdfDocument: React.FC<GanttPdfDocumentProps> = ({
       })}
     </Document>
   );
+};
+
+// Export function that creates the PDF document
+export const GanttPdfDocument = (props: GanttPdfContentProps) => {
+  return <GanttPdfContent {...props} />;
 };

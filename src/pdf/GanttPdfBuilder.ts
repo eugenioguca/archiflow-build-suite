@@ -1,5 +1,4 @@
 import { pdf } from '@react-pdf/renderer';
-import { createElement } from 'react';
 import { GanttPdfDocument } from './GanttPdfDocument';
 import { supabase } from '@/integrations/supabase/client';
 import type { GanttPlan, GanttLine } from '@/hooks/gantt-v2/useGantt';
@@ -41,9 +40,9 @@ export async function buildGanttPdf(options: BuildGanttPdfOptions): Promise<Blob
       throw new Error('No se encontraron los datos del cliente o proyecto');
     }
 
-    // Generate PDF blob using @react-pdf/renderer properly
+    // Generate PDF blob using @react-pdf/renderer properly  
     const pdfBlob = await pdf(
-      createElement(GanttPdfDocument, {
+      GanttPdfDocument({
         plan,
         lines,
         mayores,
