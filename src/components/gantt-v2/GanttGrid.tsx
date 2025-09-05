@@ -1,6 +1,8 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Trash2 } from 'lucide-react';
 import { GanttPlan, GanttLine, GanttActivity } from '@/hooks/gantt-v2/useGantt';
 import { Mayor } from '@/hooks/gantt-v2/useMayoresTU';
 import { ActivityRow } from './ActivityRow';
@@ -41,7 +43,7 @@ export function GanttGrid({
   const discountLines = lines.filter(line => line.is_discount);
   const subtotal = mayorLines.reduce((sum, line) => sum + (line.amount || 0), 0);
   const totalDiscounts = discountLines.reduce((sum, line) => sum + (line.amount || 0), 0);
-  const total = subtotal + totalDiscounts;
+  const total = subtotal - totalDiscounts; // Subtract discounts from subtotal
 
   return (
     <Card className="relative">
@@ -112,19 +114,30 @@ export function GanttGrid({
               
               {/* Discount Lines */}
               {discountLines.map((line) => (
-                <ActivityRow
-                  key={line.id}
-                  line={line}
-                  lines={lines}
-                  mayores={mayores}
-                  monthRange={monthRange}
-                  onUpdateLine={onUpdateLine}
-                  onDeleteLine={onDeleteLine}
-                  onAddActivity={onAddActivity}
-                  onEditActivity={onEditActivity}
-                  onDeleteActivity={onDeleteActivity}
-                  isLoading={isLoading || isFetching}
-                />
+                <TableRow key={line.id} className="bg-red-50/50">
+                  <TableCell className="sticky left-0 z-10 bg-red-50/50 border-r"></TableCell>
+                  <TableCell className="sticky left-[60px] z-10 bg-red-50/50 border-r font-medium">
+                    {line.label || 'Descuento'}
+                  </TableCell>
+                  <TableCell className="sticky left-[260px] z-10 bg-red-50/50 border-r text-right text-red-600">
+                    -{formatCurrency(line.amount || 0)}
+                  </TableCell>
+                  <TableCell className="sticky left-[380px] z-10 bg-red-50/50 border-r"></TableCell>
+                  {monthRange.map((month) => (
+                    <TableCell key={month.value} className="border-r bg-red-50/50"></TableCell>
+                  ))}
+                  <TableCell className="text-center bg-red-50/50">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDeleteLine(line.id)}
+                      disabled={isLoading || isFetching}
+                      className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
               ))}
               
               {/* Total Row */}

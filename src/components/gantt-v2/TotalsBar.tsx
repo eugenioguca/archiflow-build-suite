@@ -19,11 +19,11 @@ export function TotalsBar({ subtotal, totalDiscounts, total }: TotalsBarProps) {
               <span className="font-semibold">{formatCurrency(subtotal)}</span>
             </div>
             
-            {totalDiscounts !== 0 && (
+            {totalDiscounts > 0 && (
               <div>
                 <span className="text-sm text-muted-foreground">DESCUENTOS: </span>
-                <span className={`font-semibold ${totalDiscounts < 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(totalDiscounts)}
+                <span className="font-semibold text-red-600">
+                  -{formatCurrency(totalDiscounts)}
                 </span>
               </div>
             )}

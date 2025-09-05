@@ -366,9 +366,11 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
   project,
   companyBranding
 }) => {
-  // Calculate financial summary
-  const subtotal = lines.reduce((sum, line) => sum + (line.amount || 0), 0);
-  const totalDescuentos = lines.filter(l => l.is_discount).reduce((sum, line) => sum + Math.abs(line.amount || 0), 0);
+  // Calculate financial summary correctly
+  const mayorLines = lines.filter(line => !line.is_discount);
+  const discountLines = lines.filter(line => line.is_discount);
+  const subtotal = mayorLines.reduce((sum, line) => sum + (line.amount || 0), 0);
+  const totalDescuentos = discountLines.reduce((sum, line) => sum + (line.amount || 0), 0);
   const total = subtotal - totalDescuentos;
 
   // Calculate months for the plan
@@ -439,7 +441,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
           </View>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>DESCUENTOS</Text>
-            <Text style={styles.summaryValue}>{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(totalDescuentos)}</Text>
+            <Text style={[styles.summaryValue, { color: '#dc2626' }]}>-{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(totalDescuentos)}</Text>
           </View>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>TOTAL</Text>
@@ -478,6 +480,42 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                 </View>
               );
             })}
+            
+            {/* Subtotal Row */}
+            <View style={[styles.partidaRow, { backgroundColor: '#f3f4f6' }]}>
+              <Text style={styles.noCell}></Text>
+              <Text style={[styles.partidaNameCell, { fontWeight: 'bold' }]}>SUBTOTAL</Text>
+              <Text style={[styles.importeCell, { fontWeight: 'bold' }]}>
+                {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(subtotal)}
+              </Text>
+              <Text style={[styles.percentCell, { fontWeight: 'bold' }]}>100.0%</Text>
+            </View>
+            
+            {/* Discount Rows */}
+            {discountLines.map((line) => (
+              <View key={line.id} style={[styles.partidaRow, { backgroundColor: '#fef2f2' }]}>
+                <Text style={styles.noCell}></Text>
+                <Text style={[styles.partidaNameCell, { color: '#dc2626' }]}>
+                  {line.label || 'Descuento'}
+                </Text>
+                <Text style={[styles.importeCell, { color: '#dc2626' }]}>
+                  -{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(line.amount || 0)}
+                </Text>
+                <Text style={styles.percentCell}></Text>
+              </View>
+            ))}
+            
+            {/* Total Row */}
+            <View style={[styles.partidaRow, { backgroundColor: '#3b82f6', opacity: 0.1 }]}>
+              <Text style={styles.noCell}></Text>
+              <Text style={[styles.partidaNameCell, { fontWeight: 'bold' }]}>TOTAL</Text>
+              <Text style={[styles.importeCell, { fontWeight: 'bold' }]}>
+                {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(total)}
+              </Text>
+              <Text style={[styles.percentCell, { fontWeight: 'bold' }]}>
+                {subtotal > 0 ? ((total / subtotal) * 100).toFixed(1) : '0.0'}%
+              </Text>
+            </View>
           </View>
 
           {/* Cronograma Section - Right Side */}

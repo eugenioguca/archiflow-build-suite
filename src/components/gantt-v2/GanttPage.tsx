@@ -7,6 +7,7 @@ import { GanttGrid } from './GanttGrid';
 import { MatrixSection } from './MatrixSection';
 import { ActivityModal } from './ActivityModal';
 import { MayorSelectionModal } from './MayorSelectionModal';
+import { DiscountModal } from './DiscountModal';
 import { useGantt } from '@/hooks/gantt-v2/useGantt';
 import { useMayoresTU } from '@/hooks/gantt-v2/useMayoresTU';
 import { useMatrixOverrides } from '@/hooks/gantt-v2/useMatrixOverrides';
@@ -41,6 +42,7 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
   const [editingActivity, setEditingActivity] = useState<any>(null);
   const [newActivityData, setNewActivityData] = useState<{lineId: string} | null>(null);
   const [showMayorModal, setShowMayorModal] = useState(false);
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
 
   const handleAddMayor = () => {
     setShowMayorModal(true);
@@ -77,17 +79,40 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
     setShowMayorModal(false);
   };
 
-  const handleAddDiscount = async () => {
+  const handleAddDiscount = () => {
+    // Check if discount already exists
+    const existingDiscount = lines.find(line => line.is_discount);
+    if (existingDiscount) {
+      setShowDiscountModal(true);
+      return;
+    }
+    
+    setShowDiscountModal(true);
+  };
+
+  const handleDiscountSubmit = async (amount: number) => {
     if (!plan) return;
     
-    await createLine.mutateAsync({
-      plan_id: plan.id,
-      line_no: 0, // Will be set automatically
-      label: 'Descuento',
-      is_discount: true,
-      amount: 0,
-      order_index: lines.length,
-    });
+    // Check if discount already exists
+    const existingDiscount = lines.find(line => line.is_discount);
+    
+    if (existingDiscount) {
+      // Update existing discount
+      await updateLine.mutateAsync({
+        id: existingDiscount.id,
+        data: { amount }
+      });
+    } else {
+      // Create new discount line
+      await createLine.mutateAsync({
+        plan_id: plan.id,
+        line_no: 0, // Discount lines don't get numbered
+        label: 'Descuento',
+        is_discount: true,
+        amount,
+        order_index: lines.length + 100, // Place after regular lines
+      });
+    }
   };
 
   const handleAddActivity = (lineId: string) => {
@@ -214,6 +239,16 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
             onOpenChange={setShowMayorModal}
             onSubmit={handleMayorSubmit}
             title="Añadir Mayor"
+          />
+
+          {/* Discount Modal */}
+          <DiscountModal
+            open={showDiscountModal}
+            onOpenChange={setShowDiscountModal}
+            onSubmit={handleDiscountSubmit}
+            currentDiscount={lines.find(line => line.is_discount)?.amount}
+            subtotal={lines.filter(l => !l.is_discount).reduce((sum, l) => sum + (l.amount || 0), 0)}
+            title={lines.find(line => line.is_discount) ? "Editar Descuento" : "Añadir Descuento"}
           />
         </div>
       )}
