@@ -253,9 +253,18 @@ export function MatrixEditorModal({
     return !isNaN(num) && num >= 0;
   };
 
+  // Helper function to get days in a month
+  const daysInYYYYMM = (yyyyMM: string) => {
+    const y = parseInt(yyyyMM.slice(0, 4), 10);
+    const m = parseInt(yyyyMM.slice(4, 6), 10);
+    const isLeap = (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0);
+    const len = [31, (isLeap ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1];
+    return Array.from({ length: len }, (_, i) => i + 1);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden z-50">
+      <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden z-[60] pointer-events-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold flex items-center gap-2">
             <Calculator className="h-5 w-5 text-primary" />
@@ -263,7 +272,7 @@ export function MatrixEditorModal({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 overflow-y-auto max-h-[calc(90vh-120px)]">
+        <div className="space-y-4 overflow-y-auto max-h-[calc(90vh-120px)] pointer-events-auto">
           {/* Summary */}
           <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
             <div className="flex items-center gap-4">
@@ -325,9 +334,10 @@ export function MatrixEditorModal({
                             min="0"
                             value={value}
                             onChange={(e) => handleInputChange(month.value, 'ministraciones', e.target.value)}
-                            className={`text-right ${!isValid ? 'border-destructive' : ''} ${isOverridden ? 'bg-amber-50 border-amber-300' : ''}`}
+                            className={`text-right pointer-events-auto ${!isValid ? 'border-destructive' : ''} ${isOverridden ? 'bg-amber-50 border-amber-300' : ''}`}
                             placeholder="0.00"
                             tabIndex={0}
+                            autoComplete="off"
                           />
                           {!isValid && (
                             <AlertCircle className="absolute right-2 top-2 h-4 w-4 text-destructive" />
@@ -379,9 +389,10 @@ export function MatrixEditorModal({
                             max="100"
                             value={value}
                             onChange={(e) => handleInputChange(month.value, 'inversion_acumulada', e.target.value)}
-                            className={`text-right ${!isValid ? 'border-destructive' : ''} ${isOverridden ? 'bg-amber-50 border-amber-300' : ''}`}
+                            className={`text-right pointer-events-auto ${!isValid ? 'border-destructive' : ''} ${isOverridden ? 'bg-amber-50 border-amber-300' : ''}`}
                             placeholder="0.00"
                             tabIndex={0}
+                            autoComplete="off"
                           />
                           {!isValid && (
                             <AlertCircle className="absolute right-2 top-2 h-4 w-4 text-destructive" />
@@ -428,21 +439,21 @@ export function MatrixEditorModal({
                           value={value}
                           onValueChange={(val) => handleInputChange(month.value, 'fecha_pago', val)}
                         >
-                          <SelectTrigger className={`${isOverridden ? 'bg-amber-50 border-amber-300' : ''}`}>
+                          <SelectTrigger className={`${isOverridden ? 'bg-amber-50 border-amber-300' : ''} pointer-events-auto`} tabIndex={0}>
                             <SelectValue placeholder="Seleccionar día..." />
                           </SelectTrigger>
-                          <SelectContent className="z-[100]">
+                          <SelectContent className="z-[100] pointer-events-auto bg-background border shadow-md">
                             <SelectItem value="none">Sin fecha</SelectItem>
+                            {daysInYYYYMM(month.value).map(day => (
+                              <SelectItem key={day} value={day.toString()}>
+                                Día {day.toString().padStart(2, '0')}
+                              </SelectItem>
+                            ))}
                             <SelectItem value="Pago 1">Pago 1</SelectItem>
                             <SelectItem value="Pago 2">Pago 2</SelectItem>
                             <SelectItem value="Pago 3">Pago 3</SelectItem>
                             <SelectItem value="Primera Quincena">Primera Quincena</SelectItem>
                             <SelectItem value="Segunda Quincena">Segunda Quincena</SelectItem>
-                            {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
-                              <SelectItem key={day} value={day.toString()}>
-                                Día {day}
-                              </SelectItem>
-                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -492,9 +503,10 @@ export function MatrixEditorModal({
                             min="0"
                             value={value}
                             onChange={(e) => handleInputChange(month.value, 'gasto_obra', e.target.value)}
-                            className={`text-right ${!isValid ? 'border-destructive' : ''} ${isOverridden ? 'bg-amber-50 border-amber-300' : ''}`}
+                            className={`text-right pointer-events-auto ${!isValid ? 'border-destructive' : ''} ${isOverridden ? 'bg-amber-50 border-amber-300' : ''}`}
                             placeholder={automaticValue.toFixed(2)}
                             tabIndex={0}
+                            autoComplete="off"
                           />
                           {!isValid && (
                             <AlertCircle className="absolute right-2 top-2 h-4 w-4 text-destructive" />
@@ -548,9 +560,10 @@ export function MatrixEditorModal({
                             max="100"
                             value={value}
                             onChange={(e) => handleInputChange(month.value, 'avance_parcial', e.target.value)}
-                            className={`text-right ${!isValid ? 'border-destructive' : ''} ${isOverridden ? 'bg-amber-50 border-amber-300' : ''}`}
+                            className={`text-right pointer-events-auto ${!isValid ? 'border-destructive' : ''} ${isOverridden ? 'bg-amber-50 border-amber-300' : ''}`}
                             placeholder={automaticValue.toFixed(2)}
                             tabIndex={0}
+                            autoComplete="off"
                           />
                           {!isValid && (
                             <AlertCircle className="absolute right-2 top-2 h-4 w-4 text-destructive" />
@@ -603,12 +616,13 @@ export function MatrixEditorModal({
                             max="100"
                             value={value}
                             onChange={(e) => handleInputChange(month.value, 'avance_acumulado', e.target.value)}
-                            className={`text-right ${!isValid ? 'border-destructive' : ''} ${isOverridden ? 'bg-amber-50 border-amber-300' : ''}`}
+                            className={`text-right pointer-events-auto ${!isValid ? 'border-destructive' : ''} ${isOverridden ? 'bg-amber-50 border-amber-300' : ''}`}
                             placeholder={automaticValue.toFixed(2)}
                             tabIndex={0}
+                            autoComplete="off"
                           />
                           {!isValid && (
-                            <AlertCircle className="absolute right-2 top-2 h-4 w-4 text-descriptive" />
+                            <AlertCircle className="absolute right-2 top-2 h-4 w-4 text-destructive" />
                           )}
                         </div>
                         <div className="text-xs text-muted-foreground">
