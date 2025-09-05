@@ -352,18 +352,18 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
           {/* Data rows */}
           {displayLines.map((line, lineIndex) => {
             const mayor = mayores.find(m => m.id === line.mayor_id);
-            const percentage = subtotal > 0 ? ((line.importe || line.amount || 0) / subtotal * 100).toFixed(1) : '0.0';
+            const percentage = subtotal > 0 ? ((line.amount || 0) / subtotal * 100).toFixed(1) : '0.0';
             
             return (
               <View key={line.id} style={[styles.ganttDataRow, lineIndex % 2 === 1 ? styles.zebraRow : null]}>
                 {/* Left column with partida info */}
                 <View style={styles.partidaInfo}>
                   <Text style={styles.partidaNumber}>{lineIndex + 1}</Text>
-                  <Text style={styles.partidaName} numberOfLines={1}>
-                    {mayor?.nombre || 'Sin categoría'}
+                  <Text style={styles.partidaName}>
+                    {(mayor?.nombre || 'Sin categoría').length > 15 ? `${(mayor?.nombre || 'Sin categoría').substring(0, 12)}...` : (mayor?.nombre || 'Sin categoría')}
                   </Text>
                   <Text style={styles.partidaAmount}>
-                    {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(line.importe || line.amount || 0)}
+                    {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(line.amount || 0)}
                   </Text>
                   <Text style={styles.partidaPercent}>{percentage}%</Text>
                 </View>
