@@ -14,9 +14,7 @@ interface ActivityRowProps {
   monthRange: Array<{ value: string; label: string }>;
   onUpdateLine: (params: {id: string, data: Partial<GanttLine>}) => Promise<any>;
   onDeleteLine: (id: string) => Promise<any>;
-  onAddActivity: (lineId: string) => void;
-  onEditActivity: (activity: GanttActivity) => void;
-  onDeleteActivity: (id: string) => Promise<any>;
+  onEditLine: (line: GanttLine) => void;
   isLoading: boolean;
 }
 
@@ -27,9 +25,7 @@ export function ActivityRow({
   monthRange,
   onUpdateLine,
   onDeleteLine,
-  onAddActivity,
-  onEditActivity,
-  onDeleteActivity,
+  onEditLine,
   isLoading
 }: ActivityRowProps) {
   // Calculate subtotal for percentage calculation
@@ -99,25 +95,12 @@ export function ActivityRow({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onAddActivity(line.id)}
+            onClick={() => onEditLine(line)}
             disabled={isLoading}
             className="h-8 w-8 p-0"
           >
-            <Plus className="h-3 w-3" />
+            <Edit className="h-3 w-3" />
           </Button>
-          
-          {activities.map((activity) => (
-            <Button
-              key={activity.id}
-              variant="ghost"
-              size="sm"
-              onClick={() => onEditActivity(activity)}
-              disabled={isLoading}
-              className="h-8 w-8 p-0"
-            >
-              <Edit className="h-3 w-3" />
-            </Button>
-          ))}
           
           <Button
             variant="ghost"

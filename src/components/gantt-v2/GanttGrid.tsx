@@ -15,9 +15,7 @@ interface GanttGridProps {
   mayores: Mayor[];
   onUpdateLine: (params: {id: string, data: Partial<GanttLine>}) => Promise<any>;
   onDeleteLine: (id: string) => Promise<any>;
-  onAddActivity: (lineId: string) => void;
-  onEditActivity: (activity: GanttActivity) => void;
-  onDeleteActivity: (id: string) => Promise<any>;
+  onEditLine: (line: GanttLine) => void;
   isLoading: boolean;
   isFetching?: boolean;
 }
@@ -28,9 +26,7 @@ export function GanttGrid({
   mayores,
   onUpdateLine,
   onDeleteLine,
-  onAddActivity,
-  onEditActivity,
-  onDeleteActivity,
+  onEditLine,
   isLoading,
   isFetching = false
 }: GanttGridProps) {
@@ -91,9 +87,7 @@ export function GanttGrid({
                   monthRange={monthRange}
                   onUpdateLine={onUpdateLine}
                   onDeleteLine={onDeleteLine}
-                  onAddActivity={onAddActivity}
-                  onEditActivity={onEditActivity}
-                  onDeleteActivity={onDeleteActivity}
+                  onEditLine={onEditLine}
                   isLoading={isLoading || isFetching}
                 />
               ))}

@@ -38,11 +38,9 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
   const { overrides } = useMatrixOverrides(selectedClientId, selectedProjectId);
 
   // Modal state
-  const [showActivityModal, setShowActivityModal] = useState(false);
-  const [editingActivity, setEditingActivity] = useState<any>(null);
-  const [newActivityData, setNewActivityData] = useState<{lineId: string} | null>(null);
   const [showMayorModal, setShowMayorModal] = useState(false);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
+  const [editingLine, setEditingLine] = useState<any>(null);
 
   const handleAddMayor = () => {
     setShowMayorModal(true);
@@ -63,17 +61,48 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
       throw new Error('No hay plan activo');
     }
 
-    console.log('[GANTT-PAGE] Calling addLineWithActivity mutation...');
-    
-    await addLineWithActivity.mutateAsync({
-      mayor_id: mayorData.mayor_id,
-      amount: mayorData.amount,
-      is_discount: false,
-      start_month: mayorData.start_month,
-      start_week: mayorData.start_week,
-      end_month: mayorData.end_month,
-      end_week: mayorData.end_week,
-    });
+    if (editingLine) {
+      // Update existing line and its activity
+      console.log('[GANTT-PAGE] Updating existing line:', editingLine.id);
+      
+      // Update line data
+      await updateLine.mutateAsync({
+        id: editingLine.id,
+        data: {
+          mayor_id: mayorData.mayor_id,
+          amount: mayorData.amount
+        }
+      });
+      
+      // Update associated activity if exists
+      const activity = editingLine.activities?.[0];
+      if (activity) {
+        await updateActivity.mutateAsync({
+          id: activity.id,
+          data: {
+            start_month: mayorData.start_month,
+            start_week: mayorData.start_week,
+            end_month: mayorData.end_month,
+            end_week: mayorData.end_week
+          }
+        });
+      }
+      
+      setEditingLine(null);
+    } else {
+      // Create new line
+      console.log('[GANTT-PAGE] Calling addLineWithActivity mutation...');
+      
+      await addLineWithActivity.mutateAsync({
+        mayor_id: mayorData.mayor_id,
+        amount: mayorData.amount,
+        is_discount: false,
+        start_month: mayorData.start_month,
+        start_week: mayorData.start_week,
+        end_month: mayorData.end_month,
+        end_week: mayorData.end_week,
+      });
+    }
     
     console.log('[GANTT-PAGE] Mutation completed successfully');
     setShowMayorModal(false);
@@ -115,34 +144,9 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
     }
   };
 
-  const handleAddActivity = (lineId: string) => {
-    setNewActivityData({ lineId });
-    setEditingActivity(null);
-    setShowActivityModal(true);
-  };
-
-  const handleEditActivity = (activity: any) => {
-    setEditingActivity(activity);
-    setNewActivityData(null);
-    setShowActivityModal(true);
-  };
-
-  const handleActivitySubmit = async (formData: any) => {
-    if (editingActivity) {
-      await updateActivity.mutateAsync({
-        id: editingActivity.id,
-        data: formData
-      });
-    } else if (newActivityData) {
-      await createActivity.mutateAsync({
-        ...formData,
-        line_id: newActivityData.lineId
-      });
-    }
-    
-    setShowActivityModal(false);
-    setNewActivityData(null);
-    setEditingActivity(null);
+  const handleEditLine = (line: any) => {
+    setEditingLine(line);
+    setShowMayorModal(true);
   };
 
   return (
@@ -203,9 +207,7 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
             mayores={mayores}
             onUpdateLine={updateLine.mutateAsync}
             onDeleteLine={deleteLine.mutateAsync}
-            onAddActivity={handleAddActivity}
-            onEditActivity={handleEditActivity}
-            onDeleteActivity={deleteActivity.mutateAsync}
+            onEditLine={handleEditLine}
             isLoading={isLoading || isFetching}
             isFetching={isFetching}
           />
@@ -219,26 +221,23 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
             projectId={selectedProjectId}
           />
 
-          {/* Activity Modal */}
-          <ActivityModal
-            open={showActivityModal}
-            onOpenChange={setShowActivityModal}
-            onSubmit={handleActivitySubmit}
-            initialData={editingActivity ? {
-              start_month: editingActivity.start_month,
-              start_week: editingActivity.start_week,
-              end_month: editingActivity.end_month,
-              end_week: editingActivity.end_week,
-            } : undefined}
-            title={editingActivity ? "Editar Actividad" : "Nueva Actividad"}
-          />
-
           {/* Mayor Selection Modal */}
           <MayorSelectionModal
             open={showMayorModal}
-            onOpenChange={setShowMayorModal}
+            onOpenChange={(open) => {
+              setShowMayorModal(open);
+              if (!open) setEditingLine(null);
+            }}
             onSubmit={handleMayorSubmit}
-            title="Añadir Mayor"
+            initialData={editingLine ? {
+              mayor_id: editingLine.mayor_id,
+              amount: editingLine.amount,
+              start_month: editingLine.activities?.[0]?.start_month,
+              start_week: editingLine.activities?.[0]?.start_week,
+              end_month: editingLine.activities?.[0]?.end_month,
+              end_week: editingLine.activities?.[0]?.end_week,
+            } : undefined}
+            title={editingLine ? "Editar Mayor" : "Añadir Mayor"}
           />
 
           {/* Discount Modal */}
