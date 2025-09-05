@@ -107,23 +107,63 @@ export const useGantt = (clientId?: string, projectId?: string) => {
 
       console.log('[GANTT] Fetching lines for plan:', planQuery.data.id);
 
-      const { data, error } = await supabase
+      // First fetch lines without join
+      const { data: linesData, error: linesError } = await supabase
         .from('cronograma_gantt_line')
-        .select(`
-          *,
-          mayor:chart_of_accounts_mayor(id, codigo, nombre),
-          activities:cronograma_gantt_activity(*)
-        `)
+        .select('*')
         .eq('plan_id', planQuery.data.id)
         .order('order_index', { ascending: true });
 
-      if (error) {
-        console.error('[GANTT] Error fetching lines:', error);
-        throw error;
+      if (linesError) {
+        console.error('[GANTT] Error fetching lines:', linesError);
+        throw linesError;
       }
+
+      console.log('[GANTT] Fetched lines:', linesData?.length || 0);
+
+      // Fetch activities for all lines
+      const lineIds = linesData?.map(line => line.id) || [];
+      let activitiesData = [];
       
-      console.log('[GANTT] Fetched lines:', data?.length || 0);
-      return data || [];
+      if (lineIds.length > 0) {
+        const { data: activitiesResult, error: activitiesError } = await supabase
+          .from('cronograma_gantt_activity')
+          .select('*')
+          .in('line_id', lineIds);
+
+        if (activitiesError) {
+          console.error('[GANTT] Error fetching activities:', activitiesError);
+        } else {
+          activitiesData = activitiesResult || [];
+        }
+      }
+
+      // Fetch mayor names from chart_of_accounts_mayor for TU integration
+      const mayorIds = linesData?.map(line => line.mayor_id).filter(Boolean) || [];
+      let mayoresData = [];
+
+      if (mayorIds.length > 0) {
+        const { data: mayoresResult, error: mayoresError } = await supabase
+          .from('chart_of_accounts_mayor')
+          .select('id, codigo, nombre')
+          .in('id', mayorIds);
+
+        if (mayoresError) {
+          console.error('[GANTT] Error fetching mayores:', mayoresError);
+        } else {
+          mayoresData = mayoresResult || [];
+        }
+      }
+
+      // Combine data manually
+      const enrichedLines = linesData?.map(line => ({
+        ...line,
+        activities: activitiesData.filter(activity => activity.line_id === line.id),
+        mayor: mayoresData.find(mayor => mayor.id === line.mayor_id) || null
+      })) || [];
+
+      console.log('[GANTT] Enriched lines with activities:', enrichedLines.length);
+      return enrichedLines;
     },
     enabled: !!planQuery.data?.id,
     staleTime: 5_000, // 5 seconds
@@ -161,7 +201,6 @@ export const useGantt = (clientId?: string, projectId?: string) => {
     }
   });
 
-  // Atomic line + activity creation
   const addLineWithActivity = useMutation({
     mutationFn: async (params: {
       mayor_id: string;
@@ -227,7 +266,9 @@ export const useGantt = (clientId?: string, projectId?: string) => {
       return lineRow.id;
     },
     onSuccess: () => {
+      // Invalidate both plan and lines queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ['gantt-lines'] });
+      queryClient.invalidateQueries({ queryKey: ['gantt-plan'] });
       toast({
         title: "Línea creada",
         description: "Nueva línea agregada al cronograma."

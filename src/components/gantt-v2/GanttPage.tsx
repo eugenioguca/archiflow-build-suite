@@ -57,9 +57,12 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
     console.log('[GANTT-PAGE] handleMayorSubmit called with:', mayorData);
     
     if (!plan?.id) {
+      console.error('[GANTT-PAGE] No plan available');
       throw new Error('No hay plan activo');
     }
 
+    console.log('[GANTT-PAGE] Calling addLineWithActivity mutation...');
+    
     await addLineWithActivity.mutateAsync({
       mayor_id: mayorData.mayor_id,
       amount: mayorData.amount,
@@ -70,6 +73,7 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
       end_week: mayorData.end_week,
     });
     
+    console.log('[GANTT-PAGE] Mutation completed successfully');
     setShowMayorModal(false);
   };
 
