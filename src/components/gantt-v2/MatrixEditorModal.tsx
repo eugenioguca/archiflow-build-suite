@@ -7,7 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { MoneyInput } from '@/components/ui/money-input';
 import {
   Save,
   Undo,
@@ -16,7 +15,6 @@ import {
   TrendingUp,
   Calendar,
   Loader2,
-  RefreshCw,
   AlertCircle
 } from 'lucide-react';
 import { GanttPlan, GanttLine } from '@/hooks/gantt-v2/useGantt';
@@ -257,7 +255,7 @@ export function MatrixEditorModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden z-50">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold flex items-center gap-2">
             <Calculator className="h-5 w-5 text-primary" />
@@ -323,10 +321,13 @@ export function MatrixEditorModal({
                         <div className="relative">
                           <Input
                             type="number"
+                            step="0.01"
+                            min="0"
                             value={value}
                             onChange={(e) => handleInputChange(month.value, 'ministraciones', e.target.value)}
-                            className={`text-right ${!isValid ? 'border-destructive' : ''} ${isOverridden ? 'bg-amber-50' : ''}`}
-                            placeholder="0"
+                            className={`text-right ${!isValid ? 'border-destructive' : ''} ${isOverridden ? 'bg-amber-50 border-amber-300' : ''}`}
+                            placeholder="0.00"
+                            tabIndex={0}
                           />
                           {!isValid && (
                             <AlertCircle className="absolute right-2 top-2 h-4 w-4 text-destructive" />
@@ -378,8 +379,9 @@ export function MatrixEditorModal({
                             max="100"
                             value={value}
                             onChange={(e) => handleInputChange(month.value, 'inversion_acumulada', e.target.value)}
-                            className={`text-right ${!isValid ? 'border-destructive' : ''} ${isOverridden ? 'bg-amber-50' : ''}`}
+                            className={`text-right ${!isValid ? 'border-destructive' : ''} ${isOverridden ? 'bg-amber-50 border-amber-300' : ''}`}
                             placeholder="0.00"
+                            tabIndex={0}
                           />
                           {!isValid && (
                             <AlertCircle className="absolute right-2 top-2 h-4 w-4 text-destructive" />
@@ -426,10 +428,10 @@ export function MatrixEditorModal({
                           value={value}
                           onValueChange={(val) => handleInputChange(month.value, 'fecha_pago', val)}
                         >
-                          <SelectTrigger className={isOverridden ? 'bg-amber-50' : ''}>
+                          <SelectTrigger className={`${isOverridden ? 'bg-amber-50 border-amber-300' : ''}`}>
                             <SelectValue placeholder="Seleccionar día..." />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="z-[100]">
                             <SelectItem value="">Sin fecha</SelectItem>
                             <SelectItem value="Pago 1">Pago 1</SelectItem>
                             <SelectItem value="Pago 2">Pago 2</SelectItem>
@@ -486,10 +488,13 @@ export function MatrixEditorModal({
                         <div className="relative">
                           <Input
                             type="number"
+                            step="0.01"
+                            min="0"
                             value={value}
                             onChange={(e) => handleInputChange(month.value, 'gasto_obra', e.target.value)}
-                            className={`text-right ${!isValid ? 'border-destructive' : ''} ${isOverridden ? 'bg-amber-50' : ''}`}
-                            placeholder={automaticValue.toString()}
+                            className={`text-right ${!isValid ? 'border-destructive' : ''} ${isOverridden ? 'bg-amber-50 border-amber-300' : ''}`}
+                            placeholder={automaticValue.toFixed(2)}
+                            tabIndex={0}
                           />
                           {!isValid && (
                             <AlertCircle className="absolute right-2 top-2 h-4 w-4 text-destructive" />
@@ -543,8 +548,9 @@ export function MatrixEditorModal({
                             max="100"
                             value={value}
                             onChange={(e) => handleInputChange(month.value, 'avance_parcial', e.target.value)}
-                            className={`text-right ${!isValid ? 'border-destructive' : ''} ${isOverridden ? 'bg-amber-50' : ''}`}
+                            className={`text-right ${!isValid ? 'border-destructive' : ''} ${isOverridden ? 'bg-amber-50 border-amber-300' : ''}`}
                             placeholder={automaticValue.toFixed(2)}
+                            tabIndex={0}
                           />
                           {!isValid && (
                             <AlertCircle className="absolute right-2 top-2 h-4 w-4 text-destructive" />
@@ -597,11 +603,12 @@ export function MatrixEditorModal({
                             max="100"
                             value={value}
                             onChange={(e) => handleInputChange(month.value, 'avance_acumulado', e.target.value)}
-                            className={`text-right ${!isValid ? 'border-destructive' : ''} ${isOverridden ? 'bg-amber-50' : ''}`}
+                            className={`text-right ${!isValid ? 'border-destructive' : ''} ${isOverridden ? 'bg-amber-50 border-amber-300' : ''}`}
                             placeholder={automaticValue.toFixed(2)}
+                            tabIndex={0}
                           />
                           {!isValid && (
-                            <AlertCircle className="absolute right-2 top-2 h-4 w-4 text-destructive" />
+                            <AlertCircle className="absolute right-2 top-2 h-4 w-4 text-descriptive" />
                           )}
                         </div>
                         <div className="text-xs text-muted-foreground">
