@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PresupuestoParametrico } from '@/components/PresupuestoParametrico';
-import { ModernCronogramaGantt } from '@/components/ModernCronogramaGantt';
+import { GanttPage } from '@/components/gantt-v2/GanttPage';
 import { PresupuestoEjecutivoManager } from '@/components/PresupuestoEjecutivoManager';
 import { PaymentPlanManager } from '@/components/PaymentPlanManager';
 import { ClientProjectSelector } from '@/components/ClientProjectSelector';
@@ -51,10 +51,7 @@ export default function PresupuestosPlaneacion() {
         </TabsContent>
 
         <TabsContent value="gantt" className="space-y-6">
-          <ModernCronogramaGantt 
-            selectedClientId={selectedClientId}
-            selectedProjectId={selectedProjectId}
-          />
+          <GanttPage />
         </TabsContent>
 
         <TabsContent value="pagos" className="space-y-6">
