@@ -6,9 +6,9 @@ export interface MatrixOverride {
   id: string;
   cliente_id: string;
   proyecto_id: string;
-  mes: string; // YYYYMM format
+  mes: number; // YYYYMM as number (e.g., 202509)
   concepto: string;
-  valor: number;
+  valor: string; // stored as string in DB
   created_at: string;
   updated_at: string;
   created_by?: string;
@@ -79,7 +79,7 @@ export const useMatrixOverrides = (clientId?: string, projectId?: string) => {
         .delete()
         .eq('cliente_id', clientId)
         .eq('proyecto_id', projectId)
-        .eq('mes', mes)
+        .eq('mes', parseInt(mes, 10)) // Convert string to number
         .eq('concepto', concepto);
 
       if (error) throw error;

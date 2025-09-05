@@ -94,13 +94,13 @@ export function MatrixSection({
   });
 
   // Helper function to get override value or calculated value
-  const getValueOrOverride = (mes: string, concepto: string, calculatedValue: number) => {
-    const override = overrides.find(o => o.mes === mes && o.concepto === concepto);
-    return override ? override.valor : calculatedValue;
+  const getValueOrOverride = (mes: string, concepto: string, calculatedValue: number): number => {
+    const override = overrides.find(o => o.mes === parseInt(mes, 10) && o.concepto === concepto);
+    return override ? parseFloat(override.valor) : calculatedValue;
   };
 
   const hasOverride = (mes: string, concepto: string) => {
-    return overrides.some(o => o.mes === mes && o.concepto === concepto);
+    return overrides.some(o => o.mes === parseInt(mes, 10) && o.concepto === concepto);
   };
 
   const concepts = [
