@@ -44,10 +44,18 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
     setShowMayorModal(true);
   };
 
-  const handleMayorSubmit = async (mayorData: { mayor_id: string; amount: number }) => {
+  const handleMayorSubmit = async (mayorData: { 
+    mayor_id: string; 
+    amount: number;
+    start_month: string;
+    start_week: number;
+    end_month: string;
+    end_week: number;
+  }) => {
     if (!plan) return;
     
-    await createLine.mutateAsync({
+    // First create the line
+    const result = await createLine.mutateAsync({
       plan_id: plan.id,
       line_no: 0, // Will be set automatically
       mayor_id: mayorData.mayor_id,
@@ -55,6 +63,17 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
       amount: mayorData.amount,
       order_index: lines.length,
     });
+
+    // Then create an activity for the timeline
+    if (result && result.id) {
+      await createActivity.mutateAsync({
+        line_id: result.id,
+        start_month: mayorData.start_month,
+        start_week: mayorData.start_week,
+        end_month: mayorData.end_month,
+        end_week: mayorData.end_week,
+      });
+    }
   };
 
   const handleAddDiscount = async () => {
