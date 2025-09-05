@@ -34,14 +34,21 @@ export function GanttV2PDFExport({
 
   const exportToPDF = async () => {
     try {
-      // Get company settings, client and project information
-      const [companyResult, clientResult, projectResult] = await Promise.all([
-        supabase.from('company_settings').select('*').limit(1).maybeSingle(),
+      // Get client and project information (no company settings for now)
+      const [clientResult, projectResult] = await Promise.all([
         supabase.from('clients').select('full_name, email, phone').eq('id', clientId).single(),
         supabase.from('client_projects').select('project_name, project_location, construction_start_date').eq('id', projectId).single()
       ]);
 
-      const company = companyResult.data;
+      // Use default company data for now
+      const company = {
+        company_name: 'DOVITA CONSTRUCCIONES',
+        address: 'Dirección de la empresa',
+        phone: '(555) 123-4567',
+        email: 'info@dovita.com',
+        website: 'www.dovita.com'
+      };
+      
       const client = clientResult.data;
       const project = projectResult.data;
 
@@ -561,7 +568,7 @@ export function GanttV2PDFExport({
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
-        const footerCompany = company?.company_name || 'DOVITA CONSTRUCCIONES';
+        const footerCompany = company.company_name || 'DOVITA CONSTRUCCIONES';
         doc.text(`${footerCompany} - Sistema de Gestión de Proyectos`, 15, pageHeight - 14);
         doc.text(`Página ${pageNum} de ${totalPages}`, pageWidth - 15, pageHeight - 14, { align: 'right' });
         doc.text(`Confidencial - Solo para uso interno`, pageWidth / 2, pageHeight - 14, { align: 'center' });
