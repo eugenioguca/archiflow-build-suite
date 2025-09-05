@@ -159,11 +159,16 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
           {/* Toolbar */}
           <GanttToolbar
             plan={plan}
+            lines={lines as any}
+            mayores={mayores}
+            overrides={overrides as any}
             onUpdatePlan={updatePlan.mutateAsync}
             onAddMayor={handleAddMayor}
             onAddDiscount={handleAddDiscount}
             isLoading={isLoading || isFetching}
             canAddMayor={!!plan?.id}
+            clientId={selectedClientId}
+            projectId={selectedProjectId}
           />
 
           {/* Gantt Grid */}

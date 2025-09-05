@@ -1,30 +1,45 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Minus, FileDown } from 'lucide-react';
-import { GanttPlan } from '@/hooks/gantt-v2/useGantt';
+import { Plus, Minus, Settings } from 'lucide-react';
+import { GanttPlan, GanttLine } from '@/hooks/gantt-v2/useGantt';
+import { MatrixOverride } from '@/hooks/gantt-v2/useMatrixOverrides';
+import { Mayor } from '@/hooks/gantt-v2/useMayoresTU';
 import { generateMonthRange } from '@/utils/gantt-v2/monthRange';
+import { GanttV2PDFExport } from './GanttV2PDFExport';
+import { CompanySettingsModal } from './CompanySettingsModal';
 
 interface GanttToolbarProps {
   plan?: GanttPlan | null;
+  lines: GanttLine[];
+  mayores: Mayor[];
+  overrides: MatrixOverride[];
   onUpdatePlan: (updates: Partial<GanttPlan>) => Promise<any>;
   onAddMayor: () => void;
   onAddDiscount: () => void;
   isLoading: boolean;
   canAddMayor: boolean;
+  clientId: string;
+  projectId: string;
 }
 
 export function GanttToolbar({
   plan,
+  lines,
+  mayores,
+  overrides,
   onUpdatePlan,
   onAddMayor,
   onAddDiscount,
   isLoading,
-  canAddMayor
+  canAddMayor,
+  clientId,
+  projectId
 }: GanttToolbarProps) {
+  const [showCompanySettings, setShowCompanySettings] = useState(false);
   if (!plan) return null;
 
   const handleStartMonthChange = (value: string) => {
@@ -109,17 +124,34 @@ export function GanttToolbar({
             </Button>
             
             <Button 
+              onClick={() => setShowCompanySettings(true)}
               variant="outline" 
               size="sm"
-              disabled={isLoading}
               className="gap-2"
             >
-              <FileDown className="h-4 w-4" />
-              Exportar PDF
+              <Settings className="h-4 w-4" />
+              Config. Empresa
             </Button>
+            
+            {plan && lines.length > 0 && (
+              <GanttV2PDFExport
+                plan={plan}
+                lines={lines}
+                mayores={mayores}
+                overrides={overrides}
+                clientId={clientId}
+                projectId={projectId}
+              />
+            )}
           </div>
         </div>
       </CardContent>
+      
+      {/* Company Settings Modal */}
+      <CompanySettingsModal 
+        open={showCompanySettings}
+        onOpenChange={setShowCompanySettings}
+      />
     </Card>
   );
 }
