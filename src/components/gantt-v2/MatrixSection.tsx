@@ -203,7 +203,7 @@ export function MatrixSection({
                           {concept.format === 'percent' && `${(value as number).toFixed(2)}%`}
                           {concept.format === 'text' && (() => {
                             const textValue = value as string;
-                            if (!textValue) return '-';
+                            if (!textValue || textValue === 'none') return '-';
                             
                             // If it's a number, format as "Día X"
                             const numValue = parseInt(textValue, 10);

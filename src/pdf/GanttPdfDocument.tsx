@@ -750,10 +750,15 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                 if (hasOverride && override) {
                   if (row.key === 'fecha_pago') {
                     let displayText = override.valor;
-                    // If it's a number, format as "Día X"
-                    const numValue = parseInt(override.valor, 10);
-                    if (!isNaN(numValue) && numValue >= 1 && numValue <= 31) {
-                      displayText = `Día ${numValue}`;
+                    // Handle "none" value
+                    if (displayText === 'none' || !displayText) {
+                      displayText = '-';
+                    } else {
+                      // If it's a number, format as "Día X"
+                      const numValue = parseInt(override.valor, 10);
+                      if (!isNaN(numValue) && numValue >= 1 && numValue <= 31) {
+                        displayText = `Día ${numValue}`;
+                      }
                     }
                     cellValue = displayText;
                   } else if (row.key.includes('avance') || row.key.includes('inversion')) {

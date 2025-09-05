@@ -432,7 +432,7 @@ export function MatrixEditorModal({
                             <SelectValue placeholder="Seleccionar día..." />
                           </SelectTrigger>
                           <SelectContent className="z-[100]">
-                            <SelectItem value="">Sin fecha</SelectItem>
+                            <SelectItem value="none">Sin fecha</SelectItem>
                             <SelectItem value="Pago 1">Pago 1</SelectItem>
                             <SelectItem value="Pago 2">Pago 2</SelectItem>
                             <SelectItem value="Pago 3">Pago 3</SelectItem>
