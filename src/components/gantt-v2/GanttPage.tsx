@@ -6,6 +6,7 @@ import { GanttToolbar } from './GanttToolbar';
 import { GanttGrid } from './GanttGrid';
 import { MatrixSection } from './MatrixSection';
 import { ActivityModal } from './ActivityModal';
+import { MayorSelectionModal } from './MayorSelectionModal';
 import { useGantt } from '@/hooks/gantt-v2/useGantt';
 import { useMayoresTU } from '@/hooks/gantt-v2/useMayoresTU';
 import { useMatrixOverrides } from '@/hooks/gantt-v2/useMatrixOverrides';
@@ -37,15 +38,21 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [editingActivity, setEditingActivity] = useState<any>(null);
   const [newActivityData, setNewActivityData] = useState<{lineId: string} | null>(null);
+  const [showMayorModal, setShowMayorModal] = useState(false);
 
-  const handleAddMayor = async () => {
+  const handleAddMayor = () => {
+    setShowMayorModal(true);
+  };
+
+  const handleMayorSubmit = async (mayorData: { mayor_id: string; amount: number }) => {
     if (!plan) return;
     
     await createLine.mutateAsync({
       plan_id: plan.id,
       line_no: 0, // Will be set automatically
+      mayor_id: mayorData.mayor_id,
       is_discount: false,
-      amount: 0,
+      amount: mayorData.amount,
       order_index: lines.length,
     });
   };
@@ -172,6 +179,14 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
               end_week: editingActivity.end_week,
             } : undefined}
             title={editingActivity ? "Editar Actividad" : "Nueva Actividad"}
+          />
+
+          {/* Mayor Selection Modal */}
+          <MayorSelectionModal
+            open={showMayorModal}
+            onOpenChange={setShowMayorModal}
+            onSubmit={handleMayorSubmit}
+            title="Añadir Mayor"
           />
         </div>
       )}
