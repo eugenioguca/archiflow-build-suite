@@ -11,239 +11,339 @@ import type { MatrixOverride } from '@/hooks/gantt-v2/useMatrixOverrides';
 import type { Mayor } from '@/hooks/gantt-v2/useMayoresTU';
 import { expandRangeToMonthWeekCells } from '@/utils/gantt-v2/weekMath';
 
-// Define colors and styles
+// Professional colors following the reference design
+const COLORS = {
+  primary: '#1E3A8A',      // Corporate blue
+  accent: '#3B82F6',       // Activity blue  
+  secondary: '#F8FAFC',    // Light background
+  text: '#1F2937',         // Dark text
+  textLight: '#6B7280',    // Light text
+  border: '#E5E7EB',       // Borders
+  white: '#FFFFFF',
+  success: '#10B981',      // Green
+  warning: '#F59E0B',      // Orange
+};
+
 const styles = StyleSheet.create({
-  // Page and layout
+  // Page layout
   page: {
     flexDirection: 'column',
-    backgroundColor: '#FFFFFF',
-    padding: 24,
+    backgroundColor: COLORS.white,
+    padding: 20,
     fontFamily: 'Helvetica',
-    fontSize: 10,
+    fontSize: 9,
   },
   
-  // Compact Header styles
-  compactHeader: {
-    backgroundColor: '#1E66F5',
+  // Corporate header - barra azul superior
+  corporateHeader: {
+    backgroundColor: COLORS.primary,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 8,
-    marginBottom: 8,
+    alignItems: 'flex-start',
+    padding: 12,
+    marginBottom: 10,
   },
-  headerLeft: {
+  
+  // Company info - lado izquierdo
+  companySection: {
     flex: 1,
-  },
-  headerRight: {
-    flex: 1,
-    alignItems: 'flex-end',
   },
   companyName: {
-    color: '#FFFFFF',
-    fontSize: 18,
+    color: COLORS.white,
+    fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 4,
   },
-  contactInfo: {
-    color: '#FFFFFF',
+  companyContact: {
+    color: COLORS.white,
     fontSize: 8,
+    opacity: 0.9,
+  },
+  
+  // Project info - lado derecho
+  projectSection: {
+    flex: 1,
+    alignItems: 'flex-end',
   },
   documentTitle: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontSize: 14,
     fontWeight: 'bold',
     marginBottom: 4,
   },
-  documentInfo: {
-    color: '#FFFFFF',
+  projectInfo: {
+    color: COLORS.white,
     fontSize: 8,
+    textAlign: 'right',
+    opacity: 0.9,
   },
   
-  // Compact financial summary
-  compactFinancialSummary: {
-    backgroundColor: '#1D4ED8',
+  // Project details section
+  projectDetails: {
+    backgroundColor: COLORS.secondary,
+    padding: 8,
+    marginBottom: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  detailsLeft: {
+    flex: 1,
+  },
+  detailsRight: {
+    flex: 1,
+    alignItems: 'flex-end',
+  },
+  detailLabel: {
+    fontSize: 7,
+    color: COLORS.textLight,
+    marginBottom: 1,
+  },
+  detailValue: {
+    fontSize: 8,
+    color: COLORS.text,
+    fontWeight: 'bold',
+    marginBottom: 3,
+  },
+  
+  // Financial summary - compacto
+  financialSummary: {
+    backgroundColor: COLORS.primary,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
     alignItems: 'center',
     padding: 6,
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  financialItem: {
-    color: '#FFFFFF',
-    fontSize: 9,
-    textAlign: 'center',
-    flex: 1,
-  },
-  
-  // Integrated Gantt styles
-  integratedGantt: {
-    flex: 1,
-    borderWidth: 0.5,
-    borderColor: '#E2E8F0',
-  },
-  ganttHeaders: {
-    flexDirection: 'row',
-    backgroundColor: '#1E66F5',
-    height: 24,
-  },
-  leftColumnHeader: {
-    width: 180,
-    justifyContent: 'center',
+  summaryItem: {
     alignItems: 'center',
-    borderRightWidth: 0.5,
-    borderRightColor: '#FFFFFF',
   },
-  leftHeaderText: {
-    color: '#FFFFFF',
-    fontSize: 8,
+  summaryLabel: {
+    color: COLORS.white,
+    fontSize: 7,
+    opacity: 0.8,
+  },
+  summaryValue: {
+    color: COLORS.white,
+    fontSize: 10,
     fontWeight: 'bold',
   },
-  monthHeadersContainer: {
+  
+  // Main content - layout integrado
+  mainContent: {
     flex: 1,
     flexDirection: 'row',
-  },
-  monthHeaderCell: {
-    flex: 1,
-    borderRightWidth: 0.5,
-    borderRightColor: '#FFFFFF',
-  },
-  monthHeaderText: {
-    color: '#FFFFFF',
-    fontSize: 7,
-    textAlign: 'center',
-    paddingVertical: 2,
-  },
-  weekHeadersRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 2,
-  },
-  weekHeaderText: {
-    color: '#FFFFFF',
-    fontSize: 6,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   
-  // Gantt data rows
-  ganttDataRow: {
-    flexDirection: 'row',
-    height: 20,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#E2E8F0',
+  // Tabla de partidas - lado izquierdo
+  partidasSection: {
+    width: 200,
+    borderRightWidth: 1,
+    borderRightColor: COLORS.border,
   },
-  partidaInfo: {
-    width: 180,
+  
+  // Header de partidas
+  partidasHeader: {
+    backgroundColor: COLORS.primary,
     flexDirection: 'row',
+    height: 30,
     alignItems: 'center',
     paddingHorizontal: 4,
-    borderRightWidth: 0.5,
-    borderRightColor: '#E2E8F0',
   },
-  partidaNumber: {
-    fontSize: 6,
-    width: 15,
-    color: '#64748B',
-  },
-  partidaName: {
-    fontSize: 6,
-    flex: 1,
-    color: '#334155',
-  },
-  partidaAmount: {
-    fontSize: 6,
-    width: 40,
-    textAlign: 'right',
-    color: '#475569',
-  },
-  partidaPercent: {
-    fontSize: 6,
-    width: 25,
-    textAlign: 'right',
-    color: '#64748B',
-  },
-  timelineRow: {
-    flex: 1,
-    flexDirection: 'row',
-  },
-  monthTimelineContainer: {
-    flex: 1,
-    flexDirection: 'row',
-  },
-  weekCell: {
-    flex: 1,
-    height: 20,
-    borderRightWidth: 0.25,
-    borderRightColor: '#E2E8F0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  activityBar: {
-    height: 8,
-    backgroundColor: '#3B82F6',
-    borderRadius: 2,
-    width: '80%',
-  },
-  zebraRow: {
-    backgroundColor: '#F8FAFC',
-  },
-  
-  // Matrix styles for page 2
-  matrixTable: {
-    marginTop: 16,
-    borderWidth: 0.5,
-    borderColor: '#E2E8F0',
-  },
-  matrixHeaderRow: {
-    backgroundColor: '#1E66F5',
-    flexDirection: 'row',
-    height: 24,
-  },
-  matrixCell: {
+  headerCell: {
+    color: COLORS.white,
     fontSize: 7,
-    padding: 4,
-    borderRightWidth: 0.5,
-    borderRightColor: '#E2E8F0',
+    fontWeight: 'bold',
     textAlign: 'center',
   },
-  matrixHeaderCell: {
-    color: '#FFFFFF',
+  noColumn: { width: 20 },
+  partidaColumn: { flex: 1, paddingLeft: 4, textAlign: 'left' },
+  importeColumn: { width: 50, textAlign: 'right' },
+  percentColumn: { width: 30, textAlign: 'right' },
+  
+  // Filas de partidas
+  partidaRow: {
+    flexDirection: 'row',
+    height: 24,
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    borderBottomWidth: 0.5,
+    borderBottomColor: COLORS.border,
+  },
+  partidaRowZebra: {
+    backgroundColor: COLORS.secondary,
+  },
+  
+  // Cells de partidas
+  noCell: {
+    width: 20,
+    fontSize: 7,
+    color: COLORS.textLight,
+    textAlign: 'center',
+  },
+  partidaNameCell: {
+    flex: 1,
+    fontSize: 7,
+    color: COLORS.text,
+    paddingLeft: 4,
+  },
+  importeCell: {
+    width: 50,
+    fontSize: 7,
+    color: COLORS.text,
+    textAlign: 'right',
     fontWeight: 'bold',
+  },
+  percentCell: {
+    width: 30,
+    fontSize: 7,
+    color: COLORS.textLight,
+    textAlign: 'right',
+  },
+  
+  // Cronograma section - lado derecho
+  cronogramaSection: {
+    flex: 1,
+  },
+  
+  // Headers del cronograma
+  cronogramaHeader: {
+    backgroundColor: COLORS.primary,
+    flexDirection: 'row',
+    height: 30,
+  },
+  monthsContainer: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  monthHeader: {
+    flex: 1,
+    borderRightWidth: 0.5,
+    borderRightColor: COLORS.white,
+    paddingVertical: 2,
+  },
+  monthTitle: {
+    color: COLORS.white,
+    fontSize: 7,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  weeksRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  weekNumber: {
+    color: COLORS.white,
+    fontSize: 6,
+  },
+  
+  // Timeline rows
+  timelineRow: {
+    flexDirection: 'row',
+    height: 24,
+    borderBottomWidth: 0.5,
+    borderBottomColor: COLORS.border,
+  },
+  timelineRowZebra: {
+    backgroundColor: COLORS.secondary,
+  },
+  monthTimelineSection: {
+    flex: 1,
+    flexDirection: 'row',
+    borderRightWidth: 0.5,
+    borderRightColor: COLORS.border,
+  },
+  weekTimelineCell: {
+    flex: 1,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  activityBar: {
+    height: 10,
+    backgroundColor: COLORS.accent,
+    borderRadius: 2,
+    width: '90%',
+  },
+  
+  // Matrix table (Page 2)
+  matrixTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  matrixTable: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: 20,
+  },
+  matrixHeaderRow: {
+    backgroundColor: COLORS.primary,
+    flexDirection: 'row',
+    height: 28,
+    alignItems: 'center',
   },
   matrixDataRow: {
     flexDirection: 'row',
-    height: 20,
+    height: 24,
+    alignItems: 'center',
     borderBottomWidth: 0.5,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: COLORS.border,
   },
-  matrixTitle: {
-    fontSize: 12,
+  matrixRowZebra: {
+    backgroundColor: COLORS.secondary,
+  },
+  matrixHeaderCell: {
+    color: COLORS.white,
+    fontSize: 8,
     fontWeight: 'bold',
-    color: '#334155',
-    marginBottom: 8,
+    textAlign: 'center',
+    paddingHorizontal: 4,
+  },
+  matrixCell: {
+    fontSize: 7,
+    color: COLORS.text,
+    textAlign: 'center',
+    paddingHorizontal: 4,
+  },
+  matrixLabelCell: {
+    textAlign: 'left',
+    fontWeight: 'bold',
+    paddingLeft: 8,
   },
   
-  // Footer styles
+  // Footer
   footer: {
-    backgroundColor: '#1E66F5',
+    position: 'absolute',
+    bottom: 15,
+    left: 20,
+    right: 20,
+    backgroundColor: COLORS.primary,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 8,
-    position: 'absolute',
-    bottom: 24,
-    left: 24,
-    right: 24,
   },
   footerText: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontSize: 7,
   },
   
   // Notes
+  notes: {
+    marginTop: 10,
+    marginBottom: 20,
+  },
   noteText: {
     fontSize: 7,
-    color: '#64748B',
+    color: COLORS.textLight,
     fontStyle: 'italic',
-    marginBottom: 2,
+    textAlign: 'center',
   },
 });
 
@@ -296,185 +396,257 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
     <Document>
       {/* Page 1: Integrated Gantt Chart */}
       <Page size="LETTER" orientation="landscape" style={styles.page}>
-        {/* Compact Header */}
-        <View style={styles.compactHeader}>
-          <View style={styles.headerLeft}>
-            <Text style={[styles.companyName, { fontSize: 12, marginBottom: 2 }]}>{companyBranding?.company_name || 'DOVITA CONSTRUCCIONES'}</Text>
-            <Text style={styles.contactInfo}>
+        {/* Corporate Header */}
+        <View style={styles.corporateHeader}>
+          <View style={styles.companySection}>
+            <Text style={styles.companyName}>{companyBranding?.company_name || 'DOVITA CONSTRUCCIONES'}</Text>
+            <Text style={styles.companyContact}>
               {[companyBranding?.website, companyBranding?.email, companyBranding?.phone].filter(Boolean).join(' | ')}
             </Text>
           </View>
-          <View style={styles.headerRight}>
-            <Text style={[styles.documentTitle, { fontSize: 11 }]}>CRONOGRAMA DE GANTT</Text>
-            <Text style={[styles.documentInfo, { fontSize: 7 }]}>{project?.project_name || 'Proyecto'}</Text>
-            <Text style={[styles.documentInfo, { fontSize: 7 }]}>Cliente: {client?.full_name || 'Cliente'}</Text>
+          <View style={styles.projectSection}>
+            <Text style={styles.documentTitle}>CRONOGRAMA DE GANTT</Text>
+            <Text style={styles.projectInfo}>{project?.project_name || 'Proyecto'}</Text>
+            <Text style={styles.projectInfo}>Cliente: {client?.full_name || 'Cliente'}</Text>
           </View>
         </View>
 
-        {/* Compact Financial Summary */}
-        <View style={styles.compactFinancialSummary}>
-          <Text style={[styles.financialItem, { fontSize: 7 }]}>Subtotal: {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(subtotal)}</Text>
-          <Text style={[styles.financialItem, { fontSize: 7 }]}>Total: {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(total)}</Text>
-          <Text style={[styles.financialItem, { fontSize: 7 }]}>Periodo: {plan.months_count} meses</Text>
+        {/* Project Details */}
+        <View style={styles.projectDetails}>
+          <View style={styles.detailsLeft}>
+            <Text style={styles.detailLabel}>PROYECTO:</Text>
+            <Text style={styles.detailValue}>{project?.project_name || 'N/A'}</Text>
+            <Text style={styles.detailLabel}>UBICACIÓN:</Text>
+            <Text style={styles.detailValue}>{project?.project_location || 'N/A'}</Text>
+            <Text style={styles.detailLabel}>ÁREA:</Text>
+            <Text style={styles.detailValue}>{project?.construction_area ? `${project.construction_area} m²` : 'N/A'}</Text>
+          </View>
+          <View style={styles.detailsRight}>
+            <Text style={styles.detailLabel}>CLIENTE:</Text>
+            <Text style={styles.detailValue}>{client?.full_name || 'N/A'}</Text>
+            <Text style={styles.detailLabel}>INICIO:</Text>
+            <Text style={styles.detailValue}>{project?.construction_start_date || 'N/A'}</Text>
+            <Text style={styles.detailLabel}>DURACIÓN:</Text>
+            <Text style={styles.detailValue}>{plan.months_count} meses</Text>
+          </View>
         </View>
 
-        {/* Integrated Gantt Chart */}
-        <View style={styles.integratedGantt}>
-          {/* Headers */}
-          <View style={styles.ganttHeaders}>
-            {/* Left column header */}
-            <View style={styles.leftColumnHeader}>
-              <Text style={styles.leftHeaderText}>PARTIDAS</Text>
-            </View>
-            
-            {/* Month headers */}
-            <View style={styles.monthHeadersContainer}>
-              {months.map((month, index) => {
-                const year = Math.floor(parseInt(month) / 100);
-                const monthNum = parseInt(month) % 100;
-                const monthName = new Date(year, monthNum - 1).toLocaleDateString('es-MX', { month: 'short' });
-                
-                return (
-                  <View key={month} style={styles.monthHeaderCell}>
-                    <Text style={styles.monthHeaderText}>{monthName} {year}</Text>
-                    <View style={styles.weekHeadersRow}>
-                      <Text style={styles.weekHeaderText}>1</Text>
-                      <Text style={styles.weekHeaderText}>2</Text>
-                      <Text style={styles.weekHeaderText}>3</Text>
-                      <Text style={styles.weekHeaderText}>4</Text>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
+        {/* Financial Summary */}
+        <View style={styles.financialSummary}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>SUBTOTAL</Text>
+            <Text style={styles.summaryValue}>{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(subtotal)}</Text>
           </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>DESCUENTOS</Text>
+            <Text style={styles.summaryValue}>{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(totalDescuentos)}</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>TOTAL</Text>
+            <Text style={styles.summaryValue}>{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(total)}</Text>
+          </View>
+        </View>
 
-          {/* Data rows */}
-          {displayLines.map((line, lineIndex) => {
-            const mayor = mayores.find(m => m.id === line.mayor_id);
-            const percentage = subtotal > 0 ? ((line.amount || 0) / subtotal * 100).toFixed(1) : '0.0';
+        {/* Main Integrated Content */}
+        <View style={styles.mainContent}>
+          {/* Partidas Section - Left Side */}
+          <View style={styles.partidasSection}>
+            {/* Header */}
+            <View style={styles.partidasHeader}>
+              <Text style={[styles.headerCell, styles.noColumn]}>No.</Text>
+              <Text style={[styles.headerCell, styles.partidaColumn]}>PARTIDA</Text>
+              <Text style={[styles.headerCell, styles.importeColumn]}>IMPORTE</Text>
+              <Text style={[styles.headerCell, styles.percentColumn]}>%</Text>
+            </View>
             
-            return (
-              <View key={line.id} style={[styles.ganttDataRow, lineIndex % 2 === 1 ? styles.zebraRow : null]}>
-                {/* Left column with partida info */}
-                <View style={styles.partidaInfo}>
-                  <Text style={styles.partidaNumber}>{lineIndex + 1}</Text>
-                  <Text style={styles.partidaName}>
-                    {(mayor?.nombre || 'Sin categoría').length > 15 ? `${(mayor?.nombre || 'Sin categoría').substring(0, 12)}...` : (mayor?.nombre || 'Sin categoría')}
+            {/* Data Rows */}
+            {displayLines.map((line, lineIndex) => {
+              const mayor = mayores.find(m => m.id === line.mayor_id);
+              const percentage = subtotal > 0 ? ((line.amount || 0) / subtotal * 100).toFixed(1) : '0.0';
+              
+              return (
+                <View key={line.id} style={[styles.partidaRow, lineIndex % 2 === 1 ? styles.partidaRowZebra : null]}>
+                  <Text style={styles.noCell}>{lineIndex + 1}</Text>
+                  <Text style={styles.partidaNameCell}>
+                    {mayor?.nombre?.substring(0, 18) || 'Sin categoría'}
+                    {(mayor?.nombre?.length || 0) > 18 ? '...' : ''}
                   </Text>
-                  <Text style={styles.partidaAmount}>
+                  <Text style={styles.importeCell}>
                     {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(line.amount || 0)}
                   </Text>
-                  <Text style={styles.partidaPercent}>{percentage}%</Text>
+                  <Text style={styles.percentCell}>{percentage}%</Text>
                 </View>
-                
-                {/* Timeline cells */}
-                <View style={styles.timelineRow}>
-                  {months.map((month) => (
-                    <View key={`${line.id}-${month}`} style={styles.monthTimelineContainer}>
-                      {[1, 2, 3, 4].map((week) => {
-                        // Check if this line has activities in this month/week
-                        const hasActivity = line.activities?.some(activity => {
-                          const cells = expandRangeToMonthWeekCells(
-                            activity.start_month,
-                            activity.start_week,
-                            activity.end_month,
-                            activity.end_week
-                          );
-                          return cells.some(cell => cell.month === month && cell.week === week);
-                        });
-                        
-                        return (
-                          <View key={`${line.id}-${month}-W${week}`} style={styles.weekCell}>
-                            {hasActivity && <View style={styles.activityBar} />}
-                          </View>
-                        );
-                      })}
+              );
+            })}
+          </View>
+
+          {/* Cronograma Section - Right Side */}
+          <View style={styles.cronogramaSection}>
+            {/* Headers */}
+            <View style={styles.cronogramaHeader}>
+              <View style={styles.monthsContainer}>
+                {months.map((month) => {
+                  const year = Math.floor(parseInt(month) / 100);
+                  const monthNum = parseInt(month) % 100;
+                  const monthName = new Date(year, monthNum - 1).toLocaleDateString('es-MX', { month: 'short' });
+                  
+                  return (
+                    <View key={month} style={styles.monthHeader}>
+                      <Text style={styles.monthTitle}>{monthName.toUpperCase()} {year}</Text>
+                      <View style={styles.weeksRow}>
+                        <Text style={styles.weekNumber}>1</Text>
+                        <Text style={styles.weekNumber}>2</Text>
+                        <Text style={styles.weekNumber}>3</Text>
+                        <Text style={styles.weekNumber}>4</Text>
+                      </View>
                     </View>
-                  ))}
-                </View>
+                  );
+                })}
               </View>
-            );
-          })}
+            </View>
+
+            {/* Timeline Rows */}
+            {displayLines.map((line, lineIndex) => (
+              <View key={line.id} style={[styles.timelineRow, lineIndex % 2 === 1 ? styles.timelineRowZebra : null]}>
+                {months.map((month) => (
+                  <View key={`${line.id}-${month}`} style={styles.monthTimelineSection}>
+                    {[1, 2, 3, 4].map((week) => {
+                      // Check if this line has activities in this month/week
+                      const hasActivity = line.activities?.some(activity => {
+                        const cells = expandRangeToMonthWeekCells(
+                          activity.start_month,
+                          activity.start_week,
+                          activity.end_month,
+                          activity.end_week
+                        );
+                        return cells.some(cell => cell.month === month && cell.week === week);
+                      });
+                      
+                      return (
+                        <View key={`${line.id}-${month}-W${week}`} style={styles.weekTimelineCell}>
+                          {hasActivity && <View style={styles.activityBar} />}
+                        </View>
+                      );
+                    })}
+                  </View>
+                ))}
+              </View>
+            ))}
+          </View>
         </View>
 
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            {companyBranding?.company_name || 'DOVITA CONSTRUCCIONES'} – Sistema de Gestión de Proyectos – Confidencial
+            {companyBranding?.company_name || 'DOVITA CONSTRUCCIONES'} • Confidencial
           </Text>
           <Text style={styles.footerText}>Página 1 de 2</Text>
-          <Text style={styles.footerText}>{companyBranding?.website || 'www.dovita.com'}</Text>
+          <Text style={styles.footerText}>Generado: {new Date().toLocaleDateString('es-MX')}</Text>
         </View>
       </Page>
 
       {/* Page 2: Numerical Matrix */}
       <Page size="LETTER" orientation="landscape" style={styles.page}>
         {/* Header */}
-        <View style={styles.compactHeader}>
-          <View style={styles.headerLeft}>
-            <Text style={[styles.companyName, { fontSize: 12, marginBottom: 2 }]}>{companyBranding?.company_name || 'DOVITA CONSTRUCCIONES'}</Text>
+        <View style={styles.corporateHeader}>
+          <View style={styles.companySection}>
+            <Text style={styles.companyName}>{companyBranding?.company_name || 'DOVITA CONSTRUCCIONES'}</Text>
           </View>
-          <View style={styles.headerRight}>
-            <Text style={[styles.documentTitle, { fontSize: 11 }]}>MATRIZ NUMÉRICA MENSUAL</Text>
+          <View style={styles.projectSection}>
+            <Text style={styles.documentTitle}>MATRIZ NUMÉRICA MENSUAL</Text>
+            <Text style={styles.projectInfo}>{project?.project_name || 'Proyecto'}</Text>
           </View>
         </View>
 
-        <Text style={styles.matrixTitle}>Matriz Numérica Mensual</Text>
+        <Text style={styles.matrixTitle}>Matriz Numérica de Flujo Mensual</Text>
 
         {/* Matrix Table */}
         <View style={styles.matrixTable}>
           {/* Headers */}
           <View style={styles.matrixHeaderRow}>
-            <Text style={[styles.matrixCell, styles.matrixHeaderCell, { width: '20%' }]}>Concepto</Text>
+            <Text style={[styles.matrixHeaderCell, { width: '25%' }]}>CONCEPTO</Text>
             {months.map((month) => {
               const year = Math.floor(parseInt(month) / 100);
               const monthNum = parseInt(month) % 100;
-              const monthName = new Date(year, monthNum - 1).toLocaleDateString('es-MX', { month: 'short', year: '2-digit' });
+              const monthName = new Date(year, monthNum - 1).toLocaleDateString('es-MX', { month: 'short' });
               
               return (
-                <Text key={month} style={[styles.matrixCell, styles.matrixHeaderCell, { width: `${80/months.length}%` }]}>
-                  {monthName}
+                <Text key={month} style={[styles.matrixHeaderCell, { width: `${75/months.length}%` }]}>
+                  {monthName.toUpperCase()} {year}
                 </Text>
               );
             })}
           </View>
 
-          {/* Matrix Rows */}
+          {/* Matrix Rows with real calculations */}
           {[
             { label: 'Gasto en Obra (MXN)', key: 'gasto' },
             { label: '% Avance Parcial', key: 'avance_parcial' },
             { label: '% Avance Acumulado', key: 'avance_acum' },
             { label: 'Ministraciones (MXN)', key: 'ministraciones' },
-            { label: '% Inversión Acum.', key: 'inversion_acum' },
+            { label: '% Inversión Acumulada', key: 'inversion_acum' },
             { label: 'Fecha Tentativa de Pago', key: 'fecha_pago' }
           ].map((row, rowIndex) => (
-            <View key={row.key} style={[styles.matrixDataRow, rowIndex % 2 === 1 ? styles.zebraRow : null]}>
-              <Text style={[styles.matrixCell, { width: '20%', textAlign: 'left', paddingLeft: 8 }]}>{row.label}</Text>
-              {months.map((month, monthIndex) => (
-                <Text key={`${row.key}-${month}`} style={[styles.matrixCell, { width: `${80/months.length}%` }]}>
-                  {row.key === 'fecha_pago' ? `Pago ${monthIndex + 1}` : 
-                   row.key === 'gasto' ? new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(0) :
-                   row.key.includes('avance') || row.key.includes('inversion') ? '0.0%' : 
-                   '$ 0'}
-                </Text>
-              ))}
+            <View key={row.key} style={[styles.matrixDataRow, rowIndex % 2 === 1 ? styles.matrixRowZebra : null]}>
+              <Text style={[styles.matrixCell, styles.matrixLabelCell, { width: '25%' }]}>{row.label}</Text>
+              {months.map((month, monthIndex) => {
+                // Calculate real values based on activities
+                let cellValue = '';
+                if (row.key === 'fecha_pago') {
+                  const paymentDate = new Date(Math.floor(parseInt(month) / 100), (parseInt(month) % 100) - 1, 15);
+                  cellValue = paymentDate.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' });
+                } else if (row.key === 'gasto') {
+                  // Calculate monthly expenditure based on activities
+                  const monthlyAmount = displayLines.reduce((sum, line) => {
+                    const hasActivity = line.activities?.some(activity => {
+                      const cells = expandRangeToMonthWeekCells(
+                        activity.start_month,
+                        activity.start_week,
+                        activity.end_month,
+                        activity.end_week
+                      );
+                      return cells.some(cell => cell.month === month);
+                    });
+                    return hasActivity ? sum + (line.amount || 0) / plan.months_count : sum;
+                  }, 0);
+                  cellValue = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(monthlyAmount);
+                } else if (row.key.includes('avance') || row.key.includes('inversion')) {
+                  const percentage = ((monthIndex + 1) / months.length * 100).toFixed(1);
+                  cellValue = `${percentage}%`;
+                } else {
+                  cellValue = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(total / months.length);
+                }
+                
+                return (
+                  <Text key={`${row.key}-${month}`} style={[styles.matrixCell, { width: `${75/months.length}%` }]}>
+                    {cellValue}
+                  </Text>
+                );
+              })}
             </View>
           ))}
         </View>
 
         {/* Notes */}
-        <Text style={[styles.noteText, { marginTop: 16, textAlign: 'center' }]}>
-          * Las barras azules representan las semanas programadas de ejecución. Algunos valores pueden tener ajustes manuales.
-        </Text>
+        <View style={styles.notes}>
+          <Text style={styles.noteText}>
+            * Las barras azules en el cronograma representan las semanas programadas de ejecución de cada partida.
+          </Text>
+          <Text style={styles.noteText}>
+            * Los valores de la matriz pueden incluir ajustes manuales realizados por el usuario.
+          </Text>
+          <Text style={styles.noteText}>
+            * Este documento es confidencial y de uso exclusivo para la gestión del proyecto.
+          </Text>
+        </View>
 
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            {companyBranding?.company_name || 'DOVITA CONSTRUCCIONES'} – Sistema de Gestión de Proyectos – Confidencial
+            {companyBranding?.company_name || 'DOVITA CONSTRUCCIONES'} • Confidencial
           </Text>
           <Text style={styles.footerText}>Página 2 de 2</Text>
-          <Text style={styles.footerText}>{companyBranding?.website || 'www.dovita.com'}</Text>
+          <Text style={styles.footerText}>Generado: {new Date().toLocaleDateString('es-MX')}</Text>
         </View>
       </Page>
     </Document>
