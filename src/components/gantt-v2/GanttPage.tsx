@@ -54,20 +54,23 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
     end_month: string;
     end_week: number;
   }) => {
-    try {
-      await addLineWithActivity.mutateAsync({
-        mayor_id: mayorData.mayor_id,
-        amount: mayorData.amount,
-        is_discount: false,
-        start_month: mayorData.start_month,
-        start_week: mayorData.start_week,
-        end_month: mayorData.end_month,
-        end_week: mayorData.end_week,
-      });
-      setShowMayorModal(false);
-    } catch (error) {
-      console.error('Error creating line with activity:', error);
+    console.log('[GANTT-PAGE] handleMayorSubmit called with:', mayorData);
+    
+    if (!plan?.id) {
+      throw new Error('No hay plan activo');
     }
+
+    await addLineWithActivity.mutateAsync({
+      mayor_id: mayorData.mayor_id,
+      amount: mayorData.amount,
+      is_discount: false,
+      start_month: mayorData.start_month,
+      start_week: mayorData.start_week,
+      end_month: mayorData.end_month,
+      end_week: mayorData.end_week,
+    });
+    
+    setShowMayorModal(false);
   };
 
   const handleAddDiscount = async () => {
@@ -156,6 +159,7 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
             onAddMayor={handleAddMayor}
             onAddDiscount={handleAddDiscount}
             isLoading={isLoading || isFetching}
+            canAddMayor={!!plan?.id}
           />
 
           {/* Gantt Grid */}

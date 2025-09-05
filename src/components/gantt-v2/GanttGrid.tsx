@@ -4,7 +4,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { GanttPlan, GanttLine, GanttActivity } from '@/hooks/gantt-v2/useGantt';
 import { Mayor } from '@/hooks/gantt-v2/useMayoresTU';
 import { ActivityRow } from './ActivityRow';
-import { TotalsBar } from './TotalsBar';
 import { generateMonthRange } from '@/utils/gantt-v2/monthRange';
 import { formatCurrency } from '@/utils/gantt-v2/currency';
 
@@ -40,12 +39,12 @@ export function GanttGrid({
   // Calculate totals
   const mayorLines = lines.filter(line => !line.is_discount);
   const discountLines = lines.filter(line => line.is_discount);
-  const subtotal = mayorLines.reduce((sum, line) => sum + line.amount, 0);
-  const totalDiscounts = discountLines.reduce((sum, line) => sum + line.amount, 0);
+  const subtotal = mayorLines.reduce((sum, line) => sum + (line.amount || 0), 0);
+  const totalDiscounts = discountLines.reduce((sum, line) => sum + (line.amount || 0), 0);
   const total = subtotal + totalDiscounts;
 
   return (
-    <Card>
+    <Card className="relative">
       <CardHeader>
         <CardTitle>Cronograma de Gantt</CardTitle>
       </CardHeader>
@@ -85,15 +84,15 @@ export function GanttGrid({
                 <ActivityRow
                   key={line.id}
                   line={line}
+                  lines={lines}
                   mayores={mayores}
                   monthRange={monthRange}
-                  subtotal={subtotal}
                   onUpdateLine={onUpdateLine}
                   onDeleteLine={onDeleteLine}
                   onAddActivity={onAddActivity}
                   onEditActivity={onEditActivity}
                   onDeleteActivity={onDeleteActivity}
-            isLoading={isLoading || isFetching}
+                  isLoading={isLoading || isFetching}
                 />
               ))}
               
@@ -112,30 +111,21 @@ export function GanttGrid({
               </TableRow>
               
               {/* Discount Lines */}
-              {discountLines.length > 0 && (
-                <>
-                  <TableRow>
-                    <TableCell colSpan={4 + monthRange.length + 1} className="py-2">
-                      <div className="font-medium text-sm text-muted-foreground">DESCUENTOS</div>
-                    </TableCell>
-                  </TableRow>
-                  {discountLines.map((line) => (
-                    <ActivityRow
-                      key={line.id}
-                      line={line}
-                      mayores={mayores}
-                      monthRange={monthRange}
-                      subtotal={subtotal}
-                      onUpdateLine={onUpdateLine}
-                      onDeleteLine={onDeleteLine}
-                      onAddActivity={onAddActivity}
-                      onEditActivity={onEditActivity}
-                      onDeleteActivity={onDeleteActivity}
-                      isLoading={isLoading || isFetching}
-                    />
-                  ))}
-                </>
-              )}
+              {discountLines.map((line) => (
+                <ActivityRow
+                  key={line.id}
+                  line={line}
+                  lines={lines}
+                  mayores={mayores}
+                  monthRange={monthRange}
+                  onUpdateLine={onUpdateLine}
+                  onDeleteLine={onDeleteLine}
+                  onAddActivity={onAddActivity}
+                  onEditActivity={onEditActivity}
+                  onDeleteActivity={onDeleteActivity}
+                  isLoading={isLoading || isFetching}
+                />
+              ))}
               
               {/* Total Row */}
               <TableRow className="bg-primary/10 font-bold border-t-2">
@@ -156,11 +146,12 @@ export function GanttGrid({
           </Table>
         </div>
         
-        {(isLoading || isFetching) && (
-          <div className="flex items-center justify-center py-8">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              <p className="text-muted-foreground">Cargando cronograma...</p>
+        {/* Loading overlay - only show during initial load */}
+        {isLoading && (
+          <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
+            <div className="text-center">
+              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+              <p className="text-sm text-muted-foreground">Cargando cronograma...</p>
             </div>
           </div>
         )}

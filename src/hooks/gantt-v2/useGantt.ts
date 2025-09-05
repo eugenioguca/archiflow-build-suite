@@ -54,6 +54,8 @@ export const useGantt = (clientId?: string, projectId?: string) => {
     queryFn: async () => {
       if (!clientId || !projectId) return null;
 
+      console.log('[GANTT] Fetching/creating plan for:', { clientId, projectId });
+
       // Try to get existing plan
       const { data: existingPlan, error: planError } = await supabase
         .from('cronograma_gantt_plan')
@@ -62,12 +64,17 @@ export const useGantt = (clientId?: string, projectId?: string) => {
         .eq('proyecto_id', projectId)
         .maybeSingle();
 
-      if (planError) throw planError;
+      if (planError) {
+        console.error('[GANTT] Error fetching plan:', planError);
+        throw planError;
+      }
 
       if (existingPlan) {
+        console.log('[GANTT] Found existing plan:', existingPlan.id);
         return existingPlan as GanttPlan;
       }
 
+      console.log('[GANTT] Creating new plan');
       // Create new plan with current month
       const { data: newPlan, error: createError } = await supabase
         .from('cronograma_gantt_plan')
@@ -80,10 +87,16 @@ export const useGantt = (clientId?: string, projectId?: string) => {
         .select()
         .single();
 
-      if (createError) throw createError;
+      if (createError) {
+        console.error('[GANTT] Error creating plan:', createError);
+        throw createError;
+      }
+      
+      console.log('[GANTT] Created new plan:', newPlan.id);
       return newPlan as GanttPlan;
     },
     enabled: !!clientId && !!projectId,
+    staleTime: 60_000, // 1 minute
   });
 
   // Fetch lines with activities
@@ -91,6 +104,8 @@ export const useGantt = (clientId?: string, projectId?: string) => {
     queryKey: ['gantt-lines', planQuery.data?.id],
     queryFn: async () => {
       if (!planQuery.data?.id) return [];
+
+      console.log('[GANTT] Fetching lines for plan:', planQuery.data.id);
 
       const { data, error } = await supabase
         .from('cronograma_gantt_line')
@@ -102,10 +117,16 @@ export const useGantt = (clientId?: string, projectId?: string) => {
         .eq('plan_id', planQuery.data.id)
         .order('order_index', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[GANTT] Error fetching lines:', error);
+        throw error;
+      }
+      
+      console.log('[GANTT] Fetched lines:', data?.length || 0);
       return data || [];
     },
     enabled: !!planQuery.data?.id,
+    staleTime: 5_000, // 5 seconds
   });
 
   // Update plan mutation
@@ -153,6 +174,8 @@ export const useGantt = (clientId?: string, projectId?: string) => {
     }) => {
       if (!planQuery.data?.id) throw new Error('No plan found');
 
+      console.log('[ADD-LINE] payload=', { plan_id: planQuery.data.id, ...params });
+
       // Get next line number
       const { data: existingLines } = await supabase
         .from('cronograma_gantt_line')
@@ -164,7 +187,7 @@ export const useGantt = (clientId?: string, projectId?: string) => {
       const nextLineNo = existingLines && existingLines.length > 0 ? existingLines[0].line_no + 1 : 1;
 
       // 1) Insert line
-      const { data: lineRow, error: lineError } = await supabase
+      const { data: lineRow, error: lineError, status: s1 } = await supabase
         .from('cronograma_gantt_line')
         .insert({
           plan_id: planQuery.data.id,
@@ -174,16 +197,16 @@ export const useGantt = (clientId?: string, projectId?: string) => {
           is_discount: params.is_discount,
           order_index: nextLineNo
         })
-        .select('id')
+        .select('id, amount')
         .single();
 
       if (lineError) {
-        console.error('Error creating line:', lineError);
-        throw lineError;
+        console.error('[ADD-LINE] insert line failed', s1, lineError);
+        throw new Error(`Insert line failed: ${lineError.message} ${lineError.details || ''}`);
       }
 
       // 2) Insert activity
-      const { error: activityError } = await supabase
+      const { error: activityError, status: s2 } = await supabase
         .from('cronograma_gantt_activity')
         .insert({
           line_id: lineRow.id,
@@ -194,10 +217,13 @@ export const useGantt = (clientId?: string, projectId?: string) => {
         });
 
       if (activityError) {
-        console.error('Error creating activity:', activityError);
-        throw activityError;
+        console.error('[ADD-LINE] insert activity failed', s2, activityError);
+        // rollback manual si es necesario
+        await supabase.from('cronograma_gantt_line').delete().eq('id', lineRow.id);
+        throw new Error(`Insert activity failed: ${activityError.message} ${activityError.details || ''}`);
       }
 
+      console.log('[ADD-LINE] success line_id=', lineRow.id);
       return lineRow.id;
     },
     onSuccess: () => {

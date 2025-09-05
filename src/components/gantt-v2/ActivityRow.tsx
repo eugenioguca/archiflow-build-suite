@@ -7,13 +7,14 @@ import { Edit2, Trash2, Plus, GripVertical } from 'lucide-react';
 import { GanttLine, GanttActivity } from '@/hooks/gantt-v2/useGantt';
 import { Mayor } from '@/hooks/gantt-v2/useMayoresTU';
 import { MoneyInput } from '@/components/ui/money-input';
+import { formatCurrency } from '@/utils/gantt-v2/currency';
 import { expandRangeToMonthWeekCells, keyMW } from '@/utils/gantt-v2/weekMath';
 
 interface ActivityRowProps {
   line: GanttLine;
+  lines: GanttLine[];
   mayores: Mayor[];
   monthRange: Array<{ value: string; label: string }>;
-  subtotal: number;
   onUpdateLine: (params: {id: string, data: Partial<GanttLine>}) => Promise<any>;
   onDeleteLine: (id: string) => Promise<any>;
   onAddActivity: (lineId: string) => void;
@@ -24,9 +25,9 @@ interface ActivityRowProps {
 
 export function ActivityRow({
   line,
+  lines,
   mayores,
   monthRange,
-  subtotal,
   onUpdateLine,
   onDeleteLine,
   onAddActivity,
@@ -36,21 +37,24 @@ export function ActivityRow({
 }: ActivityRowProps) {
   const [editingAmount, setEditingAmount] = useState(false);
 
-  // Calculate which cells are active based on activities
-  const activeCells = new Set<string>();
-  if (line.activities) {
-    line.activities.forEach(activity => {
-      const cells = expandRangeToMonthWeekCells(
+  // Calculate subtotal for percentage calculation
+  const subtotal = lines
+    .filter((l: any) => !l.is_discount)
+    .reduce((sum: number, l: any) => sum + (l.amount || 0), 0);
+  
+  const percentage = subtotal > 0 ? ((line.amount || 0) / subtotal * 100) : 0;
+
+  // Calculate which cells to fill
+  const cellsToFill = new Set(
+    (line.activities || []).flatMap((activity: any) =>
+      expandRangeToMonthWeekCells(
         activity.start_month,
         activity.start_week,
         activity.end_month,
         activity.end_week
-      );
-      cells.forEach(cell => {
-        activeCells.add(keyMW(cell.month, cell.week));
-      });
-    });
-  }
+      ).map(cell => `${cell.month}:W${cell.week}`)
+    )
+  );
 
   const handleAmountSave = async (newAmount: number) => {
     if (newAmount !== line.amount) {
@@ -76,16 +80,6 @@ export function ActivityRow({
     });
   };
 
-  const calculatedPercent = subtotal > 0 ? (line.amount / subtotal) * 100 : 0;
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN',
-      minimumFractionDigits: 2,
-    }).format(amount);
-  };
-
   return (
     <TableRow>
       {/* Line Number */}
@@ -107,55 +101,25 @@ export function ActivityRow({
             disabled={isLoading}
           />
         ) : (
-          <Select 
-            value={line.mayor_id || ''} 
-            onValueChange={handleMayorChange}
-            disabled={isLoading}
-          >
-            <SelectTrigger className="border-none p-0 h-auto focus:ring-0">
-              <SelectValue placeholder="Seleccionar Mayor" />
-            </SelectTrigger>
-            <SelectContent>
-              {mayores.map((mayor) => (
-                <SelectItem key={mayor.id} value={mayor.id}>
-                  <div>
-                    <span className="font-mono text-xs text-muted-foreground">{mayor.codigo}</span>
-                    <span className="ml-2">{mayor.nombre}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-      </TableCell>
-
-      {/* Amount */}
-      <TableCell className="sticky left-[260px] z-10 bg-background border-r">
-        {editingAmount ? (
-          <MoneyInput
-            value={line.amount}
-            onChange={handleAmountSave}
-            onBlur={() => setEditingAmount(false)}
-            className="h-6 text-sm"
-            autoFocus
-          />
-        ) : (
-          <div 
-            className="cursor-pointer hover:bg-accent px-1 py-1 rounded"
-            onClick={() => setEditingAmount(true)}
-          >
-            {formatCurrency(line.amount)}
+          <div className="text-sm">
+            {line.mayor ? (
+              <div>
+                <span className="font-mono text-xs text-muted-foreground">{line.mayor.codigo}</span>
+                <span className="ml-2">{line.mayor.nombre}</span>
+              </div>
+            ) : (
+              <span className="text-muted-foreground">Sin mayor asignado</span>
+            )}
           </div>
         )}
       </TableCell>
 
-      {/* Percentage */}
-      <TableCell className="sticky left-[380px] z-10 bg-background border-r text-right">
-        {!line.is_discount && (
-          <span className="text-sm font-mono">
-            {calculatedPercent.toFixed(2)}%
-          </span>
-        )}
+      {/* Amount */}
+      <TableCell className="px-2 py-3 text-right font-medium">
+        {formatCurrency(line.amount || 0)}
+      </TableCell>
+      <TableCell className="px-2 py-3 text-right text-sm text-muted-foreground">
+        {percentage.toFixed(2)}%
       </TableCell>
 
       {/* Week Columns */}
@@ -163,8 +127,8 @@ export function ActivityRow({
         <TableCell key={month.value} className="p-0 border-r">
           <div className="grid grid-cols-4 gap-0 h-10">
             {[1, 2, 3, 4].map((week) => {
-              const cellKey = keyMW(month.value, week);
-              const isActive = activeCells.has(cellKey);
+              const cellKey = `${month.value}:W${week}`;
+              const filled = cellsToFill.has(cellKey);
               
               return (
                 <div
@@ -174,9 +138,7 @@ export function ActivityRow({
                   }`}
                   onClick={() => !line.is_discount && onAddActivity(line.id)}
                 >
-                  {isActive && !line.is_discount && (
-                    <div className="bg-blue-500 h-3 w-full rounded-sm" />
-                  )}
+                  {filled && <div className="bg-blue-600 h-3 w-full rounded-sm" />}
                 </div>
               );
             })}

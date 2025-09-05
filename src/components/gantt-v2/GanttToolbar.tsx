@@ -14,6 +14,7 @@ interface GanttToolbarProps {
   onAddMayor: () => void;
   onAddDiscount: () => void;
   isLoading: boolean;
+  canAddMayor: boolean;
 }
 
 export function GanttToolbar({
@@ -21,7 +22,8 @@ export function GanttToolbar({
   onUpdatePlan,
   onAddMayor,
   onAddDiscount,
-  isLoading
+  isLoading,
+  canAddMayor
 }: GanttToolbarProps) {
   if (!plan) return null;
 
@@ -87,13 +89,11 @@ export function GanttToolbar({
           {/* Action Buttons */}
           <div className="flex items-center gap-2 ml-auto">
             <Button 
-              onClick={onAddMayor} 
-              variant="outline" 
-              size="sm"
-              disabled={isLoading}
-              className="gap-2"
+              onClick={onAddMayor}
+              disabled={isLoading || !canAddMayor}
+              className="bg-primary hover:bg-primary/90"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4 mr-2" />
               Añadir Mayor
             </Button>
             

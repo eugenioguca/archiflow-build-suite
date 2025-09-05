@@ -1,23 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SearchableCombobox } from '@/components/ui/searchable-combobox';
 import { MoneyInput } from '@/components/ui/money-input';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { useMayoresTU } from '@/hooks/gantt-v2/useMayoresTU';
 import { getCurrentMonth } from '@/utils/gantt-v2/monthRange';
+import { useToast } from '@/hooks/use-toast';
+
+const yyyyMM = /^(19|20)\d{2}(0[1-9]|1[0-2])$/;
 
 const mayorSchema = z.object({
-  mayor_id: z.string().min(1, "Debe seleccionar un mayor"),
-  amount: z.number().min(0.01, "El importe debe ser mayor a 0"),
-  start_month: z.string().regex(/^\d{6}$/, "Formato de mes inválido (YYYYMM)"),
-  start_week: z.number().min(1).max(4, "Selecciona una semana válida"),
-  end_month: z.string().regex(/^\d{6}$/, "Formato de mes inválido (YYYYMM)"),
-  end_week: z.number().min(1).max(4, "Selecciona una semana válida"),
+  mayor_id: z.string().uuid('Debe seleccionar un mayor válido'),
+  amount: z.number().min(0.01, 'El importe debe ser mayor a 0'),
+  start_month: z.string().regex(yyyyMM, 'Formato de mes inválido (YYYYMM)'),
+  start_week: z.number().int().min(1).max(4),
+  end_month: z.string().regex(yyyyMM, 'Formato de mes inválido (YYYYMM)'),
+  end_week: z.number().int().min(1).max(4),
 }).refine((data) => {
   const startMonthNum = parseInt(data.start_month);
   const endMonthNum = parseInt(data.end_month);
@@ -27,7 +30,7 @@ const mayorSchema = z.object({
   
   return true;
 }, {
-  message: "La fecha de fin debe ser posterior a la fecha de inicio",
+  message: "El fin debe ser posterior al inicio",
   path: ["end_week"],
 });
 
@@ -61,6 +64,8 @@ export function MayorSelectionModal({
   title
 }: MayorSelectionModalProps) {
   const { data: mayores = [], isLoading: loadingMayores } = useMayoresTU();
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
   
   const form = useForm({
     resolver: zodResolver(mayorSchema),
@@ -74,10 +79,29 @@ export function MayorSelectionModal({
     }
   });
 
-  const handleSubmit = (data: any) => {
-    onSubmit(data);
-    form.reset();
-    onOpenChange(false);
+  const handleSubmit = async (data: any) => {
+    try {
+      setSaving(true);
+      console.log('[MODAL] Submitting data:', data);
+      
+      await onSubmit(data);
+      
+      form.reset();
+      onOpenChange(false);
+      toast({
+        title: "Línea agregada",
+        description: "La línea se ha guardado correctamente."
+      });
+    } catch (err: any) {
+      console.error('[MODAL] Submit error:', err);
+      toast({
+        title: "Error",
+        description: err.message || 'Error al guardar la línea',
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const mayorOptions = mayores.map(mayor => ({
@@ -296,9 +320,9 @@ export function MayorSelectionModal({
             </Button>
             <Button
               type="submit"
-              disabled={!form.formState.isValid || loadingMayores}
+              disabled={saving || !form.formState.isValid || loadingMayores}
             >
-              Guardar
+              {saving ? "Guardando..." : "Guardar"}
             </Button>
           </div>
         </form>
