@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, BarChart3, RefreshCw } from 'lucide-react';
-import { useClientProjectFilters } from '@/hooks/useClientProjectFilters';
-import { CollapsibleFilters } from '@/components/CollapsibleFilters';
 import { GanttToolbar } from './GanttToolbar';
 import { GanttGrid } from './GanttGrid';
 import { MatrixSection } from './MatrixSection';
@@ -12,15 +10,12 @@ import { useGantt } from '@/hooks/gantt-v2/useGantt';
 import { useMayoresTU } from '@/hooks/gantt-v2/useMayoresTU';
 import { useMatrixOverrides } from '@/hooks/gantt-v2/useMatrixOverrides';
 
-export function GanttPage() {
-  const {
-    selectedClientId,
-    selectedProjectId,
-    setClientId,
-    setProjectId,
-    clearFilters,
-    hasFilters
-  } = useClientProjectFilters();
+interface GanttPageProps {
+  selectedClientId: string;
+  selectedProjectId: string;
+}
+
+export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProps) {
 
   const {
     plan,
@@ -118,17 +113,8 @@ export function GanttPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <CollapsibleFilters
-        selectedClientId={selectedClientId}
-        selectedProjectId={selectedProjectId}
-        onClientChange={setClientId}
-        onProjectChange={setProjectId}
-        onClearFilters={clearFilters}
-      />
-
       {/* Show empty state if no filters */}
-      {!hasFilters && (
+      {(!selectedClientId || !selectedProjectId) && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
@@ -141,7 +127,7 @@ export function GanttPage() {
       )}
 
       {/* Main content */}
-      {hasFilters && selectedClientId && selectedProjectId && (
+      {selectedClientId && selectedProjectId && (
         <div className="space-y-6">
           {/* Toolbar */}
           <GanttToolbar

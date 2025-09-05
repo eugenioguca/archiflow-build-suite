@@ -51,7 +51,10 @@ export default function PresupuestosPlaneacion() {
         </TabsContent>
 
         <TabsContent value="gantt" className="space-y-6">
-          <GanttPage />
+          <GanttPage 
+            selectedClientId={selectedClientId}
+            selectedProjectId={selectedProjectId}
+          />
         </TabsContent>
 
         <TabsContent value="pagos" className="space-y-6">
