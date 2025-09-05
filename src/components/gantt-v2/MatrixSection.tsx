@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Edit2 } from 'lucide-react';
 import { GanttPlan, GanttLine } from '@/hooks/gantt-v2/useGantt';
-import { MatrixOverride } from '@/hooks/gantt-v2/useMatrixOverrides';
+import { MatrixOverride, useMatrixOverrides } from '@/hooks/gantt-v2/useMatrixOverrides';
 import { generateMonthRange } from '@/utils/gantt-v2/monthRange';
 import { formatCurrency } from '@/utils/gantt-v2/currency';
 import { expandRangeToMonthWeekCells } from '@/utils/gantt-v2/weekMath';
+import { MatrixEditorModal } from './MatrixEditorModal';
 
 interface MatrixSectionProps {
   plan?: GanttPlan | null;
@@ -24,6 +25,9 @@ export function MatrixSection({
   clientId,
   projectId
 }: MatrixSectionProps) {
+  const [showMatrixEditor, setShowMatrixEditor] = useState(false);
+  const { saveOverride, deleteOverride } = useMatrixOverrides(clientId, projectId);
+
   if (!plan) return null;
 
   const monthRange = generateMonthRange(plan.start_month, plan.months_count);
@@ -117,7 +121,12 @@ export function MatrixSection({
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           Matriz Numérica Mensual
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-2"
+            onClick={() => setShowMatrixEditor(true)}
+          >
             <Edit2 className="h-4 w-4" />
             Editar Matriz
           </Button>
@@ -226,6 +235,23 @@ export function MatrixSection({
           </Table>
         </div>
       </CardContent>
+
+      {/* Matrix Editor Modal */}
+      <MatrixEditorModal
+        open={showMatrixEditor}
+        onOpenChange={setShowMatrixEditor}
+        plan={plan}
+        lines={lines}
+        overrides={overrides}
+        clientId={clientId}
+        projectId={projectId}
+        onSaveOverride={async (data) => {
+          await saveOverride.mutateAsync(data);
+        }}
+        onDeleteOverride={async (data) => {
+          await deleteOverride.mutateAsync(data);
+        }}
+      />
     </Card>
   );
 }

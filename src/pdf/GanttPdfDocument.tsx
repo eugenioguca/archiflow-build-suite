@@ -616,48 +616,164 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
             })}
           </View>
 
-          {/* Matrix Rows with real calculations */}
+          {/* Matrix Rows with real calculations and overrides */}
           {[
-            { label: 'Gasto en Obra (MXN)', key: 'gasto' },
+            { label: 'Gasto en Obra (MXN)', key: 'gasto_obra' },
             { label: '% Avance Parcial', key: 'avance_parcial' },
-            { label: '% Avance Acumulado', key: 'avance_acum' },
+            { label: '% Avance Acumulado', key: 'avance_acumulado' },
             { label: 'Ministraciones (MXN)', key: 'ministraciones' },
-            { label: '% Inversión Acumulada', key: 'inversion_acum' },
+            { label: '% Inversión Acumulada', key: 'inversion_acumulada' },
             { label: 'Fecha Tentativa de Pago', key: 'fecha_pago' }
           ].map((row, rowIndex) => (
             <View key={row.key} style={[styles.matrixDataRow, rowIndex % 2 === 1 ? styles.matrixRowZebra : null]}>
               <Text style={[styles.matrixCell, styles.matrixLabelCell, { width: '25%' }]}>{row.label}</Text>
               {months.map((month, monthIndex) => {
-                // Calculate real values based on activities
-                let cellValue = '';
-                if (row.key === 'fecha_pago') {
-                  const paymentDate = new Date(Math.floor(parseInt(month) / 100), (parseInt(month) % 100) - 1, 15);
-                  cellValue = paymentDate.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' });
-                } else if (row.key === 'gasto') {
+                // Check for override
+                const hasOverride = overrides.some(o => o.mes === parseInt(month, 10) && o.concepto === row.key);
+                const override = overrides.find(o => o.mes === parseInt(month, 10) && o.concepto === row.key);
+                
+                // Calculate automatic values (same logic as MatrixSection)
+                let automaticValue = 0;
+                if (row.key === 'gasto_obra') {
                   // Calculate monthly expenditure based on activities
-                  const monthlyAmount = displayLines.reduce((sum, line) => {
-                    const hasActivity = line.activities?.some(activity => {
+                  automaticValue = mayorLines.reduce((sum, line) => {
+                    if (!line.activities || line.activities.length === 0) return sum;
+                    
+                    let activeWeeksInMonth = 0;
+                    line.activities.forEach(activity => {
                       const cells = expandRangeToMonthWeekCells(
                         activity.start_month,
                         activity.start_week,
                         activity.end_month,
                         activity.end_week
                       );
-                      return cells.some(cell => cell.month === month);
+                      activeWeeksInMonth += cells.filter(cell => cell.month === month).length;
                     });
-                    return hasActivity ? sum + (line.amount || 0) / plan.months_count : sum;
+                    
+                    let totalActiveWeeks = 0;
+                    line.activities.forEach(activity => {
+                      const cells = expandRangeToMonthWeekCells(
+                        activity.start_month,
+                        activity.start_week,
+                        activity.end_month,
+                        activity.end_week
+                      );
+                      totalActiveWeeks += cells.length;
+                    });
+                    
+                    if (totalActiveWeeks > 0) {
+                      const proportionalAmount = (line.amount * activeWeeksInMonth) / totalActiveWeeks;
+                      return sum + proportionalAmount;
+                    }
+                    return sum;
                   }, 0);
-                  cellValue = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(monthlyAmount);
-                } else if (row.key.includes('avance') || row.key.includes('inversion')) {
-                  const percentage = ((monthIndex + 1) / months.length * 100).toFixed(1);
-                  cellValue = `${percentage}%`;
+                } else if (row.key === 'avance_parcial') {
+                  // Calculate partial progress from gasto_obra
+                  const gastoMensual = mayorLines.reduce((sum, line) => {
+                    if (!line.activities || line.activities.length === 0) return sum;
+                    
+                    let activeWeeksInMonth = 0;
+                    line.activities.forEach(activity => {
+                      const cells = expandRangeToMonthWeekCells(
+                        activity.start_month,
+                        activity.start_week,
+                        activity.end_month,
+                        activity.end_week
+                      );
+                      activeWeeksInMonth += cells.filter(cell => cell.month === month).length;
+                    });
+                    
+                    let totalActiveWeeks = 0;
+                    line.activities.forEach(activity => {
+                      const cells = expandRangeToMonthWeekCells(
+                        activity.start_month,
+                        activity.start_week,
+                        activity.end_month,
+                        activity.end_week
+                      );
+                      totalActiveWeeks += cells.length;
+                    });
+                    
+                    if (totalActiveWeeks > 0) {
+                      const proportionalAmount = (line.amount * activeWeeksInMonth) / totalActiveWeeks;
+                      return sum + proportionalAmount;
+                    }
+                    return sum;
+                  }, 0);
+                  automaticValue = subtotal > 0 ? (gastoMensual / subtotal) * 100 : 0;
+                } else if (row.key === 'avance_acumulado') {
+                  // Calculate cumulative progress up to this month
+                  let cumulativeSpending = 0;
+                  for (let i = 0; i <= monthIndex; i++) {
+                    const monthToCalc = months[i];
+                    const gastoMensual = mayorLines.reduce((sum, line) => {
+                      if (!line.activities || line.activities.length === 0) return sum;
+                      
+                      let activeWeeksInMonth = 0;
+                      line.activities.forEach(activity => {
+                        const cells = expandRangeToMonthWeekCells(
+                          activity.start_month,
+                          activity.start_week,
+                          activity.end_month,
+                          activity.end_week
+                        );
+                        activeWeeksInMonth += cells.filter(cell => cell.month === monthToCalc).length;
+                      });
+                      
+                      let totalActiveWeeks = 0;
+                      line.activities.forEach(activity => {
+                        const cells = expandRangeToMonthWeekCells(
+                          activity.start_month,
+                          activity.start_week,
+                          activity.end_month,
+                          activity.end_week
+                        );
+                        totalActiveWeeks += cells.length;
+                      });
+                      
+                      if (totalActiveWeeks > 0) {
+                        const proportionalAmount = (line.amount * activeWeeksInMonth) / totalActiveWeeks;
+                        return sum + proportionalAmount;
+                      }
+                      return sum;
+                    }, 0);
+                    cumulativeSpending += gastoMensual;
+                  }
+                  automaticValue = subtotal > 0 ? (cumulativeSpending / subtotal) * 100 : 0;
                 } else {
-                  cellValue = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(total / months.length);
+                  // For ministraciones, inversion_acumulada, fecha_pago - no automatic value
+                  automaticValue = 0;
+                }
+                
+                // Use override value if exists, otherwise use automatic or default
+                let cellValue = '';
+                if (hasOverride && override) {
+                  if (row.key === 'fecha_pago') {
+                    cellValue = override.valor;
+                  } else if (row.key.includes('avance') || row.key.includes('inversion')) {
+                    cellValue = `${parseFloat(override.valor).toFixed(1)}%`;
+                  } else {
+                    cellValue = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(parseFloat(override.valor));
+                  }
+                } else {
+                  // Use automatic values
+                  if (row.key === 'fecha_pago') {
+                    const paymentDate = new Date(Math.floor(parseInt(month) / 100), (parseInt(month) % 100) - 1, 15);
+                    cellValue = paymentDate.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' });
+                  } else if (row.key === 'gasto_obra') {
+                    cellValue = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(automaticValue);
+                  } else if (row.key.includes('avance')) {
+                    cellValue = `${automaticValue.toFixed(1)}%`;
+                  } else if (row.key === 'ministraciones') {
+                    cellValue = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(0);
+                  } else if (row.key === 'inversion_acumulada') {
+                    cellValue = '0.0%';
+                  }
                 }
                 
                 return (
                   <Text key={`${row.key}-${month}`} style={[styles.matrixCell, { width: `${75/months.length}%` }]}>
-                    {cellValue}
+                    {cellValue}{hasOverride ? '*' : ''}
                   </Text>
                 );
               })}
@@ -671,7 +787,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
             * Las barras azules en el cronograma representan las semanas programadas de ejecución de cada partida.
           </Text>
           <Text style={styles.noteText}>
-            * Los valores de la matriz pueden incluir ajustes manuales realizados por el usuario.
+            * Valor editado manualmente - Los valores sin asterisco son calculados automáticamente desde el cronograma.
           </Text>
           <Text style={styles.noteText}>
             * Este documento es confidencial y de uso exclusivo para la gestión del proyecto.
