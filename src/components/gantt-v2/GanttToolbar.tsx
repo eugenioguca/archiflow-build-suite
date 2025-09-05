@@ -10,7 +10,7 @@ import { MatrixOverride } from '@/hooks/gantt-v2/useMatrixOverrides';
 import { Mayor } from '@/hooks/gantt-v2/useMayoresTU';
 import { generateMonthRange } from '@/utils/gantt-v2/monthRange';
 import { GanttV2PDFExport } from './GanttV2PDFExport';
-import { CompanySettingsModal } from './CompanySettingsModal';
+import { CompanyBrandingModal } from './CompanyBrandingModal';
 
 interface GanttToolbarProps {
   plan?: GanttPlan | null;
@@ -39,7 +39,7 @@ export function GanttToolbar({
   clientId,
   projectId
 }: GanttToolbarProps) {
-  const [showCompanySettings, setShowCompanySettings] = useState(false);
+  const [showBrandingModal, setShowBrandingModal] = useState(false);
   if (!plan) return null;
 
   const handleStartMonthChange = (value: string) => {
@@ -124,13 +124,13 @@ export function GanttToolbar({
             </Button>
             
             <Button 
-              onClick={() => setShowCompanySettings(true)}
+              onClick={() => setShowBrandingModal(true)}
               variant="outline" 
               size="sm"
               className="gap-2"
             >
               <Settings className="h-4 w-4" />
-              Config. Empresa
+              Configurar Encabezado
             </Button>
             
             {plan && lines.length > 0 && (
@@ -147,10 +147,10 @@ export function GanttToolbar({
         </div>
       </CardContent>
       
-      {/* Company Settings Modal */}
-      <CompanySettingsModal 
-        open={showCompanySettings}
-        onOpenChange={setShowCompanySettings}
+      {/* Company Branding Modal */}
+      <CompanyBrandingModal 
+        open={showBrandingModal}
+        onOpenChange={setShowBrandingModal}
       />
     </Card>
   );
