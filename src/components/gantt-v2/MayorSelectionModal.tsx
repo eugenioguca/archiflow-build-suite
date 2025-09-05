@@ -3,10 +3,11 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Form, FormField, FormItem, FormLabel, FormMessage, FormControl } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { SearchableCombobox } from '@/components/ui/searchable-combobox';
+import { SearchableCombobox, SearchableComboboxItem } from '@/components/ui/searchable-combobox';
 import { MoneyInput } from '@/components/ui/money-input';
 import { useMayoresTU } from '@/hooks/gantt-v2/useMayoresTU';
 import { getCurrentMonth } from '@/utils/gantt-v2/monthRange';
@@ -79,6 +80,16 @@ export function MayorSelectionModal({
     }
   });
 
+  // Transform mayors to SearchableComboboxItem format (exactly like in UnifiedTransactionForm)
+  const transformToComboboxItems = (mayores: any[]): SearchableComboboxItem[] => {
+    return mayores.map(mayor => ({
+      value: mayor.id,
+      label: `${mayor.codigo} - ${mayor.nombre}`,
+      codigo: mayor.codigo,
+      searchText: `${mayor.codigo || ''} ${mayor.nombre}`.toLowerCase()
+    }));
+  };
+
   const handleSubmit = async (data: any) => {
     try {
       setSaving(true);
@@ -104,11 +115,7 @@ export function MayorSelectionModal({
     }
   };
 
-  const mayorOptions = mayores.map(mayor => ({
-    value: mayor.id,
-    label: `${mayor.codigo} - ${mayor.nombre}`,
-    codigo: mayor.codigo
-  }));
+  const mayorOptions = transformToComboboxItems(mayores);
 
   // Generate month options (current month + 24 months)
   const generateMonthOptions = () => {
@@ -153,179 +160,178 @@ export function MayorSelectionModal({
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          {/* Mayor Selection */}
-          <div className="space-y-2">
-            <Label>Mayor</Label>
-            <SearchableCombobox
-              items={mayorOptions}
-              value={form.watch('mayor_id')}
-              onValueChange={(value) => form.setValue('mayor_id', value)}
-              placeholder="Buscar mayor..."
-              emptyText="No se encontraron mayores"
-              disabled={loadingMayores}
-            />
-            {form.formState.errors.mayor_id && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.mayor_id.message}
-              </p>
-            )}
-          </div>
-
-          {/* Amount Input */}
-          <div className="space-y-2">
-            <Label>Importe</Label>
-            <Controller
-              name="amount"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            {/* Mayor Selection - Using exact same configuration as UnifiedTransactionForm */}
+            <FormField
               control={form.control}
+              name="mayor_id"
               render={({ field }) => (
-                <MoneyInput
-                  value={field.value || 0}
-                  onChange={field.onChange}
-                />
+                <FormItem>
+                  <FormLabel className="text-sm font-medium">Mayor</FormLabel>
+                  <FormControl>
+                    <SearchableCombobox
+                      items={mayorOptions}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      placeholder="Seleccionar mayor"
+                      searchPlaceholder="Buscar mayor..."
+                      disabled={loadingMayores}
+                      showCodes={true}
+                      searchFields={['label', 'codigo', 'searchText']}
+                      className="w-full"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
-            {form.formState.errors.amount && (
-              <p className="text-sm text-destructive">
-                {form.formState.errors.amount.message}
-              </p>
-            )}
-          </div>
 
-          {/* Start Date */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Mes de Inicio</Label>
-              <Controller
+            {/* Amount Input */}
+            <FormField
+              control={form.control}
+              name="amount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium">Importe</FormLabel>
+                  <FormControl>
+                    <MoneyInput
+                      value={field.value || 0}
+                      onChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Start Date */}
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
                 name="start_month"
-                control={form.control}
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar mes" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {monthOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">Mes de Inicio</FormLabel>
+                    <FormControl>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar mes" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {monthOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
-              {form.formState.errors.start_month && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.start_month.message}
-                </p>
-              )}
-            </div>
 
-            <div className="space-y-2">
-              <Label>Semana de Inicio</Label>
-              <Controller
+              <FormField
+                control={form.control}
                 name="start_week"
-                control={form.control}
                 render={({ field }) => (
-                  <Select value={field.value?.toString()} onValueChange={(value) => field.onChange(parseInt(value))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Semana" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {weekOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value.toString()}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">Semana de Inicio</FormLabel>
+                    <FormControl>
+                      <Select value={field.value?.toString()} onValueChange={(value) => field.onChange(parseInt(value))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Semana" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {weekOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value.toString()}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
-              {form.formState.errors.start_week && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.start_week.message}
-                </p>
-              )}
             </div>
-          </div>
 
-          {/* End Date */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Mes de Fin</Label>
-              <Controller
+            {/* End Date */}
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
                 name="end_month"
-                control={form.control}
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar mes" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {monthOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">Mes de Fin</FormLabel>
+                    <FormControl>
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar mes" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {monthOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
-              {form.formState.errors.end_month && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.end_month.message}
-                </p>
-              )}
-            </div>
 
-            <div className="space-y-2">
-              <Label>Semana de Fin</Label>
-              <Controller
+              <FormField
+                control={form.control}
                 name="end_week"
-                control={form.control}
                 render={({ field }) => (
-                  <Select value={field.value?.toString()} onValueChange={(value) => field.onChange(parseInt(value))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Semana" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {weekOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value.toString()}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">Semana de Fin</FormLabel>
+                    <FormControl>
+                      <Select value={field.value?.toString()} onValueChange={(value) => field.onChange(parseInt(value))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Semana" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {weekOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value.toString()}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
-              {form.formState.errors.end_week && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.end_week.message}
-                </p>
-              )}
             </div>
-          </div>
 
-          {/* Form Actions */}
-          <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                form.reset();
-                onOpenChange(false);
-              }}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={saving || !form.formState.isValid || loadingMayores}
-            >
-              {saving ? "Guardando..." : "Guardar"}
-            </Button>
-          </div>
-        </form>
+            {/* Form Actions */}
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  form.reset();
+                  onOpenChange(false);
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={saving || !form.formState.isValid || loadingMayores}
+              >
+                {saving ? "Guardando..." : "Guardar"}
+              </Button>
+            </div>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );
