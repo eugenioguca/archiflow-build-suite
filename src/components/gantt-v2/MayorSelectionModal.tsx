@@ -50,7 +50,8 @@ export function MayorSelectionModal({
 
   const mayorOptions = mayores.map(mayor => ({
     value: mayor.id,
-    label: `${mayor.codigo} - ${mayor.nombre}`
+    label: `${mayor.codigo} - ${mayor.nombre}`,
+    codigo: mayor.codigo
   }));
 
   return (
