@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -68,17 +68,44 @@ export function MayorSelectionModal({
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   
+  const isEditing = !!initialData?.mayor_id;
+  
   const form = useForm({
     resolver: zodResolver(mayorSchema),
     defaultValues: {
-      mayor_id: initialData?.mayor_id || '',
-      amount: initialData?.amount || 0,
-      start_month: initialData?.start_month || getCurrentMonth(),
-      start_week: initialData?.start_week || 1,
-      end_month: initialData?.end_month || getCurrentMonth(),
-      end_week: initialData?.end_week || 4,
+      mayor_id: '',
+      amount: 0,
+      start_month: getCurrentMonth(),
+      start_week: 1,
+      end_month: getCurrentMonth(),
+      end_week: 4,
     }
   });
+
+  // Reset form with initial data when modal opens for editing
+  useEffect(() => {
+    if (open && initialData) {
+      console.log('[MODAL] Resetting form with initialData:', initialData);
+      form.reset({
+        mayor_id: initialData.mayor_id || '',
+        amount: initialData.amount || 0,
+        start_month: initialData.start_month || getCurrentMonth(),
+        start_week: initialData.start_week || 1,
+        end_month: initialData.end_month || getCurrentMonth(),
+        end_week: initialData.end_week || 4,
+      });
+    } else if (open && !initialData) {
+      // Reset to defaults for new entries
+      form.reset({
+        mayor_id: '',
+        amount: 0,
+        start_month: getCurrentMonth(),
+        start_week: 1,
+        end_month: getCurrentMonth(),
+        end_week: 4,
+      });
+    }
+  }, [open, initialData, form]);
 
   // Transform mayors to SearchableComboboxItem format (exactly like in UnifiedTransactionForm)
   const transformToComboboxItems = (mayores: any[]): SearchableComboboxItem[] => {
@@ -100,8 +127,8 @@ export function MayorSelectionModal({
       form.reset();
       onOpenChange(false);
       toast({
-        title: "Línea agregada",
-        description: "La línea se ha guardado correctamente."
+        title: isEditing ? "Línea actualizada" : "Línea agregada",
+        description: isEditing ? "La línea se ha actualizado correctamente." : "La línea se ha guardado correctamente."
       });
     } catch (err: any) {
       console.error('[MODAL] Submit error:', err);
@@ -162,7 +189,7 @@ export function MayorSelectionModal({
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            {/* Mayor Selection - Using exact same configuration as UnifiedTransactionForm */}
+            {/* Mayor Selection */}
             <FormField
               control={form.control}
               name="mayor_id"
@@ -170,17 +197,26 @@ export function MayorSelectionModal({
                 <FormItem>
                   <FormLabel className="text-sm font-medium">Mayor</FormLabel>
                   <FormControl>
-                    <SearchableCombobox
-                      items={mayorOptions}
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      placeholder="Seleccionar mayor"
-                      searchPlaceholder="Buscar mayor..."
-                      disabled={loadingMayores}
-                      showCodes={true}
-                      searchFields={['label', 'codigo', 'searchText']}
-                      className="w-full"
-                    />
+                    {isEditing ? (
+                      <div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm">
+                        {(() => {
+                          const selectedMayor = mayores.find(m => m.id === field.value);
+                          return selectedMayor ? `${selectedMayor.codigo} - ${selectedMayor.nombre}` : 'Mayor no encontrado';
+                        })()}
+                      </div>
+                    ) : (
+                      <SearchableCombobox
+                        items={mayorOptions}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Seleccionar mayor"
+                        searchPlaceholder="Buscar mayor..."
+                        disabled={loadingMayores}
+                        showCodes={true}
+                        searchFields={['label', 'codigo', 'searchText']}
+                        className="w-full"
+                      />
+                    )}
                   </FormControl>
                   <FormMessage />
                 </FormItem>
