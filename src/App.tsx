@@ -30,6 +30,7 @@ import ClientPortal from "./pages/ClientPortal";
 import UnifiedTransactions from "./pages/UnifiedTransactions";
 import TestTransactionForm from "./pages/TestTransactionForm";
 import PresupuestosPlaneacion from "./pages/PresupuestosPlaneacion";
+import CronogramaGanttV2 from "./pages/planeacion/CronogramaGanttV2";
 
 import PendingApproval from "./components/PendingApproval";
 import { UserOnboarding } from "./components/UserOnboarding";
@@ -202,6 +203,16 @@ const App = () => (
               <ProtectedRoute>
                 <Layout>
                   <PresupuestosPlaneacion />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/cronograma-gantt-v2" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <CronogramaGanttV2 />
                 </Layout>
               </ProtectedRoute>
             } 

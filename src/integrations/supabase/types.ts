@@ -2810,6 +2810,136 @@ export type Database = {
           },
         ]
       }
+      cronograma_gantt_activity: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          end_month: string
+          end_week: number
+          id: string
+          line_id: string
+          start_month: string
+          start_week: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          end_month: string
+          end_week: number
+          id?: string
+          line_id: string
+          start_month: string
+          start_week: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          end_month?: string
+          end_week?: number
+          id?: string
+          line_id?: string
+          start_month?: string
+          start_week?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cronograma_gantt_activity_line_id_fkey"
+            columns: ["line_id"]
+            isOneToOne: false
+            referencedRelation: "cronograma_gantt_line"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cronograma_gantt_line: {
+        Row: {
+          amount: number
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_discount: boolean
+          label: string | null
+          line_no: number
+          mayor_id: string | null
+          order_index: number
+          percent: number | null
+          plan_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_discount?: boolean
+          label?: string | null
+          line_no: number
+          mayor_id?: string | null
+          order_index?: number
+          percent?: number | null
+          plan_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_discount?: boolean
+          label?: string | null
+          line_no?: number
+          mayor_id?: string | null
+          order_index?: number
+          percent?: number | null
+          plan_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cronograma_gantt_line_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "cronograma_gantt_plan"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cronograma_gantt_plan: {
+        Row: {
+          cliente_id: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          months_count: number
+          proyecto_id: string
+          start_month: string
+          updated_at: string | null
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          months_count?: number
+          proyecto_id: string
+          start_month: string
+          updated_at?: string | null
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          months_count?: number
+          proyecto_id?: string
+          start_month?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       cronograma_matriz_manual: {
         Row: {
           cliente_id: string
