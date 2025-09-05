@@ -6,8 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Edit2, Trash2, Plus, GripVertical } from 'lucide-react';
 import { GanttLine, GanttActivity } from '@/hooks/gantt-v2/useGantt';
 import { Mayor } from '@/hooks/gantt-v2/useMayoresTU';
-import { formatCurrency, parseCurrency } from '@/utils/gantt-v2/currency';
-import { calculatePercent } from '@/utils/gantt-v2/percent';
+import { MoneyInput } from '@/components/ui/money-input';
 import { expandRangeToMonthWeekCells, keyMW } from '@/utils/gantt-v2/weekMath';
 
 interface ActivityRowProps {
@@ -36,7 +35,6 @@ export function ActivityRow({
   isLoading
 }: ActivityRowProps) {
   const [editingAmount, setEditingAmount] = useState(false);
-  const [tempAmount, setTempAmount] = useState(formatCurrency(line.amount));
 
   // Calculate which cells are active based on activities
   const activeCells = new Set<string>();
@@ -54,19 +52,13 @@ export function ActivityRow({
     });
   }
 
-  const handleAmountSave = async () => {
-    const newAmount = parseCurrency(tempAmount);
+  const handleAmountSave = async (newAmount: number) => {
     if (newAmount !== line.amount) {
       await onUpdateLine({
         id: line.id,
         data: { amount: newAmount }
       });
     }
-    setEditingAmount(false);
-  };
-
-  const handleAmountCancel = () => {
-    setTempAmount(formatCurrency(line.amount));
     setEditingAmount(false);
   };
 
@@ -84,7 +76,15 @@ export function ActivityRow({
     });
   };
 
-  const calculatedPercent = subtotal > 0 ? calculatePercent(line.amount, subtotal) : 0;
+  const calculatedPercent = subtotal > 0 ? (line.amount / subtotal) * 100 : 0;
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN',
+      minimumFractionDigits: 2,
+    }).format(amount);
+  };
 
   return (
     <TableRow>
@@ -132,19 +132,13 @@ export function ActivityRow({
       {/* Amount */}
       <TableCell className="sticky left-[260px] z-10 bg-background border-r">
         {editingAmount ? (
-          <div className="flex gap-1">
-            <Input
-              value={tempAmount}
-              onChange={(e) => setTempAmount(e.target.value)}
-              onBlur={handleAmountSave}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleAmountSave();
-                if (e.key === 'Escape') handleAmountCancel();
-              }}
-              className="h-6 text-sm"
-              autoFocus
-            />
-          </div>
+          <MoneyInput
+            value={line.amount}
+            onChange={handleAmountSave}
+            onBlur={() => setEditingAmount(false)}
+            className="h-6 text-sm"
+            autoFocus
+          />
         ) : (
           <div 
             className="cursor-pointer hover:bg-accent px-1 py-1 rounded"

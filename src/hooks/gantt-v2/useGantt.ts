@@ -140,7 +140,85 @@ export const useGantt = (clientId?: string, projectId?: string) => {
     }
   });
 
-  // Create line mutation
+  // Atomic line + activity creation
+  const addLineWithActivity = useMutation({
+    mutationFn: async (params: {
+      mayor_id: string;
+      amount: number;
+      is_discount: boolean;
+      start_month: string;
+      start_week: number;
+      end_month: string;
+      end_week: number;
+    }) => {
+      if (!planQuery.data?.id) throw new Error('No plan found');
+
+      // Get next line number
+      const { data: existingLines } = await supabase
+        .from('cronograma_gantt_line')
+        .select('line_no')
+        .eq('plan_id', planQuery.data.id)
+        .order('line_no', { ascending: false })
+        .limit(1);
+
+      const nextLineNo = existingLines && existingLines.length > 0 ? existingLines[0].line_no + 1 : 1;
+
+      // 1) Insert line
+      const { data: lineRow, error: lineError } = await supabase
+        .from('cronograma_gantt_line')
+        .insert({
+          plan_id: planQuery.data.id,
+          line_no: nextLineNo,
+          mayor_id: params.mayor_id,
+          amount: params.amount,
+          is_discount: params.is_discount,
+          order_index: nextLineNo
+        })
+        .select('id')
+        .single();
+
+      if (lineError) {
+        console.error('Error creating line:', lineError);
+        throw lineError;
+      }
+
+      // 2) Insert activity
+      const { error: activityError } = await supabase
+        .from('cronograma_gantt_activity')
+        .insert({
+          line_id: lineRow.id,
+          start_month: params.start_month,
+          start_week: params.start_week,
+          end_month: params.end_month,
+          end_week: params.end_week
+        });
+
+      if (activityError) {
+        console.error('Error creating activity:', activityError);
+        throw activityError;
+      }
+
+      return lineRow.id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gantt-lines'] });
+      toast({
+        title: "Línea creada",
+        description: "Nueva línea agregada al cronograma."
+      });
+    },
+    onError: (error: any) => {
+      const errorMsg = error?.message || "No se pudo crear la línea.";
+      toast({
+        title: "Error",
+        description: errorMsg,
+        variant: "destructive"
+      });
+      console.error('Error in addLineWithActivity:', error);
+    }
+  });
+
+  // Create line mutation (legacy - for backward compatibility)
   const createLine = useMutation({
     mutationFn: async (lineData: Omit<GanttLine, 'id' | 'created_at' | 'updated_at'>) => {
       if (!planQuery.data?.id) throw new Error('No plan found');
@@ -326,8 +404,10 @@ export const useGantt = (clientId?: string, projectId?: string) => {
     plan: planQuery.data,
     lines: linesQuery.data || [],
     isLoading: planQuery.isLoading || linesQuery.isLoading,
+    isFetching: planQuery.isFetching || linesQuery.isFetching,
     error: planQuery.error || linesQuery.error,
     updatePlan,
+    addLineWithActivity,
     createLine,
     updateLine,
     deleteLine,

@@ -1,10 +1,10 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SearchableCombobox } from '@/components/ui/searchable-combobox';
+import { MoneyInput } from '@/components/ui/money-input';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -14,9 +14,9 @@ import { getCurrentMonth } from '@/utils/gantt-v2/monthRange';
 const mayorSchema = z.object({
   mayor_id: z.string().min(1, "Debe seleccionar un mayor"),
   amount: z.number().min(0.01, "El importe debe ser mayor a 0"),
-  start_month: z.string().min(1, "Debe seleccionar el mes de inicio"),
+  start_month: z.string().regex(/^\d{6}$/, "Formato de mes inválido (YYYYMM)"),
   start_week: z.number().min(1).max(4, "Selecciona una semana válida"),
-  end_month: z.string().min(1, "Debe seleccionar el mes de fin"),
+  end_month: z.string().regex(/^\d{6}$/, "Formato de mes inválido (YYYYMM)"),
   end_week: z.number().min(1).max(4, "Selecciona una semana válida"),
 }).refine((data) => {
   const startMonthNum = parseInt(data.start_month);
@@ -151,12 +151,15 @@ export function MayorSelectionModal({
           {/* Amount Input */}
           <div className="space-y-2">
             <Label>Importe</Label>
-            <Input
-              type="number"
-              step="0.01"
-              min="0.01"
-              placeholder="0.00"
-              {...form.register('amount', { valueAsNumber: true })}
+            <Controller
+              name="amount"
+              control={form.control}
+              render={({ field }) => (
+                <MoneyInput
+                  value={field.value || 0}
+                  onChange={field.onChange}
+                />
+              )}
             />
             {form.formState.errors.amount && (
               <p className="text-sm text-destructive">

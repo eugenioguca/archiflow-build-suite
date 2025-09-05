@@ -22,7 +22,9 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
     plan,
     lines,
     isLoading,
+    isFetching,
     updatePlan,
+    addLineWithActivity,
     createLine,
     updateLine,
     deleteLine,
@@ -52,27 +54,19 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
     end_month: string;
     end_week: number;
   }) => {
-    if (!plan) return;
-    
-    // First create the line
-    const result = await createLine.mutateAsync({
-      plan_id: plan.id,
-      line_no: 0, // Will be set automatically
-      mayor_id: mayorData.mayor_id,
-      is_discount: false,
-      amount: mayorData.amount,
-      order_index: lines.length,
-    });
-
-    // Then create an activity for the timeline
-    if (result && result.id) {
-      await createActivity.mutateAsync({
-        line_id: result.id,
+    try {
+      await addLineWithActivity.mutateAsync({
+        mayor_id: mayorData.mayor_id,
+        amount: mayorData.amount,
+        is_discount: false,
         start_month: mayorData.start_month,
         start_week: mayorData.start_week,
         end_month: mayorData.end_month,
         end_week: mayorData.end_week,
       });
+      setShowMayorModal(false);
+    } catch (error) {
+      console.error('Error creating line with activity:', error);
     }
   };
 
@@ -161,7 +155,7 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
             onUpdatePlan={updatePlan.mutateAsync}
             onAddMayor={handleAddMayor}
             onAddDiscount={handleAddDiscount}
-            isLoading={isLoading}
+            isLoading={isLoading || isFetching}
           />
 
           {/* Gantt Grid */}
@@ -174,7 +168,8 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
             onAddActivity={handleAddActivity}
             onEditActivity={handleEditActivity}
             onDeleteActivity={deleteActivity.mutateAsync}
-            isLoading={isLoading}
+            isLoading={isLoading || isFetching}
+            isFetching={isFetching}
           />
 
           {/* Matrix Section */}

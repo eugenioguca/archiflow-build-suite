@@ -18,6 +18,7 @@ interface GanttGridProps {
   onEditActivity: (activity: GanttActivity) => void;
   onDeleteActivity: (id: string) => Promise<any>;
   isLoading: boolean;
+  isFetching?: boolean;
 }
 
 export function GanttGrid({
@@ -29,7 +30,8 @@ export function GanttGrid({
   onAddActivity,
   onEditActivity,
   onDeleteActivity,
-  isLoading
+  isLoading,
+  isFetching = false
 }: GanttGridProps) {
   if (!plan) return null;
 
@@ -91,7 +93,7 @@ export function GanttGrid({
                   onAddActivity={onAddActivity}
                   onEditActivity={onEditActivity}
                   onDeleteActivity={onDeleteActivity}
-                  isLoading={isLoading}
+            isLoading={isLoading || isFetching}
                 />
               ))}
               
@@ -129,7 +131,7 @@ export function GanttGrid({
                       onAddActivity={onAddActivity}
                       onEditActivity={onEditActivity}
                       onDeleteActivity={onDeleteActivity}
-                      isLoading={isLoading}
+                      isLoading={isLoading || isFetching}
                     />
                   ))}
                 </>
@@ -154,7 +156,7 @@ export function GanttGrid({
           </Table>
         </div>
         
-        {isLoading && (
+        {(isLoading || isFetching) && (
           <div className="flex items-center justify-center py-8">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -163,7 +165,7 @@ export function GanttGrid({
           </div>
         )}
         
-        {lines.length === 0 && !isLoading && (
+        {lines.length === 0 && !isLoading && !isFetching && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="text-muted-foreground">
               <p className="text-lg font-medium mb-2">Sin líneas en el cronograma</p>
