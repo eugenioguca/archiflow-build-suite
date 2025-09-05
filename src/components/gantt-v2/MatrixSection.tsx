@@ -103,6 +103,12 @@ export function MatrixSection({
     return override ? parseFloat(override.valor) : calculatedValue;
   };
 
+  // Helper function to get text override value (for fecha_pago)
+  const getTextOverride = (mes: string, concepto: string, defaultValue: string = ''): string => {
+    const override = overrides.find(o => o.mes === parseInt(mes, 10) && o.concepto === concepto);
+    return override ? override.valor : defaultValue;
+  };
+
   const hasOverride = (mes: string, concepto: string) => {
     return overrides.some(o => o.mes === parseInt(mes, 10) && o.concepto === concepto);
   };
@@ -157,7 +163,7 @@ export function MatrixSection({
                     {concept.label}
                   </TableCell>
                   {monthRange.map((month) => {
-                    let value = 0;
+                    let value: number | string = 0;
                     
                     // Calculate values based on concept
                     switch (concept.key) {
@@ -176,6 +182,10 @@ export function MatrixSection({
                       case 'inversion_acumulada':
                         value = getValueOrOverride(month.value, concept.key, 0);
                         break;
+                      case 'fecha_pago':
+                        // Handle fecha_pago as string
+                        value = getTextOverride(month.value, concept.key, '');
+                        break;
                       default:
                         value = 0;
                         break;
@@ -189,9 +199,21 @@ export function MatrixSection({
                         className={`text-center border-r ${isOverridden ? 'bg-amber-50 text-amber-800' : ''}`}
                       >
                         <div className="flex items-center justify-center gap-1">
-                          {concept.format === 'currency' && formatCurrency(value)}
-                          {concept.format === 'percent' && `${value.toFixed(2)}%`}
-                          {concept.format === 'text' && (value || '-')}
+                          {concept.format === 'currency' && formatCurrency(value as number)}
+                          {concept.format === 'percent' && `${(value as number).toFixed(2)}%`}
+                          {concept.format === 'text' && (() => {
+                            const textValue = value as string;
+                            if (!textValue) return '-';
+                            
+                            // If it's a number, format as "Día X"
+                            const numValue = parseInt(textValue, 10);
+                            if (!isNaN(numValue) && numValue >= 1 && numValue <= 31) {
+                              return `Día ${numValue}`;
+                            }
+                            
+                            // Otherwise show the text as-is (for "Pago 1", "Primera Quincena", etc.)
+                            return textValue;
+                          })()}
                           {isOverridden && (
                             <Edit2 className="h-3 w-3 text-amber-600" />
                           )}

@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { MoneyInput } from '@/components/ui/money-input';
 import {
@@ -421,12 +422,27 @@ export function MatrixEditorModal({
                             </Button>
                           )}
                         </div>
-                        <Input
+                        <Select
                           value={value}
-                          onChange={(e) => handleInputChange(month.value, 'fecha_pago', e.target.value)}
-                          className={isOverridden ? 'bg-amber-50' : ''}
-                          placeholder="Ej: Pago 1, 15 del mes"
-                        />
+                          onValueChange={(val) => handleInputChange(month.value, 'fecha_pago', val)}
+                        >
+                          <SelectTrigger className={isOverridden ? 'bg-amber-50' : ''}>
+                            <SelectValue placeholder="Seleccionar día..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">Sin fecha</SelectItem>
+                            <SelectItem value="Pago 1">Pago 1</SelectItem>
+                            <SelectItem value="Pago 2">Pago 2</SelectItem>
+                            <SelectItem value="Pago 3">Pago 3</SelectItem>
+                            <SelectItem value="Primera Quincena">Primera Quincena</SelectItem>
+                            <SelectItem value="Segunda Quincena">Segunda Quincena</SelectItem>
+                            {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                              <SelectItem key={day} value={day.toString()}>
+                                Día {day}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     );
                   })}

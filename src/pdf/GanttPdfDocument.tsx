@@ -749,7 +749,13 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                 let cellValue = '';
                 if (hasOverride && override) {
                   if (row.key === 'fecha_pago') {
-                    cellValue = override.valor;
+                    let displayText = override.valor;
+                    // If it's a number, format as "Día X"
+                    const numValue = parseInt(override.valor, 10);
+                    if (!isNaN(numValue) && numValue >= 1 && numValue <= 31) {
+                      displayText = `Día ${numValue}`;
+                    }
+                    cellValue = displayText;
                   } else if (row.key.includes('avance') || row.key.includes('inversion')) {
                     cellValue = `${parseFloat(override.valor).toFixed(1)}%`;
                   } else {
@@ -758,8 +764,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                 } else {
                   // Use automatic values
                   if (row.key === 'fecha_pago') {
-                    const paymentDate = new Date(Math.floor(parseInt(month) / 100), (parseInt(month) % 100) - 1, 15);
-                    cellValue = paymentDate.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' });
+                    cellValue = '-';
                   } else if (row.key === 'gasto_obra') {
                     cellValue = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(automaticValue);
                   } else if (row.key.includes('avance')) {
