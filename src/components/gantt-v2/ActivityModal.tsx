@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,22 +10,34 @@ import { z } from 'zod';
 import { generateMonthRange } from '@/utils/gantt-v2/monthRange';
 import { expandRangeToMonthWeekCells } from '@/utils/gantt-v2/weekMath';
 
-const yyyyMm = /^(19|20)\d{2}(0[1-9]|1[0-2])$/;
+const yyyyMm = /^\d{6}$/;
 
 const activitySchema = z.object({
-  start_month: z.string().regex(yyyyMm, "Formato de mes inválido"),
+  start_month: z.string().regex(yyyyMm, "Formato de mes inválido (YYYYMM)"),
   start_week: z.number().int().min(1).max(4),
-  end_month: z.string().regex(yyyyMm, "Formato de mes inválido"),
+  end_month: z.string().regex(yyyyMm, "Formato de mes inválido (YYYYMM)"),
   end_week: z.number().int().min(1).max(4),
-}).refine((data) => {
-  const startNum = parseInt(data.start_month);
-  const endNum = parseInt(data.end_month);
-  if (startNum > endNum) return false;
-  if (startNum === endNum && data.start_week > data.end_week) return false;
-  return true;
-}, {
-  message: "El mes de fin no puede ser anterior al mes de inicio",
-  path: ["end_month"]
+}).superRefine((val, ctx) => {
+  const s = Number(val.start_month);
+  const e = Number(val.end_month);
+  
+  // Mes de fin no puede ser anterior al mes de inicio
+  if (e < s) {
+    ctx.addIssue({
+      path: ["end_month"],
+      code: "custom",
+      message: "El mes de fin no puede ser anterior al mes de inicio",
+    });
+  }
+  
+  // Si mismo mes, semana fin no puede ser menor que semana inicio
+  if (e === s && val.end_week < val.start_week) {
+    ctx.addIssue({
+      path: ["end_week"],
+      code: "custom",
+      message: "La semana de fin no puede ser menor que la semana de inicio",
+    });
+  }
 });
 
 interface ActivityModalProps {
@@ -58,17 +70,41 @@ export function ActivityModal({
     }
   });
 
-  // Auto-suggest end month and week based on start month
-  const watchedStartMonth = form.watch('start_month');
+  // Watch form values for synchronization effects
+  const { watch, setValue, getValues } = form;
+  const watchedStartMonth = watch('start_month');
+  const watchedStartWeek = watch('start_week');
+  const watchedEndMonth = watch('end_month');
+  const watchedEndWeek = watch('end_week');
   
-  React.useEffect(() => {
-    if (watchedStartMonth && !initialData) {
-      // Auto-suggest same month as start month
-      form.setValue('end_month', watchedStartMonth);
-      // Reset end week to week 1
-      form.setValue('end_week', 1);
+  // Effect 1: Auto-suggest end month when start month changes
+  useEffect(() => {
+    if (!watchedStartMonth) return;
+    
+    // Auto-suggest fin = inicio if fin is empty or invalid
+    if (!watchedEndMonth || Number(watchedEndMonth) < Number(watchedStartMonth)) {
+      setValue('end_month', watchedStartMonth, { shouldValidate: true, shouldDirty: true });
+      setValue('end_week', 1, { shouldValidate: true, shouldDirty: true });
     }
-  }, [watchedStartMonth, form, initialData]);
+  }, [watchedStartMonth, setValue, watchedEndMonth]);
+
+  // Effect 2: Reset end_week to 1 when end_month changes
+  useEffect(() => {
+    if (watchedEndMonth) {
+      setValue('end_week', 1, { shouldValidate: true, shouldDirty: true });
+    }
+  }, [watchedEndMonth, setValue]);
+
+  // Effect 3: Force end_week = start_week if same month and end_week < start_week
+  useEffect(() => {
+    const sM = Number(getValues('start_month'));
+    const eM = Number(getValues('end_month'));
+    const eW = getValues('end_week');
+    
+    if (sM === eM && eW < watchedStartWeek) {
+      setValue('end_week', watchedStartWeek, { shouldValidate: true, shouldDirty: true });
+    }
+  }, [watchedStartWeek, setValue, getValues]);
 
   // Generate month options (current month ± 12 months)
   const currentMonth = new Date();
@@ -169,10 +205,9 @@ export function ActivityModal({
                 <SelectContent>
                   {monthOptions
                     .filter((month) => {
-                      // Only show months >= start_month to prevent selecting earlier months
-                      const startMonth = form.watch('start_month');
-                      if (!startMonth) return true;
-                      return parseInt(month.value) >= parseInt(startMonth);
+                      // Filter: only show months >= start_month
+                      if (!watchedStartMonth) return true;
+                      return Number(month.value) >= Number(watchedStartMonth);
                     })
                     .map((month) => (
                       <SelectItem key={month.value} value={month.value}>
@@ -199,10 +234,20 @@ export function ActivityModal({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">Semana 1</SelectItem>
-                  <SelectItem value="2">Semana 2</SelectItem>
-                  <SelectItem value="3">Semana 3</SelectItem>
-                  <SelectItem value="4">Semana 4</SelectItem>
+                  {/* Filter weeks: if same month, can't select week < start_week */}
+                  {[1, 2, 3, 4]
+                    .filter(week => {
+                      if (!watchedStartMonth || !watchedEndMonth) return true;
+                      if (Number(watchedStartMonth) === Number(watchedEndMonth)) {
+                        return week >= watchedStartWeek;
+                      }
+                      return true;
+                    })
+                    .map(week => (
+                      <SelectItem key={week} value={week.toString()}>
+                        Semana {week}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
               {form.formState.errors.end_week && (

@@ -21,30 +21,39 @@ import {
   getCurrentMonth
 } from '@/utils/cronogramaWeekUtils';
 
-// Schema validation for modern Gantt activity with YYYYMM format
-const yyyyMm = /^(19|20)\d{2}(0[1-9]|1[0-2])$/;
+// Schema validation with superRefine for proper YYYYMM validation
+const yyyyMm = /^\d{6}$/;
 
 const ganttActivitySchema = z.object({
   departamento_id: z.string().min(1, 'El departamento es requerido'),
   mayor_id: z.string().min(1, 'El mayor es requerido'),
-  start_month: z.string().regex(yyyyMm, 'Formato de mes inválido'),
-  start_week: z.number().min(1).max(4, 'La semana debe estar entre 1 y 4'),
-  end_month: z.string().regex(yyyyMm, 'Formato de mes inválido'),
-  end_week: z.number().min(1).max(4, 'La semana debe estar entre 1 y 4'),
+  start_month: z.string().regex(yyyyMm, 'Formato de mes inválido (YYYYMM)'),
+  start_week: z.number().int().min(1).max(4, 'La semana debe estar entre 1 y 4'),
+  end_month: z.string().regex(yyyyMm, 'Formato de mes inválido (YYYYMM)'),
+  end_week: z.number().int().min(1).max(4, 'La semana debe estar entre 1 y 4'),
   duration_weeks: z.number().min(1, 'La duración debe ser mayor a 0').default(1),
-}).refine(
-  (data) => {
-    const validation = validateMonthWeekRange(
-      { month: data.start_month, week: data.start_week },
-      { month: data.end_month, week: data.end_week }
-    );
-    return validation.isValid;
-  },
-  {
-    message: "El mes de fin no puede ser anterior al mes de inicio",
-    path: ["end_month"],
+}).superRefine((val, ctx) => {
+  const s = Number(val.start_month);
+  const e = Number(val.end_month);
+  
+  // Mes de fin no puede ser anterior al mes de inicio
+  if (e < s) {
+    ctx.addIssue({
+      path: ["end_month"],
+      code: "custom",
+      message: "El mes de fin no puede ser anterior al mes de inicio",
+    });
   }
-);
+  
+  // Si mismo mes, semana fin no puede ser menor que semana inicio
+  if (e === s && val.end_week < val.start_week) {
+    ctx.addIssue({
+      path: ["end_week"],
+      code: "custom",
+      message: "La semana de fin no puede ser menor que la semana de inicio",
+    });
+  }
+});
 
 type GanttActivityFormData = z.infer<typeof ganttActivitySchema>;
 
@@ -117,31 +126,52 @@ export function ModernGanttActivityModal({
     }
   }, [open, initialData, form, loadDepartamentos]);
 
-  // Auto-calculate duration when month/week changes
-  const startMonth = form.watch('start_month');
-  const startWeek = form.watch('start_week');
-  const endMonth = form.watch('end_month');
-  const endWeek = form.watch('end_week');
+  // Watch form values for synchronization effects
+  const { watch, setValue, getValues, trigger } = form;
+  const startMonth = watch('start_month');
+  const startWeek = watch('start_week');
+  const endMonth = watch('end_month');
+  const endWeek = watch('end_week');
   
-  // Auto-suggest end month and week based on start month
+  // Effect 1: Auto-suggest end month when start month changes
   useEffect(() => {
-    if (startMonth && !initialData) {
-      // Auto-suggest same month as start month
-      form.setValue('end_month', startMonth);
-      // Reset end week to week 1
-      form.setValue('end_week', 1);
+    if (!startMonth) return;
+    
+    // Auto-suggest fin = inicio if fin is empty or invalid
+    if (!endMonth || Number(endMonth) < Number(startMonth)) {
+      setValue('end_month', startMonth, { shouldValidate: true, shouldDirty: true });
+      setValue('end_week', 1, { shouldValidate: true, shouldDirty: true });
     }
-  }, [startMonth, form, initialData]);
+  }, [startMonth, setValue, endMonth]);
+
+  // Effect 2: Reset end_week to 1 when end_month changes
+  useEffect(() => {
+    if (endMonth) {
+      setValue('end_week', 1, { shouldValidate: true, shouldDirty: true });
+    }
+  }, [endMonth, setValue]);
+
+  // Effect 3: Force end_week = start_week if same month and end_week < start_week
+  useEffect(() => {
+    const sM = Number(getValues('start_month'));
+    const eM = Number(getValues('end_month'));
+    const eW = getValues('end_week');
+    
+    if (sM === eM && eW < startWeek) {
+      setValue('end_week', startWeek, { shouldValidate: true, shouldDirty: true });
+    }
+  }, [startWeek, setValue, getValues]);
   
+  // Effect 4: Calculate duration when any month/week changes
   useEffect(() => {
     if (startMonth && startWeek && endMonth && endWeek) {
       const duration = weeksBetween(
         { month: startMonth, week: startWeek },
         { month: endMonth, week: endWeek }
       );
-      form.setValue('duration_weeks', duration);
+      setValue('duration_weeks', duration);
     }
-  }, [startMonth, startWeek, endMonth, endWeek, form]);
+  }, [startMonth, startWeek, endMonth, endWeek, setValue]);
 
   // Reset mayor when departamento changes
   const departamentoId = form.watch('departamento_id');
@@ -337,10 +367,9 @@ export function ModernGanttActivityModal({
                       <SelectContent>
                         {monthOptions
                           .filter((month) => {
-                            // Only show months >= start_month to prevent selecting earlier months
-                            const currentStartMonth = form.watch('start_month');
-                            if (!currentStartMonth) return true;
-                            return parseInt(month.value) >= parseInt(currentStartMonth);
+                            // Filter: only show months >= start_month
+                            if (!startMonth) return true;
+                            return Number(month.value) >= Number(startMonth);
                           })
                           .map(month => (
                             <SelectItem key={month.value} value={month.value}>
@@ -370,10 +399,20 @@ export function ModernGanttActivityModal({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="1">W1 - Semana 1</SelectItem>
-                        <SelectItem value="2">W2 - Semana 2</SelectItem>
-                        <SelectItem value="3">W3 - Semana 3</SelectItem>
-                        <SelectItem value="4">W4 - Semana 4</SelectItem>
+                        {/* Filter weeks: if same month, can't select week < start_week */}
+                        {[1, 2, 3, 4]
+                          .filter(week => {
+                            if (!startMonth || !endMonth) return true;
+                            if (Number(startMonth) === Number(endMonth)) {
+                              return week >= startWeek;
+                            }
+                            return true;
+                          })
+                          .map(week => (
+                            <SelectItem key={week} value={week.toString()}>
+                              W{week} - Semana {week}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -438,7 +477,7 @@ export function ModernGanttActivityModal({
               </Button>
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !form.formState.isValid}
                 className="min-w-[120px]"
               >
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
