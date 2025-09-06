@@ -465,10 +465,12 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
         <View style={styles.projectDetails}>
           <View style={styles.detailsLeft}>
             <Text style={styles.detailLabel}>PROYECTO:</Text>
-            <Text style={styles.detailValue}>{project?.project_name || 'N/A'}</Text>
+            <Text style={styles.detailValue}>{project?.project_name ? `${project.project_name} – ${client?.full_name || 'Cliente'}` : 'N/A'}</Text>
             <Text style={styles.detailLabel}>UBICACIÓN:</Text>
             <Text style={styles.detailValue}>{project?.project_location || 'N/A'}</Text>
-            <Text style={styles.detailLabel}>ÁREA:</Text>
+            <Text style={styles.detailLabel}>SUPERFICIE DE TERRENO:</Text>
+            <Text style={styles.detailValue}>{project?.land_surface_area ? `${project.land_surface_area} m²` : 'N/A'}</Text>
+            <Text style={styles.detailLabel}>ÁREA DE CONSTRUCCIÓN:</Text>
             <Text style={styles.detailValue}>{project?.construction_area ? `${project.construction_area} m²` : 'N/A'}</Text>
           </View>
           <View style={styles.detailsRight}>

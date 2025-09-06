@@ -22,7 +22,7 @@ export async function buildGanttPdf(options: BuildGanttPdfOptions): Promise<Blob
     const [companyResult, clientResult, projectResult] = await Promise.all([
       supabase.from('company_branding').select('*').limit(1).maybeSingle(),
       supabase.from('clients').select('full_name, email, phone').eq('id', clientId).single(),
-      supabase.from('client_projects').select('project_name, project_location, construction_start_date').eq('id', projectId).single()
+      supabase.from('client_projects').select('project_name, project_location, construction_area, land_surface_area, construction_start_date').eq('id', projectId).single()
     ]);
 
     const companyBranding = companyResult.data || {

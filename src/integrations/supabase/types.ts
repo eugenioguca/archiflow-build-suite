@@ -1151,6 +1151,7 @@ export type Database = {
           has_existing_design: boolean | null
           id: string
           land_square_meters: number | null
+          land_surface_area: number | null
           last_activity_date: string | null
           last_contact_date: string | null
           lead_referral_details: string | null
@@ -1209,6 +1210,7 @@ export type Database = {
           has_existing_design?: boolean | null
           id?: string
           land_square_meters?: number | null
+          land_surface_area?: number | null
           last_activity_date?: string | null
           last_contact_date?: string | null
           lead_referral_details?: string | null
@@ -1267,6 +1269,7 @@ export type Database = {
           has_existing_design?: boolean | null
           id?: string
           land_square_meters?: number | null
+          land_surface_area?: number | null
           last_activity_date?: string | null
           last_contact_date?: string | null
           lead_referral_details?: string | null

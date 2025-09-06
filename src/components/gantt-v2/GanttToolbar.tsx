@@ -151,6 +151,8 @@ export function GanttToolbar({
       <CompanyBrandingModal 
         open={showBrandingModal}
         onOpenChange={setShowBrandingModal}
+        clientId={clientId}
+        projectId={projectId}
       />
     </Card>
   );
