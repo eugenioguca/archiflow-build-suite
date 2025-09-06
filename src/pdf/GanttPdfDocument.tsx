@@ -5,6 +5,7 @@ import {
   Text,
   View,
   StyleSheet,
+  Image,
 } from '@react-pdf/renderer';
 import type { GanttPlan, GanttLine } from '@/hooks/gantt-v2/useGantt';
 import type { MatrixOverride } from '@/hooks/gantt-v2/useMatrixOverrides';
@@ -55,6 +56,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     letterSpacing: 3,
     textTransform: 'uppercase',
+  },
+  companyLogo: {
+    width: 50,
+    height: 20,
+    marginBottom: 4,
   },
   companyContact: {
     color: COLORS.white,
@@ -406,7 +412,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
         {/* Corporate Header */}
         <View style={styles.corporateHeader}>
           <View style={styles.companySection}>
-            <Text style={styles.companyName}>{companyBranding?.company_name || 'DOVITA CONSTRUCCIONES'}</Text>
+            <Image style={styles.companyLogo} src="/lovable-uploads/7e912d57-0668-4714-a6b3-74048ae4d802.png" />
             <Text style={styles.companyContact}>
               {[companyBranding?.website, companyBranding?.email, companyBranding?.phone].filter(Boolean).join(' | ')}
             </Text>
@@ -581,7 +587,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            {companyBranding?.company_name || 'DOVITA CONSTRUCCIONES'} • Confidencial
+            DOVITA • Confidencial
           </Text>
           <Text style={styles.footerText}>Página 1 de 2</Text>
           <Text style={styles.footerText}>Generado: {new Date().toLocaleDateString('es-MX')}</Text>
@@ -593,7 +599,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
         {/* Header */}
         <View style={styles.corporateHeader}>
           <View style={styles.companySection}>
-            <Text style={styles.companyName}>{companyBranding?.company_name || 'DOVITA CONSTRUCCIONES'}</Text>
+            <Image style={styles.companyLogo} src="/lovable-uploads/7e912d57-0668-4714-a6b3-74048ae4d802.png" />
           </View>
           <View style={styles.projectSection}>
             <Text style={styles.documentTitle}>MATRIZ NUMÉRICA MENSUAL</Text>
@@ -812,7 +818,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            {companyBranding?.company_name || 'DOVITA CONSTRUCCIONES'} • Confidencial
+            DOVITA • Confidencial
           </Text>
           <Text style={styles.footerText}>Página 2 de 2</Text>
           <Text style={styles.footerText}>Generado: {new Date().toLocaleDateString('es-MX')}</Text>
