@@ -561,7 +561,6 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                 {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(total)}
               </Text>
               <Text style={[styles.percentCell, { fontWeight: 'bold', color: COLORS.text }]}>
-                {subtotal > 0 ? ((total / subtotal) * 100).toFixed(1) : '0.0'}%
               </Text>
             </View>
           </View>
