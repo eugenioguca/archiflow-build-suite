@@ -58,9 +58,10 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   companyLogo: {
-    width: 50,
-    height: 20,
+    width: 200,
+    height: 60,
     marginBottom: 4,
+    objectFit: 'contain',
   },
   companyContact: {
     color: COLORS.white,
@@ -378,19 +379,38 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
   console.log('💚 PDF RENDER: Discounts will be green color:', COLORS.success);
   console.log('📊 PDF RENDER: Total row will use normal text color:', COLORS.text);
   
-  // Try to use the logo, but fallback to text if image fails
-  const renderCompanyHeader = () => {
+  // Function to load and convert image to base64
+  const loadImageAsBase64 = async (imageUrl: string): Promise<string> => {
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('Error loading image:', error);
+      throw error;
+    }
+  };
+  
+  const renderCompanyLogo = () => {
+    // Use the uploaded logo - it should work with absolute path in @react-pdf/renderer
+    const logoSrc = window.location.origin + '/lovable-uploads/d967a2e5-99bb-4992-8a2d-f0887371c03c.png';
+    
     try {
       return (
         <Image 
           style={styles.companyLogo} 
-          src="https://raw.githubusercontent.com/lovable-dev/lovable-assets/main/dovita-logo.png"
+          src={logoSrc}
         />
       );
     } catch (error) {
-      console.log('PDF: Falling back to text logo');
+      console.log('PDF: Error loading logo, falling back to text');
       return (
-        <Text style={styles.companyName}>DOVITA CONSTRUCCIONES</Text>
+        <Text style={styles.companyName}>DOVITA</Text>
       );
     }
   };
@@ -429,7 +449,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
         {/* Corporate Header */}
         <View style={styles.corporateHeader}>
           <View style={styles.companySection}>
-            <Text style={styles.companyName}>DOVITA CONSTRUCCIONES</Text>
+            {renderCompanyLogo()}
             <Text style={styles.companyContact}>
               {[companyBranding?.website, companyBranding?.email, companyBranding?.phone].filter(Boolean).join(' | ')}
             </Text>
@@ -616,7 +636,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
         {/* Header */}
         <View style={styles.corporateHeader}>
           <View style={styles.companySection}>
-            <Text style={styles.companyName}>DOVITA CONSTRUCCIONES</Text>
+            {renderCompanyLogo()}
           </View>
           <View style={styles.projectSection}>
             <Text style={styles.documentTitle}>MATRIZ NUMÉRICA MENSUAL</Text>
