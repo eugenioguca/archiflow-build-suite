@@ -48,7 +48,8 @@ export function MatrixEditorModal({
 }: MatrixEditorModalProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState<Record<string, Record<string, string>>>({});
+  const [editableValues, setEditableValues] = useState<Record<string, Record<string, string>>>({});
+  const [initialValues, setInitialValues] = useState<Record<string, Record<string, string>>>({});
 
   const monthRange = generateMonthRange(plan.start_month, plan.months_count);
   const mayorLines = lines.filter(line => !line.is_discount);
@@ -115,7 +116,7 @@ export function MatrixEditorModal({
   const automaticValues = calculateAutomaticValues();
 
   // Helper function to get override value or calculated value
-  const getValueOrDefault = (mes: string, concepto: string, defaultValue: number | string = 0): string => {
+  const getInitialValue = (mes: string, concepto: string, defaultValue: number | string = 0): string => {
     const override = overrides.find(o => o.mes === parseInt(mes, 10) && o.concepto === concepto);
     if (override) return override.valor;
     
@@ -136,28 +137,42 @@ export function MatrixEditorModal({
     return overrides.some(o => o.mes === parseInt(mes, 10) && o.concepto === concepto);
   };
 
-  // Initialize form data
+  // Get current value (editable or initial)
+  const getCurrentValue = (month: string, concepto: string): string => {
+    return editableValues[month]?.[concepto] ?? initialValues[month]?.[concepto] ?? '';
+  };
+
+  // Initialize values only when modal opens (not on every override change)
   useEffect(() => {
-    if (open) {
+    if (open && Object.keys(initialValues).length === 0) {
       const initialData: Record<string, Record<string, string>> = {};
       
       monthRange.forEach(month => {
         initialData[month.value] = {
-          gasto_obra: getValueOrDefault(month.value, 'gasto_obra'),
-          avance_parcial: getValueOrDefault(month.value, 'avance_parcial'),
-          avance_acumulado: getValueOrDefault(month.value, 'avance_acumulado'),
-          ministraciones: getValueOrDefault(month.value, 'ministraciones'),
-          inversion_acumulada: getValueOrDefault(month.value, 'inversion_acumulada'),
-          fecha_pago: getValueOrDefault(month.value, 'fecha_pago', ''),
+          gasto_obra: getInitialValue(month.value, 'gasto_obra'),
+          avance_parcial: getInitialValue(month.value, 'avance_parcial'),
+          avance_acumulado: getInitialValue(month.value, 'avance_acumulado'),
+          ministraciones: getInitialValue(month.value, 'ministraciones'),
+          inversion_acumulada: getInitialValue(month.value, 'inversion_acumulada'),
+          fecha_pago: getInitialValue(month.value, 'fecha_pago', ''),
         };
       });
       
-      setFormData(initialData);
+      setInitialValues(initialData);
+      setEditableValues({}); // Reset editable values
     }
-  }, [open, monthRange, overrides]);
+  }, [open]);
+
+  // Reset values when modal closes
+  useEffect(() => {
+    if (!open) {
+      setInitialValues({});
+      setEditableValues({});
+    }
+  }, [open]);
 
   const handleInputChange = (month: string, concepto: string, value: string) => {
-    setFormData(prev => ({
+    setEditableValues(prev => ({
       ...prev,
       [month]: {
         ...prev[month] || {},
@@ -170,15 +185,17 @@ export function MatrixEditorModal({
     try {
       await onDeleteOverride({ mes: month, concepto });
       
-      // Reset to automatic value
-      const automaticValue = getValueOrDefault(month, concepto);
-      setFormData(prev => ({
-        ...prev,
-        [month]: {
-          ...prev[month] || {},
-          [concepto]: automaticValue
+      // Reset to automatic value by removing from editable values
+      setEditableValues(prev => {
+        const newValues = { ...prev };
+        if (newValues[month]) {
+          delete newValues[month][concepto];
+          if (Object.keys(newValues[month]).length === 0) {
+            delete newValues[month];
+          }
         }
-      }));
+        return newValues;
+      });
 
       toast({
         title: "Campo restablecido",
@@ -200,14 +217,14 @@ export function MatrixEditorModal({
       const overridesToSave: Array<Omit<MatrixOverride, 'id' | 'created_at' | 'updated_at'>> = [];
       
       monthRange.forEach(month => {
-        const monthData = formData[month.value];
-        if (!monthData) return;
+        const monthEditableData = editableValues[month.value];
+        if (!monthEditableData) return;
         
-        Object.entries(monthData).forEach(([concepto, valor]) => {
-          const automaticValue = getValueOrDefault(month.value, concepto);
-          const isOverride = valor !== automaticValue;
+        Object.entries(monthEditableData).forEach(([concepto, valor]) => {
+          const originalValue = initialValues[month.value]?.[concepto] || '';
+          const isChanged = valor !== originalValue;
           
-          if (isOverride && valor.trim() !== '') {
+          if (isChanged && typeof valor === 'string' && valor.trim() !== '') {
             overridesToSave.push({
               cliente_id: clientId,
               proyecto_id: projectId,
@@ -305,9 +322,9 @@ export function MatrixEditorModal({
                   <h3 className="text-lg font-semibold">Ministraciones (MXN)</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {monthRange.map(month => {
+                {monthRange.map(month => {
                     const isOverridden = hasOverride(month.value, 'ministraciones');
-                    const value = formData[month.value]?.ministraciones || '0';
+                    const value = getCurrentValue(month.value, 'ministraciones') || '0';
                     const isValid = validateCurrency(value);
                     
                     return (
@@ -361,7 +378,7 @@ export function MatrixEditorModal({
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {monthRange.map(month => {
                     const isOverridden = hasOverride(month.value, 'inversion_acumulada');
-                    const value = formData[month.value]?.inversion_acumulada || '0';
+                    const value = getCurrentValue(month.value, 'inversion_acumulada') || '0';
                     const isValid = validatePercentage(value);
                     
                     return (
@@ -416,7 +433,7 @@ export function MatrixEditorModal({
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {monthRange.map(month => {
                     const isOverridden = hasOverride(month.value, 'fecha_pago');
-                    const value = formData[month.value]?.fecha_pago || '';
+                    const value = getCurrentValue(month.value, 'fecha_pago') || '';
                     
                     return (
                       <div key={month.value} className="space-y-2">
@@ -473,11 +490,11 @@ export function MatrixEditorModal({
                   <Badge variant="secondary" className="text-xs">Calculado automáticamente</Badge>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {monthRange.map(month => {
-                    const isOverridden = hasOverride(month.value, 'gasto_obra');
-                    const value = formData[month.value]?.gasto_obra || '0';
-                    const automaticValue = automaticValues.gastoEnObra[month.value] || 0;
-                    const isValid = validateCurrency(value);
+                   {monthRange.map(month => {
+                     const isOverridden = hasOverride(month.value, 'gasto_obra');
+                     const value = getCurrentValue(month.value, 'gasto_obra') || '0';
+                     const automaticValue = automaticValues.gastoEnObra[month.value] || 0;
+                     const isValid = validateCurrency(value);
                     
                     return (
                       <div key={month.value} className="space-y-2">
@@ -529,11 +546,11 @@ export function MatrixEditorModal({
                   <Badge variant="secondary" className="text-xs">Calculado automáticamente</Badge>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {monthRange.map(month => {
-                    const isOverridden = hasOverride(month.value, 'avance_parcial');
-                    const value = formData[month.value]?.avance_parcial || '0';
-                    const automaticValue = automaticValues.avanceParcial[month.value] || 0;
-                    const isValid = validatePercentage(value);
+                   {monthRange.map(month => {
+                     const isOverridden = hasOverride(month.value, 'avance_parcial');
+                     const value = getCurrentValue(month.value, 'avance_parcial') || '0';
+                     const automaticValue = automaticValues.avanceParcial[month.value] || 0;
+                     const isValid = validatePercentage(value);
                     
                     return (
                       <div key={month.value} className="space-y-2">
@@ -585,11 +602,11 @@ export function MatrixEditorModal({
                   <Badge variant="secondary" className="text-xs">Calculado automáticamente</Badge>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {monthRange.map(month => {
-                    const isOverridden = hasOverride(month.value, 'avance_acumulado');
-                    const value = formData[month.value]?.avance_acumulado || '0';
-                    const automaticValue = automaticValues.avanceAcumulado[month.value] || 0;
-                    const isValid = validatePercentage(value);
+                   {monthRange.map(month => {
+                     const isOverridden = hasOverride(month.value, 'avance_acumulado');
+                     const value = getCurrentValue(month.value, 'avance_acumulado') || '0';
+                     const automaticValue = automaticValues.avanceAcumulado[month.value] || 0;
+                     const isValid = validatePercentage(value);
                     
                     return (
                       <div key={month.value} className="space-y-2">
