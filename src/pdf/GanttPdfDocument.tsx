@@ -50,10 +50,10 @@ const styles = StyleSheet.create({
   },
   companyName: {
     color: COLORS.white,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 4,
-    letterSpacing: 2,
+    letterSpacing: 3,
     textTransform: 'uppercase',
   },
   companyContact: {
@@ -368,6 +368,9 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
   project,
   companyBranding
 }) => {
+  console.log('🎨 PDF RENDER: Company name will be white with fontSize 20');
+  console.log('💚 PDF RENDER: Discounts will be green color:', COLORS.success);
+  console.log('📊 PDF RENDER: Total row will use normal text color:', COLORS.text);
   // Calculate financial summary correctly
   const mayorLines = lines.filter(line => !line.is_discount);
   const discountLines = lines.filter(line => line.is_discount);
