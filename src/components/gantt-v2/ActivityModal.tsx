@@ -24,7 +24,7 @@ const activitySchema = z.object({
   if (startNum === endNum && data.start_week > data.end_week) return false;
   return true;
 }, {
-  message: "La fecha de fin debe ser posterior o igual a la fecha de inicio",
+  message: "El mes de fin no puede ser anterior al mes de inicio",
   path: ["end_month"]
 });
 
@@ -57,6 +57,18 @@ export function ActivityModal({
       end_week: initialData?.end_week || 1,
     }
   });
+
+  // Auto-suggest end month and week based on start month
+  const watchedStartMonth = form.watch('start_month');
+  
+  React.useEffect(() => {
+    if (watchedStartMonth && !initialData) {
+      // Auto-suggest same month as start month
+      form.setValue('end_month', watchedStartMonth);
+      // Reset end week to week 1
+      form.setValue('end_week', 1);
+    }
+  }, [watchedStartMonth, form, initialData]);
 
   // Generate month options (current month ± 12 months)
   const currentMonth = new Date();
@@ -155,11 +167,18 @@ export function ActivityModal({
                   <SelectValue placeholder="Seleccionar mes" />
                 </SelectTrigger>
                 <SelectContent>
-                  {monthOptions.map((month) => (
-                    <SelectItem key={month.value} value={month.value}>
-                      {month.label}
-                    </SelectItem>
-                  ))}
+                  {monthOptions
+                    .filter((month) => {
+                      // Only show months >= start_month to prevent selecting earlier months
+                      const startMonth = form.watch('start_month');
+                      if (!startMonth) return true;
+                      return parseInt(month.value) >= parseInt(startMonth);
+                    })
+                    .map((month) => (
+                      <SelectItem key={month.value} value={month.value}>
+                        {month.label}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
               {form.formState.errors.end_month && (

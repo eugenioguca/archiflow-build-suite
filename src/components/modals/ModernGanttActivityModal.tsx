@@ -41,7 +41,7 @@ const ganttActivitySchema = z.object({
     return validation.isValid;
   },
   {
-    message: "La fecha de fin debe ser posterior o igual a la fecha de inicio",
+    message: "El mes de fin no puede ser anterior al mes de inicio",
     path: ["end_month"],
   }
 );
@@ -122,6 +122,16 @@ export function ModernGanttActivityModal({
   const startWeek = form.watch('start_week');
   const endMonth = form.watch('end_month');
   const endWeek = form.watch('end_week');
+  
+  // Auto-suggest end month and week based on start month
+  useEffect(() => {
+    if (startMonth && !initialData) {
+      // Auto-suggest same month as start month
+      form.setValue('end_month', startMonth);
+      // Reset end week to week 1
+      form.setValue('end_week', 1);
+    }
+  }, [startMonth, form, initialData]);
   
   useEffect(() => {
     if (startMonth && startWeek && endMonth && endWeek) {
@@ -325,11 +335,18 @@ export function ModernGanttActivityModal({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {monthOptions.map(month => (
-                          <SelectItem key={month.value} value={month.value}>
-                            {month.label}
-                          </SelectItem>
-                        ))}
+                        {monthOptions
+                          .filter((month) => {
+                            // Only show months >= start_month to prevent selecting earlier months
+                            const currentStartMonth = form.watch('start_month');
+                            if (!currentStartMonth) return true;
+                            return parseInt(month.value) >= parseInt(currentStartMonth);
+                          })
+                          .map(month => (
+                            <SelectItem key={month.value} value={month.value}>
+                              {month.label}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
