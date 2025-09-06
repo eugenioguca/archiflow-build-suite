@@ -37,11 +37,11 @@ const styles = StyleSheet.create({
   
   // Corporate header - barra azul superior
   corporateHeader: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#2D4B9A', // Blue matching the logo
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    padding: 12,
+    padding: 15,
     marginBottom: 10,
   },
   
@@ -51,10 +51,10 @@ const styles = StyleSheet.create({
   },
   companyName: {
     color: COLORS.white,
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 4,
-    letterSpacing: 3,
+    letterSpacing: 5,
     textTransform: 'uppercase',
   },
   companyLogo: {
@@ -377,6 +377,23 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
   console.log('🎨 PDF RENDER: Company name will be white with fontSize 20');
   console.log('💚 PDF RENDER: Discounts will be green color:', COLORS.success);
   console.log('📊 PDF RENDER: Total row will use normal text color:', COLORS.text);
+  
+  // Try to use the logo, but fallback to text if image fails
+  const renderCompanyHeader = () => {
+    try {
+      return (
+        <Image 
+          style={styles.companyLogo} 
+          src="https://raw.githubusercontent.com/lovable-dev/lovable-assets/main/dovita-logo.png"
+        />
+      );
+    } catch (error) {
+      console.log('PDF: Falling back to text logo');
+      return (
+        <Text style={styles.companyName}>DOVITA CONSTRUCCIONES</Text>
+      );
+    }
+  };
   // Calculate financial summary correctly
   const mayorLines = lines.filter(line => !line.is_discount);
   const discountLines = lines.filter(line => line.is_discount);
@@ -412,7 +429,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
         {/* Corporate Header */}
         <View style={styles.corporateHeader}>
           <View style={styles.companySection}>
-            <Image style={styles.companyLogo} src="/lovable-uploads/7e912d57-0668-4714-a6b3-74048ae4d802.png" />
+            <Text style={styles.companyName}>DOVITA CONSTRUCCIONES</Text>
             <Text style={styles.companyContact}>
               {[companyBranding?.website, companyBranding?.email, companyBranding?.phone].filter(Boolean).join(' | ')}
             </Text>
@@ -599,7 +616,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
         {/* Header */}
         <View style={styles.corporateHeader}>
           <View style={styles.companySection}>
-            <Image style={styles.companyLogo} src="/lovable-uploads/7e912d57-0668-4714-a6b3-74048ae4d802.png" />
+            <Text style={styles.companyName}>DOVITA CONSTRUCCIONES</Text>
           </View>
           <View style={styles.projectSection}>
             <Text style={styles.documentTitle}>MATRIZ NUMÉRICA MENSUAL</Text>
