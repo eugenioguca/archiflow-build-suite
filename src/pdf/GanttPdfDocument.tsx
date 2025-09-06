@@ -11,18 +11,18 @@ import type { MatrixOverride } from '@/hooks/gantt-v2/useMatrixOverrides';
 import type { Mayor } from '@/hooks/gantt-v2/useMayoresTU';
 import { expandRangeToMonthWeekCells } from '@/utils/gantt-v2/weekMath';
 
-// Professional colors following the reference design
-const COLORS = {
-  primary: '#1E3A8A',      // Corporate blue
-  accent: '#3B82F6',       // Activity blue  
-  secondary: '#F8FAFC',    // Light background
-  text: '#1F2937',         // Dark text
-  textLight: '#6B7280',    // Light text
-  border: '#E5E7EB',       // Borders
-  white: '#FFFFFF',
-  success: '#10B981',      // Green
-  warning: '#F59E0B',      // Orange
-};
+  // Professional colors following the reference design
+  const COLORS = {
+    primary: '#1E3A8A',      // Corporate blue
+    accent: '#3B82F6',       // Activity blue  
+    secondary: '#F8FAFC',    // Light background
+    text: '#1F2937',         // Dark text
+    textLight: '#6B7280',    // Light text
+    border: '#E5E7EB',       // Borders
+    white: '#FFFFFF',
+    success: '#10B981',      // Green for positive values
+    warning: '#F59E0B',      // Orange
+  };
 
 const styles = StyleSheet.create({
   // Page layout
@@ -50,9 +50,11 @@ const styles = StyleSheet.create({
   },
   companyName: {
     color: COLORS.white,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 4,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
   },
   companyContact: {
     color: COLORS.white,
@@ -441,7 +443,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
           </View>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>DESCUENTOS</Text>
-            <Text style={[styles.summaryValue, { color: '#dc2626' }]}>-{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(totalDescuentos)}</Text>
+            <Text style={[styles.summaryValue, { color: COLORS.success }]}>-{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(totalDescuentos)}</Text>
           </View>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>TOTAL</Text>
@@ -493,12 +495,12 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
             
             {/* Discount Rows */}
             {discountLines.map((line) => (
-              <View key={line.id} style={[styles.partidaRow, { backgroundColor: '#fef2f2' }]}>
+              <View key={line.id} style={[styles.partidaRow, { backgroundColor: '#f0fdf4' }]}>
                 <Text style={styles.noCell}></Text>
-                <Text style={[styles.partidaNameCell, { color: '#dc2626' }]}>
+                <Text style={[styles.partidaNameCell, { color: COLORS.success }]}>
                   {line.label || 'Descuento'}
                 </Text>
-                <Text style={[styles.importeCell, { color: '#dc2626' }]}>
+                <Text style={[styles.importeCell, { color: COLORS.success }]}>
                   -{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(line.amount || 0)}
                 </Text>
                 <Text style={styles.percentCell}></Text>
@@ -506,13 +508,13 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
             ))}
             
             {/* Total Row */}
-            <View style={[styles.partidaRow, { backgroundColor: '#3b82f6', opacity: 0.1 }]}>
+            <View style={[styles.partidaRow, { backgroundColor: '#f3f4f6' }]}>
               <Text style={styles.noCell}></Text>
-              <Text style={[styles.partidaNameCell, { fontWeight: 'bold' }]}>TOTAL</Text>
-              <Text style={[styles.importeCell, { fontWeight: 'bold' }]}>
+              <Text style={[styles.partidaNameCell, { fontWeight: 'bold', color: COLORS.text }]}>TOTAL</Text>
+              <Text style={[styles.importeCell, { fontWeight: 'bold', color: COLORS.text }]}>
                 {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(total)}
               </Text>
-              <Text style={[styles.percentCell, { fontWeight: 'bold' }]}>
+              <Text style={[styles.percentCell, { fontWeight: 'bold', color: COLORS.text }]}>
                 {subtotal > 0 ? ((total / subtotal) * 100).toFixed(1) : '0.0'}%
               </Text>
             </View>
