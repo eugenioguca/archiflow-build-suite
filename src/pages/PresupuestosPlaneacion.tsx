@@ -18,7 +18,7 @@ export default function PresupuestosPlaneacion() {
   } = useClientProjectFilters();
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
+    <div className="container mx-auto py-6 space-y-6">
       <div className="space-y-2">
         <h1 className="text-4xl font-bold tracking-tight">Presupuestos y Planeación</h1>
         <p className="text-muted-foreground text-lg">

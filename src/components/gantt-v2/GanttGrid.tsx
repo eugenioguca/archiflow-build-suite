@@ -48,26 +48,18 @@ export function GanttGrid({
       </CardHeader>
       <CardContent className="p-0">
         <div className="overflow-x-auto">
-          <table className="min-w-max border-collapse w-full">
-            <thead>
-              <tr>
-                {/* Fixed sticky columns with cumulative left offsets */}
-                <th className="sticky left-0 z-10 bg-background border-r w-12 p-2 text-center text-sm font-medium">
-                  No.
-                </th>
-                <th className="sticky left-12 z-10 bg-background border-r w-40 p-2 text-left text-sm font-medium">
-                  <span className="truncate block" title="Mayor">Mayor</span>
-                </th>
-                <th className="sticky left-52 z-10 bg-background border-r w-28 p-2 text-right text-sm font-medium">
-                  <span className="truncate block" title="Importe">Importe</span>
-                </th>
-                <th className="sticky left-80 z-10 bg-background border-r w-16 p-2 text-right text-sm font-medium">
-                  %
-                </th>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {/* Fixed columns */}
+                <TableHead className="sticky left-0 z-10 bg-background border-r min-w-[60px]">No.</TableHead>
+                <TableHead className="sticky left-[60px] z-10 bg-background border-r min-w-[200px]">Mayor</TableHead>
+                <TableHead className="sticky left-[260px] z-10 bg-background border-r min-w-[120px]">Importe</TableHead>
+                <TableHead className="sticky left-[380px] z-10 bg-background border-r min-w-[80px]">%</TableHead>
                 
-                {/* Month columns - scrollable */}
+                {/* Month columns */}
                 {monthRange.map((month) => (
-                  <th key={month.value} className="text-center min-w-[100px] border-r p-2">
+                  <TableHead key={month.value} className="text-center min-w-[120px] border-r">
                     <div className="space-y-1">
                       <div className="font-semibold text-xs">{month.label}</div>
                       <div className="flex justify-between text-xs text-muted-foreground">
@@ -77,16 +69,14 @@ export function GanttGrid({
                         <span>W4</span>
                       </div>
                     </div>
-                  </th>
+                  </TableHead>
                 ))}
                 
                 {/* Actions column */}
-                <th className="min-w-[80px] p-2 text-center text-sm font-medium">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                <TableHead className="min-w-[100px]">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {/* Mayor Lines */}
               {mayorLines.map((line) => (
                 <ActivityRow
@@ -103,42 +93,34 @@ export function GanttGrid({
               ))}
               
               {/* Subtotal Row */}
-              <tr className="bg-muted/50 font-medium">
-                <td className="sticky left-0 z-10 bg-muted/50 border-r w-12 p-2"></td>
-                <td className="sticky left-12 z-10 bg-muted/50 border-r w-40 p-2 text-sm">
-                  <span className="truncate block" title="SUBTOTAL">SUBTOTAL</span>
-                </td>
-                <td className="sticky left-52 z-10 bg-muted/50 border-r w-28 p-2 text-sm text-right">
-                  <span className="truncate block" title={formatCurrency(subtotal)}>
-                    {formatCurrency(subtotal)}
-                  </span>
-                </td>
-                <td className="sticky left-80 z-10 bg-muted/50 border-r w-16 p-2 text-sm text-right">100.00%</td>
+              <TableRow className="bg-muted/50 font-medium">
+                <TableCell className="sticky left-0 z-10 bg-muted/50 border-r"></TableCell>
+                <TableCell className="sticky left-[60px] z-10 bg-muted/50 border-r">SUBTOTAL</TableCell>
+                <TableCell className="sticky left-[260px] z-10 bg-muted/50 border-r">
+                  {formatCurrency(subtotal)}
+                </TableCell>
+                <TableCell className="sticky left-[380px] z-10 bg-muted/50 border-r">100.00%</TableCell>
                 {monthRange.map((month) => (
-                  <td key={month.value} className="border-r p-2"></td>
+                  <TableCell key={month.value} className="border-r"></TableCell>
                 ))}
-                <td className="p-2"></td>
-              </tr>
+                <TableCell></TableCell>
+              </TableRow>
               
               {/* Discount Lines */}
               {discountLines.map((line) => (
-                <tr key={line.id} className="bg-red-50/50">
-                  <td className="sticky left-0 z-10 bg-red-50/50 border-r w-12 p-2"></td>
-                  <td className="sticky left-12 z-10 bg-red-50/50 border-r w-40 p-2 text-sm font-medium">
-                    <span className="truncate block" title={line.label || 'Descuento'}>
-                      {line.label || 'Descuento'}
-                    </span>
-                  </td>
-                  <td className="sticky left-52 z-10 bg-red-50/50 border-r w-28 p-2 text-sm text-right text-red-600">
-                    <span className="truncate block" title={`-${formatCurrency(line.amount || 0)}`}>
-                      -{formatCurrency(line.amount || 0)}
-                    </span>
-                  </td>
-                  <td className="sticky left-80 z-10 bg-red-50/50 border-r w-16 p-2"></td>
+                <TableRow key={line.id} className="bg-red-50/50">
+                  <TableCell className="sticky left-0 z-10 bg-red-50/50 border-r"></TableCell>
+                  <TableCell className="sticky left-[60px] z-10 bg-red-50/50 border-r font-medium">
+                    {line.label || 'Descuento'}
+                  </TableCell>
+                  <TableCell className="sticky left-[260px] z-10 bg-red-50/50 border-r text-right text-red-600">
+                    -{formatCurrency(line.amount || 0)}
+                  </TableCell>
+                  <TableCell className="sticky left-[380px] z-10 bg-red-50/50 border-r"></TableCell>
                   {monthRange.map((month) => (
-                    <td key={month.value} className="border-r bg-red-50/50 p-2"></td>
+                    <TableCell key={month.value} className="border-r bg-red-50/50"></TableCell>
                   ))}
-                  <td className="text-center bg-red-50/50 p-2">
+                  <TableCell className="text-center bg-red-50/50">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -148,31 +130,27 @@ export function GanttGrid({
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
               
               {/* Total Row */}
-              <tr className="bg-primary/10 font-bold border-t-2">
-                <td className="sticky left-0 z-10 bg-primary/10 border-r w-12 p-2"></td>
-                <td className="sticky left-12 z-10 bg-primary/10 border-r w-40 p-2 text-sm">
-                  <span className="truncate block" title="TOTAL">TOTAL</span>
-                </td>
-                <td className="sticky left-52 z-10 bg-primary/10 border-r w-28 p-2 text-sm text-right">
-                  <span className="truncate block" title={formatCurrency(total)}>
-                    {formatCurrency(total)}
-                  </span>
-                </td>
-                <td className="sticky left-80 z-10 bg-primary/10 border-r w-16 p-2 text-sm text-right">
+              <TableRow className="bg-primary/10 font-bold border-t-2">
+                <TableCell className="sticky left-0 z-10 bg-primary/10 border-r"></TableCell>
+                <TableCell className="sticky left-[60px] z-10 bg-primary/10 border-r">TOTAL</TableCell>
+                <TableCell className="sticky left-[260px] z-10 bg-primary/10 border-r">
+                  {formatCurrency(total)}
+                </TableCell>
+                <TableCell className="sticky left-[380px] z-10 bg-primary/10 border-r">
                   {subtotal > 0 ? ((total / subtotal) * 100).toFixed(2) : '0.00'}%
-                </td>
+                </TableCell>
                 {monthRange.map((month) => (
-                  <td key={month.value} className="border-r p-2"></td>
+                  <TableCell key={month.value} className="border-r"></TableCell>
                 ))}
-                <td className="p-2"></td>
-              </tr>
-            </tbody>
-          </table>
+                <TableCell></TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
         </div>
         
         {/* Loading overlay - only show during initial load */}

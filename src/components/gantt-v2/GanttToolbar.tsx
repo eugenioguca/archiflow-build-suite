@@ -63,57 +63,53 @@ export function GanttToolbar({
 
   return (
     <Card>
-      <CardContent className="p-4 sm:p-6">
-        <div className="space-y-4">
-          {/* Configuration Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Start Month Selector */}
-            <div className="flex items-center gap-2">
-              <Label htmlFor="start-month" className="text-sm whitespace-nowrap">Mes inicial:</Label>
-              <Select 
-                value={plan.start_month} 
-                onValueChange={handleStartMonthChange}
-                disabled={isLoading}
-              >
-                <SelectTrigger className="w-full sm:w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {monthOptions.map((month) => (
-                    <SelectItem key={month.value} value={month.value}>
-                      {month.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      <CardContent className="p-6">
+        <div className="flex flex-wrap items-center gap-4">
+          {/* Start Month Selector */}
+          <div className="flex items-center gap-2">
+            <Label htmlFor="start-month" className="whitespace-nowrap">Mes inicial:</Label>
+            <Select 
+              value={plan.start_month} 
+              onValueChange={handleStartMonthChange}
+              disabled={isLoading}
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {monthOptions.map((month) => (
+                  <SelectItem key={month.value} value={month.value}>
+                    {month.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-            {/* Months Count Input */}
-            <div className="flex items-center gap-2">
-              <Label htmlFor="months-count" className="text-sm whitespace-nowrap">Número de meses:</Label>
-              <Input
-                id="months-count"
-                type="number"
-                min={3}
-                max={24}
-                value={plan.months_count}
-                onChange={(e) => handleMonthsCountChange(e.target.value)}
-                className="w-20"
-                disabled={isLoading}
-              />
-            </div>
+          {/* Months Count Input */}
+          <div className="flex items-center gap-2">
+            <Label htmlFor="months-count" className="whitespace-nowrap">Número de meses:</Label>
+            <Input
+              id="months-count"
+              type="number"
+              min={3}
+              max={24}
+              value={plan.months_count}
+              onChange={(e) => handleMonthsCountChange(e.target.value)}
+              className="w-20"
+              disabled={isLoading}
+            />
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
+          <div className="flex items-center gap-2 ml-auto">
             <Button 
               onClick={onAddMayor}
               disabled={isLoading || !canAddMayor}
-              className="bg-primary hover:bg-primary/90 whitespace-nowrap shrink-0"
-              size="sm"
+              className="bg-primary hover:bg-primary/90"
             >
               <Plus className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Añadir </span>Mayor
+              Añadir Mayor
             </Button>
             
             <Button 
@@ -121,21 +117,20 @@ export function GanttToolbar({
               variant="outline" 
               size="sm"
               disabled={isLoading}
-              className="gap-2 whitespace-nowrap shrink-0"
+              className="gap-2"
             >
               <Minus className="h-4 w-4" />
-              <span className="hidden sm:inline">Añadir </span>Descuento
+              Añadir Descuento
             </Button>
             
             <Button 
               onClick={() => setShowBrandingModal(true)}
               variant="outline" 
               size="sm"
-              className="gap-2 whitespace-nowrap shrink-0"
+              className="gap-2"
             >
               <Settings className="h-4 w-4" />
-              <span className="hidden lg:inline">Configurar Encabezado</span>
-              <span className="lg:hidden">Config</span>
+              Configurar Encabezado
             </Button>
             
             {plan && lines.length > 0 && (
