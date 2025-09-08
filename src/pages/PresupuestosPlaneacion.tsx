@@ -18,46 +18,51 @@ export default function PresupuestosPlaneacion() {
   } = useClientProjectFilters();
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-4xl font-bold tracking-tight">Presupuestos y Planeación</h1>
-        <p className="text-muted-foreground text-lg">
-          Gestión completa de presupuestos, cronogramas y planes de pago para proyectos
-        </p>
+    <div className="h-screen flex flex-col overflow-hidden">
+      <div className="container mx-auto py-4 flex-shrink-0">
+        <div className="space-y-2">
+          <h1 className="text-2xl lg:text-4xl font-bold tracking-tight">Presupuestos y Planeación</h1>
+          <p className="text-muted-foreground text-sm lg:text-lg">
+            Gestión completa de presupuestos, cronogramas y planes de pago para proyectos
+          </p>
+        </div>
+
+        <div className="mt-4">
+          <ClientProjectSelector
+            selectedClientId={selectedClientId}
+            selectedProjectId={selectedProjectId}
+            onClientChange={setClientId}
+            onProjectChange={setProjectId}
+            showAllOption={false}
+            showProjectFilter={true}
+          />
+        </div>
       </div>
 
-      <ClientProjectSelector
-        selectedClientId={selectedClientId}
-        selectedProjectId={selectedProjectId}
-        onClientChange={setClientId}
-        onProjectChange={setProjectId}
-        showAllOption={false}
-        showProjectFilter={true}
-      />
+      <div className="flex-1 min-h-0 container mx-auto pb-4">
+        <Tabs defaultValue="parametrico" className="h-full flex flex-col">
+          <TabsList className="grid w-full grid-cols-4 flex-shrink-0">
+            <TabsTrigger value="parametrico">Presupuesto Paramétrico</TabsTrigger>
+            <TabsTrigger value="gantt">Cronograma de Gantt</TabsTrigger>
+            <TabsTrigger value="pagos">Planes de Pago</TabsTrigger>
+            <TabsTrigger value="ejecutivo">Presupuesto Ejecutivo</TabsTrigger>
+          </TabsList>
 
-      <Tabs defaultValue="parametrico" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="parametrico">Presupuesto Paramétrico</TabsTrigger>
-          <TabsTrigger value="gantt">Cronograma de Gantt</TabsTrigger>
-          <TabsTrigger value="pagos">Planes de Pago</TabsTrigger>
-          <TabsTrigger value="ejecutivo">Presupuesto Ejecutivo</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="parametrico" className="space-y-6">
+          <TabsContent value="parametrico" className="flex-1 min-h-0">
           <PresupuestoParametrico 
             selectedClientId={selectedClientId}
             selectedProjectId={selectedProjectId}
           />
         </TabsContent>
 
-        <TabsContent value="gantt" className="space-y-6">
-          <GanttPage 
-            selectedClientId={selectedClientId}
-            selectedProjectId={selectedProjectId}
-          />
-        </TabsContent>
+          <TabsContent value="gantt" className="flex-1 min-h-0">
+            <GanttPage 
+              selectedClientId={selectedClientId}
+              selectedProjectId={selectedProjectId}
+            />
+          </TabsContent>
 
-        <TabsContent value="pagos" className="space-y-6">
+          <TabsContent value="pagos" className="flex-1 min-h-0">
           {hasFilters && selectedClientId && selectedProjectId ? (
             <PaymentPlanManager 
               clientProjectId={selectedProjectId} 
@@ -91,13 +96,14 @@ export default function PresupuestosPlaneacion() {
           )}
         </TabsContent>
 
-        <TabsContent value="ejecutivo" className="space-y-6">
-          <PresupuestoEjecutivoManager 
-            selectedClientId={selectedClientId}
-            selectedProjectId={selectedProjectId}
-          />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="ejecutivo" className="flex-1 min-h-0">
+            <PresupuestoEjecutivoManager 
+              selectedClientId={selectedClientId}
+              selectedProjectId={selectedProjectId}
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }

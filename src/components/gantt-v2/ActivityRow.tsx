@@ -57,17 +57,17 @@ export function ActivityRow({
         {line.line_no}
       </TableCell>
       
-      <TableCell className="sticky left-10 sm:left-14 lg:left-16 z-20 bg-background border-r font-medium text-xs">
-        <div className="truncate max-w-[90px] sm:max-w-[120px] lg:max-w-none" title={line.is_discount ? line.label || 'Descuento' : mayorName}>
+      <TableCell className="sticky left-8 sm:left-10 z-20 bg-background border-r font-medium text-xs">
+        <div className="truncate max-w-[100px] sm:max-w-[120px] lg:max-w-[130px]" title={line.is_discount ? line.label || 'Descuento' : mayorName}>
           {line.is_discount ? line.label || 'Descuento' : mayorName}
         </div>
       </TableCell>
       
-      <TableCell className="sticky left-34 sm:left-46 md:left-56 lg:left-64 xl:left-68 z-20 bg-background border-r text-right text-xs">
+      <TableCell className="sticky left-36 sm:left-42 lg:left-46 z-20 bg-background border-r text-right text-xs">
         <span className="truncate">{formatCurrency(line.amount || 0)}</span>
       </TableCell>
       
-      <TableCell className="sticky left-50 sm:left-66 md:left-80 lg:left-92 xl:left-100 z-20 bg-background border-r text-right text-xs">
+      <TableCell className="sticky left-56 sm:left-66 lg:left-74 z-20 bg-background border-r text-right text-xs">
         {line.is_discount ? '' : `${percentage.toFixed(2)}%`}
       </TableCell>
 

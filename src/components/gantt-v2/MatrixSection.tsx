@@ -123,9 +123,9 @@ export function MatrixSection({
   ];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+    <Card className="flex-1 min-h-0 flex flex-col">
+      <CardHeader className="flex-shrink-0 pb-3">
+        <CardTitle className="flex items-center justify-between text-lg">
           Matriz Numérica Mensual
           <Button 
             variant="outline" 
@@ -138,16 +138,16 @@ export function MatrixSection({
           </Button>
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-0">
-        <div className="relative">
+      <CardContent className="flex-1 min-h-0 p-0">
+        <div className="relative h-full flex flex-col">
           {/* Scroll indicator for mobile */}
           <div className="sm:hidden absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-background/80 to-transparent z-20 pointer-events-none opacity-60" />
           
-          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+          <div className="flex-1 min-h-0 overflow-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
             <Table className="w-full">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="sticky left-0 z-20 bg-background border-r w-28 sm:w-36 md:w-40 lg:w-48 xl:w-52 min-w-[112px] sm:min-w-[144px] text-xs">
+                  <TableHead className="sticky left-0 z-20 bg-background border-r w-32 sm:w-36 lg:w-40 text-xs">
                     <span className="truncate">Concepto</span>
                   </TableHead>
                   {monthRange.map((month) => (
@@ -164,7 +164,7 @@ export function MatrixSection({
               {concepts.map((concept) => (
                 <TableRow key={concept.key}>
                   <TableCell className="sticky left-0 z-20 bg-background border-r font-medium text-xs">
-                    <div className="truncate max-w-[104px] sm:max-w-[132px] lg:max-w-none" title={concept.label}>
+                    <div className="truncate max-w-[120px] sm:max-w-[130px] lg:max-w-[150px]" title={concept.label}>
                       {concept.label}
                     </div>
                   </TableCell>

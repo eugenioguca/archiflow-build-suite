@@ -150,9 +150,9 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
   };
 
   return (
-    <div className="max-w-full overflow-hidden space-y-4 lg:space-y-6">
+    <div className="h-full flex flex-col max-w-full overflow-hidden">
       {/* Header - responsive */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-card p-3 sm:p-4 lg:p-6 rounded-lg border shadow-sm gap-3 sm:gap-0 min-w-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-card p-3 rounded-lg border shadow-sm gap-2 min-w-0 flex-shrink-0">
         <div className="min-w-0 flex-1">
           <h1 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold tracking-tight flex items-center gap-2">
             <Calendar className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-primary flex-shrink-0" />
@@ -184,7 +184,7 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
 
       {/* Main content */}
       {selectedClientId && selectedProjectId && (
-        <div className="space-y-4 lg:space-y-6 min-w-0">
+        <div className="flex-1 min-h-0 flex flex-col space-y-3 min-w-0">
           {/* Toolbar */}
           <GanttToolbar
             plan={plan}
