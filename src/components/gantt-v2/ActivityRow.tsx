@@ -51,24 +51,24 @@ export function ActivityRow({
 
   return (
     <tr className={line.is_discount ? "bg-red-50/50" : ""}>
-      {/* Fixed sticky columns */}
-      <td className="sticky left-0 z-10 bg-background border-r p-2 text-center text-sm font-medium">
+      {/* Fixed sticky columns with cumulative left offsets */}
+      <td className="sticky left-0 z-10 bg-background border-r w-12 p-2 text-center text-sm font-medium">
         {line.line_no}
       </td>
       
-      <td className="sticky left-[50px] z-10 bg-background border-r p-2 text-sm font-medium">
-        <span className="truncate block max-w-[130px]" title={line.is_discount ? line.label || 'Descuento' : mayorName}>
+      <td className="sticky left-12 z-10 bg-background border-r w-40 p-2 text-sm font-medium">
+        <span className="truncate block" title={line.is_discount ? line.label || 'Descuento' : mayorName}>
           {line.is_discount ? line.label || 'Descuento' : mayorName}
         </span>
       </td>
       
-      <td className="sticky left-[200px] z-10 bg-background border-r p-2 text-sm text-right">
+      <td className="sticky left-52 z-10 bg-background border-r w-28 p-2 text-sm text-right">
         <span className="truncate block" title={formatCurrency(line.amount || 0)}>
           {formatCurrency(line.amount || 0)}
         </span>
       </td>
       
-      <td className="sticky left-[300px] z-10 bg-background border-r p-2 text-sm text-right">
+      <td className="sticky left-80 z-10 bg-background border-r w-16 p-2 text-sm text-right">
         {line.is_discount ? '' : `${percentage.toFixed(2)}%`}
       </td>
 
