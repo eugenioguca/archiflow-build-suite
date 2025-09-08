@@ -23,45 +23,45 @@
   --gantt-col-pct-tablet: 100px;
 }
 
-/* Sticky Header Classes */
+/* Sticky Header Classes - Higher z-index to avoid conflicts */
 .gantt-header {
   position: sticky;
   top: 0;
-  z-index: 40;
-  background: hsl(var(--background));
+  z-index: 60 !important;
+  background: hsl(var(--background)) !important;
   border-bottom: 1px solid hsl(var(--border));
 }
 
-/* Sticky Columns - Desktop */
+/* Sticky Columns - Desktop - High priority with !important */
 .gantt-freeze-no {
-  position: sticky;
-  left: 0;
-  z-index: 30;
-  background: hsl(var(--background));
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 50 !important;
+  background: hsl(var(--background)) !important;
   border-right: 1px solid hsl(var(--border));
 }
 
 .gantt-freeze-mayor {
-  position: sticky;
-  left: var(--gantt-col-no);
-  z-index: 30;
-  background: hsl(var(--background));
+  position: sticky !important;
+  left: var(--gantt-col-no) !important;
+  z-index: 50 !important;
+  background: hsl(var(--background)) !important;
   border-right: 1px solid hsl(var(--border));
 }
 
 .gantt-freeze-importe {
-  position: sticky;
-  left: calc(var(--gantt-col-no) + var(--gantt-col-mayor));
-  z-index: 30;
-  background: hsl(var(--background));
+  position: sticky !important;
+  left: calc(var(--gantt-col-no) + var(--gantt-col-mayor)) !important;
+  z-index: 50 !important;
+  background: hsl(var(--background)) !important;
   border-right: 1px solid hsl(var(--border));
 }
 
 .gantt-freeze-pct {
-  position: sticky;
-  left: calc(var(--gantt-col-no) + var(--gantt-col-mayor) + var(--gantt-col-importe));
-  z-index: 30;
-  background: hsl(var(--background));
+  position: sticky !important;
+  left: calc(var(--gantt-col-no) + var(--gantt-col-mayor) + var(--gantt-col-importe)) !important;
+  z-index: 50 !important;
+  background: hsl(var(--background)) !important;
   border-right: 1px solid hsl(var(--border));
 }
 
@@ -90,11 +90,11 @@
   max-width: var(--gantt-col-pct);
 }
 
-/* Table layout fixes */
+/* Table layout fixes - Force horizontal scroll */
 .gantt-table {
-  table-layout: fixed;
-  min-width: calc(var(--gantt-col-no) + var(--gantt-col-mayor) + var(--gantt-col-importe) + var(--gantt-col-pct) + 800px);
-  width: 100%;
+  table-layout: fixed !important;
+  min-width: calc(var(--gantt-col-no) + var(--gantt-col-mayor) + var(--gantt-col-importe) + var(--gantt-col-pct) + 1200px) !important;
+  width: max-content !important;
 }
 
 /* Sticky toolbar */
@@ -131,15 +131,15 @@
   }
   
   .gantt-freeze-mayor {
-    left: var(--gantt-col-no-mobile);
+    left: var(--gantt-col-no-mobile) !important;
   }
   
   .gantt-freeze-importe {
-    left: calc(var(--gantt-col-no-mobile) + var(--gantt-col-mayor-mobile));
+    left: calc(var(--gantt-col-no-mobile) + var(--gantt-col-mayor-mobile)) !important;
   }
   
   .gantt-freeze-pct {
-    left: calc(var(--gantt-col-no-mobile) + var(--gantt-col-mayor-mobile) + var(--gantt-col-importe-mobile));
+    left: calc(var(--gantt-col-no-mobile) + var(--gantt-col-mayor-mobile) + var(--gantt-col-importe-mobile)) !important;
   }
 }
 
@@ -163,15 +163,15 @@
   }
   
   .gantt-freeze-mayor {
-    left: var(--gantt-col-no-tablet);
+    left: var(--gantt-col-no-tablet) !important;
   }
   
   .gantt-freeze-importe {
-    left: calc(var(--gantt-col-no-tablet) + var(--gantt-col-mayor-tablet));
+    left: calc(var(--gantt-col-no-tablet) + var(--gantt-col-mayor-tablet)) !important;
   }
   
   .gantt-freeze-pct {
-    left: calc(var(--gantt-col-no-tablet) + var(--gantt-col-mayor-tablet) + var(--gantt-col-importe-tablet));
+    left: calc(var(--gantt-col-no-tablet) + var(--gantt-col-mayor-tablet) + var(--gantt-col-importe-tablet)) !important;
   }
 }
 
