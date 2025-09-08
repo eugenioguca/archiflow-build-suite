@@ -53,21 +53,21 @@ export function ActivityRow({
   return (
     <TableRow className={line.is_discount ? "bg-red-50/50" : ""}>
       {/* Fixed columns - responsive */}
-      <TableCell className="sticky left-0 z-20 bg-background border-r text-center font-medium text-xs sm:text-sm">
+      <TableCell className="sticky left-0 z-20 bg-background border-r text-center font-medium text-xs">
         {line.line_no}
       </TableCell>
       
-      <TableCell className="sticky left-12 sm:left-16 z-20 bg-background border-r font-medium text-xs sm:text-sm">
-        <div className="truncate max-w-[120px] sm:max-w-none" title={line.is_discount ? line.label || 'Descuento' : mayorName}>
+      <TableCell className="sticky left-10 sm:left-14 lg:left-16 z-20 bg-background border-r font-medium text-xs">
+        <div className="truncate max-w-[90px] sm:max-w-[120px] lg:max-w-none" title={line.is_discount ? line.label || 'Descuento' : mayorName}>
           {line.is_discount ? line.label || 'Descuento' : mayorName}
         </div>
       </TableCell>
       
-      <TableCell className="sticky left-40 sm:left-64 md:left-68 z-20 bg-background border-r text-right text-xs sm:text-sm">
-        {formatCurrency(line.amount || 0)}
+      <TableCell className="sticky left-34 sm:left-46 md:left-56 lg:left-64 xl:left-68 z-20 bg-background border-r text-right text-xs">
+        <span className="truncate">{formatCurrency(line.amount || 0)}</span>
       </TableCell>
       
-      <TableCell className="sticky left-60 sm:left-92 md:left-100 z-20 bg-background border-r text-right text-xs sm:text-sm">
+      <TableCell className="sticky left-50 sm:left-66 md:left-80 lg:left-92 xl:left-100 z-20 bg-background border-r text-right text-xs">
         {line.is_discount ? '' : `${percentage.toFixed(2)}%`}
       </TableCell>
 
