@@ -26,8 +26,12 @@ export interface SelectedParametric {
   monto_total: number;
 }
 
-export default function ExecutiveBudgetPage() {
-  const { selectedClientId, selectedProjectId } = useClientProjectFilters();
+interface ExecutiveBudgetPageProps {
+  selectedClientId?: string;
+  selectedProjectId?: string;
+}
+
+export default function ExecutiveBudgetPage({ selectedClientId, selectedProjectId }: ExecutiveBudgetPageProps) {
   const hasFilters = Boolean(selectedClientId && selectedProjectId);
 
   // Search and filter states

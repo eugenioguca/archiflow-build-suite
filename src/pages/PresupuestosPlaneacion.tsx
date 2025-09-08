@@ -178,7 +178,10 @@ export default function PresupuestosPlaneacion() {
         </TabsContent>
 
         <TabsContent value="ejecutivo" className="space-y-6">
-          <ExecutiveBudgetPage />
+          <ExecutiveBudgetPage 
+            selectedClientId={selectedClientId}
+            selectedProjectId={selectedProjectId}
+          />
         </TabsContent>
       </Tabs>
     </div>
