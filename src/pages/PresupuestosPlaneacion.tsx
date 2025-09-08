@@ -58,7 +58,7 @@ export default function PresupuestosPlaneacion() {
         </TabsContent>
 
         <TabsContent value="pagos" className="space-y-6">
-          {hasFilters && selectedClientId && selectedProjectId ? (
+          {selectedClientId && selectedProjectId ? (
             <PaymentPlanManager 
               clientProjectId={selectedProjectId} 
               planType="construction_payment"

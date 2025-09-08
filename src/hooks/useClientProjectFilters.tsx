@@ -30,7 +30,7 @@ export const useClientProjectFilters = (): UseClientProjectFiltersReturn => {
     setSelectedProjectId('');
   }, []);
 
-  const hasFilters = selectedClientId !== '' || selectedProjectId !== '';
+  const hasFilters = selectedClientId !== '' && selectedProjectId !== '';
 
   return {
     selectedClientId,
