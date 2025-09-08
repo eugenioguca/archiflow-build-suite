@@ -67,8 +67,8 @@ const clientItems = [
 ];
 
 // Constantes de anchura
-const COLLAPSED_W = 64;
-const EXPANDED_W = 264;
+const COLLAPSED_W = 56;
+const EXPANDED_W = 240;
 
 type SidebarMode = 'pinned-open' | 'pinned-closed' | 'hover-open';
 
@@ -180,33 +180,33 @@ export function AppSidebar() {
         variant="floating"
       >
         {/* Contenido móvil simplificado - mantener funcionalmente igual */}
-        <SidebarHeader className="p-3 border-b border-sidebar-border">
+        <SidebarHeader className="shrink-0 p-2 border-b border-sidebar-border">
           <div className="flex justify-center">
             <img 
               src="/lovable-uploads/2d4574ff-eac1-4a35-8890-f3fb20cf2252.png" 
               alt="Dovita Arquitectura" 
-              className="h-10 w-auto dark:hidden"
+              className="h-8 w-auto dark:hidden"
             />
             <img 
               src="/lovable-uploads/7a3755e3-978f-4182-af7d-1db88590b5a4.png" 
               alt="Dovita Arquitectura" 
-              className="h-10 w-auto hidden dark:block"
+              className="h-8 w-auto hidden dark:block"
             />
           </div>
         </SidebarHeader>
 
-        <SidebarContent className="px-2">
+        <SidebarContent className="flex-1 overflow-y-auto px-2">
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1">
                 {menuItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild className="h-12">
+                    <SidebarMenuButton asChild className="h-10">
                       <NavLink to={item.url} className={getNavCls} onClick={handleNavigate}>
-                        <div className={`p-1.5 rounded-lg ${item.color}`}>
-                          <item.icon className="h-5 w-5" />
+                        <div className={`p-1 rounded-lg ${item.color}`}>
+                          <item.icon className="h-4 w-4" />
                         </div>
-                        <span className="font-medium text-base">{item.title}</span>
+                        <span className="font-medium text-sm">{item.title}</span>
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -217,17 +217,17 @@ export function AppSidebar() {
         </SidebarContent>
 
         {user && (
-          <SidebarFooter className="p-3 border-t border-sidebar-border">
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 p-2 bg-sidebar-accent/50 rounded-lg">
-                <div className="p-2 bg-primary rounded-full">
-                  <User className="h-4 w-4 text-primary-foreground" />
+          <SidebarFooter className="shrink-0 p-2 border-t border-sidebar-border">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 p-2 bg-sidebar-accent/50 rounded-lg">
+                <div className="p-1.5 bg-primary rounded-full">
+                  <User className="h-3 w-3 text-primary-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-sidebar-foreground truncate">
+                  <p className="text-xs font-medium text-sidebar-foreground truncate">
                     {user.email}
                   </p>
-                  <p className="text-xs text-sidebar-foreground/70">
+                  <p className="text-[10px] text-sidebar-foreground/70">
                     {userRole === 'client' ? 'Cliente' : getPositionDisplay(userPosition, userDepartment)}
                   </p>
                 </div>
@@ -236,9 +236,9 @@ export function AppSidebar() {
                 variant="outline" 
                 size="sm" 
                 onClick={signOut}
-                className="w-full bg-transparent border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent"
+                className="w-full h-8 bg-transparent border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent text-xs"
               >
-                <LogOut className="h-4 w-4 mr-2" />
+                <LogOut className="h-3 w-3 mr-1" />
                 Cerrar Sesión
               </Button>
             </div>
@@ -251,33 +251,33 @@ export function AppSidebar() {
   return (
     <TooltipProvider>
       <aside 
-        className="fixed left-0 top-0 h-screen z-40 bg-sidebar shadow-sm transition-[width] duration-200 ease-out border-r border-sidebar-border"
+        className="fixed left-0 top-0 h-screen z-40 bg-sidebar shadow-sm transition-[width] duration-200 ease-out border-r border-sidebar-border flex flex-col"
         style={{ width: isExpanded ? EXPANDED_W : COLLAPSED_W }}
         onMouseEnter={() => !isPinnedOpen && setIsHovering(true)}
         onMouseLeave={() => !isPinnedOpen && setIsHovering(false)}
       >
         {/* Header con logo y botón pin */}
-        <header className="p-4 border-b border-sidebar-border">
+        <header className="shrink-0 p-3 border-b border-sidebar-border">
           <div className="flex items-center justify-between">
             {isExpanded && (
               <div className="flex justify-center flex-1">
                 <img 
                   src="/lovable-uploads/2d4574ff-eac1-4a35-8890-f3fb20cf2252.png" 
                   alt="Dovita Arquitectura" 
-                  className="h-12 w-auto dark:hidden"
+                  className="h-8 w-auto dark:hidden"
                 />
                 <img 
                   src="/lovable-uploads/7a3755e3-978f-4182-af7d-1db88590b5a4.png" 
                   alt="Dovita Arquitectura" 
-                  className="h-12 w-auto hidden dark:block"
+                  className="h-8 w-auto hidden dark:block"
                 />
               </div>
             )}
             
             {!isExpanded && (
               <div className="flex justify-center w-full">
-                <div className="p-2 bg-primary rounded-lg">
-                  <Building2 className="h-6 w-6 text-primary-foreground" />
+                <div className="p-1.5 bg-primary rounded-lg">
+                  <Building2 className="h-4 w-4 text-primary-foreground" />
                 </div>
               </div>
             )}
@@ -288,19 +288,19 @@ export function AppSidebar() {
                 variant="ghost"
                 size="sm"
                 onClick={handlePinToggle}
-                className={`ml-2 p-1.5 ${isPinnedOpen ? 'bg-primary text-primary-foreground' : 'hover:bg-sidebar-accent'}`}
+                className={`ml-2 p-1 ${isPinnedOpen ? 'bg-primary text-primary-foreground' : 'hover:bg-sidebar-accent'}`}
                 aria-pressed={isPinnedOpen}
                 aria-label={isPinnedOpen ? "Desanclar sidebar" : "Anclar sidebar"}
               >
-                <Pin className={`h-4 w-4 transition-transform ${isPinnedOpen ? 'rotate-45' : ''}`} />
+                <Pin className={`h-3 w-3 transition-transform ${isPinnedOpen ? 'rotate-45' : ''}`} />
               </Button>
             )}
           </div>
         </header>
 
-        {/* Contenido de navegación */}
-        <nav className="flex-1 px-3 py-4">
-          <ul className={`space-y-2 ${!isExpanded ? 'flex flex-col items-center' : ''}`}>
+        {/* Contenido de navegación con scroll */}
+        <nav className="flex-1 overflow-y-auto px-2 py-2">
+          <ul className={`space-y-1 ${!isExpanded ? 'flex flex-col items-center' : ''}`}>
             {menuItems.map((item) => {
               const itemIsActive = isActive(item.url);
               
@@ -309,7 +309,7 @@ export function AppSidebar() {
                   {isExpanded ? (
                     <NavLink
                       to={item.url}
-                      className={`group flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer transition-all duration-150 ${
+                      className={`group flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-all duration-150 ${
                         itemIsActive 
                           ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md" 
                           : "hover:bg-sidebar-accent/80"
@@ -317,11 +317,11 @@ export function AppSidebar() {
                       onClick={handleNavigate}
                     >
                       <span
-                        className="flex items-center justify-center w-10 h-10 shrink-0 rounded-lg"
+                        className="flex items-center justify-center w-8 h-8 shrink-0 rounded-lg"
                         style={{ overflow: 'visible' }}
                       >
-                        <div className={`p-1.5 rounded-lg ${item.color}`}>
-                          <item.icon className="w-6 h-6" />
+                        <div className={`p-1 rounded-lg ${item.color}`}>
+                          <item.icon className="w-5 h-5" />
                         </div>
                       </span>
                       
@@ -334,7 +334,7 @@ export function AppSidebar() {
                       <TooltipTrigger asChild>
                         <NavLink
                           to={item.url}
-                          className={`group flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer transition-all duration-150 ${
+                          className={`group flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-all duration-150 ${
                             itemIsActive 
                               ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md" 
                               : "hover:bg-sidebar-accent/80"
@@ -342,11 +342,11 @@ export function AppSidebar() {
                           onClick={handleNavigate}
                         >
                           <span
-                            className="flex items-center justify-center w-10 h-10 shrink-0 rounded-lg"
+                            className="flex items-center justify-center w-8 h-8 shrink-0 rounded-lg"
                             style={{ overflow: 'visible' }}
                           >
-                            <div className={`p-1.5 rounded-lg ${item.color}`}>
-                              <item.icon className="w-6 h-6" />
+                            <div className={`p-1 rounded-lg ${item.color}`}>
+                              <item.icon className="w-5 h-5" />
                             </div>
                           </span>
                         </NavLink>
@@ -364,18 +364,18 @@ export function AppSidebar() {
 
         {/* Footer con información del usuario */}
         {user && (
-          <footer className="p-4 border-t border-sidebar-border">
+          <footer className="shrink-0 p-2 border-t border-sidebar-border">
             {isExpanded ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-sidebar-accent/50 rounded-lg">
-                  <div className="p-2 bg-primary rounded-full">
-                    <User className="h-4 w-4 text-primary-foreground" />
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 p-2 bg-sidebar-accent/50 rounded-lg">
+                  <div className="p-1.5 bg-primary rounded-full">
+                    <User className="h-3 w-3 text-primary-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-sidebar-foreground truncate">
+                    <p className="text-xs font-medium text-sidebar-foreground truncate">
                       {user.email}
                     </p>
-                    <p className="text-xs text-sidebar-foreground/70">
+                    <p className="text-[10px] text-sidebar-foreground/70">
                       {userRole === 'client' ? 'Cliente' : getPositionDisplay(userPosition, userDepartment)}
                     </p>
                   </div>
@@ -384,9 +384,9 @@ export function AppSidebar() {
                   variant="outline" 
                   size="sm" 
                   onClick={signOut}
-                  className="w-full bg-transparent border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent"
+                  className="w-full h-8 bg-transparent border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent text-xs"
                 >
-                  <LogOut className="h-4 w-4 mr-2" />
+                  <LogOut className="h-3 w-3 mr-1" />
                   Cerrar Sesión
                 </Button>
               </div>
@@ -399,9 +399,9 @@ export function AppSidebar() {
                         variant="outline" 
                         size="sm" 
                         onClick={signOut}
-                        className="p-2 bg-transparent border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent"
+                        className="p-1.5 bg-transparent border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent"
                       >
-                        <LogOut className="h-4 w-4" />
+                        <LogOut className="h-3 w-3" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="right" className="ml-2">
