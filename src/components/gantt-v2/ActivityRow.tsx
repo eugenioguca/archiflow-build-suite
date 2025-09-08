@@ -53,20 +53,20 @@ export function ActivityRow({
   return (
     <TableRow className={line.is_discount ? "bg-red-50/50" : ""}>
       {/* Fixed columns with proper sticky positioning */}
-      <TableCell className="gantt-freeze-no col-no text-center font-medium text-xs sm:text-sm">
+      <TableCell className="gantt-freeze-no col-no text-center text-sm border-r">
         {line.line_no}
       </TableCell>
       
-      <TableCell className="gantt-freeze-mayor col-mayor font-medium text-xs sm:text-sm truncate" title={line.is_discount ? line.label || 'Descuento' : mayorName}>
-        {line.is_discount ? line.label || 'Descuento' : mayorName}
+      <TableCell className="gantt-freeze-mayor col-mayor border-r">
+        <span className="font-medium text-sm">{mayorName}</span>
       </TableCell>
       
-      <TableCell className="gantt-freeze-importe col-importe text-right text-xs sm:text-sm">
-        {formatCurrency(line.amount || 0)}
+      <TableCell className="gantt-freeze-importe col-importe text-right border-r">
+        <span className="font-medium">{formatCurrency(line.amount || 0)}</span>
       </TableCell>
       
-      <TableCell className="gantt-freeze-pct col-pct text-right text-xs sm:text-sm">
-        {line.is_discount ? '' : `${percentage.toFixed(2)}%`}
+      <TableCell className="gantt-freeze-pct col-pct text-center border-r">
+        <span className="text-sm">{percentage.toFixed(2)}%</span>
       </TableCell>
 
       {/* Month columns */}

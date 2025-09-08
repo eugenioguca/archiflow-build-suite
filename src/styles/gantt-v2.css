@@ -93,7 +93,8 @@
 /* Table layout fixes */
 .gantt-table {
   table-layout: fixed;
-  min-width: max-content;
+  min-width: calc(var(--gantt-col-no) + var(--gantt-col-mayor) + var(--gantt-col-importe) + var(--gantt-col-pct) + 800px);
+  width: 100%;
 }
 
 /* Sticky toolbar */
@@ -195,6 +196,14 @@
   overflow-x: auto;
   overflow-y: visible;
   scroll-behavior: smooth;
+  position: relative;
+  width: 100%;
+}
+
+/* Ensure month columns have minimum width to force horizontal scroll */
+.gantt-month-col {
+  min-width: 120px;
+  width: 120px;
 }
 
 /* Month columns grid for mobile scroll snapping */
