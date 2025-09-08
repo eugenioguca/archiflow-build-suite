@@ -206,7 +206,7 @@ export function AppSidebar() {
                         <div className={`p-1 rounded-lg ${item.color}`}>
                           <item.icon className="h-4 w-4" />
                         </div>
-                        <span className="font-medium text-sm">{item.title}</span>
+                        <span className="font-medium text-xs">{item.title}</span>
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -325,9 +325,9 @@ export function AppSidebar() {
                         </div>
                       </span>
                       
-                      <span className="whitespace-nowrap overflow-hidden font-medium text-sm">
-                        {item.title}
-                      </span>
+                       <span className="whitespace-nowrap overflow-hidden font-medium text-xs">
+                         {item.title}
+                       </span>
                     </NavLink>
                   ) : (
                     <Tooltip>
