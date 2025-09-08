@@ -1,0 +1,200 @@
+/* Cronograma de Gantt v2 - Sticky Columns & Responsive Layout */
+
+:root {
+  /* Column widths - fixed to prevent overlapping */
+  --gantt-col-no: 72px;           /* No. */
+  --gantt-col-mayor: 280px;       /* Mayor */
+  --gantt-col-importe: 180px;     /* Importe */
+  --gantt-col-pct: 120px;         /* % */
+  
+  /* Mobile column widths - smaller for mobile */
+  --gantt-col-no-mobile: 48px;
+  --gantt-col-mayor-mobile: 180px;
+  --gantt-col-importe-mobile: 120px;
+  --gantt-col-pct-mobile: 80px;
+}
+
+/* Sticky Header Classes */
+.gantt-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: hsl(var(--background));
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+/* Sticky Columns - Desktop */
+.gantt-freeze-no {
+  position: sticky;
+  left: 0;
+  z-index: 30;
+  background: hsl(var(--background));
+  border-right: 1px solid hsl(var(--border));
+}
+
+.gantt-freeze-mayor {
+  position: sticky;
+  left: var(--gantt-col-no);
+  z-index: 30;
+  background: hsl(var(--background));
+  border-right: 1px solid hsl(var(--border));
+}
+
+.gantt-freeze-importe {
+  position: sticky;
+  left: calc(var(--gantt-col-no) + var(--gantt-col-mayor));
+  z-index: 30;
+  background: hsl(var(--background));
+  border-right: 1px solid hsl(var(--border));
+}
+
+.gantt-freeze-pct {
+  position: sticky;
+  left: calc(var(--gantt-col-no) + var(--gantt-col-mayor) + var(--gantt-col-importe));
+  z-index: 30;
+  background: hsl(var(--background));
+  border-right: 1px solid hsl(var(--border));
+}
+
+/* Column width enforcement */
+.col-no {
+  width: var(--gantt-col-no);
+  min-width: var(--gantt-col-no);
+  max-width: var(--gantt-col-no);
+}
+
+.col-mayor {
+  width: var(--gantt-col-mayor);
+  min-width: var(--gantt-col-mayor);
+  max-width: var(--gantt-col-mayor);
+}
+
+.col-importe {
+  width: var(--gantt-col-importe);
+  min-width: var(--gantt-col-importe);
+  max-width: var(--gantt-col-importe);
+}
+
+.col-pct {
+  width: var(--gantt-col-pct);
+  min-width: var(--gantt-col-pct);
+  max-width: var(--gantt-col-pct);
+}
+
+/* Table layout fixes */
+.gantt-table {
+  table-layout: fixed;
+  min-width: max-content;
+}
+
+/* Sticky toolbar */
+.gantt-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 45;
+  background: hsl(var(--background));
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+/* Mobile Responsive - Card layout for small screens */
+@media (max-width: 767px) {
+  :root {
+    --gantt-col-no: var(--gantt-col-no-mobile);
+    --gantt-col-mayor: var(--gantt-col-mayor-mobile);
+    --gantt-col-importe: var(--gantt-col-importe-mobile);
+    --gantt-col-pct: var(--gantt-col-pct-mobile);
+  }
+  
+  .gantt-freeze-mayor {
+    left: var(--gantt-col-no-mobile);
+  }
+  
+  .gantt-freeze-importe {
+    left: calc(var(--gantt-col-no-mobile) + var(--gantt-col-mayor-mobile));
+  }
+  
+  .gantt-freeze-pct {
+    left: calc(var(--gantt-col-no-mobile) + var(--gantt-col-mayor-mobile) + var(--gantt-col-importe-mobile));
+  }
+}
+
+/* Tablet Responsive */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .gantt-table {
+    font-size: 0.875rem; /* text-sm */
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .gantt-table {
+    font-size: 1rem; /* text-base */
+  }
+}
+
+/* Scroll optimizations */
+.gantt-scroll-container {
+  overflow-x: auto;
+  overflow-y: visible;
+  scroll-behavior: smooth;
+}
+
+/* Month columns grid for mobile scroll snapping */
+@media (max-width: 767px) {
+  .gantt-scroll-container {
+    scroll-snap-type: x mandatory;
+  }
+  
+  .gantt-month-column {
+    scroll-snap-align: start;
+  }
+}
+
+/* Background fixes for sticky cells */
+.gantt-freeze-no.bg-muted\/50 {
+  background: hsl(var(--muted) / 0.5) !important;
+}
+
+.gantt-freeze-mayor.bg-muted\/50 {
+  background: hsl(var(--muted) / 0.5) !important;
+}
+
+.gantt-freeze-importe.bg-muted\/50 {
+  background: hsl(var(--muted) / 0.5) !important;
+}
+
+.gantt-freeze-pct.bg-muted\/50 {
+  background: hsl(var(--muted) / 0.5) !important;
+}
+
+.gantt-freeze-no.bg-red-50\/50 {
+  background: hsl(var(--destructive) / 0.1) !important;
+}
+
+.gantt-freeze-mayor.bg-red-50\/50 {
+  background: hsl(var(--destructive) / 0.1) !important;
+}
+
+.gantt-freeze-importe.bg-red-50\/50 {
+  background: hsl(var(--destructive) / 0.1) !important;
+}
+
+.gantt-freeze-pct.bg-red-50\/50 {
+  background: hsl(var(--destructive) / 0.1) !important;
+}
+
+.gantt-freeze-no.bg-primary\/10 {
+  background: hsl(var(--primary) / 0.1) !important;
+}
+
+.gantt-freeze-mayor.bg-primary\/10 {
+  background: hsl(var(--primary) / 0.1) !important;
+}
+
+.gantt-freeze-importe.bg-primary\/10 {
+  background: hsl(var(--primary) / 0.1) !important;
+}
+
+.gantt-freeze-pct.bg-primary\/10 {
+  background: hsl(var(--primary) / 0.1) !important;
+}

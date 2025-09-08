@@ -187,20 +187,22 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
         {/* Main content */}
         {selectedClientId && selectedProjectId && (
           <div className="space-y-4 lg:space-y-6">
-          {/* Toolbar */}
-          <GanttToolbar
-            plan={plan}
-            lines={lines as any}
-            mayores={mayores}
-            overrides={overrides as any}
-            onUpdatePlan={updatePlan.mutateAsync}
-            onAddMayor={handleAddMayor}
-            onAddDiscount={handleAddDiscount}
-            isLoading={isLoading || isFetching}
-            canAddMayor={!!plan?.id}
-            clientId={selectedClientId}
-            projectId={selectedProjectId}
-          />
+          {/* Toolbar - Made sticky */}
+          <div className="gantt-toolbar">
+            <GanttToolbar
+              plan={plan}
+              lines={lines as any}
+              mayores={mayores}
+              overrides={overrides as any}
+              onUpdatePlan={updatePlan.mutateAsync}
+              onAddMayor={handleAddMayor}
+              onAddDiscount={handleAddDiscount}
+              isLoading={isLoading || isFetching}
+              canAddMayor={!!plan?.id}
+              clientId={selectedClientId}
+              projectId={selectedProjectId}
+            />
+          </div>
 
           {/* Gantt Grid */}
           <GanttGrid

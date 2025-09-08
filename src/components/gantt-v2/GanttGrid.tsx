@@ -47,27 +47,27 @@ export function GanttGrid({
         <CardTitle className="text-lg sm:text-xl">Cronograma de Gantt</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <Table className="min-w-max">
-            <TableHeader>
+        <div className="gantt-scroll-container">
+          <Table className="gantt-table">
+            <TableHeader className="gantt-header">
               <TableRow>
                 {/* Fixed columns with proper sticky positioning */}
-                <TableHead className="sticky left-0 z-20 bg-background border-r w-12 sm:w-16 text-xs sm:text-sm">
+                <TableHead className="gantt-freeze-no col-no text-xs sm:text-sm">
                   No.
                 </TableHead>
-                <TableHead className="sticky left-12 sm:left-16 z-20 bg-background border-r w-32 sm:w-48 lg:w-56 text-xs sm:text-sm">
+                <TableHead className="gantt-freeze-mayor col-mayor text-xs sm:text-sm">
                   Mayor
                 </TableHead>
-                <TableHead className="sticky left-44 sm:left-64 lg:left-72 z-20 bg-background border-r w-20 sm:w-28 text-xs sm:text-sm text-right">
+                <TableHead className="gantt-freeze-importe col-importe text-xs sm:text-sm text-right">
                   Importe
                 </TableHead>
-                <TableHead className="sticky left-64 sm:left-92 lg:left-100 z-20 bg-background border-r w-12 sm:w-16 text-xs sm:text-sm text-right">
+                <TableHead className="gantt-freeze-pct col-pct text-xs sm:text-sm text-right">
                   %
                 </TableHead>
                 
                 {/* Month columns */}
                 {monthRange.map((month) => (
-                  <TableHead key={month.value} className="text-center min-w-[100px] sm:min-w-[120px] border-r">
+                  <TableHead key={month.value} className="gantt-month-column text-center min-w-[100px] sm:min-w-[120px] border-r">
                     <div className="space-y-1">
                       <div className="font-semibold text-xs">{month.label}</div>
                       <div className="flex justify-between text-xs text-muted-foreground">
@@ -102,14 +102,14 @@ export function GanttGrid({
               
               {/* Subtotal Row */}
               <TableRow className="bg-muted/50 font-medium">
-                <TableCell className="sticky left-0 z-20 bg-muted/50 border-r"></TableCell>
-                <TableCell className="sticky left-12 sm:left-16 z-20 bg-muted/50 border-r text-xs sm:text-sm">
+                <TableCell className="gantt-freeze-no col-no bg-muted/50"></TableCell>
+                <TableCell className="gantt-freeze-mayor col-mayor bg-muted/50 text-xs sm:text-sm">
                   SUBTOTAL
                 </TableCell>
-                <TableCell className="sticky left-44 sm:left-64 lg:left-72 z-20 bg-muted/50 border-r text-right text-xs sm:text-sm">
+                <TableCell className="gantt-freeze-importe col-importe bg-muted/50 text-right text-xs sm:text-sm">
                   {formatCurrency(subtotal)}
                 </TableCell>
-                <TableCell className="sticky left-64 sm:left-92 lg:left-100 z-20 bg-muted/50 border-r text-right text-xs sm:text-sm">
+                <TableCell className="gantt-freeze-pct col-pct bg-muted/50 text-right text-xs sm:text-sm">
                   100.00%
                 </TableCell>
                 {monthRange.map((month) => (
@@ -121,14 +121,14 @@ export function GanttGrid({
               {/* Discount Lines */}
               {discountLines.map((line) => (
                 <TableRow key={line.id} className="bg-red-50/50">
-                  <TableCell className="sticky left-0 z-20 bg-red-50/50 border-r"></TableCell>
-                  <TableCell className="sticky left-12 sm:left-16 z-20 bg-red-50/50 border-r font-medium text-xs sm:text-sm truncate" title={line.label || 'Descuento'}>
+                  <TableCell className="gantt-freeze-no col-no bg-red-50/50"></TableCell>
+                  <TableCell className="gantt-freeze-mayor col-mayor bg-red-50/50 font-medium text-xs sm:text-sm truncate" title={line.label || 'Descuento'}>
                     {line.label || 'Descuento'}
                   </TableCell>
-                  <TableCell className="sticky left-44 sm:left-64 lg:left-72 z-20 bg-red-50/50 border-r text-right text-red-600 text-xs sm:text-sm">
+                  <TableCell className="gantt-freeze-importe col-importe bg-red-50/50 text-right text-red-600 text-xs sm:text-sm">
                     -{formatCurrency(line.amount || 0)}
                   </TableCell>
-                  <TableCell className="sticky left-64 sm:left-92 lg:left-100 z-20 bg-red-50/50 border-r"></TableCell>
+                  <TableCell className="gantt-freeze-pct col-pct bg-red-50/50"></TableCell>
                   {monthRange.map((month) => (
                     <TableCell key={month.value} className="border-r bg-red-50/50"></TableCell>
                   ))}
@@ -148,14 +148,14 @@ export function GanttGrid({
               
               {/* Total Row */}
               <TableRow className="bg-primary/10 font-bold border-t-2">
-                <TableCell className="sticky left-0 z-20 bg-primary/10 border-r"></TableCell>
-                <TableCell className="sticky left-12 sm:left-16 z-20 bg-primary/10 border-r text-xs sm:text-sm">
+                <TableCell className="gantt-freeze-no col-no bg-primary/10"></TableCell>
+                <TableCell className="gantt-freeze-mayor col-mayor bg-primary/10 text-xs sm:text-sm">
                   TOTAL
                 </TableCell>
-                <TableCell className="sticky left-44 sm:left-64 lg:left-72 z-20 bg-primary/10 border-r text-right text-xs sm:text-sm">
+                <TableCell className="gantt-freeze-importe col-importe bg-primary/10 text-right text-xs sm:text-sm">
                   {formatCurrency(total)}
                 </TableCell>
-                <TableCell className="sticky left-64 sm:left-92 lg:left-100 z-20 bg-primary/10 border-r text-right text-xs sm:text-sm">
+                <TableCell className="gantt-freeze-pct col-pct bg-primary/10 text-right text-xs sm:text-sm">
                   {subtotal > 0 ? ((total / subtotal) * 100).toFixed(2) : '0.00'}%
                 </TableCell>
                 {monthRange.map((month) => (

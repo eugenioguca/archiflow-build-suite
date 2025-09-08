@@ -53,19 +53,19 @@ export function ActivityRow({
   return (
     <TableRow className={line.is_discount ? "bg-red-50/50" : ""}>
       {/* Fixed columns with proper sticky positioning */}
-      <TableCell className="sticky left-0 z-20 bg-background border-r text-center font-medium text-xs sm:text-sm">
+      <TableCell className="gantt-freeze-no col-no text-center font-medium text-xs sm:text-sm">
         {line.line_no}
       </TableCell>
       
-      <TableCell className="sticky left-12 sm:left-16 z-20 bg-background border-r font-medium text-xs sm:text-sm truncate" title={line.is_discount ? line.label || 'Descuento' : mayorName}>
+      <TableCell className="gantt-freeze-mayor col-mayor font-medium text-xs sm:text-sm truncate" title={line.is_discount ? line.label || 'Descuento' : mayorName}>
         {line.is_discount ? line.label || 'Descuento' : mayorName}
       </TableCell>
       
-      <TableCell className="sticky left-44 sm:left-64 lg:left-72 z-20 bg-background border-r text-right text-xs sm:text-sm">
+      <TableCell className="gantt-freeze-importe col-importe text-right text-xs sm:text-sm">
         {formatCurrency(line.amount || 0)}
       </TableCell>
       
-      <TableCell className="sticky left-64 sm:left-92 lg:left-100 z-20 bg-background border-r text-right text-xs sm:text-sm">
+      <TableCell className="gantt-freeze-pct col-pct text-right text-xs sm:text-sm">
         {line.is_discount ? '' : `${percentage.toFixed(2)}%`}
       </TableCell>
 
