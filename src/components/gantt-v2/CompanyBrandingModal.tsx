@@ -183,54 +183,26 @@ export function CompanyBrandingModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Configurar Encabezado</DialogTitle>
         </DialogHeader>
         
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Información de la Empresa */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Información de la Empresa</h3>
-              
-              <FormField
-                control={form.control}
-                name="company_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nombre de la Empresa</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="DOVITA CONSTRUCCIONES" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Dirección</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} placeholder="Dirección completa de la empresa" rows={2} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
+        <div className="flex-1 overflow-y-auto px-1">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Información de la Empresa */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Información de la Empresa</h3>
+                
                 <FormField
                   control={form.control}
-                  name="phone"
+                  name="company_name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Teléfono</FormLabel>
+                      <FormLabel>Nombre de la Empresa</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="(555) 123-4567" />
+                        <Input {...field} placeholder="DOVITA CONSTRUCCIONES" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -239,85 +211,56 @@ export function CompanyBrandingModal({
 
                 <FormField
                   control={form.control}
-                  name="email"
+                  name="address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>Dirección</FormLabel>
                       <FormControl>
-                        <Input {...field} type="email" placeholder="info@empresa.com" />
+                        <Textarea {...field} placeholder="Dirección completa de la empresa" rows={2} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
 
-              <FormField
-                control={form.control}
-                name="website"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Sitio Web (Opcional)</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="www.empresa.com" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Teléfono</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="(555) 123-4567" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="logo_url"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>URL del Logo (Opcional)</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="https://..." />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="email" placeholder="info@empresa.com" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-            <Separator />
-
-            {/* Información del Proyecto */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Información del Proyecto</h3>
-              
-              <FormField
-                control={form.control}
-                name="project_location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Ubicación</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Ubicación del proyecto" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="land_surface_area"
+                  name="website"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Superficie de Terreno (m²)</FormLabel>
+                      <FormLabel>Sitio Web (Opcional)</FormLabel>
                       <FormControl>
-                        <Input 
-                          {...field} 
-                          type="number" 
-                          min="0"
-                          step="0.01"
-                          placeholder="0.00"
-                          value={field.value || ''}
-                          onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : null)}
-                        />
+                        <Input {...field} placeholder="www.empresa.com" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -326,43 +269,105 @@ export function CompanyBrandingModal({
 
                 <FormField
                   control={form.control}
-                  name="construction_area"
+                  name="logo_url"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Área de Construcción (m²)</FormLabel>
+                      <FormLabel>URL del Logo (Opcional)</FormLabel>
                       <FormControl>
-                        <Input 
-                          {...field} 
-                          type="number" 
-                          min="0"
-                          step="0.01"
-                          placeholder="0.00"
-                          value={field.value || ''}
-                          onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : null)}
-                        />
+                        <Input {...field} placeholder="https://..." />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
-            </div>
 
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={loading}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? "Guardando..." : "Guardar"}
-              </Button>
-            </div>
-          </form>
-        </Form>
+              <Separator />
+
+              {/* Información del Proyecto */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Información del Proyecto</h3>
+                
+                <FormField
+                  control={form.control}
+                  name="project_location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Ubicación</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Ubicación del proyecto" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="land_surface_area"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Superficie de Terreno (m²)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            {...field} 
+                            type="number" 
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                            value={field.value || ''}
+                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : null)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="construction_area"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Área de Construcción (m²)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            {...field} 
+                            type="number" 
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                            value={field.value || ''}
+                            onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : null)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            </form>
+          </Form>
+        </div>
+
+        <div className="flex-shrink-0 flex justify-end gap-2 pt-4 border-t">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={loading}
+          >
+            Cancelar
+          </Button>
+          <Button 
+            onClick={form.handleSubmit(onSubmit)} 
+            disabled={loading}
+          >
+            {loading ? "Guardando..." : "Guardar"}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
