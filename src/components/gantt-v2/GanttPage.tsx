@@ -150,24 +150,26 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between bg-card p-6 rounded-lg border shadow-sm">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Calendar className="h-8 w-8 text-primary" />
-            Cronograma de Gantt (v2)
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Sistema moderno de cronograma con matriz numérica mensual
-          </p>
+    <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
+      <div className="space-y-4 lg:space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-card p-3 sm:p-4 lg:p-6 rounded-lg border shadow-sm">
+          <div className="mb-2 sm:mb-0">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight flex items-center gap-2">
+              <Calendar className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-primary" />
+              <span className="hidden sm:inline">Cronograma de Gantt (v2)</span>
+              <span className="sm:hidden">Gantt v2</span>
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+              Sistema moderno de cronograma con matriz numérica mensual
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={() => window.location.reload()} variant="outline" size="sm">
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={() => window.location.reload()} variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
 
       {/* Show empty state if no filters */}
       {(!selectedClientId || !selectedProjectId) && (
@@ -182,9 +184,9 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
         </Card>
       )}
 
-      {/* Main content */}
-      {selectedClientId && selectedProjectId && (
-        <div className="space-y-6">
+        {/* Main content */}
+        {selectedClientId && selectedProjectId && (
+          <div className="space-y-4 lg:space-y-6">
           {/* Toolbar */}
           <GanttToolbar
             plan={plan}
@@ -249,8 +251,9 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
             subtotal={lines.filter(l => !l.is_discount).reduce((sum, l) => sum + (l.amount || 0), 0)}
             title={lines.find(line => line.is_discount) ? "Editar Descuento" : "Añadir Descuento"}
           />
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

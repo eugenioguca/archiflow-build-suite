@@ -52,20 +52,20 @@ export function ActivityRow({
 
   return (
     <TableRow className={line.is_discount ? "bg-red-50/50" : ""}>
-      {/* Fixed columns */}
-      <TableCell className="sticky left-0 z-10 bg-background border-r text-center font-medium">
+      {/* Fixed columns with proper sticky positioning */}
+      <TableCell className="sticky left-0 z-20 bg-background border-r text-center font-medium text-xs sm:text-sm">
         {line.line_no}
       </TableCell>
       
-      <TableCell className="sticky left-[60px] z-10 bg-background border-r font-medium">
+      <TableCell className="sticky left-12 sm:left-16 z-20 bg-background border-r font-medium text-xs sm:text-sm truncate" title={line.is_discount ? line.label || 'Descuento' : mayorName}>
         {line.is_discount ? line.label || 'Descuento' : mayorName}
       </TableCell>
       
-      <TableCell className="sticky left-[260px] z-10 bg-background border-r text-right">
+      <TableCell className="sticky left-44 sm:left-64 lg:left-72 z-20 bg-background border-r text-right text-xs sm:text-sm">
         {formatCurrency(line.amount || 0)}
       </TableCell>
       
-      <TableCell className="sticky left-[380px] z-10 bg-background border-r text-right">
+      <TableCell className="sticky left-64 sm:left-92 lg:left-100 z-20 bg-background border-r text-right text-xs sm:text-sm">
         {line.is_discount ? '' : `${percentage.toFixed(2)}%`}
       </TableCell>
 
@@ -91,15 +91,15 @@ export function ActivityRow({
       
       {/* Actions column */}
       <TableCell className="text-center">
-        <div className="flex items-center justify-center gap-1">
+        <div className="flex items-center justify-center gap-0.5 sm:gap-1">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => onEditLine(line)}
             disabled={isLoading}
-            className="h-8 w-8 p-0"
+            className="h-6 w-6 sm:h-8 sm:w-8 p-0"
           >
-            <Edit className="h-3 w-3" />
+            <Edit className="h-2 w-2 sm:h-3 sm:w-3" />
           </Button>
           
           <Button
@@ -107,9 +107,9 @@ export function ActivityRow({
             size="sm"
             onClick={() => onDeleteLine(line.id)}
             disabled={isLoading}
-            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+            className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-destructive hover:text-destructive"
           >
-            <Trash2 className="h-3 w-3" />
+            <Trash2 className="h-2 w-2 sm:h-3 sm:w-3" />
           </Button>
         </div>
       </TableCell>
