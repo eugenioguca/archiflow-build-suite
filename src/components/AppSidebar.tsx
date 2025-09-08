@@ -67,11 +67,18 @@ export function AppSidebar() {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const currentPath = location.pathname;
-  const collapsed = state === "collapsed";
+  
+  // Estado local para hover automático en desktop
+  const [isHovering, setIsHovering] = useState(false);
+  const isMobile = useIsMobile();
+  
+  // En desktop: collapsed por defecto, expandido en hover
+  // En mobile: usa el estado original del sidebar
+  const collapsed = isMobile ? state === "collapsed" : !isHovering;
+  
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userDepartment, setUserDepartment] = useState<string | null>(null);
   const [userPosition, setUserPosition] = useState<string | null>(null);
-  const isMobile = useIsMobile();
   const { hasModuleAccess, isLoading } = usePermissions();
 
   useEffect(() => {
@@ -154,8 +161,13 @@ export function AppSidebar() {
   return (
     <Sidebar 
       collapsible={isMobile ? "none" : "icon"} 
-      className="border-r border-sidebar-border"
+      className="border-r border-sidebar-border transition-all duration-300 ease-out"
       variant={isMobile ? "floating" : "sidebar"}
+      onMouseEnter={() => !isMobile && setIsHovering(true)}
+      onMouseLeave={() => !isMobile && setIsHovering(false)}
+      style={{
+        width: isMobile ? undefined : collapsed ? "64px" : "240px"
+      }}
     >
       <SidebarHeader className={`${isMobile ? 'p-3' : 'p-4'} border-b border-sidebar-border`}>
         {(!collapsed || isMobile) && (

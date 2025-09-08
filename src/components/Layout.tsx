@@ -49,7 +49,7 @@ export default function Layout({ children }: LayoutProps) {
   const mobileSidebar = useMobileSidebar();
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <ClientRedirect />
       <div className="min-h-screen flex w-full">
         {/* Desktop Sidebar */}
