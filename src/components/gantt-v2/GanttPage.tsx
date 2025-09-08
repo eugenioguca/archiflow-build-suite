@@ -150,8 +150,8 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 lg:px-6">
-      <div className="space-y-4 lg:space-y-6">
+    <div className="gantt-container">
+      <div className="space-y-3 sm:space-y-4 lg:space-y-6 px-2 sm:px-4 lg:px-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-card p-3 sm:p-4 lg:p-6 rounded-lg border shadow-sm">
           <div className="mb-2 sm:mb-0">
@@ -186,7 +186,7 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
 
         {/* Main content */}
         {selectedClientId && selectedProjectId && (
-          <div className="space-y-4 lg:space-y-6">
+          <div className="space-y-3 sm:space-y-4 lg:space-y-6">
           {/* Toolbar - Made sticky */}
           <div className="gantt-toolbar">
             <GanttToolbar

@@ -42,7 +42,7 @@ export function GanttGrid({
   const total = subtotal - totalDiscounts; // Subtract discounts from subtotal
 
   return (
-    <Card className="relative">
+    <Card className="gantt-container relative">
       <CardHeader className="pb-2 sm:pb-4">
         <CardTitle className="text-lg sm:text-xl">Cronograma de Gantt</CardTitle>
       </CardHeader>

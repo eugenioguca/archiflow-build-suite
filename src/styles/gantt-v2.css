@@ -1,6 +1,9 @@
 /* Cronograma de Gantt v2 - Sticky Columns & Responsive Layout */
 
 :root {
+  /* Sidebar width - consistent across app */
+  --sidebar-width: 240px;
+  
   /* Column widths - fixed to prevent overlapping */
   --gantt-col-no: 72px;           /* No. */
   --gantt-col-mayor: 280px;       /* Mayor */
@@ -12,6 +15,12 @@
   --gantt-col-mayor-mobile: 180px;
   --gantt-col-importe-mobile: 120px;
   --gantt-col-pct-mobile: 80px;
+  
+  /* Tablet column widths - medium for tablet */
+  --gantt-col-no-tablet: 60px;
+  --gantt-col-mayor-tablet: 220px;
+  --gantt-col-importe-tablet: 140px;
+  --gantt-col-pct-tablet: 100px;
 }
 
 /* Sticky Header Classes */
@@ -96,13 +105,28 @@
   border-bottom: 1px solid hsl(var(--border));
 }
 
+/* Gantt container width calculations */
+.gantt-container {
+  width: calc(100vw - var(--sidebar-width));
+  max-width: calc(100vw - var(--sidebar-width));
+  overflow-x: hidden;
+}
+
 /* Mobile Responsive - Card layout for small screens */
 @media (max-width: 767px) {
   :root {
+    --sidebar-width: 0px; /* Mobile typically has no visible sidebar */
     --gantt-col-no: var(--gantt-col-no-mobile);
     --gantt-col-mayor: var(--gantt-col-mayor-mobile);
     --gantt-col-importe: var(--gantt-col-importe-mobile);
     --gantt-col-pct: var(--gantt-col-pct-mobile);
+  }
+  
+  .gantt-container {
+    width: 100vw;
+    max-width: 100vw;
+    padding-left: 8px;
+    padding-right: 8px;
   }
   
   .gantt-freeze-mayor {
@@ -120,13 +144,47 @@
 
 /* Tablet Responsive */
 @media (min-width: 768px) and (max-width: 1023px) {
+  :root {
+    --sidebar-width: 240px; /* Tablet has sidebar */
+    --gantt-col-no: var(--gantt-col-no-tablet);
+    --gantt-col-mayor: var(--gantt-col-mayor-tablet);
+    --gantt-col-importe: var(--gantt-col-importe-tablet);
+    --gantt-col-pct: var(--gantt-col-pct-tablet);
+  }
+  
+  .gantt-container {
+    width: calc(100vw - var(--sidebar-width));
+    max-width: calc(100vw - var(--sidebar-width));
+  }
+  
   .gantt-table {
     font-size: 0.875rem; /* text-sm */
+  }
+  
+  .gantt-freeze-mayor {
+    left: var(--gantt-col-no-tablet);
+  }
+  
+  .gantt-freeze-importe {
+    left: calc(var(--gantt-col-no-tablet) + var(--gantt-col-mayor-tablet));
+  }
+  
+  .gantt-freeze-pct {
+    left: calc(var(--gantt-col-no-tablet) + var(--gantt-col-mayor-tablet) + var(--gantt-col-importe-tablet));
   }
 }
 
 /* Desktop */
 @media (min-width: 1024px) {
+  :root {
+    --sidebar-width: 240px; /* Desktop has full sidebar */
+  }
+  
+  .gantt-container {
+    width: calc(100vw - var(--sidebar-width));
+    max-width: calc(100vw - var(--sidebar-width));
+  }
+  
   .gantt-table {
     font-size: 1rem; /* text-base */
   }

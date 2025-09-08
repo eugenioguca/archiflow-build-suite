@@ -62,20 +62,20 @@ export function GanttToolbar({
   );
 
   return (
-    <Card>
+    <Card className="gantt-container">
       <CardContent className="p-3 sm:p-4 lg:p-6">
         <div className="space-y-4">
           {/* Configuration Controls */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-4">
             {/* Start Month Selector */}
-            <div className="flex items-center gap-2">
-              <Label htmlFor="start-month" className="text-xs sm:text-sm whitespace-nowrap">Mes inicial:</Label>
+            <div className="flex items-center gap-2 min-w-0">
+              <Label htmlFor="start-month" className="text-xs sm:text-sm whitespace-nowrap shrink-0">Mes inicial:</Label>
               <Select 
                 value={plan.start_month} 
                 onValueChange={handleStartMonthChange}
                 disabled={isLoading}
               >
-                <SelectTrigger className="w-full sm:w-40">
+                <SelectTrigger className="w-full min-w-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -89,8 +89,8 @@ export function GanttToolbar({
             </div>
 
             {/* Months Count Input */}
-            <div className="flex items-center gap-2">
-              <Label htmlFor="months-count" className="text-xs sm:text-sm whitespace-nowrap">Número de meses:</Label>
+            <div className="flex items-center gap-2 min-w-0">
+              <Label htmlFor="months-count" className="text-xs sm:text-sm whitespace-nowrap shrink-0">Número de meses:</Label>
               <Input
                 id="months-count"
                 type="number"
@@ -98,14 +98,14 @@ export function GanttToolbar({
                 max={24}
                 value={plan.months_count}
                 onChange={(e) => handleMonthsCountChange(e.target.value)}
-                className="w-20"
+                className="w-20 shrink-0"
                 disabled={isLoading}
               />
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
+          <div className="flex flex-wrap gap-2 items-center w-full">
             <Button 
               onClick={onAddMayor}
               disabled={isLoading || !canAddMayor}
