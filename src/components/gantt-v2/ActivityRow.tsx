@@ -52,29 +52,27 @@ export function ActivityRow({
 
   return (
     <TableRow className={line.is_discount ? "bg-red-50/50" : ""}>
-      {/* Fixed columns - responsive */}
-      <TableCell className="sticky left-0 z-20 bg-background border-r text-center font-medium text-xs">
+      {/* Fixed columns */}
+      <TableCell className="sticky left-0 z-10 bg-background border-r text-center font-medium">
         {line.line_no}
       </TableCell>
       
-      <TableCell className="sticky left-8 sm:left-10 z-20 bg-background border-r font-medium text-xs">
-        <div className="truncate max-w-[100px] sm:max-w-[120px] lg:max-w-[130px]" title={line.is_discount ? line.label || 'Descuento' : mayorName}>
-          {line.is_discount ? line.label || 'Descuento' : mayorName}
-        </div>
+      <TableCell className="sticky left-[60px] z-10 bg-background border-r font-medium">
+        {line.is_discount ? line.label || 'Descuento' : mayorName}
       </TableCell>
       
-      <TableCell className="sticky left-36 sm:left-42 lg:left-46 z-20 bg-background border-r text-right text-xs">
-        <span className="truncate">{formatCurrency(line.amount || 0)}</span>
+      <TableCell className="sticky left-[260px] z-10 bg-background border-r text-right">
+        {formatCurrency(line.amount || 0)}
       </TableCell>
       
-      <TableCell className="sticky left-56 sm:left-66 lg:left-74 z-20 bg-background border-r text-right text-xs">
+      <TableCell className="sticky left-[380px] z-10 bg-background border-r text-right">
         {line.is_discount ? '' : `${percentage.toFixed(2)}%`}
       </TableCell>
 
-      {/* Month columns - responsive */}
+      {/* Month columns */}
       {monthRange.map((month) => (
-        <TableCell key={month.value} className="p-0.5 sm:p-1 border-r">
-          <div className="grid grid-cols-4 gap-0.5 h-6 sm:h-8">
+        <TableCell key={month.value} className="p-1 border-r">
+          <div className="grid grid-cols-4 gap-0.5 h-8">
             {[1, 2, 3, 4].map((week) => {
               const cellKey = `${month.value}:W${week}`;
               const isCovered = coveredCells.has(cellKey);
@@ -82,7 +80,7 @@ export function ActivityRow({
               return (
                 <div key={week} className="relative flex items-center justify-center">
                   {isCovered && (
-                    <div className="bg-blue-600 h-2 sm:h-3 w-full rounded-sm" />
+                    <div className="bg-blue-600 h-3 w-full rounded-sm" />
                   )}
                 </div>
               );
@@ -91,17 +89,17 @@ export function ActivityRow({
         </TableCell>
       ))}
       
-      {/* Actions column - responsive */}
+      {/* Actions column */}
       <TableCell className="text-center">
-        <div className="flex items-center justify-center gap-0.5 sm:gap-1">
+        <div className="flex items-center justify-center gap-1">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => onEditLine(line)}
             disabled={isLoading}
-            className="h-6 w-6 sm:h-8 sm:w-8 p-0 touch-manipulation"
+            className="h-8 w-8 p-0"
           >
-            <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+            <Edit className="h-3 w-3" />
           </Button>
           
           <Button
@@ -109,9 +107,9 @@ export function ActivityRow({
             size="sm"
             onClick={() => onDeleteLine(line.id)}
             disabled={isLoading}
-            className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-destructive hover:text-destructive touch-manipulation"
+            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
           >
-            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+            <Trash2 className="h-3 w-3" />
           </Button>
         </div>
       </TableCell>

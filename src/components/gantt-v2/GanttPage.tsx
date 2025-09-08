@@ -150,20 +150,20 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
   };
 
   return (
-    <div className="h-full flex flex-col max-w-full overflow-hidden">
-      {/* Header - responsive */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-card p-3 rounded-lg border shadow-sm gap-2 min-w-0 flex-shrink-0">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-lg sm:text-xl lg:text-2xl xl:text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Calendar className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 text-primary flex-shrink-0" />
-            <span className="truncate">Cronograma de Gantt (v2)</span>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between bg-card p-6 rounded-lg border shadow-sm">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Calendar className="h-8 w-8 text-primary" />
+            Cronograma de Gantt (v2)
           </h1>
-          <p className="text-muted-foreground mt-1 text-xs sm:text-sm lg:text-base">
+          <p className="text-muted-foreground mt-1">
             Sistema moderno de cronograma con matriz numérica mensual
           </p>
         </div>
-        <div className="flex gap-2 flex-shrink-0">
-          <Button onClick={() => window.location.reload()} variant="outline" size="sm" className="touch-manipulation">
+        <div className="flex gap-2">
+          <Button onClick={() => window.location.reload()} variant="outline" size="sm">
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
@@ -184,7 +184,7 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
 
       {/* Main content */}
       {selectedClientId && selectedProjectId && (
-        <div className="flex-1 min-h-0 flex flex-col space-y-3 min-w-0">
+        <div className="space-y-6">
           {/* Toolbar */}
           <GanttToolbar
             plan={plan}

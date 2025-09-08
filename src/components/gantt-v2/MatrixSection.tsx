@@ -123,9 +123,9 @@ export function MatrixSection({
   ];
 
   return (
-    <Card className="flex-1 min-h-0 flex flex-col">
-      <CardHeader className="flex-shrink-0 pb-3">
-        <CardTitle className="flex items-center justify-between text-lg">
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
           Matriz Numérica Mensual
           <Button 
             variant="outline" 
@@ -138,35 +138,29 @@ export function MatrixSection({
           </Button>
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 min-h-0 p-0">
-        <div className="relative h-full flex flex-col">
-          {/* Scroll indicator for mobile */}
-          <div className="sm:hidden absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-background/80 to-transparent z-20 pointer-events-none opacity-60" />
-          
-          <div className="flex-1 min-h-0 overflow-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-            <Table className="w-full">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="sticky left-0 z-20 bg-background border-r w-32 sm:w-36 lg:w-40 text-xs">
-                    <span className="truncate">Concepto</span>
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="sticky left-0 z-10 bg-background border-r min-w-[200px]">
+                  Concepto
+                </TableHead>
+                {monthRange.map((month) => (
+                  <TableHead key={month.value} className="text-center min-w-[120px] border-r">
+                    {month.label}
                   </TableHead>
-                  {monthRange.map((month) => (
-                    <TableHead key={month.value} className="text-center border-r w-16 sm:w-20 md:w-24 lg:w-28 xl:w-32 min-w-[64px] sm:min-w-[80px] text-xs">
-                      <span className="truncate">{month.label}</span>
-                    </TableHead>
-                  ))}
-                  <TableHead className="text-center w-16 sm:w-20 md:w-24 lg:w-28 xl:w-32 min-w-[64px] sm:min-w-[80px] font-semibold text-xs">
-                    TOTAL
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
+                ))}
+                <TableHead className="text-center min-w-[120px] font-semibold">
+                  TOTAL
+                </TableHead>
+              </TableRow>
+            </TableHeader>
             <TableBody>
               {concepts.map((concept) => (
                 <TableRow key={concept.key}>
-                  <TableCell className="sticky left-0 z-20 bg-background border-r font-medium text-xs">
-                    <div className="truncate max-w-[120px] sm:max-w-[130px] lg:max-w-[150px]" title={concept.label}>
-                      {concept.label}
-                    </div>
+                  <TableCell className="sticky left-0 z-10 bg-background border-r font-medium">
+                    {concept.label}
                   </TableCell>
                   {monthRange.map((month) => {
                     let value: number | string = 0;
@@ -202,28 +196,26 @@ export function MatrixSection({
                     return (
                       <TableCell 
                         key={month.value} 
-                        className={`text-center border-r text-xs ${isOverridden ? 'bg-amber-50 text-amber-800' : ''}`}
+                        className={`text-center border-r ${isOverridden ? 'bg-amber-50 text-amber-800' : ''}`}
                       >
-                        <div className="flex items-center justify-center gap-0.5">
-                          <div className="truncate max-w-[50px] sm:max-w-[70px] lg:max-w-none">
-                            {concept.format === 'currency' && formatCurrency(value as number)}
-                            {concept.format === 'percent' && `${(value as number).toFixed(2)}%`}
-                            {concept.format === 'text' && (() => {
-                              const textValue = value as string;
-                              if (!textValue || textValue === 'none') return '-';
-                              
-                              // If it's a number, format as "Día X"
-                              const numValue = parseInt(textValue, 10);
-                              if (!isNaN(numValue) && numValue >= 1 && numValue <= 31) {
-                                return `Día ${numValue}`;
-                              }
-                              
-                              // Otherwise show the text as-is (for "Pago 1", "Primera Quincena", etc.)
-                              return textValue;
-                            })()}
-                          </div>
+                        <div className="flex items-center justify-center gap-1">
+                          {concept.format === 'currency' && formatCurrency(value as number)}
+                          {concept.format === 'percent' && `${(value as number).toFixed(2)}%`}
+                          {concept.format === 'text' && (() => {
+                            const textValue = value as string;
+                            if (!textValue || textValue === 'none') return '-';
+                            
+                            // If it's a number, format as "Día X"
+                            const numValue = parseInt(textValue, 10);
+                            if (!isNaN(numValue) && numValue >= 1 && numValue <= 31) {
+                              return `Día ${numValue}`;
+                            }
+                            
+                            // Otherwise show the text as-is (for "Pago 1", "Primera Quincena", etc.)
+                            return textValue;
+                          })()}
                           {isOverridden && (
-                            <Edit2 className="h-1.5 w-1.5 sm:h-2 sm:w-2 lg:h-3 lg:w-3 text-amber-600 flex-shrink-0" />
+                            <Edit2 className="h-3 w-3 text-amber-600" />
                           )}
                         </div>
                       </TableCell>
@@ -231,7 +223,7 @@ export function MatrixSection({
                   })}
                   
                   {/* Total Column */}
-                  <TableCell className="text-center font-semibold text-xs">
+                  <TableCell className="text-center font-semibold">
                     {concept.format === 'currency' && (
                       formatCurrency(
                         monthRange.reduce((sum, month) => {
@@ -262,8 +254,7 @@ export function MatrixSection({
                 </TableRow>
               ))}
             </TableBody>
-            </Table>
-          </div>
+          </Table>
         </div>
       </CardContent>
 
