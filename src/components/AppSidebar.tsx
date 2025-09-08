@@ -185,12 +185,12 @@ export function AppSidebar() {
             <img 
               src="/lovable-uploads/2d4574ff-eac1-4a35-8890-f3fb20cf2252.png" 
               alt="Dovita Arquitectura" 
-              className="h-10 w-auto dark:hidden"
+              className="h-12 w-auto dark:hidden"
             />
             <img 
               src="/lovable-uploads/7a3755e3-978f-4182-af7d-1db88590b5a4.png" 
               alt="Dovita Arquitectura" 
-              className="h-10 w-auto hidden dark:block"
+              className="h-12 w-auto hidden dark:block"
             />
           </div>
         </SidebarHeader>
@@ -264,12 +264,12 @@ export function AppSidebar() {
                 <img 
                   src="/lovable-uploads/2d4574ff-eac1-4a35-8890-f3fb20cf2252.png" 
                   alt="Dovita Arquitectura" 
-                  className="h-10 w-auto dark:hidden"
+                  className="h-12 w-auto dark:hidden"
                 />
                 <img 
                   src="/lovable-uploads/7a3755e3-978f-4182-af7d-1db88590b5a4.png" 
                   alt="Dovita Arquitectura" 
-                  className="h-10 w-auto hidden dark:block"
+                  className="h-12 w-auto hidden dark:block"
                 />
               </div>
             )}
