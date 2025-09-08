@@ -1,7 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PresupuestoParametrico } from '@/components/PresupuestoParametrico';
 import { GanttPage } from '@/components/gantt-v2/GanttPage';
-import { PresupuestoEjecutivoManager } from '@/components/PresupuestoEjecutivoManager';
+import ExecutiveBudgetPage from '@/modules/ejecutivo/ExecutiveBudgetPage';
 import { PaymentPlanManager } from '@/components/PaymentPlanManager';
 import { ClientProjectSelector } from '@/components/ClientProjectSelector';
 import { useClientProjectFilters } from '@/hooks/useClientProjectFilters';
@@ -178,10 +178,7 @@ export default function PresupuestosPlaneacion() {
         </TabsContent>
 
         <TabsContent value="ejecutivo" className="space-y-6">
-          <PresupuestoEjecutivoManager 
-            selectedClientId={selectedClientId}
-            selectedProjectId={selectedProjectId}
-          />
+          <ExecutiveBudgetPage />
         </TabsContent>
       </Tabs>
     </div>
