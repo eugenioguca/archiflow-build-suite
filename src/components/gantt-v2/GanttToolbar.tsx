@@ -109,7 +109,7 @@ export function GanttToolbar({
             <Button 
               onClick={onAddMayor}
               disabled={isLoading || !canAddMayor}
-              className="bg-primary hover:bg-primary/90 whitespace-nowrap"
+              className="bg-primary hover:bg-primary/90 whitespace-nowrap shrink-0"
               size="sm"
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -121,7 +121,7 @@ export function GanttToolbar({
               variant="outline" 
               size="sm"
               disabled={isLoading}
-              className="gap-2 whitespace-nowrap"
+              className="gap-2 whitespace-nowrap shrink-0"
             >
               <Minus className="h-4 w-4" />
               <span className="hidden sm:inline">Añadir </span>Descuento
@@ -131,7 +131,7 @@ export function GanttToolbar({
               onClick={() => setShowBrandingModal(true)}
               variant="outline" 
               size="sm"
-              className="gap-2 whitespace-nowrap"
+              className="gap-2 whitespace-nowrap shrink-0"
             >
               <Settings className="h-4 w-4" />
               <span className="hidden lg:inline">Configurar Encabezado</span>

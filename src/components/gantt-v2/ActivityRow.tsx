@@ -51,24 +51,24 @@ export function ActivityRow({
 
   return (
     <tr className={line.is_discount ? "bg-red-50/50" : ""}>
-      {/* Fixed columns */}
-      <td className="sticky left-0 z-10 bg-background border-r p-2 text-center text-xs sm:text-sm font-medium">
+      {/* Fixed sticky columns */}
+      <td className="sticky left-0 z-10 bg-background border-r p-2 text-center text-sm font-medium">
         {line.line_no}
       </td>
       
-      <td className="sticky left-[50px] z-10 bg-background border-r p-2 text-xs sm:text-sm font-medium">
-        <span className="truncate block" title={line.is_discount ? line.label || 'Descuento' : mayorName}>
+      <td className="sticky left-[50px] z-10 bg-background border-r p-2 text-sm font-medium">
+        <span className="truncate block max-w-[130px]" title={line.is_discount ? line.label || 'Descuento' : mayorName}>
           {line.is_discount ? line.label || 'Descuento' : mayorName}
         </span>
       </td>
       
-      <td className="sticky left-[170px] sm:left-[230px] z-10 bg-background border-r p-2 text-xs sm:text-sm text-right">
+      <td className="sticky left-[200px] z-10 bg-background border-r p-2 text-sm text-right">
         <span className="truncate block" title={formatCurrency(line.amount || 0)}>
           {formatCurrency(line.amount || 0)}
         </span>
       </td>
       
-      <td className="sticky left-[250px] sm:left-[330px] z-10 bg-background border-r p-2 text-xs sm:text-sm text-right">
+      <td className="sticky left-[300px] z-10 bg-background border-r p-2 text-sm text-right">
         {line.is_discount ? '' : `${percentage.toFixed(2)}%`}
       </td>
 
@@ -100,10 +100,10 @@ export function ActivityRow({
             size="sm"
             onClick={() => onEditLine(line)}
             disabled={isLoading}
-            className="h-6 w-6 sm:h-8 sm:w-8 p-0"
+            className="h-8 w-8 p-0"
             title="Editar"
           >
-            <Edit className="h-2 w-2 sm:h-3 sm:w-3" />
+            <Edit className="h-3 w-3" />
           </Button>
           
           <Button
@@ -111,10 +111,10 @@ export function ActivityRow({
             size="sm"
             onClick={() => onDeleteLine(line.id)}
             disabled={isLoading}
-            className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-destructive hover:text-destructive"
+            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
             title="Eliminar"
           >
-            <Trash2 className="h-2 w-2 sm:h-3 sm:w-3" />
+            <Trash2 className="h-3 w-3" />
           </Button>
         </div>
       </td>
