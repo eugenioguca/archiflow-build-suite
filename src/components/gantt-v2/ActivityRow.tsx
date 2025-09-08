@@ -1,5 +1,4 @@
 import React from 'react';
-import { TableCell, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Trash2, Plus, Edit } from 'lucide-react';
 import { GanttLine, GanttActivity } from '@/hooks/gantt-v2/useGantt';
@@ -51,28 +50,32 @@ export function ActivityRow({
   const mayorName = line.mayor?.nombre || line.mayor?.codigo || 'Sin mayor';
 
   return (
-    <TableRow className={line.is_discount ? "bg-red-50/50" : ""}>
+    <tr className={line.is_discount ? "bg-red-50/50" : ""}>
       {/* Fixed columns */}
-      <TableCell className="sticky left-0 z-10 bg-background border-r text-center font-medium">
+      <td className="sticky left-0 z-10 bg-background border-r p-2 text-center text-xs sm:text-sm font-medium">
         {line.line_no}
-      </TableCell>
+      </td>
       
-      <TableCell className="sticky left-[60px] z-10 bg-background border-r font-medium">
-        {line.is_discount ? line.label || 'Descuento' : mayorName}
-      </TableCell>
+      <td className="sticky left-[50px] z-10 bg-background border-r p-2 text-xs sm:text-sm font-medium">
+        <span className="truncate block" title={line.is_discount ? line.label || 'Descuento' : mayorName}>
+          {line.is_discount ? line.label || 'Descuento' : mayorName}
+        </span>
+      </td>
       
-      <TableCell className="sticky left-[260px] z-10 bg-background border-r text-right">
-        {formatCurrency(line.amount || 0)}
-      </TableCell>
+      <td className="sticky left-[170px] sm:left-[230px] z-10 bg-background border-r p-2 text-xs sm:text-sm text-right">
+        <span className="truncate block" title={formatCurrency(line.amount || 0)}>
+          {formatCurrency(line.amount || 0)}
+        </span>
+      </td>
       
-      <TableCell className="sticky left-[380px] z-10 bg-background border-r text-right">
+      <td className="sticky left-[250px] sm:left-[330px] z-10 bg-background border-r p-2 text-xs sm:text-sm text-right">
         {line.is_discount ? '' : `${percentage.toFixed(2)}%`}
-      </TableCell>
+      </td>
 
       {/* Month columns */}
       {monthRange.map((month) => (
-        <TableCell key={month.value} className="p-1 border-r">
-          <div className="grid grid-cols-4 gap-0.5 h-8">
+        <td key={month.value} className="p-1 border-r">
+          <div className="grid grid-cols-4 gap-0.5 h-6 sm:h-8">
             {[1, 2, 3, 4].map((week) => {
               const cellKey = `${month.value}:W${week}`;
               const isCovered = coveredCells.has(cellKey);
@@ -80,26 +83,27 @@ export function ActivityRow({
               return (
                 <div key={week} className="relative flex items-center justify-center">
                   {isCovered && (
-                    <div className="bg-blue-600 h-3 w-full rounded-sm" />
+                    <div className="bg-blue-600 h-2 sm:h-3 w-full rounded-sm" />
                   )}
                 </div>
               );
             })}
           </div>
-        </TableCell>
+        </td>
       ))}
       
       {/* Actions column */}
-      <TableCell className="text-center">
+      <td className="text-center p-2">
         <div className="flex items-center justify-center gap-1">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => onEditLine(line)}
             disabled={isLoading}
-            className="h-8 w-8 p-0"
+            className="h-6 w-6 sm:h-8 sm:w-8 p-0"
+            title="Editar"
           >
-            <Edit className="h-3 w-3" />
+            <Edit className="h-2 w-2 sm:h-3 sm:w-3" />
           </Button>
           
           <Button
@@ -107,12 +111,13 @@ export function ActivityRow({
             size="sm"
             onClick={() => onDeleteLine(line.id)}
             disabled={isLoading}
-            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+            className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-destructive hover:text-destructive"
+            title="Eliminar"
           >
-            <Trash2 className="h-3 w-3" />
+            <Trash2 className="h-2 w-2 sm:h-3 sm:w-3" />
           </Button>
         </div>
-      </TableCell>
-    </TableRow>
+      </td>
+    </tr>
   );
 }

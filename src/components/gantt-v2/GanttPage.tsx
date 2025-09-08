@@ -150,19 +150,19 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between bg-card p-6 rounded-lg border shadow-sm">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Calendar className="h-8 w-8 text-primary" />
-            Cronograma de Gantt (v2)
+      <div className="grid grid-cols-1 lg:grid-cols-3 items-center gap-4 bg-card p-4 sm:p-6 rounded-lg border shadow-sm">
+        <div className="lg:col-span-2">
+          <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+            <span className="truncate">Cronograma de Gantt (v2)</span>
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
             Sistema moderno de cronograma con matriz numérica mensual
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 justify-end">
           <Button onClick={() => window.location.reload()} variant="outline" size="sm">
             <RefreshCw className="h-4 w-4" />
           </Button>
@@ -184,7 +184,7 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
 
       {/* Main content */}
       {selectedClientId && selectedProjectId && (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Toolbar */}
           <GanttToolbar
             plan={plan}

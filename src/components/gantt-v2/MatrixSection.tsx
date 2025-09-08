@@ -125,43 +125,46 @@ export function MatrixSection({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          Matriz Numérica Mensual
+        <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <span className="text-sm sm:text-base lg:text-lg">Matriz Numérica Mensual</span>
           <Button 
             variant="outline" 
             size="sm" 
-            className="gap-2"
+            className="gap-2 whitespace-nowrap"
             onClick={() => setShowMatrixEditor(true)}
           >
             <Edit2 className="h-4 w-4" />
-            Editar Matriz
+            <span className="hidden sm:inline">Editar Matriz</span>
+            <span className="sm:hidden">Editar</span>
           </Button>
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="sticky left-0 z-10 bg-background border-r min-w-[200px]">
-                  Concepto
-                </TableHead>
+          <table className="min-w-max border-collapse w-full">
+            <thead>
+              <tr>
+                <th className="sticky left-0 z-10 bg-background border-r min-w-[120px] sm:min-w-[180px] p-2 text-left text-xs sm:text-sm font-medium">
+                  <span className="truncate block" title="Concepto">Concepto</span>
+                </th>
                 {monthRange.map((month) => (
-                  <TableHead key={month.value} className="text-center min-w-[120px] border-r">
-                    {month.label}
-                  </TableHead>
+                  <th key={month.value} className="text-center min-w-[80px] sm:min-w-[100px] border-r p-2 text-xs sm:text-sm font-medium">
+                    <span className="truncate block" title={month.label}>{month.label}</span>
+                  </th>
                 ))}
-                <TableHead className="text-center min-w-[120px] font-semibold">
-                  TOTAL
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+                <th className="text-center min-w-[80px] sm:min-w-[100px] p-2 text-xs sm:text-sm font-semibold">
+                  <span className="truncate block" title="TOTAL">TOTAL</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
               {concepts.map((concept) => (
-                <TableRow key={concept.key}>
-                  <TableCell className="sticky left-0 z-10 bg-background border-r font-medium">
-                    {concept.label}
-                  </TableCell>
+                <tr key={concept.key}>
+                  <td className="sticky left-0 z-10 bg-background border-r p-2 text-xs sm:text-sm font-medium">
+                    <span className="truncate block" title={concept.label}>
+                      {concept.label}
+                    </span>
+                  </td>
                   {monthRange.map((month) => {
                     let value: number | string = 0;
                     
@@ -194,38 +197,52 @@ export function MatrixSection({
                     const isOverridden = hasOverride(month.value, concept.key);
 
                     return (
-                      <TableCell 
+                      <td 
                         key={month.value} 
-                        className={`text-center border-r ${isOverridden ? 'bg-amber-50 text-amber-800' : ''}`}
+                        className={`text-center border-r p-2 text-xs sm:text-sm ${isOverridden ? 'bg-amber-50 text-amber-800' : ''}`}
                       >
                         <div className="flex items-center justify-center gap-1">
-                          {concept.format === 'currency' && formatCurrency(value as number)}
-                          {concept.format === 'percent' && `${(value as number).toFixed(2)}%`}
-                          {concept.format === 'text' && (() => {
-                            const textValue = value as string;
-                            if (!textValue || textValue === 'none') return '-';
-                            
-                            // If it's a number, format as "Día X"
-                            const numValue = parseInt(textValue, 10);
-                            if (!isNaN(numValue) && numValue >= 1 && numValue <= 31) {
-                              return `Día ${numValue}`;
-                            }
-                            
-                            // Otherwise show the text as-is (for "Pago 1", "Primera Quincena", etc.)
-                            return textValue;
-                          })()}
+                          <span className="truncate" title={
+                            concept.format === 'currency' ? formatCurrency(value as number) :
+                            concept.format === 'percent' ? `${(value as number).toFixed(2)}%` :
+                            concept.format === 'text' ? (() => {
+                              const textValue = value as string;
+                              if (!textValue || textValue === 'none') return '-';
+                              const numValue = parseInt(textValue, 10);
+                              if (!isNaN(numValue) && numValue >= 1 && numValue <= 31) {
+                                return `Día ${numValue}`;
+                              }
+                              return textValue;
+                            })() : ''
+                          }>
+                            {concept.format === 'currency' && formatCurrency(value as number)}
+                            {concept.format === 'percent' && `${(value as number).toFixed(2)}%`}
+                            {concept.format === 'text' && (() => {
+                              const textValue = value as string;
+                              if (!textValue || textValue === 'none') return '-';
+                              
+                              // If it's a number, format as "Día X"
+                              const numValue = parseInt(textValue, 10);
+                              if (!isNaN(numValue) && numValue >= 1 && numValue <= 31) {
+                                return `Día ${numValue}`;
+                              }
+                              
+                              // Otherwise show the text as-is (for "Pago 1", "Primera Quincena", etc.)
+                              return textValue;
+                            })()}
+                          </span>
                           {isOverridden && (
-                            <Edit2 className="h-3 w-3 text-amber-600" />
+                            <Edit2 className="h-2 w-2 sm:h-3 sm:w-3 text-amber-600" />
                           )}
                         </div>
-                      </TableCell>
+                      </td>
                     );
                   })}
                   
                   {/* Total Column */}
-                  <TableCell className="text-center font-semibold">
-                    {concept.format === 'currency' && (
-                      formatCurrency(
+                  <td className="text-center p-2 text-xs sm:text-sm font-semibold">
+                    <span className="truncate block" title={
+                      concept.format === 'currency' ? formatCurrency(
                         monthRange.reduce((sum, month) => {
                           let value = 0;
                           switch (concept.key) {
@@ -238,23 +255,46 @@ export function MatrixSection({
                           }
                           return sum + value;
                         }, 0)
-                      )
-                    )}
-                    {concept.format === 'percent' && concept.key === 'avance_acumulado' && '100.00%'}
-                    {concept.format === 'percent' && concept.key !== 'avance_acumulado' && (
-                      `${monthRange.reduce((sum, month) => {
+                      ) : concept.format === 'percent' && concept.key === 'avance_acumulado' ? '100.00%' :
+                      concept.format === 'percent' && concept.key !== 'avance_acumulado' ? `${monthRange.reduce((sum, month) => {
                         const value = concept.key === 'avance_parcial' 
                           ? getValueOrOverride(month.value, concept.key, avanceParcial[month.value] || 0)
                           : getValueOrOverride(month.value, concept.key, 0);
                         return sum + value;
-                      }, 0).toFixed(2)}%`
-                    )}
-                    {concept.format === 'text' && '-'}
-                  </TableCell>
-                </TableRow>
+                      }, 0).toFixed(2)}%` : '-'
+                    }>
+                      {concept.format === 'currency' && (
+                        formatCurrency(
+                          monthRange.reduce((sum, month) => {
+                            let value = 0;
+                            switch (concept.key) {
+                              case 'gasto_obra':
+                                value = getValueOrOverride(month.value, concept.key, gastoEnObra[month.value] || 0);
+                                break;
+                              case 'ministraciones':
+                                value = getValueOrOverride(month.value, concept.key, 0);
+                                break;
+                            }
+                            return sum + value;
+                          }, 0)
+                        )
+                      )}
+                      {concept.format === 'percent' && concept.key === 'avance_acumulado' && '100.00%'}
+                      {concept.format === 'percent' && concept.key !== 'avance_acumulado' && (
+                        `${monthRange.reduce((sum, month) => {
+                          const value = concept.key === 'avance_parcial' 
+                            ? getValueOrOverride(month.value, concept.key, avanceParcial[month.value] || 0)
+                            : getValueOrOverride(month.value, concept.key, 0);
+                          return sum + value;
+                        }, 0).toFixed(2)}%`
+                      )}
+                      {concept.format === 'text' && '-'}
+                    </span>
+                  </td>
+                </tr>
               ))}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
         </div>
       </CardContent>
 
