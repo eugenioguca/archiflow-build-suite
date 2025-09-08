@@ -5,14 +5,19 @@ import { PresupuestoEjecutivoManager } from '@/components/PresupuestoEjecutivoMa
 import { PaymentPlanManager } from '@/components/PaymentPlanManager';
 import { ClientProjectSelector } from '@/components/ClientProjectSelector';
 import { useClientProjectFilters } from '@/hooks/useClientProjectFilters';
-import { DollarSign } from 'lucide-react';
-import { Suspense } from 'react';
+import { DollarSign, CreditCard } from 'lucide-react';
+import { Suspense, useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
-// Wrapper component for Payment Plan integration
-function PaymentPlanRoot({ selectedClientId, selectedProjectId }: {
+// Payment Plan Component - Same pattern as Sales and Finance modules
+function PaymentPlanSection({ selectedClientId, selectedProjectId }: {
   selectedClientId: string;
   selectedProjectId: string;
 }) {
+  // Estado para tipo de plan de pago (mismo que Sales y Finanzas)
+  const [selectedPlanType, setSelectedPlanType] = useState<'all' | 'design_payment' | 'construction_payment'>('construction_payment');
+  
   // Normalize IDs (critical for proper matching)
   const clientId = String(selectedClientId ?? '').trim();
   const projectId = String(selectedProjectId ?? '').trim();
@@ -30,7 +35,7 @@ function PaymentPlanRoot({ selectedClientId, selectedProjectId }: {
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Planes de Pago</h2>
             <p className="text-muted-foreground">
-              Gestión de planes de pago integrados del sistema existente
+              Gestión de planes de pago del proyecto (diseño y construcción). Especializado en planes de construcción pero con visibilidad completa.
             </p>
           </div>
         </div>
@@ -52,20 +57,66 @@ function PaymentPlanRoot({ selectedClientId, selectedProjectId }: {
   }
 
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center space-y-2">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="text-sm text-muted-foreground">Cargando plan de pago...</p>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Planes de Pago</h2>
+          <p className="text-muted-foreground">
+            Gestión de planes de pago del proyecto (diseño y construcción). Especializado en planes de construcción pero con visibilidad completa.
+          </p>
         </div>
       </div>
-    }>
-      <PaymentPlanManager 
-        clientProjectId={projectId}
-        planType="construction_payment"
-        compact={false}
-      />
-    </Suspense>
+      
+      {/* Selector de tipo de plan - mismo patrón que Sales y Finanzas */}
+      <div className="mb-4">
+        <Label htmlFor="planType" className="text-sm font-medium">Tipo de Plan de Pago</Label>
+        <Select 
+          value={selectedPlanType} 
+          onValueChange={(value: 'all' | 'design_payment' | 'construction_payment') => setSelectedPlanType(value)}
+        >
+          <SelectTrigger className="w-full mt-1">
+            <SelectValue placeholder="Seleccionar tipo de plan" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">
+              <div className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                Todos los planes
+              </div>
+            </SelectItem>
+            <SelectItem value="design_payment">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                Planes de Diseño
+              </div>
+            </SelectItem>
+            <SelectItem value="construction_payment">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                Planes de Construcción
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* PaymentPlanManager - exactamente como en Sales y Finanzas */}
+      <Suspense fallback={
+        <div className="flex items-center justify-center p-8">
+          <div className="text-center space-y-2">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="text-sm text-muted-foreground">Cargando plan de pago...</p>
+          </div>
+        </div>
+      }>
+        <PaymentPlanManager 
+          clientProjectId={projectId}
+          planType={selectedPlanType === 'all' ? undefined : selectedPlanType}
+          readOnly={false}
+          compact={true}
+        />
+      </Suspense>
+    </div>
   );
 }
 
@@ -120,7 +171,7 @@ export default function PresupuestosPlaneacion() {
         </TabsContent>
 
         <TabsContent value="pagos" className="space-y-6">
-          <PaymentPlanRoot
+          <PaymentPlanSection
             selectedClientId={selectedClientId}
             selectedProjectId={selectedProjectId}
           />
