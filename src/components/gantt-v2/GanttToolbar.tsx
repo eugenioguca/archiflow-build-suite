@@ -63,53 +63,62 @@ export function GanttToolbar({
 
   return (
     <Card>
-      <CardContent className="p-6">
-        <div className="flex flex-wrap items-center gap-4">
-          {/* Start Month Selector */}
-          <div className="flex items-center gap-2">
-            <Label htmlFor="start-month" className="whitespace-nowrap">Mes inicial:</Label>
-            <Select 
-              value={plan.start_month} 
-              onValueChange={handleStartMonthChange}
-              disabled={isLoading}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {monthOptions.map((month) => (
-                  <SelectItem key={month.value} value={month.value}>
-                    {month.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-4">
+          {/* Configuration Controls */}
+          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+            {/* Start Month Selector */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <Label htmlFor="start-month" className="text-sm font-medium whitespace-nowrap">
+                Mes inicial:
+              </Label>
+              <Select 
+                value={plan.start_month} 
+                onValueChange={handleStartMonthChange}
+                disabled={isLoading}
+              >
+                <SelectTrigger className="w-full sm:w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {monthOptions.map((month) => (
+                    <SelectItem key={month.value} value={month.value}>
+                      {month.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* Months Count Input */}
-          <div className="flex items-center gap-2">
-            <Label htmlFor="months-count" className="whitespace-nowrap">Número de meses:</Label>
-            <Input
-              id="months-count"
-              type="number"
-              min={3}
-              max={24}
-              value={plan.months_count}
-              onChange={(e) => handleMonthsCountChange(e.target.value)}
-              className="w-20"
-              disabled={isLoading}
-            />
+            {/* Months Count Input */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <Label htmlFor="months-count" className="text-sm font-medium whitespace-nowrap">
+                Meses:
+              </Label>
+              <Input
+                id="months-count"
+                type="number"
+                min={3}
+                max={24}
+                value={plan.months_count}
+                onChange={(e) => handleMonthsCountChange(e.target.value)}
+                className="w-full sm:w-20"
+                disabled={isLoading}
+              />
+            </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:ml-auto">
             <Button 
               onClick={onAddMayor}
               disabled={isLoading || !canAddMayor}
-              className="bg-primary hover:bg-primary/90"
+              className="bg-primary hover:bg-primary/90 touch-manipulation flex-1 sm:flex-none"
+              size="sm"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Añadir Mayor
+              <span className="hidden sm:inline">Añadir Mayor</span>
+              <span className="sm:hidden">Mayor</span>
             </Button>
             
             <Button 
@@ -117,31 +126,35 @@ export function GanttToolbar({
               variant="outline" 
               size="sm"
               disabled={isLoading}
-              className="gap-2"
+              className="gap-2 touch-manipulation flex-1 sm:flex-none"
             >
               <Minus className="h-4 w-4" />
-              Añadir Descuento
+              <span className="hidden sm:inline">Añadir Descuento</span>
+              <span className="sm:hidden">Descuento</span>
             </Button>
             
             <Button 
               onClick={() => setShowBrandingModal(true)}
               variant="outline" 
               size="sm"
-              className="gap-2"
+              className="gap-2 touch-manipulation flex-1 sm:flex-none"
             >
               <Settings className="h-4 w-4" />
-              Configurar Encabezado
+              <span className="hidden md:inline">Configurar Encabezado</span>
+              <span className="md:hidden">Config.</span>
             </Button>
             
             {plan && lines.length > 0 && (
-              <GanttV2PDFExport
-                plan={plan}
-                lines={lines}
-                mayores={mayores}
-                overrides={overrides}
-                clientId={clientId}
-                projectId={projectId}
-              />
+              <div className="flex-1 sm:flex-none">
+                <GanttV2PDFExport
+                  plan={plan}
+                  lines={lines}
+                  mayores={mayores}
+                  overrides={overrides}
+                  clientId={clientId}
+                  projectId={projectId}
+                />
+              </div>
             )}
           </div>
         </div>

@@ -139,28 +139,34 @@ export function MatrixSection({
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="sticky left-0 z-10 bg-background border-r min-w-[200px]">
-                  Concepto
-                </TableHead>
-                {monthRange.map((month) => (
-                  <TableHead key={month.value} className="text-center min-w-[120px] border-r">
-                    {month.label}
+        <div className="relative">
+          {/* Scroll indicator for mobile */}
+          <div className="sm:hidden absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-background/80 to-transparent z-20 pointer-events-none opacity-60" />
+          
+          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+            <Table className="w-full">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="sticky left-0 z-20 bg-background border-r w-36 sm:w-48 md:w-52 min-w-[144px] sm:min-w-[200px] text-xs sm:text-sm">
+                    Concepto
                   </TableHead>
-                ))}
-                <TableHead className="text-center min-w-[120px] font-semibold">
-                  TOTAL
-                </TableHead>
-              </TableRow>
-            </TableHeader>
+                  {monthRange.map((month) => (
+                    <TableHead key={month.value} className="text-center border-r w-20 sm:w-28 md:w-32 min-w-[80px] sm:min-w-[120px] text-xs sm:text-sm">
+                      {month.label}
+                    </TableHead>
+                  ))}
+                  <TableHead className="text-center w-20 sm:w-28 md:w-32 min-w-[80px] sm:min-w-[120px] font-semibold text-xs sm:text-sm">
+                    TOTAL
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {concepts.map((concept) => (
                 <TableRow key={concept.key}>
-                  <TableCell className="sticky left-0 z-10 bg-background border-r font-medium">
-                    {concept.label}
+                  <TableCell className="sticky left-0 z-20 bg-background border-r font-medium text-xs sm:text-sm">
+                    <div className="truncate max-w-[140px] sm:max-w-none" title={concept.label}>
+                      {concept.label}
+                    </div>
                   </TableCell>
                   {monthRange.map((month) => {
                     let value: number | string = 0;
@@ -196,26 +202,28 @@ export function MatrixSection({
                     return (
                       <TableCell 
                         key={month.value} 
-                        className={`text-center border-r ${isOverridden ? 'bg-amber-50 text-amber-800' : ''}`}
+                        className={`text-center border-r text-xs sm:text-sm ${isOverridden ? 'bg-amber-50 text-amber-800' : ''}`}
                       >
-                        <div className="flex items-center justify-center gap-1">
-                          {concept.format === 'currency' && formatCurrency(value as number)}
-                          {concept.format === 'percent' && `${(value as number).toFixed(2)}%`}
-                          {concept.format === 'text' && (() => {
-                            const textValue = value as string;
-                            if (!textValue || textValue === 'none') return '-';
-                            
-                            // If it's a number, format as "Día X"
-                            const numValue = parseInt(textValue, 10);
-                            if (!isNaN(numValue) && numValue >= 1 && numValue <= 31) {
-                              return `Día ${numValue}`;
-                            }
-                            
-                            // Otherwise show the text as-is (for "Pago 1", "Primera Quincena", etc.)
-                            return textValue;
-                          })()}
+                        <div className="flex items-center justify-center gap-0.5 sm:gap-1">
+                          <div className="truncate max-w-[60px] sm:max-w-none">
+                            {concept.format === 'currency' && formatCurrency(value as number)}
+                            {concept.format === 'percent' && `${(value as number).toFixed(2)}%`}
+                            {concept.format === 'text' && (() => {
+                              const textValue = value as string;
+                              if (!textValue || textValue === 'none') return '-';
+                              
+                              // If it's a number, format as "Día X"
+                              const numValue = parseInt(textValue, 10);
+                              if (!isNaN(numValue) && numValue >= 1 && numValue <= 31) {
+                                return `Día ${numValue}`;
+                              }
+                              
+                              // Otherwise show the text as-is (for "Pago 1", "Primera Quincena", etc.)
+                              return textValue;
+                            })()}
+                          </div>
                           {isOverridden && (
-                            <Edit2 className="h-3 w-3 text-amber-600" />
+                            <Edit2 className="h-2 w-2 sm:h-3 sm:w-3 text-amber-600 flex-shrink-0" />
                           )}
                         </div>
                       </TableCell>
@@ -223,7 +231,7 @@ export function MatrixSection({
                   })}
                   
                   {/* Total Column */}
-                  <TableCell className="text-center font-semibold">
+                  <TableCell className="text-center font-semibold text-xs sm:text-sm">
                     {concept.format === 'currency' && (
                       formatCurrency(
                         monthRange.reduce((sum, month) => {
@@ -254,7 +262,8 @@ export function MatrixSection({
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
+            </Table>
+          </div>
         </div>
       </CardContent>
 
