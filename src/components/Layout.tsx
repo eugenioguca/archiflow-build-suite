@@ -61,7 +61,7 @@ export default function Layout({ children }: LayoutProps) {
             {/* Overlay */}
             {mobileSidebar.isOpen && (
               <div 
-                className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-300"
+                className="fixed inset-0 bg-black/50 z-30 transition-opacity duration-300"
                 onClick={mobileSidebar.close}
               />
             )}
@@ -77,12 +77,29 @@ export default function Layout({ children }: LayoutProps) {
           </>
         )}
         
-        <div className="flex-1 flex flex-col">
+        {/* Content area que se ajusta automáticamente al sidebar en desktop */}
+        <div className={`flex-1 flex flex-col ${!isMobile ? 'transition-[margin] duration-200' : ''}`} style={{
+          marginLeft: !isMobile ? '64px' : undefined // Siempre deja espacio para el sidebar colapsado en desktop
+        }}>
           <header className={`${isMobile ? 'h-12' : 'h-14'} flex items-center justify-between border-b bg-background ${isMobile ? 'px-3' : 'px-6'}`}>
             <div className="flex items-center gap-4">
-              {!isMobile && <MobileSidebarTrigger />}
               {isMobile && (
-                <div className="text-sm font-medium text-muted-foreground ml-12">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={mobileSidebar.toggle}
+                  className="h-10 w-10 p-0 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring transition-all duration-200"
+                  aria-label={mobileSidebar.isOpen ? "Cerrar menú" : "Abrir menú"}
+                >
+                  {mobileSidebar.isOpen ? (
+                    <X className="h-5 w-5 text-foreground" />
+                  ) : (
+                    <Menu className="h-5 w-5 text-foreground" />
+                  )}
+                </Button>
+              )}
+              {isMobile && (
+                <div className="text-sm font-medium text-muted-foreground">
                   ArchiFlow
                 </div>
               )}
@@ -101,7 +118,6 @@ export default function Layout({ children }: LayoutProps) {
           </main>
         </div>
       </div>
-      
       {/* Eye Toggle Button for Mobile Only */}
       {isMobile && (
         <MobileEyeToggle 

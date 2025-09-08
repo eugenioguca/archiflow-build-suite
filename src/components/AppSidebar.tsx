@@ -20,6 +20,9 @@ import {
   UserCheck,
   HandHeart,
   Calendar,
+  Pin,
+  Menu,
+  X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -39,6 +42,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 
 const allMenuItems = [
@@ -62,19 +66,25 @@ const clientItems = [
   
 ];
 
+// Constantes de anchura
+const COLLAPSED_W = 64;
+const EXPANDED_W = 264;
+
+type SidebarMode = 'pinned-open' | 'pinned-closed' | 'hover-open';
+
 export function AppSidebar() {
   const { state, setOpenMobile } = useSidebar();
   const location = useLocation();
   const { user, signOut } = useAuth();
   const currentPath = location.pathname;
   
-  // Estado local para hover automático en desktop
-  const [isHovering, setIsHovering] = useState(false);
+  // Estados de la máquina de estados del sidebar
+  const [isPinnedOpen, setIsPinnedOpen] = useState<boolean>(false);
+  const [isHovering, setIsHovering] = useState<boolean>(false);
   const isMobile = useIsMobile();
   
-  // En desktop: collapsed por defecto, expandido en hover
-  // En mobile: usa el estado original del sidebar
-  const collapsed = isMobile ? state === "collapsed" : !isHovering;
+  // Estado derivado: expandido si está pinned-open O si está en hover (hover-open)
+  const isExpanded = isPinnedOpen || isHovering;
   
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userDepartment, setUserDepartment] = useState<string | null>(null);
@@ -107,6 +117,10 @@ export function AppSidebar() {
     if (isMobile) {
       setOpenMobile(false);
     }
+  };
+
+  const handlePinToggle = () => {
+    setIsPinnedOpen(prev => !prev);
   };
 
   const isActive = (path: string) => currentPath === path;
@@ -158,107 +172,248 @@ export function AppSidebar() {
     return `${positionTitle} ${departmentTitle}`.trim();
   };
 
-  return (
-    <Sidebar 
-      collapsible={isMobile ? "none" : "icon"} 
-      className="border-r border-sidebar-border transition-all duration-300 ease-out"
-      variant={isMobile ? "floating" : "sidebar"}
-      onMouseEnter={() => !isMobile && setIsHovering(true)}
-      onMouseLeave={() => !isMobile && setIsHovering(false)}
-      style={{
-        width: isMobile ? undefined : collapsed ? "64px" : "240px"
-      }}
-    >
-      <SidebarHeader className={`${isMobile ? 'p-3' : 'p-4'} border-b border-sidebar-border`}>
-        {(!collapsed || isMobile) && (
+  if (isMobile) {
+    return (
+      <Sidebar 
+        collapsible="none"
+        className="border-r border-sidebar-border"
+        variant="floating"
+      >
+        {/* Contenido móvil simplificado - mantener funcionalmente igual */}
+        <SidebarHeader className="p-3 border-b border-sidebar-border">
           <div className="flex justify-center">
             <img 
               src="/lovable-uploads/2d4574ff-eac1-4a35-8890-f3fb20cf2252.png" 
               alt="Dovita Arquitectura" 
-              className={`${isMobile ? 'h-10' : 'h-12'} w-auto dark:hidden`}
+              className="h-10 w-auto dark:hidden"
             />
             <img 
               src="/lovable-uploads/7a3755e3-978f-4182-af7d-1db88590b5a4.png" 
               alt="Dovita Arquitectura" 
-              className={`${isMobile ? 'h-10' : 'h-12'} w-auto hidden dark:block`}
+              className="h-10 w-auto hidden dark:block"
             />
           </div>
-        )}
-        {collapsed && !isMobile && (
-          <div className="flex justify-center">
-            <div className="p-2 bg-primary rounded-lg">
-              <Building2 className="h-6 w-6 text-primary-foreground" />
-            </div>
-          </div>
-        )}
-      </SidebarHeader>
+        </SidebarHeader>
 
-      <SidebarContent className="px-2">
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/70 font-medium text-xs">
-            Módulos Principales
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild className={`${isMobile ? 'h-12' : 'h-11'}`}>
-                    <NavLink to={item.url} className={getNavCls} onClick={handleNavigate}>
-                      <div className={`p-1.5 rounded-lg ${item.color}`}>
-                        <item.icon className="h-5 w-5" />
-                      </div>
-                      {(!collapsed || isMobile) && (
-                        <span className={`font-medium ${isMobile ? 'text-base' : 'text-sm'}`}>{item.title}</span>
-                      )}
+        <SidebarContent className="px-2">
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu className="space-y-1">
+                {menuItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild className="h-12">
+                      <NavLink to={item.url} className={getNavCls} onClick={handleNavigate}>
+                        <div className={`p-1.5 rounded-lg ${item.color}`}>
+                          <item.icon className="h-5 w-5" />
+                        </div>
+                        <span className="font-medium text-base">{item.title}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+
+        {user && (
+          <SidebarFooter className="p-3 border-t border-sidebar-border">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-2 bg-sidebar-accent/50 rounded-lg">
+                <div className="p-2 bg-primary rounded-full">
+                  <User className="h-4 w-4 text-primary-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-sidebar-foreground truncate">
+                    {user.email}
+                  </p>
+                  <p className="text-xs text-sidebar-foreground/70">
+                    {userRole === 'client' ? 'Cliente' : getPositionDisplay(userPosition, userDepartment)}
+                  </p>
+                </div>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={signOut}
+                className="w-full bg-transparent border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Cerrar Sesión
+              </Button>
+            </div>
+          </SidebarFooter>
+        )}
+      </Sidebar>
+    );
+  }
+
+  return (
+    <TooltipProvider>
+      <aside 
+        className="fixed left-0 top-0 h-screen z-40 bg-sidebar shadow-sm transition-[width] duration-200 ease-out border-r border-sidebar-border"
+        style={{ width: isExpanded ? EXPANDED_W : COLLAPSED_W }}
+        onMouseEnter={() => !isPinnedOpen && setIsHovering(true)}
+        onMouseLeave={() => !isPinnedOpen && setIsHovering(false)}
+      >
+        {/* Header con logo y botón pin */}
+        <header className="p-4 border-b border-sidebar-border">
+          <div className="flex items-center justify-between">
+            {isExpanded && (
+              <div className="flex justify-center flex-1">
+                <img 
+                  src="/lovable-uploads/2d4574ff-eac1-4a35-8890-f3fb20cf2252.png" 
+                  alt="Dovita Arquitectura" 
+                  className="h-12 w-auto dark:hidden"
+                />
+                <img 
+                  src="/lovable-uploads/7a3755e3-978f-4182-af7d-1db88590b5a4.png" 
+                  alt="Dovita Arquitectura" 
+                  className="h-12 w-auto hidden dark:block"
+                />
+              </div>
+            )}
+            
+            {!isExpanded && (
+              <div className="flex justify-center w-full">
+                <div className="p-2 bg-primary rounded-lg">
+                  <Building2 className="h-6 w-6 text-primary-foreground" />
+                </div>
+              </div>
+            )}
+            
+            {/* Botón Pin - solo visible en expandido */}
+            {isExpanded && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handlePinToggle}
+                className={`ml-2 p-1.5 ${isPinnedOpen ? 'bg-primary text-primary-foreground' : 'hover:bg-sidebar-accent'}`}
+                aria-pressed={isPinnedOpen}
+                aria-label={isPinnedOpen ? "Desanclar sidebar" : "Anclar sidebar"}
+              >
+                <Pin className={`h-4 w-4 transition-transform ${isPinnedOpen ? 'rotate-45' : ''}`} />
+              </Button>
+            )}
+          </div>
+        </header>
+
+        {/* Contenido de navegación */}
+        <nav className="flex-1 px-3 py-4">
+          <ul className={`space-y-2 ${!isExpanded ? 'flex flex-col items-center' : ''}`}>
+            {menuItems.map((item) => {
+              const itemIsActive = isActive(item.url);
+              
+              return (
+                <li key={item.title}>
+                  {isExpanded ? (
+                    <NavLink
+                      to={item.url}
+                      className={`group flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer transition-all duration-150 ${
+                        itemIsActive 
+                          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md" 
+                          : "hover:bg-sidebar-accent/80"
+                      }`}
+                      onClick={handleNavigate}
+                    >
+                      <span
+                        className="flex items-center justify-center w-10 h-10 shrink-0 rounded-lg"
+                        style={{ overflow: 'visible' }}
+                      >
+                        <div className={`p-1.5 rounded-lg ${item.color}`}>
+                          <item.icon className="w-6 h-6" />
+                        </div>
+                      </span>
+                      
+                      <span className="whitespace-nowrap overflow-hidden font-medium text-sm">
+                        {item.title}
+                      </span>
                     </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
+                  ) : (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <NavLink
+                          to={item.url}
+                          className={`group flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer transition-all duration-150 ${
+                            itemIsActive 
+                              ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md" 
+                              : "hover:bg-sidebar-accent/80"
+                          }`}
+                          onClick={handleNavigate}
+                        >
+                          <span
+                            className="flex items-center justify-center w-10 h-10 shrink-0 rounded-lg"
+                            style={{ overflow: 'visible' }}
+                          >
+                            <div className={`p-1.5 rounded-lg ${item.color}`}>
+                              <item.icon className="w-6 h-6" />
+                            </div>
+                          </span>
+                        </NavLink>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="ml-2">
+                        {item.title}
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
 
-      <SidebarFooter className={`${isMobile ? 'p-3' : 'p-4'} border-t border-sidebar-border`}>
-        {(!collapsed || isMobile) && user && (
-          <div className="space-y-3">
-            <div className={`flex items-center gap-3 ${isMobile ? 'p-2' : 'p-3'} bg-sidebar-accent/50 rounded-lg`}>
-              <div className="p-2 bg-primary rounded-full">
-                <User className="h-4 w-4 text-primary-foreground" />
+        {/* Footer con información del usuario */}
+        {user && (
+          <footer className="p-4 border-t border-sidebar-border">
+            {isExpanded ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 bg-sidebar-accent/50 rounded-lg">
+                  <div className="p-2 bg-primary rounded-full">
+                    <User className="h-4 w-4 text-primary-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-sidebar-foreground truncate">
+                      {user.email}
+                    </p>
+                    <p className="text-xs text-sidebar-foreground/70">
+                      {userRole === 'client' ? 'Cliente' : getPositionDisplay(userPosition, userDepartment)}
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={signOut}
+                  className="w-full bg-transparent border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Cerrar Sesión
+                </Button>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className={`${isMobile ? 'text-sm' : 'text-sm'} font-medium text-sidebar-foreground truncate`}>
-                  {user.email}
-                </p>
-                <p className="text-xs text-sidebar-foreground/70">
-                  {userRole === 'client' ? 'Cliente' : getPositionDisplay(userPosition, userDepartment)}
-                </p>
+            ) : (
+              <div className="flex justify-center">
+                {user ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={signOut}
+                        className="p-2 bg-transparent border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent"
+                      >
+                        <LogOut className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="ml-2">
+                      Cerrar Sesión
+                    </TooltipContent>
+                  </Tooltip>
+                ) : null}
               </div>
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={signOut}
-              className="w-full bg-transparent border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Cerrar Sesión
-            </Button>
-          </div>
+            )}
+          </footer>
         )}
-        {collapsed && !isMobile && user && (
-          <div className="flex justify-center">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={signOut}
-              className="p-2 bg-transparent border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-      </SidebarFooter>
-    </Sidebar>
+      </aside>
+    </TooltipProvider>
   );
 }
