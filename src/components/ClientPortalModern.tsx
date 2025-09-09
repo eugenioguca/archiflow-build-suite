@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { usePaymentPlans } from '@/hooks/usePaymentPlans';
 import { usePaymentInstallments } from '@/hooks/usePaymentInstallments';
+import { usePresupuestoParametrico } from '@/hooks/usePresupuestoParametrico';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -90,6 +91,17 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
   const [activeTab, setActiveTab] = useState('calendar');
   const [paidAmount, setPaidAmount] = useState(0);
   const [progressPhotos, setProgressPhotos] = useState([]);
+
+  // Hook para obtener el presupuesto paramétrico
+  const { presupuestos: presupuestoParametrico } = usePresupuestoParametrico(
+    selectedProject?.client_id,
+    selectedProject?.id
+  );
+
+  // Calcular el total del presupuesto paramétrico
+  const totalPresupuestoParametrico = presupuestoParametrico?.reduce((total, item) => {
+    return total + (item.monto_total || 0);
+  }, 0) || 0;
 
   useEffect(() => {
     if (isPreview && previewData) {
@@ -503,7 +515,12 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Presupuesto Obra</p>
-                  <p className="font-bold">{formatCurrency(selectedProject?.construction_budget || 0)}</p>
+                  <p className="font-bold">
+                    {totalPresupuestoParametrico > 0 
+                      ? formatCurrency(totalPresupuestoParametrico) 
+                      : '—'
+                    }
+                  </p>
                 </div>
               </div>
             </CardContent>
