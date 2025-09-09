@@ -323,8 +323,8 @@ export function ExecutiveFinalPdf({
 
   // Function to render company logo - same approach as Gantt PDF
   const renderCompanyLogo = () => {
-    // Use the uploaded logo from the user
-    const logoSrc = window.location.origin + '/lovable-uploads/f5f6e22f-528a-4518-8c8d-13186f4b7cbc.png';
+    // Use the same logo that works in Gantt PDF
+    const logoSrc = window.location.origin + '/lovable-uploads/d967a2e5-99bb-4992-8a2d-f0887371c03c.png';
     
     try {
       return (
