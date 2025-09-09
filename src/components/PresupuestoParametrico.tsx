@@ -296,9 +296,9 @@ export function PresupuestoParametrico({
     doc.line(margin, infoY, pageWidth - margin, infoY);
     infoY += 10;
 
-    // Table setup
-    const colWidths = [40, 35, 45, 25, 30, 30]; // Adjusted widths
-    const headers = ['Departamento', 'Mayor', 'Partida', 'Cantidad', 'P. Unitario', 'Monto Total'];
+    // Table setup - removed Departamento column
+    const colWidths = [50, 55, 30, 35, 35]; // Adjusted widths without departamento
+    const headers = ['Mayor', 'Partida', 'Cantidad', 'P. Unitario', 'Monto Total'];
     const rowHeight = 8;
     let currentY = infoY;
 
@@ -333,9 +333,8 @@ export function PresupuestoParametrico({
     doc.setFontSize(8);
 
     const allItems = presupuestos.map(item => ({
-      departamento: item.departamento,
-      mayor_codigo: item.mayor ? `${item.mayor.codigo} - ${item.mayor.nombre}` : 'N/A',
-      partida_codigo: item.partida ? `${item.partida.codigo} - ${item.partida.nombre}` : 'N/A',
+      mayor_nombre: item.mayor ? item.mayor.nombre : 'N/A',
+      partida_nombre: item.partida ? item.partida.nombre : 'N/A',
       cantidad_requerida: item.cantidad_requerida,
       precio_unitario: item.precio_unitario,
       monto_total: item.monto_total
@@ -358,12 +357,11 @@ export function PresupuestoParametrico({
         doc.rect(margin, currentY, contentWidth, rowHeight, 'F');
       }
 
-      // Row data
+      // Row data - removed departamento column, only show names without codes
       let x = margin;
       const rowData = [
-        item.departamento,
-        item.mayor_codigo,
-        item.partida_codigo,
+        item.mayor_nombre,
+        item.partida_nombre,
         item.cantidad_requerida.toString(),
         `$${item.precio_unitario.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`,
         `$${item.monto_total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
@@ -371,8 +369,8 @@ export function PresupuestoParametrico({
 
       rowData.forEach((data, colIndex) => {
         const cellWidth = colWidths[colIndex];
-        const textX = colIndex >= 3 ? x + cellWidth - 2 : x + 2; // Right align for numeric columns
-        const align = colIndex >= 3 ? 'right' : 'left';
+        const textX = colIndex >= 2 ? x + cellWidth - 2 : x + 2; // Right align for numeric columns (adjusted for removed departamento)
+        const align = colIndex >= 2 ? 'right' : 'left';
         
         // Truncate text if too long
         let displayText = data;
