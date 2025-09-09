@@ -5104,6 +5104,7 @@ export type Database = {
         Row: {
           cantidad: number
           cliente_id: string
+          codigo_snapshot: string | null
           created_at: string
           created_by: string
           id: string
@@ -5119,6 +5120,7 @@ export type Database = {
         Insert: {
           cantidad: number
           cliente_id: string
+          codigo_snapshot?: string | null
           created_at?: string
           created_by: string
           id?: string
@@ -5134,6 +5136,7 @@ export type Database = {
         Update: {
           cantidad?: number
           cliente_id?: string
+          codigo_snapshot?: string | null
           created_at?: string
           created_by?: string
           id?: string
