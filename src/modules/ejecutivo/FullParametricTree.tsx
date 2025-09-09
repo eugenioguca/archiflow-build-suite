@@ -6,9 +6,27 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ChevronDown, ChevronRight, Plus, Building2, Archive, Package } from 'lucide-react';
 import { ExecutiveSubpartidaRow } from './ExecutiveSubpartidaRow';
 import type { GroupedParametric } from './ExecutiveBudgetPage';
-import type { PresupuestoEjecutivo } from '@/hooks/usePresupuestoEjecutivo';
 
-interface ExecutiveItem extends PresupuestoEjecutivo {}
+interface ExecutiveItem {
+  id: string;
+  cliente_id: string;
+  proyecto_id: string;
+  presupuesto_parametrico_id: string;
+  departamento: string;
+  mayor_id: string;
+  partida_id: string;
+  subpartida_id: string;
+  unidad: string;
+  cantidad_requerida: number;
+  precio_unitario: number;
+  monto_total: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  mayor?: { codigo: string; nombre: string };
+  partida?: { codigo: string; nombre: string };
+  subpartida?: { codigo: string; nombre: string };
+}
 
 interface FullParametricTreeProps {
   groupedParametric: GroupedParametric;
@@ -94,7 +112,7 @@ export function FullParametricTree({
   };
 
   const getPartidaExecutiveItems = (partidaId: string) => {
-    return executiveItems.filter(item => item.presupuesto_parametrico_id === partidaId);
+    return executiveItems.filter(item => item.partida_id === partidaId);
   };
 
   const getPartidaStatus = (partida: any) => {
@@ -133,14 +151,31 @@ export function FullParametricTree({
   };
 
   const handleCreateSubpartida = (partidaId: string, data: Partial<ExecutiveItem>) => {
+    // Obtener contexto de la partida para departamento, mayor_id, partida_id
+    let departamento = '';
+    let mayor_id = '';
+    let parametric_item_id = '';
+
+    // Buscar la partida en la estructura para obtener sus IDs
+    Object.entries(groupedParametric.departamentos).forEach(([deptoKey, depto]) => {
+      Object.entries(depto.mayores).forEach(([mayorKey, mayor]) => {
+        const partida = mayor.partidas.find(p => p.id === partidaId);
+        if (partida) {
+          departamento = 'CONSTRUCCIÓN';
+          mayor_id = partida.mayor_id;
+          parametric_item_id = partida.id; // Este es el ID del item del presupuesto paramétrico
+        }
+      });
+    });
+
     onCreateItem({
       cliente_id: '', // Will be filled by the mutation
       proyecto_id: '', // Will be filled by the mutation  
-      presupuesto_parametrico_id: partidaId,
-      departamento: '',
-      mayor_id: '',
-      partida_id: '',
-      subpartida_id: '',
+      presupuesto_parametrico_id: parametric_item_id,
+      departamento,
+      mayor_id,
+      partida_id: partidaId,
+      subpartida_id: data.subpartida_id || '',
       unidad: data.unidad || 'pza',
       cantidad_requerida: data.cantidad_requerida || 1,
       precio_unitario: data.precio_unitario || 0

@@ -7,6 +7,7 @@ export interface SearchableComboboxItem {
   codigo?: string
   searchText?: string
   group?: string
+  unidad_default?: string
 }
 
 interface SearchableComboboxProps {

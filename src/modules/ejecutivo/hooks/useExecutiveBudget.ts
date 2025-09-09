@@ -3,15 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { PresupuestoEjecutivo } from '@/hooks/usePresupuestoEjecutivo';
 
-export function useExecutiveBudget(clientId?: string, projectId?: string, parametricId?: string) {
+export function useExecutiveBudget(clientId?: string, projectId?: string) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   // Query for fetching executive budget items
   const executiveQuery = useQuery({
-    queryKey: ['executive-budget', clientId, projectId, parametricId],
+    queryKey: ['executive-budget', clientId, projectId],
     queryFn: async () => {
-      if (!clientId || !projectId || !parametricId) return [];
+      if (!clientId || !projectId) return [];
 
       let query = supabase
         .from('presupuesto_ejecutivo')
@@ -23,7 +23,6 @@ export function useExecutiveBudget(clientId?: string, projectId?: string, parame
         `)
         .eq('cliente_id', clientId)
         .eq('proyecto_id', projectId)
-        .eq('presupuesto_parametrico_id', parametricId)
         .order('created_at', { ascending: true });
 
       const { data, error } = await query;
@@ -31,7 +30,7 @@ export function useExecutiveBudget(clientId?: string, projectId?: string, parame
       if (error) throw error;
       return data as PresupuestoEjecutivo[];
     },
-    enabled: Boolean(clientId && projectId && parametricId),
+    enabled: Boolean(clientId && projectId),
   });
 
   // Mutation for creating executive budget item
@@ -49,23 +48,31 @@ export function useExecutiveBudget(clientId?: string, projectId?: string, parame
 
       if (!profile) throw new Error('Profile not found');
 
+      // Calculate total
+      const monto_total = (data.cantidad_requerida || 0) * (data.precio_unitario || 0);
+
       const { data: result, error } = await supabase
         .from('presupuesto_ejecutivo')
         .insert({
           cliente_id: clientId,
           proyecto_id: projectId,
-          presupuesto_parametrico_id: parametricId,
-          departamento: data.departamento,
+          presupuesto_parametrico_id: data.presupuesto_parametrico_id, // ID del item paramétrico
+          departamento: 'CONSTRUCCIÓN', // Fixed for construction department
           mayor_id: data.mayor_id,
           partida_id: data.partida_id,
           subpartida_id: data.subpartida_id,
-          unidad: data.unidad,
-          cantidad_requerida: data.cantidad_requerida,
-          precio_unitario: data.precio_unitario,
-          monto_total: data.cantidad_requerida * data.precio_unitario,
+          unidad: data.unidad || 'pza',
+          cantidad_requerida: data.cantidad_requerida || 1,
+          precio_unitario: data.precio_unitario || 0,
+          monto_total,
           created_by: profile.id
         })
-        .select()
+        .select(`
+          *,
+          mayor:chart_of_accounts_mayor(codigo, nombre),
+          partida:chart_of_accounts_partidas(codigo, nombre),
+          subpartida:chart_of_accounts_subpartidas(codigo, nombre)
+        `)
         .single();
       
       if (error) throw error;
@@ -92,15 +99,22 @@ export function useExecutiveBudget(clientId?: string, projectId?: string, parame
   // Mutation for updating executive budget item
   const updateExecutiveItem = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const monto_total = (data.cantidad_requerida || 0) * (data.precio_unitario || 0);
+      
       const { data: result, error } = await supabase
         .from('presupuesto_ejecutivo')
         .update({
           ...data,
-          monto_total: data.cantidad_requerida * data.precio_unitario,
+          monto_total,
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
-        .select()
+        .select(`
+          *,
+          mayor:chart_of_accounts_mayor(codigo, nombre),
+          partida:chart_of_accounts_partidas(codigo, nombre),
+          subpartida:chart_of_accounts_subpartidas(codigo, nombre)
+        `)
         .single();
       
       if (error) throw error;

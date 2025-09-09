@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { usePresupuestoParametrico } from '@/hooks/usePresupuestoParametrico';
-import { usePresupuestoEjecutivo, type PresupuestoEjecutivo } from '@/hooks/usePresupuestoEjecutivo';
+import { useExecutiveBudget } from './hooks/useExecutiveBudget';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -52,12 +52,12 @@ export default function ExecutiveBudgetPage({ selectedClientId, selectedProjectI
   
   // Load executive budget data for all parametric items
   const { 
-    presupuestosEjecutivo: executiveItems, 
+    executiveItems, 
     isLoading: isLoadingExecutive, 
-    createPresupuestoEjecutivo,
-    updatePresupuestoEjecutivo,
-    deletePresupuestoEjecutivo 
-  } = usePresupuestoEjecutivo(selectedClientId, selectedProjectId);
+    createExecutiveItem,
+    updateExecutiveItem,
+    deleteExecutiveItem 
+  } = useExecutiveBudget(selectedClientId, selectedProjectId);
 
   // Group parametric data by departamento -> mayor -> partidas
   const groupedParametric = useMemo(() => {
@@ -281,9 +281,9 @@ export default function ExecutiveBudgetPage({ selectedClientId, selectedProjectI
             searchTerm={searchTerm}
             statusFilter={statusFilter}
             expandedAll={expandedAll}
-            onCreateItem={(data) => createPresupuestoEjecutivo.mutate(data)}
-            onUpdateItem={(id, data) => updatePresupuestoEjecutivo.mutate({ id, data })}
-            onDeleteItem={(id) => deletePresupuestoEjecutivo.mutate(id)}
+            onCreateItem={(data) => createExecutiveItem.mutate(data)}
+            onUpdateItem={(id, data) => updateExecutiveItem.mutate({ id, data })}
+            onDeleteItem={(id) => deleteExecutiveItem.mutate(id)}
           />
         </div>
       )}

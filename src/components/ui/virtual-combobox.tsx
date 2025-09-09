@@ -21,6 +21,7 @@ export interface VirtualComboboxItem {
   codigo?: string
   searchText?: string
   group?: string
+  unidad_default?: string
 }
 
 interface VirtualComboboxProps {
