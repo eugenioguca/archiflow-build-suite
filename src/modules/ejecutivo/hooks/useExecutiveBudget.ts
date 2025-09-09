@@ -1,11 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useExecutivePartidas } from './useExecutivePartidas';
 import type { PresupuestoEjecutivo } from '@/hooks/usePresupuestoEjecutivo';
 
 export function useExecutiveBudget(clientId?: string, projectId?: string) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  
+  // Hook para partidas ejecutivas (padre)
+  const { executivePartidas, upsertExecutivePartida } = useExecutivePartidas(clientId, projectId);
 
   // Query for fetching executive budget items
   const executiveQuery = useQuery({
@@ -17,8 +21,6 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
         .from('presupuesto_ejecutivo')
         .select(`
           *,
-          mayor:chart_of_accounts_mayor(codigo, nombre),
-          partida:chart_of_accounts_partidas(codigo, nombre),
           subpartida:chart_of_accounts_subpartidas(codigo, nombre)
         `)
         .eq('cliente_id', clientId)
@@ -33,7 +35,7 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
     enabled: Boolean(clientId && projectId),
   });
 
-  // Mutation for creating executive budget item
+  // Mutation for creating executive budget item - temporarily use old structure
   const createExecutiveItem = useMutation({
     mutationFn: async (data: any) => {
       console.log('Creating executive item with data:', data);
@@ -51,19 +53,19 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
       if (!profile) throw new Error('Profile not found');
 
       // Calculate total
-      const monto_total = (data.cantidad_requerida || 0) * (data.precio_unitario || 0);
+      const monto_total = (data.cantidad || data.cantidad_requerida || 0) * (data.precio_unitario || 0);
 
-      // Prepare insert data with required fields for RLS
+      // Use old structure for now - will be updated after types regeneration
       const insertData = {
         cliente_id: clientId,
         proyecto_id: projectId,
-        presupuesto_parametrico_id: data.presupuesto_parametrico_id, // ID del item paramétrico
-        departamento: 'CONSTRUCCIÓN', // Fixed for construction department
+        presupuesto_parametrico_id: data.presupuesto_parametrico_id,
+        departamento: 'CONSTRUCCIÓN',
         mayor_id: data.mayor_id,
         partida_id: data.partida_id,
         subpartida_id: data.subpartida_id,
         unidad: data.unidad || 'PZA',
-        cantidad_requerida: data.cantidad_requerida || 1,
+        cantidad_requerida: data.cantidad || data.cantidad_requerida || 1,
         precio_unitario: data.precio_unitario || 0,
         monto_total,
         created_by: profile.id
@@ -92,6 +94,7 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['executive-budget'] });
+      queryClient.invalidateQueries({ queryKey: ['executive-partidas'] });
       queryClient.invalidateQueries({ queryKey: ['executive-rollups'] });
       toast({
         title: "Subpartida creada",
@@ -112,20 +115,22 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
   // Mutation for updating executive budget item
   const updateExecutiveItem = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      const monto_total = (data.cantidad_requerida || 0) * (data.precio_unitario || 0);
+      const importe = (data.cantidad || 0) * (data.precio_unitario || 0);
       
       const { data: result, error } = await supabase
         .from('presupuesto_ejecutivo')
         .update({
-          ...data,
-          monto_total,
+          subpartida_id: data.subpartida_id,
+          nombre_subpartida_snapshot: data.nombre_subpartida,
+          unidad: data.unidad,
+          cantidad: data.cantidad,
+          precio_unitario: data.precio_unitario,
+          importe,
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
         .select(`
           *,
-          mayor:chart_of_accounts_mayor(codigo, nombre),
-          partida:chart_of_accounts_partidas(codigo, nombre),
           subpartida:chart_of_accounts_subpartidas(codigo, nombre)
         `)
         .single();
@@ -135,6 +140,7 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['executive-budget'] });
+      queryClient.invalidateQueries({ queryKey: ['executive-partidas'] });
       queryClient.invalidateQueries({ queryKey: ['executive-rollups'] });
       toast({
         title: "Subpartida actualizada",
@@ -163,6 +169,7 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['executive-budget'] });
+      queryClient.invalidateQueries({ queryKey: ['executive-partidas'] });
       queryClient.invalidateQueries({ queryKey: ['executive-rollups'] });
       toast({
         title: "Subpartida eliminada",
@@ -181,6 +188,7 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
 
   return {
     executiveItems: executiveQuery.data || [],
+    executivePartidas: executivePartidas || [],
     isLoading: executiveQuery.isLoading,
     isError: executiveQuery.isError,
     error: executiveQuery.error,

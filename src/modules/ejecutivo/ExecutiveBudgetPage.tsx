@@ -53,6 +53,7 @@ export default function ExecutiveBudgetPage({ selectedClientId, selectedProjectI
   // Load executive budget data for all parametric items
   const { 
     executiveItems, 
+    executivePartidas,
     isLoading: isLoadingExecutive, 
     createExecutiveItem,
     updateExecutiveItem,
@@ -129,11 +130,11 @@ export default function ExecutiveBudgetPage({ selectedClientId, selectedProjectI
   }
 
   // Calculate totals from all parametric items
-  const totalParametric = presupuestos.reduce((sum, item) => sum + item.monto_total, 0);
-  const totalExecutive = executiveItems.reduce((sum, item) => sum + item.monto_total, 0);
-  const difference = totalExecutive - totalParametric;
-  const isWithinBudget = Math.abs(difference) < 0.01;
-  const isOverBudget = difference > 0.01;
+  const totalParametrico = presupuestos.reduce((sum, item) => sum + item.monto_total, 0);
+  const totalEjecutivo = executiveItems.reduce((sum, item) => sum + item.monto_total, 0);
+  const diferencia = totalEjecutivo - totalParametrico;
+  const isWithinBudget = Math.abs(diferencia) < 0.01;
+  const isOverBudget = diferencia > 0.01;
 
   return (
     <div className="space-y-6">
@@ -199,8 +200,8 @@ export default function ExecutiveBudgetPage({ selectedClientId, selectedProjectI
                   </Badge>
                   <span className="text-sm">
                     {isOverBudget 
-                      ? `Excede por $${difference.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
-                      : `Disponible: $${Math.abs(difference).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                      ? `Excede por $${diferencia.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                      : `Disponible: $${Math.abs(diferencia).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
                     }
                   </span>
                 </div>
@@ -215,19 +216,19 @@ export default function ExecutiveBudgetPage({ selectedClientId, selectedProjectI
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">Total Paramétrico</p>
                   <p className="text-2xl font-bold text-primary">
-                    ${totalParametric.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    ${totalParametrico.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">Total Ejecutivo</p>
                   <p className="text-2xl font-bold">
-                    ${totalExecutive.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    ${totalEjecutivo.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">Diferencia</p>
                   <p className={`text-2xl font-bold ${isOverBudget ? 'text-destructive' : 'text-green-600'}`}>
-                    ${Math.abs(difference).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    ${Math.abs(diferencia).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
               </div>
