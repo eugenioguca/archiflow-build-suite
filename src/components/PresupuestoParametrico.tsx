@@ -161,7 +161,7 @@ export function PresupuestoParametrico({
       try {
         // Use the same logo file that works in Gantt PDF
         const logoUrl = window.location.origin + '/lovable-uploads/d967a2e5-99bb-4992-8a2d-f0887371c03c.png';
-        doc.addImage(logoUrl, 'PNG', margin, 8, 50, 15);
+        doc.addImage(logoUrl, 'PNG', margin, 8, 30, 15); // Adjusted to maintain aspect ratio
       } catch (error) {
         console.warn('Could not load logo:', error);
         // Fallback to company name if logo fails
