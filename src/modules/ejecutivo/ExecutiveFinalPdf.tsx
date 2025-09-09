@@ -321,6 +321,28 @@ export function ExecutiveFinalPdf({
     day: 'numeric'
   });
 
+  // Function to render company logo - same approach as Gantt PDF
+  const renderCompanyLogo = () => {
+    // Use the uploaded logo from the user
+    const logoSrc = window.location.origin + '/lovable-uploads/f5f6e22f-528a-4518-8c8d-13186f4b7cbc.png';
+    
+    try {
+      return (
+        <Image 
+          style={styles.companyLogo} 
+          src={logoSrc}
+        />
+      );
+    } catch (error) {
+      console.log('PDF: Error loading logo, falling back to text');
+      return (
+        <Text style={styles.companyName}>
+          {companySettings?.company_name || 'DOVITA CONSTRUCCIONES'}
+        </Text>
+      );
+    }
+  };
+
   // Group rows by partida for better page breaks
   const groupedRows = rows.reduce((acc, row) => {
     const key = `${row.mayor_id}-${row.partida_id}`;
@@ -426,13 +448,7 @@ export function ExecutiveFinalPdf({
         {/* Corporate Header - matching Gantt v2 */}
         <View style={styles.corporateHeader}>
           <View style={styles.companySection}>
-            {companySettings?.logo_url ? (
-              <Image style={styles.companyLogo} src={companySettings.logo_url} />
-            ) : (
-              <Text style={styles.companyName}>
-                {companySettings?.company_name || 'DOVITA CONSTRUCCIONES'}
-              </Text>
-            )}
+            {renderCompanyLogo()}
             <Text style={styles.companyContact}>
               {companySettings?.website || 'www.dovita.com'} | {companySettings?.email || 'info@dovita.com'} | {companySettings?.phone || '(555) 123-4567'}
               {'\n'}{companySettings?.address || 'Dirección de la empresa'}
