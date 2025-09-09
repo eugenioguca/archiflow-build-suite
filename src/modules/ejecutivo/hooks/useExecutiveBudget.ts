@@ -23,15 +23,17 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
         .select(`
           *,
           subpartida:chart_of_accounts_subpartidas(codigo, nombre),
-          partida_ejecutivo:presupuesto_ejecutivo_partida(
-            id,
-            parametrico:presupuesto_parametrico(
-              mayor_id,
-              partida_id,
-              mayor:chart_of_accounts_mayor(codigo, nombre),
-              partida:chart_of_accounts_partidas(codigo, nombre)
-            )
-          )
+           partida_ejecutivo:presupuesto_ejecutivo_partida(
+             id,
+             parametrico_id,
+             parametrico:presupuesto_parametrico(
+               id,
+               mayor_id,
+               partida_id,
+               mayor:chart_of_accounts_mayor(codigo, nombre),
+               partida:chart_of_accounts_partidas(codigo, nombre)
+             )
+           )
         `)
         .eq('cliente_id', clientId)
         .eq('proyecto_id', projectId)
@@ -113,7 +115,9 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
           subpartida:chart_of_accounts_subpartidas(codigo, nombre),
           partida_ejecutivo:presupuesto_ejecutivo_partida(
             id,
+            parametrico_id,
             parametrico:presupuesto_parametrico(
+              id,
               mayor_id,
               partida_id,
               mayor:chart_of_accounts_mayor(codigo, nombre),
@@ -132,10 +136,19 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
       console.log('Successfully created executive subpartida:', result);
       return result;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['executive-subpartidas'] });
-      queryClient.invalidateQueries({ queryKey: ['executive-partidas'] });
-      queryClient.invalidateQueries({ queryKey: ['executive-rollups'] });
+    onSuccess: (newItem) => {
+      // Invalidate queries with exact matching keys
+      queryClient.invalidateQueries({ queryKey: ['executive-subpartidas', clientId, projectId] });
+      queryClient.invalidateQueries({ queryKey: ['executive-partidas', clientId, projectId] });
+      queryClient.invalidateQueries({ queryKey: ['executive-rollups', clientId, projectId] });
+      
+      // Log success for debugging
+      console.log('Subpartida created successfully:', {
+        id: newItem.id,
+        partida_ejecutivo_id: newItem.partida_ejecutivo_id,
+        nombre: newItem.nombre_snapshot
+      });
+      
       toast({
         title: "Subpartida creada",
         description: "La subpartida se ha agregado exitosamente.",
@@ -183,7 +196,9 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
           subpartida:chart_of_accounts_subpartidas(codigo, nombre),
           partida_ejecutivo:presupuesto_ejecutivo_partida(
             id,
+            parametrico_id,
             parametrico:presupuesto_parametrico(
+              id,
               mayor_id,
               partida_id,
               mayor:chart_of_accounts_mayor(codigo, nombre),
@@ -197,9 +212,9 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['executive-subpartidas'] });
-      queryClient.invalidateQueries({ queryKey: ['executive-partidas'] });
-      queryClient.invalidateQueries({ queryKey: ['executive-rollups'] });
+      queryClient.invalidateQueries({ queryKey: ['executive-subpartidas', clientId, projectId] });
+      queryClient.invalidateQueries({ queryKey: ['executive-partidas', clientId, projectId] });
+      queryClient.invalidateQueries({ queryKey: ['executive-rollups', clientId, projectId] });
       toast({
         title: "Subpartida actualizada",
         description: "Los cambios se han guardado exitosamente.",
@@ -226,9 +241,9 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['executive-subpartidas'] });
-      queryClient.invalidateQueries({ queryKey: ['executive-partidas'] });
-      queryClient.invalidateQueries({ queryKey: ['executive-rollups'] });
+      queryClient.invalidateQueries({ queryKey: ['executive-subpartidas', clientId, projectId] });
+      queryClient.invalidateQueries({ queryKey: ['executive-partidas', clientId, projectId] });
+      queryClient.invalidateQueries({ queryKey: ['executive-rollups', clientId, projectId] });
       toast({
         title: "Subpartida eliminada",
         description: "La subpartida se ha eliminado correctamente.",

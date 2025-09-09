@@ -116,12 +116,23 @@ export function FullParametricTree({
     setExpandedPartidas(newExpanded);
   };
 
-  const getPartidaExecutiveItems = (partidaId: string) => {
-    // Since we don't have partida_id in the new structure, we need to find items by comparing 
-    // the parametrico relation to find items that belong to this partida
-    return executiveItems.filter(item => 
-      item.partida_ejecutivo?.parametrico?.partida_id === partidaId
-    );
+  const getPartidaExecutiveItems = (partidaParametricoId: string) => {
+    // Filter items that belong to this parametrico partida
+    // Use the parametrico_id field from presupuesto_ejecutivo_partida
+    return executiveItems.filter(item => {
+      // Type assertion to access parametrico_id until types are regenerated
+      const partidaEjecutivo = item.partida_ejecutivo as any;
+      const matchesParametrico = partidaEjecutivo?.parametrico_id === partidaParametricoId;
+      
+      console.log('Filtering executive items:', {
+        itemId: item.id,
+        parametricoId: partidaEjecutivo?.parametrico_id,
+        searchingFor: partidaParametricoId,
+        matches: matchesParametrico
+      });
+      
+      return matchesParametrico;
+    });
   };
 
   const getPartidaStatus = (partida: any) => {
@@ -237,7 +248,7 @@ export function FullParametricTree({
                               {mayor.partidas
                                 .filter(shouldShowPartida)
                                 .map((partida) => {
-                                  const partidaExecutiveItems = getPartidaExecutiveItems(partida.id);
+                                   const partidaExecutiveItems = getPartidaExecutiveItems(partida.id);
                                    const totalExecutive = partidaExecutiveItems.reduce(
                                      (sum, item) => sum + item.importe, 0
                                    );
