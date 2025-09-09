@@ -151,26 +151,38 @@ export function PresupuestoParametrico({
     let currentPage = 1;
     let totalPages = 1; // We'll calculate this later
 
-    // Function to draw header on each page
+    // Function to draw header on each page - matching Gantt PDF design
     const drawHeader = () => {
-      // Header background bar
-      doc.setFillColor(51, 126, 198); // Primary color from theme (hsl(210 85% 60%))
-      doc.rect(0, 0, pageWidth, 25, 'F');
+      // Corporate header background - matching Gantt PDF colors
+      doc.setFillColor(45, 75, 154); // #2D4B9A - Same as Gantt PDF corporateHeader
+      doc.rect(0, 0, pageWidth, 30, 'F');
 
-      // Add company logo
+      // Add company logo - same as working Gantt PDF
       try {
-        doc.addImage(dovitaLogo, 'PNG', margin, 5, 15, 15);
+        // Use the same logo file that works in Gantt PDF
+        const logoUrl = window.location.origin + '/lovable-uploads/d967a2e5-99bb-4992-8a2d-f0887371c03c.png';
+        doc.addImage(logoUrl, 'PNG', margin, 8, 50, 15);
       } catch (error) {
         console.warn('Could not load logo:', error);
+        // Fallback to company name if logo fails
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text('DOVITA', margin, 18);
       }
 
-      // Company name
+      // Company name - matching Gantt PDF style
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(16);
+      doc.setFontSize(20);
       doc.setFont('helvetica', 'bold');
-      doc.text('DOVITA CONSTRUCCIONES', margin + 20, 15);
+      doc.text('DOVITA CONSTRUCCIONES', margin + 60, 18);
 
-      // Company info on the right
+      // Document type on the right
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('PRESUPUESTO PARAMÉTRICO', pageWidth - margin, 12, { align: 'right' });
+
+      // Company info on the right - matching Gantt PDF style
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
       const companyInfo = [
@@ -180,45 +192,51 @@ export function PresupuestoParametrico({
       ];
       
       companyInfo.forEach((info, index) => {
-        doc.text(info, pageWidth - margin, 8 + (index * 4), { align: 'right' });
+        doc.text(info, pageWidth - margin, 18 + (index * 3), { align: 'right' });
       });
 
       // Reset text color
       doc.setTextColor(0, 0, 0);
     };
 
-    // Function to draw footer on each page
+    // Function to draw footer on each page - matching Gantt PDF design
     const drawFooter = (page: number, total: number) => {
-      // Footer background bar
-      doc.setFillColor(242, 151, 81); // Secondary color from theme (hsl(25 70% 65%))
+      // Footer background - matching Gantt PDF footer style
+      doc.setFillColor(248, 250, 252); // #F8FAFC - Light background matching Gantt
       doc.rect(0, pageHeight - 15, pageWidth, 15, 'F');
 
-      doc.setTextColor(255, 255, 255);
+      // Footer border line
+      doc.setDrawColor(30, 58, 138); // #1E3A8A - Primary blue matching Gantt
+      doc.setLineWidth(0.5);
+      doc.line(0, pageHeight - 15, pageWidth, pageHeight - 15);
+
+      doc.setTextColor(31, 41, 55); // #1F2937 - Dark text matching Gantt
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
-      doc.text('Sistema de Gestión DOVITA', margin, pageHeight - 5);
-      doc.text(`Página ${page} de ${total}`, pageWidth - margin, pageHeight - 5, { align: 'right' });
+      doc.text('DOVITA • Confidencial', margin, pageHeight - 5);
+      doc.text(`Página ${page} de ${total}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
+      doc.text(`Generado: ${new Date().toLocaleDateString('es-MX')}`, pageWidth - margin, pageHeight - 5, { align: 'right' });
       
       // Reset text color
       doc.setTextColor(0, 0, 0);
     };
 
     // Calculate total pages needed (rough estimate)
-    const itemsPerPage = Math.floor((pageHeight - 120) / 8); // Approximate
+    const itemsPerPage = Math.floor((pageHeight - 130) / 8); // Adjusted for larger header
     totalPages = Math.ceil(presupuestos.length / itemsPerPage);
 
     // Draw first page header and footer
     drawHeader();
     drawFooter(currentPage, totalPages);
 
-    // Document title
-    doc.setFontSize(22);
+    // Document title - matching Gantt PDF style
+    doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(51, 126, 198); // Primary color
-    doc.text('PRESUPUESTO PARAMÉTRICO', pageWidth / 2, 40, { align: 'center' });
+    doc.setTextColor(30, 58, 138); // #1E3A8A - Primary blue matching Gantt
+    doc.text('PRESUPUESTO PARAMÉTRICO', pageWidth / 2, 45, { align: 'center' });
 
     // Reset color
-    doc.setTextColor(0, 0, 0);
+    doc.setTextColor(31, 41, 55); // #1F2937 - Dark text matching Gantt
 
     // Client and project information section
     let infoY = 55;
@@ -284,10 +302,10 @@ export function PresupuestoParametrico({
     const rowHeight = 8;
     let currentY = infoY;
 
-    // Function to draw table headers
+    // Function to draw table headers - matching Gantt PDF colors
     const drawTableHeaders = (y: number) => {
-      // Header background
-      doc.setFillColor(51, 126, 198); // Primary color
+      // Header background - matching Gantt PDF primary color
+      doc.setFillColor(30, 58, 138); // #1E3A8A - Primary blue matching Gantt
       doc.rect(margin, y, contentWidth, rowHeight, 'F');
       
       // Header text
@@ -369,11 +387,11 @@ export function PresupuestoParametrico({
       currentY += rowHeight;
     });
 
-    // Totals section
+    // Totals section - matching Gantt PDF style
     currentY += 10;
     
-    // Total background
-    doc.setFillColor(51, 126, 198); // Primary color
+    // Total background - matching Gantt PDF
+    doc.setFillColor(30, 58, 138); // #1E3A8A - Primary blue matching Gantt
     doc.rect(margin, currentY, contentWidth, rowHeight + 2, 'F');
     
     // Total text
@@ -389,7 +407,7 @@ export function PresupuestoParametrico({
     );
 
     // Reset text color
-    doc.setTextColor(0, 0, 0);
+    doc.setTextColor(31, 41, 55); // #1F2937 - Dark text matching Gantt
 
     // Save PDF with descriptive filename
     const filename = `Presupuesto_Parametrico_${clientInfo?.nombre || 'Cliente'}_${projectInfo?.project_name || 'Proyecto'}_${new Date().toISOString().split('T')[0]}.pdf`;
