@@ -14,6 +14,9 @@ import { Download, FileText, Search, Calculator, Filter, ArrowUpDown, Info, File
 import { useExecutiveFinalBudget, type FinalBudgetRow } from './hooks/useExecutiveFinalBudget';
 import { pdf } from '@react-pdf/renderer';
 import { ExecutiveFinalPdf } from './ExecutiveFinalPdf';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import * as XLSX from 'xlsx';
 
 interface ExecutiveFinalViewProps {
   selectedClientId?: string;
@@ -56,8 +59,10 @@ export default function ExecutiveFinalView({ selectedClientId, selectedProjectId
     hasData 
   } = useExecutiveFinalBudget(selectedClientId, selectedProjectId);
 
-  // Filter and sort rows
-  const { filteredRows, departments } = useMemo(() => {
+  const { toast } = useToast();
+
+  // Filter and sort rows with grouping support
+  const { filteredRows, groupedRows, departments } = useMemo(() => {
     let filtered = [...finalRows];
     
     // Search filter
@@ -121,10 +126,32 @@ export default function ExecutiveFinalView({ selectedClientId, selectedProjectId
       return filters.sortOrder === 'desc' ? -comparison : comparison;
     });
 
+    // Group by Mayor if enabled
+    const grouped = new Map<string, { mayor: string, rows: FinalBudgetRow[], total: number }>();
+    
+    if (filters.groupByMayor) {
+      filtered.forEach(row => {
+        const mayorKey = `${row.mayor_id}-${row.mayor_nombre}`;
+        if (!grouped.has(mayorKey)) {
+          grouped.set(mayorKey, {
+            mayor: `${row.mayor_codigo} - ${row.mayor_nombre}`,
+            rows: [],
+            total: 0
+          });
+        }
+        grouped.get(mayorKey)!.rows.push(row);
+        grouped.get(mayorKey)!.total += row.importe;
+      });
+    }
+
     // Extract unique departments
     const uniqueDepartments = Array.from(new Set(finalRows.map(row => row.departamento)));
 
-    return { filteredRows: filtered, departments: uniqueDepartments };
+    return { 
+      filteredRows: filtered, 
+      groupedRows: grouped,
+      departments: uniqueDepartments 
+    };
   }, [finalRows, filters]);
 
   // Get subpartidas for selected residual row
@@ -134,32 +161,188 @@ export default function ExecutiveFinalView({ selectedClientId, selectedProjectId
     );
   };
 
-  // Export to PDF
+  // Export to Excel
+  const handleExportExcel = async () => {
+    if (!hasData) return;
+    
+    setIsExporting(true);
+    try {
+      // Prepare data for export (respect grouping and filters)
+      let exportData: any[] = [];
+      
+      if (filters.groupByMayor && groupedRows.size > 0) {
+        // Export with grouping
+        for (const [mayorKey, group] of groupedRows.entries()) {
+          // Add group header
+          exportData.push({
+            Departamento: '',
+            Mayor: `=== ${group.mayor} ===`,
+            Partida: '',
+            Subpartida: '',
+            Unidad: '',
+            Cantidad: '',
+            'P.U.': '',
+            Importe: group.total,
+            Origen: `Total: $${group.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+          });
+          
+          // Add group rows
+          group.rows.forEach(row => {
+            exportData.push({
+              Departamento: row.departamento,
+              Mayor: `${row.mayor_codigo} - ${row.mayor_nombre}`,
+              Partida: `${row.partida_codigo} - ${row.partida_nombre}`,
+              Subpartida: row.subpartida_nombre 
+                ? `${row.subpartida_codigo} - ${row.subpartida_nombre}`
+                : '—',
+              Unidad: row.unidad || '—',
+              Cantidad: row.cantidad || '—',
+              'P.U.': row.precio_unitario || '—',
+              Importe: row.importe,
+              Origen: row.tipo === 'residual' 
+                ? (row.estado === 'excedido' ? 'Excedido' : 'Residual')
+                : 'Subpartida'
+            });
+          });
+          
+          // Add empty row for separation
+          exportData.push({});
+        }
+      } else {
+        // Export without grouping
+        exportData = filteredRows.map(row => ({
+          Departamento: row.departamento,
+          Mayor: `${row.mayor_codigo} - ${row.mayor_nombre}`,
+          Partida: `${row.partida_codigo} - ${row.partida_nombre}`,
+          Subpartida: row.subpartida_nombre 
+            ? `${row.subpartida_codigo} - ${row.subpartida_nombre}`
+            : '—',
+          Unidad: row.unidad || '—',
+          Cantidad: row.cantidad || '—',
+          'P.U.': row.precio_unitario || '—',
+          Importe: row.importe,
+          Origen: row.tipo === 'residual' 
+            ? (row.estado === 'excedido' ? 'Excedido' : 'Residual')
+            : 'Subpartida'
+        }));
+      }
+      
+      // Create workbook
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      
+      // Set column widths
+      const colWidths = [
+        { wch: 15 }, // Departamento
+        { wch: 25 }, // Mayor
+        { wch: 25 }, // Partida
+        { wch: 30 }, // Subpartida
+        { wch: 10 }, // Unidad
+        { wch: 12 }, // Cantidad
+        { wch: 15 }, // P.U.
+        { wch: 15 }, // Importe
+        { wch: 15 }  // Origen
+      ];
+      ws['!cols'] = colWidths;
+      
+      // Freeze first row
+      ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+      
+      // Format currency columns (P.U. and Importe)
+      const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+      for (let row = 1; row <= range.e.r; row++) {
+        const puCell = XLSX.utils.encode_cell({ r: row, c: 6 }); // P.U. column
+        const importeCell = XLSX.utils.encode_cell({ r: row, c: 7 }); // Importe column
+        
+        if (ws[puCell] && typeof ws[puCell].v === 'number') {
+          ws[puCell].z = '"$"#,##0.00';
+        }
+        if (ws[importeCell] && typeof ws[importeCell].v === 'number') {
+          ws[importeCell].z = '"$"#,##0.00';
+        }
+      }
+      
+      XLSX.utils.book_append_sheet(wb, ws, 'Vista Final');
+      
+      // Generate filename
+      const now = new Date();
+      const timestamp = now.toISOString().slice(0, 16).replace(/[-:T]/g, '').replace(/(\d{8})(\d{4})/, '$1_$2');
+      const filename = `Vista-Final_Cliente_Proyecto_${timestamp}.xlsx`;
+      
+      // Download file
+      XLSX.writeFile(wb, filename);
+      
+      toast({
+        title: "Excel Generado",
+        description: `Los datos se han exportado como ${filename}`
+      });
+      
+    } catch (error) {
+      console.error('Error exporting Excel:', error);
+      toast({
+        title: "Error al exportar",
+        description: 'Error al generar el archivo Excel',
+        variant: "destructive"
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Export to PDF (using same data source as Gantt)
   const handleExportPdf = async () => {
     if (!hasData || !selectedClientId || !selectedProjectId) return;
     
     setIsExporting(true);
     try {
-      // Get client and project names (simplified for demo)
-      const clientName = "Cliente Seleccionado";
-      const projectName = "Proyecto Seleccionado";
+      // Fetch data using same approach as Gantt
+      const [clientResult, projectResult] = await Promise.all([
+        supabase.from('clients').select('full_name, email, phone').eq('id', selectedClientId).single(),
+        supabase.from('client_projects').select('project_name, project_location, construction_area, land_surface_area, construction_start_date').eq('id', selectedProjectId).single()
+      ]);
+
+      const client = clientResult.data;
+      const project = projectResult.data;
+
+      if (!client || !project) {
+        throw new Error('No se encontraron los datos del cliente o proyecto');
+      }
+
+      // Use filtered rows respecting grouping
+      let rowsToExport = filteredRows;
+      if (filters.groupByMayor && groupedRows.size > 0) {
+        // Flatten grouped data while maintaining group structure
+        rowsToExport = [];
+        for (const group of groupedRows.values()) {
+          rowsToExport.push(...group.rows);
+        }
+      }
 
       const pdfDocument = (
         <ExecutiveFinalPdf 
-          rows={filteredRows} 
+          rows={rowsToExport} 
           totals={totals}
           companySettings={companySettings}
-          clientName={clientName}
-          projectName={projectName}
+          clientName={client.full_name}
+          projectName={project.project_name}
+          projectData={{
+            location: project.project_location,
+            constructionArea: project.construction_area,
+            landArea: project.land_surface_area,
+            startDate: project.construction_start_date
+          }}
           filters={filters}
+          groupByMayor={filters.groupByMayor}
+          groupedData={groupedRows}
         />
       );
 
       const pdfBlob = await pdf(pdfDocument).toBlob();
       const url = URL.createObjectURL(pdfBlob);
       
-      const today = new Date().toISOString().split('T')[0].replace(/-/g, '');
-      const filename = `Presupuesto-Ejecutivo-Final_${clientName}_${projectName}_${today}.pdf`;
+      const now = new Date();
+      const timestamp = now.toISOString().slice(0, 16).replace(/[-:T]/g, '').replace(/(\d{8})(\d{4})/, '$1_$2');
+      const filename = `Vista-Final_${client.full_name}_${project.project_name}_${timestamp}.pdf`;
       
       const link = document.createElement('a');
       link.href = url;
@@ -169,8 +352,19 @@ export default function ExecutiveFinalView({ selectedClientId, selectedProjectId
       document.body.removeChild(link);
       
       URL.revokeObjectURL(url);
+      
+      toast({
+        title: "PDF Generado",
+        description: `El documento se ha exportado como ${filename}`
+      });
+      
     } catch (error) {
       console.error('Error exporting PDF:', error);
+      toast({
+        title: "Error al exportar",
+        description: error instanceof Error ? error.message : 'Error al generar el PDF',
+        variant: "destructive"
+      });
     } finally {
       setIsExporting(false);
     }
@@ -300,15 +494,22 @@ export default function ExecutiveFinalView({ selectedClientId, selectedProjectId
           </div>
           
           <div className="flex items-center gap-2">
-            <Button variant="outline" className="gap-2">
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={handleExportExcel}
+              disabled={isExporting || !hasData}
+              data-testid="export-excel"
+            >
               <Download className="h-4 w-4" />
-              Excel
+              {isExporting ? 'Generando...' : 'Excel'}
             </Button>
             <Button 
               variant="outline" 
               className="gap-2" 
               onClick={handleExportPdf}
               disabled={isExporting || !hasData}
+              data-testid="export-pdf"
             >
               <FileText className="h-4 w-4" />
               {isExporting ? 'Generando...' : 'PDF'}

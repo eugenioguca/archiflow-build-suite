@@ -302,7 +302,7 @@ export default function ExecutiveBudgetPage({ selectedClientId, selectedProjectI
             />
           </TabsContent>
 
-          <TabsContent value="final">
+          <TabsContent value="final" className="space-y-0">
             <ExecutiveFinalView
               selectedClientId={selectedClientId}
               selectedProjectId={selectedProjectId}

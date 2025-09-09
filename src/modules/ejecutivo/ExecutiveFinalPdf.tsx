@@ -2,84 +2,107 @@ import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import type { FinalBudgetRow, FinalBudgetTotals } from './hooks/useExecutiveFinalBudget';
 
-// PDF Styles consistent with Gantt v2
+// Professional colors following Gantt v2 reference design
+const COLORS = {
+  primary: '#1E3A8A',      // Corporate blue
+  accent: '#3B82F6',       // Activity blue  
+  secondary: '#F8FAFC',    // Light background
+  text: '#1F2937',         // Dark text
+  textLight: '#6B7280',    // Light text
+  border: '#E5E7EB',       // Borders
+  white: '#FFFFFF',
+  success: '#10B981',      // Green for positive values
+  warning: '#F59E0B',      // Orange
+  danger: '#EF4444',       // Red for exceeded values
+};
+
+// PDF Styles following Gantt v2 design system
 const styles = StyleSheet.create({
+  // Page layout
   page: {
     flexDirection: 'column',
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.white,
     padding: 20,
-    fontSize: 9,
     fontFamily: 'Helvetica',
+    fontSize: 9,
   },
   
-  // Header Section
-  header: {
+  // Corporate header - matching Gantt v2
+  corporateHeader: {
+    backgroundColor: '#2D4B9A', // Blue matching the logo
     flexDirection: 'row',
-    marginBottom: 20,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
-  },
-  
-  headerLeft: {
-    flex: 1,
-    paddingRight: 20,
-  },
-  
-  headerRight: {
-    flex: 1,
-    paddingLeft: 20,
-  },
-  
-  logo: {
-    width: 120,
-    height: 'auto',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: 15,
     marginBottom: 10,
   },
   
-  companyInfo: {
+  // Company info - left side
+  companySection: {
+    flex: 1,
+  },
+  companyName: {
+    color: COLORS.white,
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    letterSpacing: 5,
+    textTransform: 'uppercase',
+  },
+  companyLogo: {
+    width: 200,
+    height: 60,
+    marginBottom: 4,
+    objectFit: 'contain',
+  },
+  companyContact: {
+    color: COLORS.white,
     fontSize: 8,
-    color: '#64748b',
-    lineHeight: 1.4,
+    opacity: 0.9,
   },
   
-  titleSection: {
+  // Project info - right side
+  projectSection: {
+    flex: 1,
     alignItems: 'flex-end',
   },
-  
-  mainTitle: {
-    fontSize: 18,
-    fontFamily: 'Helvetica-Bold',
-    color: '#1e40af',
-    marginBottom: 5,
-    textAlign: 'right',
+  documentTitle: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 4,
   },
-  
-  subtitle: {
-    fontSize: 10,
-    color: '#64748b',
-    textAlign: 'right',
-    marginBottom: 2,
-  },
-  
   projectInfo: {
-    marginTop: 15,
-    padding: 12,
-    backgroundColor: '#f8fafc',
-    borderRadius: 4,
+    color: COLORS.white,
+    fontSize: 8,
+    textAlign: 'right',
+    opacity: 0.9,
   },
   
-  projectTitle: {
-    fontSize: 11,
-    fontFamily: 'Helvetica-Bold',
-    color: '#334155',
-    marginBottom: 6,
+  // Project details section
+  projectDetails: {
+    backgroundColor: COLORS.secondary,
+    padding: 8,
+    marginBottom: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
-  
-  projectDetail: {
-    fontSize: 9,
-    color: '#64748b',
-    marginBottom: 2,
+  detailsLeft: {
+    flex: 1,
+  },
+  detailsRight: {
+    flex: 1,
+    alignItems: 'flex-end',
+  },
+  detailLabel: {
+    fontSize: 7,
+    color: COLORS.textLight,
+    marginBottom: 1,
+  },
+  detailValue: {
+    fontSize: 8,
+    color: COLORS.text,
+    fontWeight: 'bold',
   },
   
   // KPI Section
@@ -261,11 +284,20 @@ interface ExecutiveFinalPdfProps {
   } | null;
   clientName: string;
   projectName: string;
+  projectData?: {
+    location?: string;
+    constructionArea?: number;
+    landArea?: number;
+    startDate?: string;
+  };
   filters?: {
     searchTerm?: string;
     departmentFilter?: string;
     statusFilter?: string;
+    groupByMayor?: boolean;
   };
+  groupByMayor?: boolean;
+  groupedData?: Map<string, { mayor: string, rows: FinalBudgetRow[], total: number }>;
 }
 
 const formatCurrency = (amount: number): string => {
@@ -278,7 +310,10 @@ export function ExecutiveFinalPdf({
   companySettings, 
   clientName, 
   projectName, 
-  filters 
+  projectData,
+  filters,
+  groupByMayor = false,
+  groupedData
 }: ExecutiveFinalPdfProps) {
   const today = new Date().toLocaleDateString('es-MX', {
     year: 'numeric',
@@ -388,39 +423,70 @@ export function ExecutiveFinalPdf({
   return (
     <Document>
       <Page size="A4" orientation="landscape" style={styles.page}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            {companySettings?.logo_url && (
-              <Image style={styles.logo} src={companySettings.logo_url} />
+        {/* Corporate Header - matching Gantt v2 */}
+        <View style={styles.corporateHeader}>
+          <View style={styles.companySection}>
+            {companySettings?.logo_url ? (
+              <Image style={styles.companyLogo} src={companySettings.logo_url} />
+            ) : (
+              <Text style={styles.companyName}>
+                {companySettings?.company_name || 'DOVITA CONSTRUCCIONES'}
+              </Text>
             )}
-            <Text style={styles.companyInfo}>
-              {companySettings?.company_name || 'DOVITA CONSTRUCCIONES'}{'\n'}
-              {companySettings?.website || 'www.dovita.com'}{'\n'}
-              {companySettings?.email || 'info@dovita.com'}{'\n'}
-              {companySettings?.phone || '(555) 123-4567'}{'\n'}
-              {companySettings?.address || 'Dirección de la empresa'}
+            <Text style={styles.companyContact}>
+              {companySettings?.website || 'www.dovita.com'} | {companySettings?.email || 'info@dovita.com'} | {companySettings?.phone || '(555) 123-4567'}
+              {'\n'}{companySettings?.address || 'Dirección de la empresa'}
             </Text>
           </View>
           
-          <View style={styles.headerRight}>
-            <View style={styles.titleSection}>
-              <Text style={styles.mainTitle}>PRESUPUESTO EJECUTIVO</Text>
-              <Text style={styles.mainTitle}>VISTA FINAL</Text>
-              <Text style={styles.subtitle}>Fecha: {today}</Text>
-              <Text style={styles.subtitle}>Sistema ERP v2.0</Text>
-            </View>
+          <View style={styles.projectSection}>
+            <Text style={styles.documentTitle}>PRESUPUESTO EJECUTIVO</Text>
+            <Text style={styles.documentTitle}>VISTA FINAL</Text>
+            <Text style={styles.projectInfo}>Fecha: {today}</Text>
+            <Text style={styles.projectInfo}>Sistema ERP v2.0</Text>
           </View>
         </View>
 
-        {/* Project Info */}
-        <View style={styles.projectInfo}>
-          <Text style={styles.projectTitle}>Información del Proyecto</Text>
-          <Text style={styles.projectDetail}>Cliente: {clientName}</Text>
-          <Text style={styles.projectDetail}>Proyecto: {projectName}</Text>
-          {filters?.searchTerm && (
-            <Text style={styles.projectDetail}>Filtros aplicados: "{filters.searchTerm}"</Text>
-          )}
+        {/* Project Details Section */}
+        <View style={styles.projectDetails}>
+          <View style={styles.detailsLeft}>
+            <Text style={styles.detailLabel}>CLIENTE</Text>
+            <Text style={styles.detailValue}>{clientName}</Text>
+            <Text style={styles.detailLabel}>PROYECTO</Text>
+            <Text style={styles.detailValue}>{projectName}</Text>
+            {projectData?.location && (
+              <>
+                <Text style={styles.detailLabel}>UBICACIÓN</Text>
+                <Text style={styles.detailValue}>{projectData.location}</Text>
+              </>
+            )}
+          </View>
+          <View style={styles.detailsRight}>
+            {projectData?.constructionArea && (
+              <>
+                <Text style={styles.detailLabel}>ÁREA DE CONSTRUCCIÓN</Text>
+                <Text style={styles.detailValue}>{projectData.constructionArea} m²</Text>
+              </>
+            )}
+            {projectData?.landArea && (
+              <>
+                <Text style={styles.detailLabel}>SUPERFICIE DE TERRENO</Text>
+                <Text style={styles.detailValue}>{projectData.landArea} m²</Text>
+              </>
+            )}
+            {projectData?.startDate && (
+              <>
+                <Text style={styles.detailLabel}>FECHA DE INICIO</Text>
+                <Text style={styles.detailValue}>{new Date(projectData.startDate).toLocaleDateString('es-MX')}</Text>
+              </>
+            )}
+            {filters?.searchTerm && (
+              <>
+                <Text style={styles.detailLabel}>FILTROS APLICADOS</Text>
+                <Text style={styles.detailValue}>"{filters.searchTerm}"</Text>
+              </>
+            )}
+          </View>
         </View>
 
         {/* KPI Summary */}
