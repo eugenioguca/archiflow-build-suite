@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Download, FileText, Search, Expand, Minimize, Calculator, Table } from 'lucide-react';
+import { Search, Expand, Minimize, Calculator, Table } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { FullParametricTree } from './FullParametricTree';
 import ExecutiveFinalView from './ExecutiveFinalView';
@@ -141,24 +141,11 @@ export default function ExecutiveBudgetPage({ selectedClientId, selectedProjectI
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight">Presupuesto Ejecutivo</h1>
-          <p className="text-muted-foreground text-lg">
-            Desglose completo del presupuesto paramétrico en subpartidas ejecutables
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-2">
-            <Download className="h-4 w-4" />
-            Excel
-          </Button>
-          <Button variant="outline" className="gap-2">
-            <FileText className="h-4 w-4" />
-            PDF
-          </Button>
-        </div>
+      <div className="space-y-2">
+        <h1 className="text-4xl font-bold tracking-tight">Presupuesto Ejecutivo</h1>
+        <p className="text-muted-foreground text-lg">
+          Desglose completo del presupuesto paramétrico en subpartidas ejecutables
+        </p>
       </div>
 
       {/* Show loading state */}
