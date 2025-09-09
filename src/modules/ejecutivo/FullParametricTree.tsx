@@ -11,21 +11,26 @@ interface ExecutiveItem {
   id: string;
   cliente_id: string;
   proyecto_id: string;
-  presupuesto_parametrico_id: string;
-  departamento: string;
-  mayor_id: string;
-  partida_id: string;
+  partida_ejecutivo_id: string;
   subpartida_id: string;
+  nombre_snapshot: string;
   unidad: string;
-  cantidad_requerida: number;
+  cantidad: number;
   precio_unitario: number;
-  monto_total: number;
+  importe: number;
   created_by: string;
   created_at: string;
   updated_at: string;
-  mayor?: { codigo: string; nombre: string };
-  partida?: { codigo: string; nombre: string };
   subpartida?: { codigo: string; nombre: string };
+  partida_ejecutivo?: {
+    id: string;
+    parametrico?: {
+      mayor_id: string;
+      partida_id: string;
+      mayor?: { codigo: string; nombre: string };
+      partida?: { codigo: string; nombre: string };
+    };
+  };
 }
 
 interface FullParametricTreeProps {
@@ -34,7 +39,7 @@ interface FullParametricTreeProps {
   searchTerm: string;
   statusFilter: 'all' | 'empty' | 'within' | 'over';
   expandedAll: boolean;
-  onCreateItem: (data: Omit<ExecutiveItem, 'id' | 'created_at' | 'updated_at' | 'monto_total' | 'created_by' | 'mayor' | 'partida' | 'subpartida'>) => void;
+  onCreateItem: (data: Omit<ExecutiveItem, 'id' | 'created_at' | 'updated_at' | 'importe' | 'created_by' | 'subpartida' | 'partida_ejecutivo'>) => void;
   onUpdateItem: (id: string, data: Partial<ExecutiveItem>) => void;
   onDeleteItem: (id: string) => void;
 }
@@ -112,12 +117,16 @@ export function FullParametricTree({
   };
 
   const getPartidaExecutiveItems = (partidaId: string) => {
-    return executiveItems.filter(item => item.partida_id === partidaId);
+    // Since we don't have partida_id in the new structure, we need to find items by comparing 
+    // the parametrico relation to find items that belong to this partida
+    return executiveItems.filter(item => 
+      item.partida_ejecutivo?.parametrico?.partida_id === partidaId
+    );
   };
 
   const getPartidaStatus = (partida: any) => {
     const partidaExecutiveItems = getPartidaExecutiveItems(partida.id);
-    const totalExecutive = partidaExecutiveItems.reduce((sum, item) => sum + item.monto_total, 0);
+    const totalExecutive = partidaExecutiveItems.reduce((sum, item) => sum + item.importe, 0);
     
     if (partidaExecutiveItems.length === 0) return 'empty';
     if (totalExecutive > partida.monto_total) return 'over';
@@ -151,19 +160,15 @@ export function FullParametricTree({
   };
 
   const handleCreateSubpartida = (partidaId: string, data: Partial<ExecutiveItem>) => {
-    // Obtener contexto de la partida para departamento, mayor_id, partida_id
-    let departamento = '';
-    let mayor_id = '';
-    let parametric_item_id = '';
+    // Get the parametrico_id by finding the corresponding partida in the grouped structure
+    let parametrico_id = '';
 
-    // Buscar la partida en la estructura para obtener sus IDs
+    // Search for the partida in the structure to get its parametrico ID
     Object.entries(groupedParametric.departamentos).forEach(([deptoKey, depto]) => {
       Object.entries(depto.mayores).forEach(([mayorKey, mayor]) => {
         const partida = mayor.partidas.find(p => p.id === partidaId);
         if (partida) {
-          departamento = 'CONSTRUCCIÓN';
-          mayor_id = partida.mayor_id;
-          parametric_item_id = partida.id; // Este es el ID del item del presupuesto paramétrico
+          parametrico_id = partida.id; // This is the parametrico ID we need
         }
       });
     });
@@ -171,15 +176,15 @@ export function FullParametricTree({
     onCreateItem({
       cliente_id: '', // Will be filled by the mutation
       proyecto_id: '', // Will be filled by the mutation  
-      presupuesto_parametrico_id: parametric_item_id,
-      departamento,
-      mayor_id,
-      partida_id: partidaId,
+      partida_ejecutivo_id: '', // Will be created by the backend
       subpartida_id: data.subpartida_id || '',
-      unidad: data.unidad || 'pza',
-      cantidad_requerida: data.cantidad_requerida || 1,
-      precio_unitario: data.precio_unitario || 0
-    });
+      nombre_snapshot: data.nombre_snapshot || '',
+      unidad: data.unidad || 'PZA',
+      cantidad: data.cantidad || 1,
+      precio_unitario: data.precio_unitario || 0,
+      // Add parametico_id for the backend to create parent
+      presupuesto_parametrico_id: parametrico_id
+    } as any);
     setAddingSubpartidaTo(null);
   };
 
@@ -233,9 +238,9 @@ export function FullParametricTree({
                                 .filter(shouldShowPartida)
                                 .map((partida) => {
                                   const partidaExecutiveItems = getPartidaExecutiveItems(partida.id);
-                                  const totalExecutive = partidaExecutiveItems.reduce(
-                                    (sum, item) => sum + item.monto_total, 0
-                                  );
+                                   const totalExecutive = partidaExecutiveItems.reduce(
+                                     (sum, item) => sum + item.importe, 0
+                                   );
                                   const difference = totalExecutive - partida.monto_total;
                                   const status = getPartidaStatus(partida);
                                   
@@ -258,10 +263,10 @@ export function FullParametricTree({
                                                   <p className="font-medium">
                                                     {partida.codigo} - {partida.nombre}
                                                   </p>
-                                                  <p className="text-sm text-muted-foreground">
-                                                    Cantidad: {partida.cantidad_requerida} | 
-                                                    P.U: ${partida.precio_unitario.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                                                  </p>
+                                                   <p className="text-sm text-muted-foreground">
+                                                     Cantidad: {partida.cantidad_requerida} | 
+                                                     P.U: ${partida.precio_unitario.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                                   </p>
                                                 </div>
                                               </div>
                                               

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useExecutivePartidas } from './useExecutivePartidas';
+import { toNumber, validateMonetaryInput } from '@/utils/monetaryUtils';
 import type { PresupuestoEjecutivo } from '@/hooks/usePresupuestoEjecutivo';
 
 export function useExecutiveBudget(clientId?: string, projectId?: string) {
@@ -11,34 +12,41 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
   // Hook para partidas ejecutivas (padre)
   const { executivePartidas, upsertExecutivePartida } = useExecutivePartidas(clientId, projectId);
 
-  // Query for fetching executive budget items
+  // Query for fetching executive subpartidas
   const executiveQuery = useQuery({
-    queryKey: ['executive-budget', clientId, projectId],
+    queryKey: ['executive-subpartidas', clientId, projectId],
     queryFn: async () => {
       if (!clientId || !projectId) return [];
 
-      let query = supabase
-        .from('presupuesto_ejecutivo')
+      const { data, error } = await supabase
+        .from('presupuesto_ejecutivo_subpartida')
         .select(`
           *,
-          subpartida:chart_of_accounts_subpartidas(codigo, nombre)
+          subpartida:chart_of_accounts_subpartidas(codigo, nombre),
+          partida_ejecutivo:presupuesto_ejecutivo_partida(
+            id,
+            parametrico:presupuesto_parametrico(
+              mayor_id,
+              partida_id,
+              mayor:chart_of_accounts_mayor(codigo, nombre),
+              partida:chart_of_accounts_partidas(codigo, nombre)
+            )
+          )
         `)
         .eq('cliente_id', clientId)
         .eq('proyecto_id', projectId)
         .order('created_at', { ascending: true });
-
-      const { data, error } = await query;
       
       if (error) throw error;
-      return data as PresupuestoEjecutivo[];
+      return data || [];
     },
     enabled: Boolean(clientId && projectId),
   });
 
-  // Mutation for creating executive budget item - temporarily use old structure
+  // Mutation for creating executive subpartida using two-step process
   const createExecutiveItem = useMutation({
     mutationFn: async (data: any) => {
-      console.log('Creating executive item with data:', data);
+      console.log('Creating executive subpartida with data:', data);
       
       // Get current user profile
       const { data: { user } } = await supabase.auth.getUser();
@@ -52,48 +60,80 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
 
       if (!profile) throw new Error('Profile not found');
 
-      // Calculate total
-      const monto_total = (data.cantidad || data.cantidad_requerida || 0) * (data.precio_unitario || 0);
+      // Parse and validate monetary values
+      const sanitizedCant = toNumber(data.cantidad || 1);
+      const sanitizedPU = toNumber(data.precio_unitario || 0);
+      
+      const validation = validateMonetaryInput(sanitizedCant, sanitizedPU);
+      if (!validation.isValid) {
+        throw new Error(validation.error);
+      }
 
-      // Use old structure for now - will be updated after types regeneration
-      const insertData = {
-        cliente_id: clientId,
-        proyecto_id: projectId,
-        presupuesto_parametrico_id: data.presupuesto_parametrico_id,
-        departamento: 'CONSTRUCCIÓN',
-        mayor_id: data.mayor_id,
-        partida_id: data.partida_id,
-        subpartida_id: data.subpartida_id,
-        unidad: data.unidad || 'PZA',
-        cantidad_requerida: data.cantidad || data.cantidad_requerida || 1,
-        precio_unitario: data.precio_unitario || 0,
-        monto_total,
-        created_by: profile.id
-      };
+      const importe = sanitizedCant * sanitizedPU;
 
-      console.log('Inserting with data:', insertData);
+      // Step 1: Upsert parent (presupuesto_ejecutivo_partida)
+      const { data: pep, error: upsertError } = await supabase
+        .from('presupuesto_ejecutivo_partida')
+        .upsert({
+          cliente_id: clientId,
+          proyecto_id: projectId,
+          parametrico_id: data.presupuesto_parametrico_id,
+          created_by: profile.id
+        }, { 
+          onConflict: 'cliente_id,proyecto_id,parametrico_id',
+          ignoreDuplicates: false 
+        })
+        .select('id')
+        .single();
 
-      const { data: result, error } = await supabase
-        .from('presupuesto_ejecutivo')
-        .insert(insertData)
+      if (upsertError) {
+        console.error('Parent upsert error:', upsertError);
+        throw upsertError;
+      }
+
+      console.log('Parent partida upserted:', pep);
+
+      // Step 2: Insert child (presupuesto_ejecutivo_subpartida)
+      const { data: result, error: insertError } = await supabase
+        .from('presupuesto_ejecutivo_subpartida')
+        .insert({
+          cliente_id: clientId,
+          proyecto_id: projectId,
+          partida_ejecutivo_id: pep.id,
+          subpartida_id: data.subpartida_id,
+          nombre_snapshot: data.nombre_subpartida || 'Subpartida',
+          unidad: data.unidad || 'PZA',
+          cantidad: sanitizedCant,
+          precio_unitario: sanitizedPU,
+          importe,
+          created_by: profile.id
+        })
         .select(`
           *,
-          mayor:chart_of_accounts_mayor(codigo, nombre),
-          partida:chart_of_accounts_partidas(codigo, nombre),
-          subpartida:chart_of_accounts_subpartidas(codigo, nombre)
+          subpartida:chart_of_accounts_subpartidas(codigo, nombre),
+          partida_ejecutivo:presupuesto_ejecutivo_partida(
+            id,
+            parametrico:presupuesto_parametrico(
+              mayor_id,
+              partida_id,
+              mayor:chart_of_accounts_mayor(codigo, nombre),
+              partida:chart_of_accounts_partidas(codigo, nombre)
+            )
+          )
         `)
         .single();
       
-      if (error) {
-        console.error('Supabase insert error:', error);
-        throw error;
+      if (insertError) {
+        console.error('Child insert error:', insertError);
+        throw insertError;
       }
-      
-      console.log('Successfully created executive item:', result);
+
+      // Step 3: Recalculate parent total (trigger should handle this automatically)
+      console.log('Successfully created executive subpartida:', result);
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['executive-budget'] });
+      queryClient.invalidateQueries({ queryKey: ['executive-subpartidas'] });
       queryClient.invalidateQueries({ queryKey: ['executive-partidas'] });
       queryClient.invalidateQueries({ queryKey: ['executive-rollups'] });
       toast({
@@ -112,26 +152,44 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
     },
   });
 
-  // Mutation for updating executive budget item
+  // Mutation for updating executive subpartida
   const updateExecutiveItem = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      const importe = (data.cantidad || 0) * (data.precio_unitario || 0);
+      // Parse and validate monetary values
+      const sanitizedCant = toNumber(data.cantidad || 1);
+      const sanitizedPU = toNumber(data.precio_unitario || 0);
+      
+      const validation = validateMonetaryInput(sanitizedCant, sanitizedPU);
+      if (!validation.isValid) {
+        throw new Error(validation.error);
+      }
+
+      const importe = sanitizedCant * sanitizedPU;
       
       const { data: result, error } = await supabase
-        .from('presupuesto_ejecutivo')
+        .from('presupuesto_ejecutivo_subpartida')
         .update({
           subpartida_id: data.subpartida_id,
-          nombre_subpartida_snapshot: data.nombre_subpartida,
+          nombre_snapshot: data.nombre_subpartida || 'Subpartida',
           unidad: data.unidad,
-          cantidad: data.cantidad,
-          precio_unitario: data.precio_unitario,
+          cantidad: sanitizedCant,
+          precio_unitario: sanitizedPU,
           importe,
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
         .select(`
           *,
-          subpartida:chart_of_accounts_subpartidas(codigo, nombre)
+          subpartida:chart_of_accounts_subpartidas(codigo, nombre),
+          partida_ejecutivo:presupuesto_ejecutivo_partida(
+            id,
+            parametrico:presupuesto_parametrico(
+              mayor_id,
+              partida_id,
+              mayor:chart_of_accounts_mayor(codigo, nombre),
+              partida:chart_of_accounts_partidas(codigo, nombre)
+            )
+          )
         `)
         .single();
       
@@ -139,7 +197,7 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['executive-budget'] });
+      queryClient.invalidateQueries({ queryKey: ['executive-subpartidas'] });
       queryClient.invalidateQueries({ queryKey: ['executive-partidas'] });
       queryClient.invalidateQueries({ queryKey: ['executive-rollups'] });
       toast({
@@ -157,18 +215,18 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
     },
   });
 
-  // Mutation for deleting executive budget item
+  // Mutation for deleting executive subpartida
   const deleteExecutiveItem = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('presupuesto_ejecutivo')
+        .from('presupuesto_ejecutivo_subpartida')
         .delete()
         .eq('id', id);
       
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['executive-budget'] });
+      queryClient.invalidateQueries({ queryKey: ['executive-subpartidas'] });
       queryClient.invalidateQueries({ queryKey: ['executive-partidas'] });
       queryClient.invalidateQueries({ queryKey: ['executive-rollups'] });
       toast({

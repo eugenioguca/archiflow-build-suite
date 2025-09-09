@@ -129,9 +129,9 @@ export default function ExecutiveBudgetPage({ selectedClientId, selectedProjectI
     );
   }
 
-  // Calculate totals from all parametric items
+  // Calculate totals from all executive subpartidas
   const totalParametrico = presupuestos.reduce((sum, item) => sum + item.monto_total, 0);
-  const totalEjecutivo = executiveItems.reduce((sum, item) => sum + item.monto_total, 0);
+  const totalEjecutivo = executiveItems.reduce((sum, item) => sum + item.importe, 0);
   const diferencia = totalEjecutivo - totalParametrico;
   const isWithinBudget = Math.abs(diferencia) < 0.01;
   const isOverBudget = diferencia > 0.01;

@@ -5059,6 +5059,110 @@ export type Database = {
           },
         ]
       }
+      presupuesto_ejecutivo_partida: {
+        Row: {
+          cliente_id: string
+          created_at: string
+          created_by: string
+          id: string
+          importe_ejecutivo: number
+          parametrico_id: string
+          proyecto_id: string
+          updated_at: string
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          importe_ejecutivo?: number
+          parametrico_id: string
+          proyecto_id: string
+          updated_at?: string
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          importe_ejecutivo?: number
+          parametrico_id?: string
+          proyecto_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presupuesto_ejecutivo_partida_parametrico_id_fkey"
+            columns: ["parametrico_id"]
+            isOneToOne: false
+            referencedRelation: "presupuesto_parametrico"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presupuesto_ejecutivo_subpartida: {
+        Row: {
+          cantidad: number
+          cliente_id: string
+          created_at: string
+          created_by: string
+          id: string
+          importe: number
+          nombre_snapshot: string
+          partida_ejecutivo_id: string
+          precio_unitario: number
+          proyecto_id: string
+          subpartida_id: string
+          unidad: string
+          updated_at: string
+        }
+        Insert: {
+          cantidad: number
+          cliente_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          importe: number
+          nombre_snapshot: string
+          partida_ejecutivo_id: string
+          precio_unitario: number
+          proyecto_id: string
+          subpartida_id: string
+          unidad: string
+          updated_at?: string
+        }
+        Update: {
+          cantidad?: number
+          cliente_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          importe?: number
+          nombre_snapshot?: string
+          partida_ejecutivo_id?: string
+          precio_unitario?: number
+          proyecto_id?: string
+          subpartida_id?: string
+          unidad?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presupuesto_ejecutivo_subpartida_partida_ejecutivo_id_fkey"
+            columns: ["partida_ejecutivo_id"]
+            isOneToOne: false
+            referencedRelation: "presupuesto_ejecutivo_partida"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presupuesto_ejecutivo_subpartida_subpartida_id_fkey"
+            columns: ["subpartida_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts_subpartidas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       presupuesto_parametrico: {
         Row: {
           cantidad_requerida: number
@@ -7538,6 +7642,10 @@ export type Database = {
       migrate_design_budget_to_construction: {
         Args: { p_project_id: string }
         Returns: Json
+      }
+      recalc_pep_total: {
+        Args: { pep_id: string }
+        Returns: undefined
       }
       refresh_financial_summary: {
         Args: Record<PropertyKey, never>

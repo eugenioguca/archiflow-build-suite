@@ -19,21 +19,26 @@ interface ExecutiveItem {
   id: string;
   cliente_id: string;
   proyecto_id: string;
-  presupuesto_parametrico_id: string;
-  departamento: string;
-  mayor_id: string;
-  partida_id: string;
+  partida_ejecutivo_id: string;
   subpartida_id: string;
+  nombre_snapshot: string;
   unidad: string;
-  cantidad_requerida: number;
+  cantidad: number;
   precio_unitario: number;
-  monto_total: number;
+  importe: number;
   created_by: string;
   created_at: string;
   updated_at: string;
-  mayor?: { codigo: string; nombre: string };
-  partida?: { codigo: string; nombre: string };
   subpartida?: { codigo: string; nombre: string };
+  partida_ejecutivo?: {
+    id: string;
+    parametrico?: {
+      mayor_id: string;
+      partida_id: string;
+      mayor?: { codigo: string; nombre: string };
+      partida?: { codigo: string; nombre: string };
+    };
+  };
 }
 
 export function ExecutiveSubpartidaRow({
@@ -48,7 +53,7 @@ export function ExecutiveSubpartidaRow({
     subpartida_id: item?.subpartida_id || '',
     nombre_subpartida: item?.subpartida?.nombre || '',
     unidad: item?.unidad || 'PZA',
-    cantidad_requerida: item?.cantidad_requerida || 1,
+    cantidad: item?.cantidad || 1,
     precio_unitario: item?.precio_unitario || 0,
   });
 
@@ -59,14 +64,14 @@ export function ExecutiveSubpartidaRow({
     totalCount
   } = useSubpartidas('CONSTRUCCIÓN', undefined, undefined);
 
-  const total = formData.cantidad_requerida * formData.precio_unitario;
+  const total = formData.cantidad * formData.precio_unitario;
 
   const handleSave = async () => {
     // Validaciones
     if (!formData.subpartida_id) {
       return; // No guardar si no hay subpartida seleccionada
     }
-    if (formData.cantidad_requerida <= 0) {
+    if (formData.cantidad <= 0) {
       return; // Validar cantidad positiva
     }
     if (formData.precio_unitario < 0) {
@@ -90,7 +95,7 @@ export function ExecutiveSubpartidaRow({
         subpartida_id: item?.subpartida_id || '',
         nombre_subpartida: item?.subpartida?.nombre || '',
         unidad: item?.unidad || 'PZA',
-        cantidad_requerida: item?.cantidad_requerida || 1,
+        cantidad: item?.cantidad || 1,
         precio_unitario: item?.precio_unitario || 0,
       });
     }
@@ -115,7 +120,7 @@ export function ExecutiveSubpartidaRow({
       >
         <div className="grid grid-cols-5 gap-4 items-center">
           <div className="col-span-1">
-            <p className="font-medium">{item.subpartida?.nombre || 'Subpartida'}</p>
+            <p className="font-medium">{item.nombre_snapshot || 'Subpartida'}</p>
             <p className="text-xs text-muted-foreground">
               {item.subpartida?.codigo || 'Sin código'}
             </p>
@@ -126,7 +131,7 @@ export function ExecutiveSubpartidaRow({
           </div>
           
           <div className="text-center">
-            <p className="text-sm font-medium">{item.cantidad_requerida}</p>
+            <p className="text-sm font-medium">{item.cantidad}</p>
           </div>
           
           <div className="text-right">
@@ -137,7 +142,7 @@ export function ExecutiveSubpartidaRow({
           
           <div className="flex items-center justify-between">
             <span className="font-semibold">
-              ${item.monto_total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+              ${item.importe.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
             </span>
             
             {onDelete && (
@@ -200,8 +205,8 @@ export function ExecutiveSubpartidaRow({
           type="number"
           step="0.01"
           min="0"
-          value={formData.cantidad_requerida}
-          onChange={(e) => setFormData({ ...formData, cantidad_requerida: parseFloat(e.target.value) || 0 })}
+          value={formData.cantidad}
+          onChange={(e) => setFormData({ ...formData, cantidad: parseFloat(e.target.value) || 0 })}
           className="text-center"
           placeholder="Cantidad"
         />
@@ -222,7 +227,7 @@ export function ExecutiveSubpartidaRow({
               size="sm"
               variant="ghost"
               onClick={handleSave}
-              disabled={!formData.subpartida_id || formData.cantidad_requerida <= 0}
+              disabled={!formData.subpartida_id || formData.cantidad <= 0}
               className="text-green-600 hover:text-green-700 disabled:opacity-50"
             >
               <Save className="h-4 w-4" />

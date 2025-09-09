@@ -17,15 +17,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface PresupuestoEjecutivoRow {
   id?: string;
-  presupuesto_parametrico_id: string;
-  departamento: string;
-  mayor_id: string;
-  partida_id: string;
+  partida_ejecutivo_id: string;
   subpartida_id: string;
+  nombre_snapshot: string;
   unidad: string;
-  cantidad_requerida: number;
+  cantidad: number;
   precio_unitario: number;
-  monto_total: number;
+  importe: number;
 }
 
 // Unidades de medida disponibles - exactamente las mismas que en UnifiedTransactionBulkForm
@@ -173,15 +171,13 @@ export function PresupuestoEjecutivoManager({
     if (!selectedPresupuesto) return;
 
     const newRow: PresupuestoEjecutivoRow = {
-      presupuesto_parametrico_id: selectedPresupuestoId,
-      departamento: selectedPresupuesto.departamento, // Usar departamento del presupuesto paramétrico
-      mayor_id: selectedPresupuesto.mayor_id,
-      partida_id: selectedPresupuesto.partida_id,
+      partida_ejecutivo_id: '', // Will be set by the backend
       subpartida_id: '',
+      nombre_snapshot: '',
       unidad: 'PZA',
-      cantidad_requerida: 1,
+      cantidad: 1,
       precio_unitario: 0,
-      monto_total: 0
+      importe: 0
     };
     setRows([...rows, newRow]);
   };
@@ -190,10 +186,10 @@ export function PresupuestoEjecutivoManager({
     const updatedRows = [...rows];
     updatedRows[index] = { ...updatedRows[index], [field]: value };
     
-    // Auto-calculate monto_total
-    if (field === 'cantidad_requerida' || field === 'precio_unitario') {
-      updatedRows[index].monto_total = 
-        updatedRows[index].cantidad_requerida * updatedRows[index].precio_unitario;
+    // Auto-calculate importe
+    if (field === 'cantidad' || field === 'precio_unitario') {
+      updatedRows[index].importe = 
+        updatedRows[index].cantidad * updatedRows[index].precio_unitario;
     }
     
     setRows(updatedRows);
@@ -221,8 +217,9 @@ export function PresupuestoEjecutivoManager({
           id: row.id,
           data: {
             subpartida_id: row.subpartida_id,
+            nombre_snapshot: row.nombre_snapshot,
             unidad: row.unidad,
-            cantidad_requerida: row.cantidad_requerida,
+            cantidad: row.cantidad,
             precio_unitario: row.precio_unitario
           }
         });
@@ -230,13 +227,11 @@ export function PresupuestoEjecutivoManager({
         await createPresupuestoEjecutivo.mutateAsync({
           cliente_id: selectedClientId,
           proyecto_id: selectedProjectId,
-          presupuesto_parametrico_id: selectedPresupuestoId,
-          departamento: selectedPresupuesto?.departamento || 'Construcción', // Usar departamento del presupuesto paramétrico
-          mayor_id: row.mayor_id,
-          partida_id: row.partida_id,
+          partida_ejecutivo_id: row.partida_ejecutivo_id,
           subpartida_id: row.subpartida_id,
+          nombre_snapshot: row.nombre_snapshot,
           unidad: row.unidad,
-          cantidad_requerida: row.cantidad_requerida,
+          cantidad: row.cantidad,
           precio_unitario: row.precio_unitario
         });
       }
@@ -259,8 +254,8 @@ export function PresupuestoEjecutivoManager({
   };
 
   // Calculate totals and validation
-  const totalEjecutivo = presupuestosEjecutivo.reduce((sum, item) => sum + item.monto_total, 0) +
-    rows.reduce((sum, row) => sum + row.monto_total, 0);
+  const totalEjecutivo = presupuestosEjecutivo.reduce((sum, item) => sum + item.importe, 0) +
+    rows.reduce((sum, row) => sum + row.importe, 0);
   
   const totalParametrico = selectedPresupuesto?.monto_total || 0;
   const diferencia = totalEjecutivo - totalParametrico;
@@ -361,12 +356,12 @@ export function PresupuestoEjecutivoManager({
                             <TableCell>
                               <Badge variant="outline">{item.unidad}</Badge>
                             </TableCell>
-                            <TableCell>{item.cantidad_requerida}</TableCell>
+                            <TableCell>{item.cantidad}</TableCell>
                             <TableCell>
                               ${item.precio_unitario.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                             </TableCell>
                             <TableCell className="font-semibold">
-                              ${item.monto_total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                              ${item.importe.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                             </TableCell>
                             <TableCell>
                               <Button
@@ -420,21 +415,21 @@ export function PresupuestoEjecutivoManager({
                                 type="number"
                                 min="0.01"
                                 step="0.01"
-                                value={row.cantidad_requerida || ""}
+                                value={row.cantidad || ""}
                                 placeholder="1"
                                 onChange={(e) => {
                                   const value = e.target.value;
                                   if (value === "") {
-                                    updateRow(index, 'cantidad_requerida', "");
+                                    updateRow(index, 'cantidad', "");
                                   } else {
                                     const numValue = parseFloat(value);
-                                    updateRow(index, 'cantidad_requerida', isNaN(numValue) ? "" : numValue);
+                                    updateRow(index, 'cantidad', isNaN(numValue) ? "" : numValue);
                                   }
                                 }}
                                 onBlur={(e) => {
                                   const value = parseFloat(e.target.value);
                                   if (isNaN(value) || value <= 0) {
-                                    updateRow(index, 'cantidad_requerida', 1);
+                                    updateRow(index, 'cantidad', 1);
                                   }
                                 }}
                                 className="text-right"
@@ -448,7 +443,7 @@ export function PresupuestoEjecutivoManager({
                               />
                             </TableCell>
                             <TableCell className="font-semibold">
-                              ${row.monto_total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                              ${row.importe.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                             </TableCell>
                              <TableCell>
                                <div className="flex gap-1">

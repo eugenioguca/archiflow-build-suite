@@ -6,24 +6,30 @@ export interface PresupuestoEjecutivo {
   id: string;
   cliente_id: string;
   proyecto_id: string;
-  presupuesto_parametrico_id: string;
-  departamento: string;
-  mayor_id: string;
-  partida_id: string;
+  partida_ejecutivo_id: string;
   subpartida_id: string;
+  nombre_snapshot: string;
   unidad: string;
-  cantidad_requerida: number;
+  cantidad: number;
   precio_unitario: number;
-  monto_total: number;
+  importe: number;
   created_by: string;
   created_at: string;
   updated_at: string;
   // Relations
-  mayor?: { codigo: string; nombre: string };
-  partida?: { codigo: string; nombre: string };
   subpartida?: { codigo: string; nombre: string };
+  partida_ejecutivo?: {
+    id: string;
+    parametrico?: {
+      mayor_id: string;
+      partida_id: string;
+      mayor?: { codigo: string; nombre: string };
+      partida?: { codigo: string; nombre: string };
+    };
+  };
 }
 
+// Fix circular reference by simplifying type
 export const usePresupuestoEjecutivo = (clienteId?: string, proyectoId?: string, presupuestoParametricoId?: string) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -33,12 +39,19 @@ export const usePresupuestoEjecutivo = (clienteId?: string, proyectoId?: string,
     queryKey: ['presupuesto-ejecutivo', clienteId, proyectoId, presupuestoParametricoId],
     queryFn: async () => {
       let query = supabase
-        .from('presupuesto_ejecutivo')
+        .from('presupuesto_ejecutivo_subpartida')
         .select(`
           *,
-          mayor:chart_of_accounts_mayor(codigo, nombre),
-          partida:chart_of_accounts_partidas(codigo, nombre),
-          subpartida:chart_of_accounts_subpartidas(codigo, nombre)
+          subpartida:chart_of_accounts_subpartidas(codigo, nombre),
+          partida_ejecutivo:presupuesto_ejecutivo_partida(
+            id,
+            parametrico:presupuesto_parametrico(
+              mayor_id,
+              partida_id,
+              mayor:chart_of_accounts_mayor(codigo, nombre),
+              partida:chart_of_accounts_partidas(codigo, nombre)
+            )
+          )
         `)
         .order('created_at', { ascending: true });
 
@@ -51,20 +64,21 @@ export const usePresupuestoEjecutivo = (clienteId?: string, proyectoId?: string,
       }
 
       if (presupuestoParametricoId) {
-        query = query.eq('presupuesto_parametrico_id', presupuestoParametricoId);
+        // This filter is not applicable for the new structure
+        // query = query.eq('presupuesto_parametrico_id', presupuestoParametricoId);
       }
 
       const { data, error } = await query;
       
       if (error) throw error;
-      return data as PresupuestoEjecutivo[];
+      return data || [];
     },
     enabled: true,
   });
 
-  // Mutation for creating presupuesto ejecutivo
+  // Mutation for creating presupuesto ejecutivo subpartida
   const createPresupuestoEjecutivo = useMutation({
-    mutationFn: async (data: Omit<PresupuestoEjecutivo, 'id' | 'created_at' | 'updated_at' | 'monto_total' | 'created_by' | 'mayor' | 'partida' | 'subpartida'>) => {
+    mutationFn: async (data: any) => {
       // Get current user profile
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
@@ -78,9 +92,10 @@ export const usePresupuestoEjecutivo = (clienteId?: string, proyectoId?: string,
       if (!profile) throw new Error('Profile not found');
 
       const { data: result, error } = await supabase
-        .from('presupuesto_ejecutivo')
+        .from('presupuesto_ejecutivo_subpartida')
         .insert({
           ...data,
+          importe: data.cantidad * data.precio_unitario,
           created_by: profile.id
         })
         .select()
@@ -106,12 +121,32 @@ export const usePresupuestoEjecutivo = (clienteId?: string, proyectoId?: string,
     },
   });
 
-  // Mutation for updating presupuesto ejecutivo
+  // Mutation for updating presupuesto ejecutivo subpartida
   const updatePresupuestoEjecutivo = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<PresupuestoEjecutivo> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const updateData = { 
+        ...data, 
+        updated_at: new Date().toISOString() 
+      };
+      
+      // Recalculate importe if cantidad or precio_unitario changed
+      if (data.cantidad !== undefined || data.precio_unitario !== undefined) {
+        const { data: current } = await supabase
+          .from('presupuesto_ejecutivo_subpartida')
+          .select('cantidad, precio_unitario')
+          .eq('id', id)
+          .single();
+        
+        if (current) {
+          const cantidad = data.cantidad ?? current.cantidad;
+          const precio = data.precio_unitario ?? current.precio_unitario;
+          updateData.importe = cantidad * precio;
+        }
+      }
+      
       const { data: result, error } = await supabase
-        .from('presupuesto_ejecutivo')
-        .update({ ...data, updated_at: new Date().toISOString() })
+        .from('presupuesto_ejecutivo_subpartida')
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();
@@ -136,11 +171,11 @@ export const usePresupuestoEjecutivo = (clienteId?: string, proyectoId?: string,
     },
   });
 
-  // Mutation for deleting presupuesto ejecutivo
+  // Mutation for deleting presupuesto ejecutivo subpartida
   const deletePresupuestoEjecutivo = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('presupuesto_ejecutivo')
+        .from('presupuesto_ejecutivo_subpartida')
         .delete()
         .eq('id', id);
       
