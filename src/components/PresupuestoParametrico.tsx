@@ -171,13 +171,8 @@ export function PresupuestoParametrico({
         doc.text('DOVITA', margin, 18);
       }
 
-      // Company name - matching Gantt PDF style
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(20);
-      doc.setFont('helvetica', 'bold');
-      doc.text('DOVITA CONSTRUCCIONES', margin + 60, 18);
-
       // Document type on the right
+      doc.setTextColor(255, 255, 255);
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.text('PRESUPUESTO PARAMÉTRICO', pageWidth - margin, 12, { align: 'right' });
@@ -296,8 +291,9 @@ export function PresupuestoParametrico({
     doc.line(margin, infoY, pageWidth - margin, infoY);
     infoY += 10;
 
-    // Table setup - removed Departamento column
-    const colWidths = [50, 55, 30, 35, 35]; // Adjusted widths without departamento
+    // Table setup - optimized column widths based on content
+    // Total content width is approximately 185mm (pageWidth - 2*margins)
+    const colWidths = [35, 45, 20, 35, 35]; // Optimized for actual content lengths
     const headers = ['Mayor', 'Partida', 'Cantidad', 'P. Unitario', 'Monto Total'];
     const rowHeight = 8;
     let currentY = infoY;
