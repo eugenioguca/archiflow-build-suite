@@ -95,6 +95,13 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
 
       console.log('Parent partida upserted:', pep);
 
+      // Get subpartida data for snapshot
+      const { data: subpartidaData } = await supabase
+        .from('chart_of_accounts_subpartidas')
+        .select('codigo, nombre')
+        .eq('id', data.subpartida_id)
+        .single();
+
       // Step 2: Insert child (presupuesto_ejecutivo_subpartida)
       const { data: result, error: insertError } = await supabase
         .from('presupuesto_ejecutivo_subpartida')
@@ -103,7 +110,8 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
           proyecto_id: projectId,
           partida_ejecutivo_id: pep.id,
           subpartida_id: data.subpartida_id,
-          nombre_snapshot: data.nombre_subpartida || 'Subpartida',
+          nombre_snapshot: subpartidaData?.nombre || data.nombre_subpartida || 'Subpartida',
+          codigo_snapshot: subpartidaData?.codigo || '',
           unidad: data.unidad || 'PZA',
           cantidad: sanitizedCant,
           precio_unitario: sanitizedPU,
@@ -179,11 +187,29 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
 
       const importe = sanitizedCant * sanitizedPU;
       
+      // Get subpartida data for snapshot if updating subpartida_id
+      let nombre_snapshot = data.nombre_subpartida || 'Subpartida';
+      let codigo_snapshot = '';
+      
+      if (data.subpartida_id) {
+        const { data: subpartidaData } = await supabase
+          .from('chart_of_accounts_subpartidas')
+          .select('codigo, nombre')
+          .eq('id', data.subpartida_id)
+          .single();
+        
+        if (subpartidaData) {
+          nombre_snapshot = subpartidaData.nombre;
+          codigo_snapshot = subpartidaData.codigo;
+        }
+      }
+
       const { data: result, error } = await supabase
         .from('presupuesto_ejecutivo_subpartida')
         .update({
           subpartida_id: data.subpartida_id,
-          nombre_snapshot: data.nombre_subpartida || 'Subpartida',
+          nombre_snapshot,
+          codigo_snapshot,
           unidad: data.unidad,
           cantidad: sanitizedCant,
           precio_unitario: sanitizedPU,

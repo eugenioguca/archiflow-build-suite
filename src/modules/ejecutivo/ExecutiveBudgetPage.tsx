@@ -4,9 +4,11 @@ import { useExecutiveBudget } from './hooks/useExecutiveBudget';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Download, FileText, Search, Expand, Minimize, Calculator } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Download, FileText, Search, Expand, Minimize, Calculator, Table } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { FullParametricTree } from './FullParametricTree';
+import ExecutiveFinalView from './ExecutiveFinalView';
 
 // Grouped parametric structure
 export interface GroupedParametric {
@@ -187,106 +189,126 @@ export default function ExecutiveBudgetPage({ selectedClientId, selectedProjectI
         </Card>
       )}
 
-      {/* Show parametric budget tree */}
+      {/* Show parametric budget tree with tabs */}
       {!isLoading && groupedParametric && (
-        <div className="space-y-6">
-          {/* Budget Status Alert */}
-          {!isWithinBudget && (
-            <Card className={isOverBudget ? "border-destructive bg-destructive/5" : "border-warning bg-warning/5"}>
+        <Tabs defaultValue="tree" className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="tree" className="flex items-center gap-2">
+              <Calculator className="h-4 w-4" />
+              Desglose por Partidas
+            </TabsTrigger>
+            <TabsTrigger value="final" className="flex items-center gap-2">
+              <Table className="h-4 w-4" />
+              Vista Final
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="tree" className="space-y-6">
+            {/* Budget Status Alert */}
+            {!isWithinBudget && (
+              <Card className={isOverBudget ? "border-destructive bg-destructive/5" : "border-warning bg-warning/5"}>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    <Badge variant={isOverBudget ? "destructive" : "secondary"}>
+                      {isOverBudget ? "Sobrepresupuesto" : "Disponible"}
+                    </Badge>
+                    <span className="text-sm">
+                      {isOverBudget 
+                        ? `Excede por $${diferencia.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                        : `Disponible: $${Math.abs(diferencia).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                      }
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Summary Card */}
+            <Card>
               <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <Badge variant={isOverBudget ? "destructive" : "secondary"}>
-                    {isOverBudget ? "Sobrepresupuesto" : "Disponible"}
-                  </Badge>
-                  <span className="text-sm">
-                    {isOverBudget 
-                      ? `Excede por $${diferencia.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
-                      : `Disponible: $${Math.abs(diferencia).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
-                    }
-                  </span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground">Total Paramétrico</p>
+                    <p className="text-2xl font-bold text-primary">
+                      ${totalParametrico.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground">Total Ejecutivo</p>
+                    <p className="text-2xl font-bold">
+                      ${totalEjecutivo.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground">Diferencia</p>
+                    <p className={`text-2xl font-bold ${isOverBudget ? 'text-destructive' : 'text-green-600'}`}>
+                      ${Math.abs(diferencia).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          )}
 
-          {/* Summary Card */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Total Paramétrico</p>
-                  <p className="text-2xl font-bold text-primary">
-                    ${totalParametrico.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Total Ejecutivo</p>
-                  <p className="text-2xl font-bold">
-                    ${totalEjecutivo.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                  </p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">Diferencia</p>
-                  <p className={`text-2xl font-bold ${isOverBudget ? 'text-destructive' : 'text-green-600'}`}>
-                    ${Math.abs(diferencia).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Search and Filters */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar partidas o subpartidas..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setExpandedAll(!expandedAll)}
-                    className="gap-2"
-                  >
-                    {expandedAll ? <Minimize className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
-                    {expandedAll ? 'Colapsar' : 'Expandir'} Todo
-                  </Button>
+            {/* Search and Filters */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar partidas o subpartidas..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
                   
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value as any)}
-                    className="px-3 py-2 border rounded-md text-sm bg-background"
-                  >
-                    <option value="all">Todos</option>
-                    <option value="empty">Sin subpartidas</option>
-                    <option value="within">Dentro de presupuesto</option>
-                    <option value="over">Sobrepresupuesto</option>
-                  </select>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setExpandedAll(!expandedAll)}
+                      className="gap-2"
+                    >
+                      {expandedAll ? <Minimize className="h-4 w-4" /> : <Expand className="h-4 w-4" />}
+                      {expandedAll ? 'Colapsar' : 'Expandir'} Todo
+                    </Button>
+                    
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value as any)}
+                      className="px-3 py-2 border rounded-md text-sm bg-background"
+                    >
+                      <option value="all">Todos</option>
+                      <option value="empty">Sin subpartidas</option>
+                      <option value="within">Dentro de presupuesto</option>
+                      <option value="over">Sobrepresupuesto</option>
+                    </select>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Full Parametric Tree */}
-          <FullParametricTree
-            groupedParametric={groupedParametric}
-            executiveItems={executiveItems}
-            searchTerm={searchTerm}
-            statusFilter={statusFilter}
-            expandedAll={expandedAll}
-            onCreateItem={(data) => createExecutiveItem.mutate(data)}
-            onUpdateItem={(id, data) => updateExecutiveItem.mutate({ id, data })}
-            onDeleteItem={(id) => deleteExecutiveItem.mutate(id)}
-          />
-        </div>
+            {/* Full Parametric Tree */}
+            <FullParametricTree
+              groupedParametric={groupedParametric}
+              executiveItems={executiveItems}
+              searchTerm={searchTerm}
+              statusFilter={statusFilter}
+              expandedAll={expandedAll}
+              onCreateItem={(data) => createExecutiveItem.mutate(data)}
+              onUpdateItem={(id, data) => updateExecutiveItem.mutate({ id, data })}
+              onDeleteItem={(id) => deleteExecutiveItem.mutate(id)}
+            />
+          </TabsContent>
+
+          <TabsContent value="final">
+            <ExecutiveFinalView
+              selectedClientId={selectedClientId}
+              selectedProjectId={selectedProjectId}
+            />
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );

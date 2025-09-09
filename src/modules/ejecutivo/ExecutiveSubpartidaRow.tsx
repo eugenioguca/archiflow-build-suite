@@ -22,6 +22,7 @@ interface ExecutiveItem {
   partida_ejecutivo_id: string;
   subpartida_id: string;
   nombre_snapshot: string;
+  codigo_snapshot?: string;
   unidad: string;
   cantidad: number;
   precio_unitario: number;
@@ -120,9 +121,9 @@ export function ExecutiveSubpartidaRow({
       >
         <div className="grid grid-cols-5 gap-4 items-center">
           <div className="col-span-1">
-            <p className="font-medium">{item.nombre_snapshot || 'Subpartida'}</p>
+            <p className="font-medium">{item.nombre_snapshot || item.subpartida?.nombre || 'Subpartida'}</p>
             <p className="text-xs text-muted-foreground">
-              {item.subpartida?.codigo || 'Sin código'}
+              {item.codigo_snapshot || item.subpartida?.codigo || 'Sin código'}
             </p>
           </div>
           

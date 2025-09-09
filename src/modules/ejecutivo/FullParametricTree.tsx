@@ -14,6 +14,7 @@ interface ExecutiveItem {
   partida_ejecutivo_id: string;
   subpartida_id: string;
   nombre_snapshot: string;
+  codigo_snapshot?: string;
   unidad: string;
   cantidad: number;
   precio_unitario: number;
