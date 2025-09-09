@@ -47,17 +47,17 @@ export function ExecutiveSubpartidaRow({
   const [formData, setFormData] = useState({
     subpartida_id: item?.subpartida_id || '',
     nombre_subpartida: item?.subpartida?.nombre || '',
-    unidad: item?.unidad || 'pza',
+    unidad: item?.unidad || 'PZA',
     cantidad_requerida: item?.cantidad_requerida || 1,
     precio_unitario: item?.precio_unitario || 0,
   });
 
-  // Hook para buscar subpartidas del catálogo TU
+  // Hook para buscar subpartidas del catálogo TU - pass context if available
   const { 
     subpartidas, 
-    searchSubpartidas, 
-    isLoadingSubpartidas 
-  } = useSubpartidas();
+    isLoadingSubpartidas,
+    totalCount
+  } = useSubpartidas('CONSTRUCCIÓN', undefined, undefined);
 
   const total = formData.cantidad_requerida * formData.precio_unitario;
 
@@ -89,7 +89,7 @@ export function ExecutiveSubpartidaRow({
       setFormData({
         subpartida_id: item?.subpartida_id || '',
         nombre_subpartida: item?.subpartida?.nombre || '',
-        unidad: item?.unidad || 'pza',
+        unidad: item?.unidad || 'PZA',
         cantidad_requerida: item?.cantidad_requerida || 1,
         precio_unitario: item?.precio_unitario || 0,
       });
@@ -167,11 +167,12 @@ export function ExecutiveSubpartidaRow({
           value={formData.subpartida_id}
           onValueChange={handleSubpartidaSelect}
           placeholder="Buscar subpartida..."
-          searchPlaceholder="Escriba para buscar..."
+          searchPlaceholder={`Escriba para buscar... (${totalCount} disponibles)`}
           emptyText="No se encontraron subpartidas"
           loading={isLoadingSubpartidas}
           showCodes={true}
           searchFields={['label', 'codigo']}
+          virtualized={true}
           className="col-span-1"
         />
         
@@ -183,14 +184,15 @@ export function ExecutiveSubpartidaRow({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="pza">Pieza</SelectItem>
-            <SelectItem value="m">Metro</SelectItem>
-            <SelectItem value="m2">Metro²</SelectItem>
-            <SelectItem value="m3">Metro³</SelectItem>
-            <SelectItem value="kg">Kilogramo</SelectItem>
-            <SelectItem value="ton">Tonelada</SelectItem>
-            <SelectItem value="lt">Litro</SelectItem>
-            <SelectItem value="global">Global</SelectItem>
+            <SelectItem value="PZA">Pieza</SelectItem>
+            <SelectItem value="M">Metro</SelectItem>
+            <SelectItem value="M2">Metro²</SelectItem>
+            <SelectItem value="M3">Metro³</SelectItem>
+            <SelectItem value="ML">Metro Lineal</SelectItem>
+            <SelectItem value="KG">Kilogramo</SelectItem>
+            <SelectItem value="TON">Tonelada</SelectItem>
+            <SelectItem value="LT">Litro</SelectItem>
+            <SelectItem value="GAL">Galón</SelectItem>
           </SelectContent>
         </Select>
         

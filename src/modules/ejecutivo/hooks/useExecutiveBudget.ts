@@ -36,6 +36,8 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
   // Mutation for creating executive budget item
   const createExecutiveItem = useMutation({
     mutationFn: async (data: any) => {
+      console.log('Creating executive item with data:', data);
+      
       // Get current user profile
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
@@ -51,22 +53,27 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
       // Calculate total
       const monto_total = (data.cantidad_requerida || 0) * (data.precio_unitario || 0);
 
+      // Prepare insert data with required fields for RLS
+      const insertData = {
+        cliente_id: clientId,
+        proyecto_id: projectId,
+        presupuesto_parametrico_id: data.presupuesto_parametrico_id, // ID del item paramétrico
+        departamento: 'CONSTRUCCIÓN', // Fixed for construction department
+        mayor_id: data.mayor_id,
+        partida_id: data.partida_id,
+        subpartida_id: data.subpartida_id,
+        unidad: data.unidad || 'PZA',
+        cantidad_requerida: data.cantidad_requerida || 1,
+        precio_unitario: data.precio_unitario || 0,
+        monto_total,
+        created_by: profile.id
+      };
+
+      console.log('Inserting with data:', insertData);
+
       const { data: result, error } = await supabase
         .from('presupuesto_ejecutivo')
-        .insert({
-          cliente_id: clientId,
-          proyecto_id: projectId,
-          presupuesto_parametrico_id: data.presupuesto_parametrico_id, // ID del item paramétrico
-          departamento: 'CONSTRUCCIÓN', // Fixed for construction department
-          mayor_id: data.mayor_id,
-          partida_id: data.partida_id,
-          subpartida_id: data.subpartida_id,
-          unidad: data.unidad || 'pza',
-          cantidad_requerida: data.cantidad_requerida || 1,
-          precio_unitario: data.precio_unitario || 0,
-          monto_total,
-          created_by: profile.id
-        })
+        .insert(insertData)
         .select(`
           *,
           mayor:chart_of_accounts_mayor(codigo, nombre),
@@ -75,7 +82,12 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
         `)
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase insert error:', error);
+        throw error;
+      }
+      
+      console.log('Successfully created executive item:', result);
       return result;
     },
     onSuccess: () => {
@@ -86,11 +98,12 @@ export function useExecutiveBudget(clientId?: string, projectId?: string) {
         description: "La subpartida se ha agregado exitosamente.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error creating executive item:', error);
+      const errorMessage = error?.message || 'Error desconocido';
       toast({
         title: "Error",
-        description: "No se pudo crear la subpartida.",
+        description: `No se pudo crear la subpartida: ${errorMessage}`,
         variant: "destructive",
       });
     },
