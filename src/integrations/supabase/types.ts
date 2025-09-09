@@ -4957,14 +4957,14 @@ export type Database = {
       }
       presupuesto_ejecutivo: {
         Row: {
-          cantidad_requerida: number
+          cantidad: number
           cliente_id: string
           created_at: string
           created_by: string
           departamento: string
           id: string
+          importe: number
           mayor_id: string
-          monto_total: number
           partida_id: string
           precio_unitario: number
           presupuesto_parametrico_id: string
@@ -4974,14 +4974,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          cantidad_requerida?: number
+          cantidad?: number
           cliente_id: string
           created_at?: string
           created_by: string
           departamento?: string
           id?: string
+          importe?: number
           mayor_id: string
-          monto_total?: number
           partida_id: string
           precio_unitario?: number
           presupuesto_parametrico_id: string
@@ -4991,14 +4991,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          cantidad_requerida?: number
+          cantidad?: number
           cliente_id?: string
           created_at?: string
           created_by?: string
           departamento?: string
           id?: string
+          importe?: number
           mayor_id?: string
-          monto_total?: number
           partida_id?: string
           precio_unitario?: number
           presupuesto_parametrico_id?: string
