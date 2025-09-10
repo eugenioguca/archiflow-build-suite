@@ -183,14 +183,15 @@ export function MayorSelectionModal({
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
       <ResponsiveDialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <ResponsiveDialogHeader>
+        <ResponsiveDialogHeader className="pb-4">
           <ResponsiveDialogTitle className="text-xl font-semibold flex items-center gap-2">
             📊 {title}
           </ResponsiveDialogTitle>
         </ResponsiveDialogHeader>
         
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <div className="p-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             {/* First row: Mayor | Importe */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
@@ -378,8 +379,9 @@ export function MayorSelectionModal({
                 {saving ? "Guardando..." : "Guardar"}
               </Button>
             </div>
-          </form>
-        </Form>
+            </form>
+          </Form>
+        </div>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
   );

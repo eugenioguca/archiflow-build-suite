@@ -72,13 +72,14 @@ export function DiscountModal({
   return (
     <ResponsiveDialog open={open} onOpenChange={handleOpenChange}>
       <ResponsiveDialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-        <ResponsiveDialogHeader>
+        <ResponsiveDialogHeader className="pb-4">
           <ResponsiveDialogTitle className="text-xl font-semibold flex items-center gap-2">
             💰 {title}
           </ResponsiveDialogTitle>
         </ResponsiveDialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="discount-amount" className="text-sm font-medium">Valor del descuento</Label>
@@ -121,7 +122,8 @@ export function DiscountModal({
               {isLoading ? 'Guardando...' : 'Guardar'}
             </Button>
           </div>
-        </form>
+          </form>
+        </div>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
   );
