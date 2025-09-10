@@ -182,16 +182,16 @@ export function MayorSelectionModal({
 
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
-      <ResponsiveDialogContent className="max-w-4xl w-full mx-4 min-h-[600px]">
-        <ResponsiveDialogHeader className="pb-6">
+      <ResponsiveDialogContent className="max-w-lg w-full mx-4">
+        <ResponsiveDialogHeader className="pb-4">
           <ResponsiveDialogTitle className="text-xl font-semibold">{title}</ResponsiveDialogTitle>
         </ResponsiveDialogHeader>
         
-        <div className="px-6 pb-6">
+        <div className="p-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-10">
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             {/* Mayor Selection */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <FormField
                 control={form.control}
                 name="mayor_id"
@@ -200,7 +200,7 @@ export function MayorSelectionModal({
                     <FormLabel className="text-base font-medium">Mayor</FormLabel>
                     <FormControl>
                       {isEditing ? (
-                        <div className="flex h-14 w-full rounded-md border border-input bg-muted px-4 py-3 text-base items-center">
+                        <div className="flex h-12 w-full rounded-md border border-input bg-muted px-4 py-3 text-base items-center">
                           {(() => {
                             const selectedMayor = mayores.find(m => m.id === field.value);
                             return selectedMayor ? `${selectedMayor.codigo} - ${selectedMayor.nombre}` : 'Mayor no encontrado';
@@ -216,7 +216,7 @@ export function MayorSelectionModal({
                           disabled={loadingMayores}
                           showCodes={true}
                           searchFields={['label', 'codigo', 'searchText']}
-                          className="w-full h-14 text-base"
+                          className="w-full h-12 text-base"
                         />
                       )}
                     </FormControl>
@@ -227,7 +227,7 @@ export function MayorSelectionModal({
             </div>
 
             {/* Amount Input */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <FormField
                 control={form.control}
                 name="amount"
@@ -238,7 +238,7 @@ export function MayorSelectionModal({
                       <MoneyInput
                         value={field.value || 0}
                         onChange={field.onChange}
-                        className="h-14 text-base"
+                        className="h-12 text-base"
                       />
                     </FormControl>
                     <FormMessage />
@@ -248,14 +248,14 @@ export function MayorSelectionModal({
             </div>
 
             {/* Date Range Section */}
-            <div className="space-y-8">
-              <div className="border-t border-border pt-6">
-                <h3 className="text-lg font-medium mb-6 text-foreground">Periodo de Ejecución</h3>
+            <div className="space-y-4">
+              <div className="border-t border-border pt-4">
+                <h3 className="text-lg font-medium mb-4 text-foreground">Periodo de Ejecución</h3>
                 
                 {/* Start Date */}
-                <div className="mb-8">
-                  <h4 className="text-base font-medium mb-4 text-muted-foreground">Fecha de Inicio</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="mb-6">
+                  <h4 className="text-base font-medium mb-3 text-muted-foreground">Fecha de Inicio</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="start_month"
@@ -264,7 +264,7 @@ export function MayorSelectionModal({
                           <FormLabel className="text-base font-medium">Mes de Inicio</FormLabel>
                           <FormControl>
                             <Select value={field.value} onValueChange={field.onChange}>
-                              <SelectTrigger className="h-14 text-base">
+                              <SelectTrigger className="h-12 text-base">
                                 <SelectValue placeholder="Seleccionar mes" />
                               </SelectTrigger>
                               <SelectContent>
@@ -289,7 +289,7 @@ export function MayorSelectionModal({
                           <FormLabel className="text-base font-medium">Semana de Inicio</FormLabel>
                           <FormControl>
                             <Select value={field.value?.toString()} onValueChange={(value) => field.onChange(parseInt(value))}>
-                              <SelectTrigger className="h-14 text-base">
+                              <SelectTrigger className="h-12 text-base">
                                 <SelectValue placeholder="Semana" />
                               </SelectTrigger>
                               <SelectContent>
@@ -310,8 +310,8 @@ export function MayorSelectionModal({
 
                 {/* End Date */}
                 <div>
-                  <h4 className="text-base font-medium mb-4 text-muted-foreground">Fecha de Fin</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <h4 className="text-base font-medium mb-3 text-muted-foreground">Fecha de Fin</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="end_month"
@@ -320,7 +320,7 @@ export function MayorSelectionModal({
                           <FormLabel className="text-base font-medium">Mes de Fin</FormLabel>
                           <FormControl>
                             <Select value={field.value} onValueChange={field.onChange}>
-                              <SelectTrigger className="h-14 text-base">
+                              <SelectTrigger className="h-12 text-base">
                                 <SelectValue placeholder="Seleccionar mes" />
                               </SelectTrigger>
                               <SelectContent>
@@ -345,7 +345,7 @@ export function MayorSelectionModal({
                           <FormLabel className="text-base font-medium">Semana de Fin</FormLabel>
                           <FormControl>
                             <Select value={field.value?.toString()} onValueChange={(value) => field.onChange(parseInt(value))}>
-                              <SelectTrigger className="h-14 text-base">
+                              <SelectTrigger className="h-12 text-base">
                                 <SelectValue placeholder="Semana" />
                               </SelectTrigger>
                               <SelectContent>
@@ -367,7 +367,7 @@ export function MayorSelectionModal({
             </div>
 
             {/* Form Actions */}
-            <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 mt-8 border-t border-border">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 mt-6 border-t border-border">
               <Button
                 type="button"
                 variant="outline"
@@ -375,14 +375,14 @@ export function MayorSelectionModal({
                   form.reset();
                   onOpenChange(false);
                 }}
-                className="order-2 sm:order-1 h-12 px-8 text-base"
+                className="order-2 sm:order-1 h-10 px-6 text-base"
               >
                 Cancelar
               </Button>
               <Button
                 type="submit"
                 disabled={saving || !form.formState.isValid || loadingMayores}
-                className="order-1 sm:order-2 h-12 px-8 text-base"
+                className="order-1 sm:order-2 h-10 px-6 text-base"
               >
                 {saving ? "Guardando..." : "Guardar"}
               </Button>
