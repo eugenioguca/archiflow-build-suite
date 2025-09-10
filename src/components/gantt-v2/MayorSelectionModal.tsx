@@ -183,13 +183,13 @@ export function MayorSelectionModal({
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
       <ResponsiveDialogContent className="max-w-lg w-full mx-4">
-        <ResponsiveDialogHeader className="pb-4">
-          <ResponsiveDialogTitle className="text-xl font-semibold">{title}</ResponsiveDialogTitle>
+        <ResponsiveDialogHeader className="pb-2">
+          <ResponsiveDialogTitle className="text-lg font-semibold">{title}</ResponsiveDialogTitle>
         </ResponsiveDialogHeader>
         
-        <div className="p-6">
+        <div className="p-4">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             {/* Mayor Selection */}
             <div className="space-y-2">
               <FormField
@@ -200,7 +200,7 @@ export function MayorSelectionModal({
                     <FormLabel className="text-base font-medium">Mayor</FormLabel>
                     <FormControl>
                       {isEditing ? (
-                        <div className="flex h-12 w-full rounded-md border border-input bg-muted px-4 py-3 text-base items-center">
+                        <div className="flex h-10 w-full rounded-md border border-input bg-muted px-4 py-3 text-base items-center">
                           {(() => {
                             const selectedMayor = mayores.find(m => m.id === field.value);
                             return selectedMayor ? `${selectedMayor.codigo} - ${selectedMayor.nombre}` : 'Mayor no encontrado';
@@ -216,7 +216,7 @@ export function MayorSelectionModal({
                           disabled={loadingMayores}
                           showCodes={true}
                           searchFields={['label', 'codigo', 'searchText']}
-                          className="w-full h-12 text-base"
+                          className="w-full h-10 text-base"
                         />
                       )}
                     </FormControl>
@@ -238,7 +238,7 @@ export function MayorSelectionModal({
                       <MoneyInput
                         value={field.value || 0}
                         onChange={field.onChange}
-                        className="h-12 text-base"
+                        className="h-10 text-base"
                       />
                     </FormControl>
                     <FormMessage />
@@ -250,12 +250,12 @@ export function MayorSelectionModal({
             {/* Date Range Section */}
             <div className="space-y-4">
               <div className="border-t border-border pt-4">
-                <h3 className="text-lg font-medium mb-4 text-foreground">Periodo de Ejecución</h3>
+                <h3 className="text-lg font-medium mb-3 text-foreground">Periodo de Ejecución</h3>
                 
                 {/* Start Date */}
-                <div className="mb-6">
-                  <h4 className="text-base font-medium mb-3 text-muted-foreground">Fecha de Inicio</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium mb-2 text-muted-foreground">Fecha de Inicio</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <FormField
                       control={form.control}
                       name="start_month"
@@ -264,7 +264,7 @@ export function MayorSelectionModal({
                           <FormLabel className="text-base font-medium">Mes de Inicio</FormLabel>
                           <FormControl>
                             <Select value={field.value} onValueChange={field.onChange}>
-                              <SelectTrigger className="h-12 text-base">
+                              <SelectTrigger className="h-10 text-base">
                                 <SelectValue placeholder="Seleccionar mes" />
                               </SelectTrigger>
                               <SelectContent>
@@ -289,7 +289,7 @@ export function MayorSelectionModal({
                           <FormLabel className="text-base font-medium">Semana de Inicio</FormLabel>
                           <FormControl>
                             <Select value={field.value?.toString()} onValueChange={(value) => field.onChange(parseInt(value))}>
-                              <SelectTrigger className="h-12 text-base">
+                              <SelectTrigger className="h-10 text-base">
                                 <SelectValue placeholder="Semana" />
                               </SelectTrigger>
                               <SelectContent>
@@ -310,8 +310,8 @@ export function MayorSelectionModal({
 
                 {/* End Date */}
                 <div>
-                  <h4 className="text-base font-medium mb-3 text-muted-foreground">Fecha de Fin</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <h4 className="text-sm font-medium mb-2 text-muted-foreground">Fecha de Fin</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <FormField
                       control={form.control}
                       name="end_month"
@@ -320,7 +320,7 @@ export function MayorSelectionModal({
                           <FormLabel className="text-base font-medium">Mes de Fin</FormLabel>
                           <FormControl>
                             <Select value={field.value} onValueChange={field.onChange}>
-                              <SelectTrigger className="h-12 text-base">
+                              <SelectTrigger className="h-10 text-base">
                                 <SelectValue placeholder="Seleccionar mes" />
                               </SelectTrigger>
                               <SelectContent>
@@ -345,7 +345,7 @@ export function MayorSelectionModal({
                           <FormLabel className="text-base font-medium">Semana de Fin</FormLabel>
                           <FormControl>
                             <Select value={field.value?.toString()} onValueChange={(value) => field.onChange(parseInt(value))}>
-                              <SelectTrigger className="h-12 text-base">
+                              <SelectTrigger className="h-10 text-base">
                                 <SelectValue placeholder="Semana" />
                               </SelectTrigger>
                               <SelectContent>
@@ -367,7 +367,7 @@ export function MayorSelectionModal({
             </div>
 
             {/* Form Actions */}
-            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 mt-6 border-t border-border">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-3 mt-4 border-t border-border">
               <Button
                 type="button"
                 variant="outline"
