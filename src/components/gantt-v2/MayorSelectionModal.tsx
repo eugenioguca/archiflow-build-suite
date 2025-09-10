@@ -182,14 +182,15 @@ export function MayorSelectionModal({
 
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
-      <ResponsiveDialogContent className="max-w-lg w-full mx-4">
-        <ResponsiveDialogHeader className="pb-2">
-          <ResponsiveDialogTitle className="text-lg font-semibold">{title}</ResponsiveDialogTitle>
+      <ResponsiveDialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle className="text-xl font-semibold flex items-center gap-2">
+            📊 {title}
+          </ResponsiveDialogTitle>
         </ResponsiveDialogHeader>
         
-        <div className="p-6 max-w-md mx-auto">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             {/* Mayor Selection */}
             <div className="space-y-2 w-full">
               <FormField
@@ -367,7 +368,7 @@ export function MayorSelectionModal({
             </div>
 
             {/* Form Actions */}
-            <div className="flex flex-col sm:flex-row justify-center gap-4 pt-6 mt-8 border-t border-border">
+            <div className="flex justify-end space-x-2 pt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -375,21 +376,19 @@ export function MayorSelectionModal({
                   form.reset();
                   onOpenChange(false);
                 }}
-                className="order-2 sm:order-1 h-10 px-6 text-sm"
+                disabled={saving}
               >
                 Cancelar
               </Button>
               <Button
                 type="submit"
                 disabled={saving || !form.formState.isValid || loadingMayores}
-                className="order-1 sm:order-2 h-10 px-6 text-sm"
               >
                 {saving ? "Guardando..." : "Guardar"}
               </Button>
             </div>
           </form>
         </Form>
-        </div>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
   );

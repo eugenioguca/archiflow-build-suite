@@ -71,37 +71,41 @@ export function DiscountModal({
 
   return (
     <ResponsiveDialog open={open} onOpenChange={handleOpenChange}>
-      <ResponsiveDialogContent className="sm:max-w-[425px]">
+      <ResponsiveDialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <ResponsiveDialogHeader>
-          <ResponsiveDialogTitle>{title}</ResponsiveDialogTitle>
+          <ResponsiveDialogTitle className="text-xl font-semibold flex items-center gap-2">
+            💰 {title}
+          </ResponsiveDialogTitle>
         </ResponsiveDialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="discount-amount">Valor del descuento</Label>
-            <Input
-              id="discount-amount"
-              type="number"
-              step="0.01"
-              min="0"
-              max={subtotal}
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.00"
-              disabled={isLoading}
-              className="text-right"
-            />
-            <div className="text-sm text-muted-foreground">
-              Subtotal: {formatCurrency(subtotal)}
-            </div>
-            {error && (
-              <div className="text-sm text-destructive">
-                {error}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="discount-amount" className="text-sm font-medium">Valor del descuento</Label>
+              <Input
+                id="discount-amount"
+                type="number"
+                step="0.01"
+                min="0"
+                max={subtotal}
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0.00"
+                disabled={isLoading}
+                className="text-right h-10 text-sm"
+              />
+              <div className="text-sm text-muted-foreground">
+                Subtotal: {formatCurrency(subtotal)}
               </div>
-            )}
+              {error && (
+                <div className="text-sm text-destructive">
+                  {error}
+                </div>
+              )}
+            </div>
           </div>
 
-          <ResponsiveDialogFooter>
+          <div className="flex justify-end space-x-2 pt-4">
             <Button 
               type="button" 
               variant="outline" 
@@ -116,7 +120,7 @@ export function DiscountModal({
             >
               {isLoading ? 'Guardando...' : 'Guardar'}
             </Button>
-          </ResponsiveDialogFooter>
+          </div>
         </form>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
