@@ -182,112 +182,43 @@ export function MayorSelectionModal({
 
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
-      <ResponsiveDialogContent className="max-w-2xl w-full mx-4">
-        <ResponsiveDialogHeader>
-          <ResponsiveDialogTitle>{title}</ResponsiveDialogTitle>
+      <ResponsiveDialogContent className="max-w-4xl w-full mx-4 min-h-[600px]">
+        <ResponsiveDialogHeader className="pb-6">
+          <ResponsiveDialogTitle className="text-xl font-semibold">{title}</ResponsiveDialogTitle>
         </ResponsiveDialogHeader>
         
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+        <div className="px-6 pb-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-10">
             {/* Mayor Selection */}
-            <FormField
-              control={form.control}
-              name="mayor_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm font-medium">Mayor</FormLabel>
-                  <FormControl>
-                    {isEditing ? (
-                      <div className="flex h-12 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm items-center">
-                        {(() => {
-                          const selectedMayor = mayores.find(m => m.id === field.value);
-                          return selectedMayor ? `${selectedMayor.codigo} - ${selectedMayor.nombre}` : 'Mayor no encontrado';
-                        })()}
-                      </div>
-                    ) : (
-                      <SearchableCombobox
-                        items={mayorOptions}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder="Seleccionar mayor"
-                        searchPlaceholder="Buscar mayor..."
-                        disabled={loadingMayores}
-                        showCodes={true}
-                        searchFields={['label', 'codigo', 'searchText']}
-                        className="w-full h-12"
-                      />
-                    )}
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Amount Input */}
-            <FormField
-              control={form.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm font-medium">Importe</FormLabel>
-                  <FormControl>
-                    <MoneyInput
-                      value={field.value || 0}
-                      onChange={field.onChange}
-                      className="h-12"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Start Date */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="space-y-3">
               <FormField
                 control={form.control}
-                name="start_month"
+                name="mayor_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium">Mes de Inicio</FormLabel>
+                    <FormLabel className="text-base font-medium">Mayor</FormLabel>
                     <FormControl>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="h-12">
-                          <SelectValue placeholder="Seleccionar mes" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {monthOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="start_week"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium">Semana de Inicio</FormLabel>
-                    <FormControl>
-                      <Select value={field.value?.toString()} onValueChange={(value) => field.onChange(parseInt(value))}>
-                        <SelectTrigger className="h-12">
-                          <SelectValue placeholder="Semana" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {weekOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value.toString()}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      {isEditing ? (
+                        <div className="flex h-14 w-full rounded-md border border-input bg-muted px-4 py-3 text-base items-center">
+                          {(() => {
+                            const selectedMayor = mayores.find(m => m.id === field.value);
+                            return selectedMayor ? `${selectedMayor.codigo} - ${selectedMayor.nombre}` : 'Mayor no encontrado';
+                          })()}
+                        </div>
+                      ) : (
+                        <SearchableCombobox
+                          items={mayorOptions}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Seleccionar mayor"
+                          searchPlaceholder="Buscar mayor..."
+                          disabled={loadingMayores}
+                          showCodes={true}
+                          searchFields={['label', 'codigo', 'searchText']}
+                          className="w-full h-14 text-base"
+                        />
+                      )}
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -295,61 +226,148 @@ export function MayorSelectionModal({
               />
             </div>
 
-            {/* End Date */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {/* Amount Input */}
+            <div className="space-y-3">
               <FormField
                 control={form.control}
-                name="end_month"
+                name="amount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium">Mes de Fin</FormLabel>
+                    <FormLabel className="text-base font-medium">Importe</FormLabel>
                     <FormControl>
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="h-12">
-                          <SelectValue placeholder="Seleccionar mes" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {monthOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <MoneyInput
+                        value={field.value || 0}
+                        onChange={field.onChange}
+                        className="h-14 text-base"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+            </div>
 
-              <FormField
-                control={form.control}
-                name="end_week"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium">Semana de Fin</FormLabel>
-                    <FormControl>
-                      <Select value={field.value?.toString()} onValueChange={(value) => field.onChange(parseInt(value))}>
-                        <SelectTrigger className="h-12">
-                          <SelectValue placeholder="Semana" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {weekOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value.toString()}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            {/* Date Range Section */}
+            <div className="space-y-8">
+              <div className="border-t border-border pt-6">
+                <h3 className="text-lg font-medium mb-6 text-foreground">Periodo de Ejecución</h3>
+                
+                {/* Start Date */}
+                <div className="mb-8">
+                  <h4 className="text-base font-medium mb-4 text-muted-foreground">Fecha de Inicio</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <FormField
+                      control={form.control}
+                      name="start_month"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-base font-medium">Mes de Inicio</FormLabel>
+                          <FormControl>
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <SelectTrigger className="h-14 text-base">
+                                <SelectValue placeholder="Seleccionar mes" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {monthOptions.map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="start_week"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-base font-medium">Semana de Inicio</FormLabel>
+                          <FormControl>
+                            <Select value={field.value?.toString()} onValueChange={(value) => field.onChange(parseInt(value))}>
+                              <SelectTrigger className="h-14 text-base">
+                                <SelectValue placeholder="Semana" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {weekOptions.map((option) => (
+                                  <SelectItem key={option.value} value={option.value.toString()}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* End Date */}
+                <div>
+                  <h4 className="text-base font-medium mb-4 text-muted-foreground">Fecha de Fin</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <FormField
+                      control={form.control}
+                      name="end_month"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-base font-medium">Mes de Fin</FormLabel>
+                          <FormControl>
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <SelectTrigger className="h-14 text-base">
+                                <SelectValue placeholder="Seleccionar mes" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {monthOptions.map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="end_week"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-base font-medium">Semana de Fin</FormLabel>
+                          <FormControl>
+                            <Select value={field.value?.toString()} onValueChange={(value) => field.onChange(parseInt(value))}>
+                              <SelectTrigger className="h-14 text-base">
+                                <SelectValue placeholder="Semana" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {weekOptions.map((option) => (
+                                  <SelectItem key={option.value} value={option.value.toString()}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Form Actions */}
-            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
+            <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 mt-8 border-t border-border">
               <Button
                 type="button"
                 variant="outline"
@@ -357,20 +375,21 @@ export function MayorSelectionModal({
                   form.reset();
                   onOpenChange(false);
                 }}
-                className="order-2 sm:order-1 h-12 px-6"
+                className="order-2 sm:order-1 h-12 px-8 text-base"
               >
                 Cancelar
               </Button>
               <Button
                 type="submit"
                 disabled={saving || !form.formState.isValid || loadingMayores}
-                className="order-1 sm:order-2 h-12 px-6"
+                className="order-1 sm:order-2 h-12 px-8 text-base"
               >
                 {saving ? "Guardando..." : "Guardar"}
               </Button>
             </div>
           </form>
         </Form>
+        </div>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
   );
