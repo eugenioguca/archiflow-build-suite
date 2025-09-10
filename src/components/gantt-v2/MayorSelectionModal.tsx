@@ -187,11 +187,11 @@ export function MayorSelectionModal({
           <ResponsiveDialogTitle className="text-lg font-semibold">{title}</ResponsiveDialogTitle>
         </ResponsiveDialogHeader>
         
-        <div className="p-4">
+        <div className="p-6 max-w-md mx-auto">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             {/* Mayor Selection */}
-            <div className="space-y-2 max-w-sm">
+            <div className="space-y-2 w-full">
               <FormField
                 control={form.control}
                 name="mayor_id"
@@ -227,7 +227,7 @@ export function MayorSelectionModal({
             </div>
 
             {/* Amount Input */}
-            <div className="space-y-2 max-w-sm">
+            <div className="space-y-2 w-full">
               <FormField
                 control={form.control}
                 name="amount"
@@ -248,14 +248,14 @@ export function MayorSelectionModal({
             </div>
 
             {/* Date Range Section */}
-            <div className="space-y-4">
-              <div className="border-t border-border pt-4">
-                <h3 className="text-base font-medium mb-3 text-foreground">Periodo de Ejecución</h3>
+            <div className="space-y-6">
+              <div className="border-t border-border pt-6">
+                <h3 className="text-base font-medium mb-4 text-foreground">Periodo de Ejecución</h3>
                 
                 {/* Start Date */}
-                <div className="mb-4">
-                  <h4 className="text-sm font-medium mb-2 text-muted-foreground">Fecha de Inicio</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-md">
+                <div className="mb-6">
+                  <h4 className="text-sm font-medium mb-3 text-muted-foreground">Fecha de Inicio</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-full">
                     <FormField
                       control={form.control}
                       name="start_month"
@@ -310,8 +310,8 @@ export function MayorSelectionModal({
 
                 {/* End Date */}
                 <div>
-                  <h4 className="text-sm font-medium mb-2 text-muted-foreground">Fecha de Fin</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-md">
+                  <h4 className="text-sm font-medium mb-3 text-muted-foreground">Fecha de Fin</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-full">
                     <FormField
                       control={form.control}
                       name="end_month"
@@ -367,7 +367,7 @@ export function MayorSelectionModal({
             </div>
 
             {/* Form Actions */}
-            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-3 mt-4 border-t border-border">
+            <div className="flex flex-col sm:flex-row justify-center gap-4 pt-6 mt-8 border-t border-border">
               <Button
                 type="button"
                 variant="outline"
