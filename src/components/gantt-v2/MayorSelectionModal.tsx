@@ -180,6 +180,7 @@ export function MayorSelectionModal({
     { value: 4, label: 'Semana 4' },
   ];
 
+  return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
       <ResponsiveDialogContent className="max-w-2xl w-full mx-4">
         <ResponsiveDialogHeader>
