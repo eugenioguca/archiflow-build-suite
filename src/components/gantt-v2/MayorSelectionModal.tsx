@@ -191,7 +191,7 @@ export function MayorSelectionModal({
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             {/* Mayor Selection */}
-            <div className="space-y-2">
+            <div className="space-y-2 max-w-sm">
               <FormField
                 control={form.control}
                 name="mayor_id"
@@ -227,7 +227,7 @@ export function MayorSelectionModal({
             </div>
 
             {/* Amount Input */}
-            <div className="space-y-2">
+            <div className="space-y-2 max-w-sm">
               <FormField
                 control={form.control}
                 name="amount"
