@@ -183,9 +183,9 @@ export function MayorSelectionModal({
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
       <ResponsiveDialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <ResponsiveDialogHeader className="pb-4">
-          <ResponsiveDialogTitle className="text-xl font-semibold flex items-center gap-2">
-            📊 {title}
+        <ResponsiveDialogHeader className="p-6 pb-4">
+          <ResponsiveDialogTitle className="text-xl font-semibold">
+            {title}
           </ResponsiveDialogTitle>
         </ResponsiveDialogHeader>
         
@@ -249,7 +249,7 @@ export function MayorSelectionModal({
             {/* Second row: Date Range Section */}
             <div className="space-y-4">
               <div className="border-t border-border pt-4">
-                <h3 className="text-base font-medium mb-4 text-foreground">Periodo de Ejecución</h3>
+                <h3 className="text-base font-medium mb-6 mt-2 text-foreground">Periodo de Ejecución</h3>
                 
                 {/* Start Date Row */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">

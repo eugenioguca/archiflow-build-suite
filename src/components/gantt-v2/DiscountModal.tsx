@@ -72,9 +72,9 @@ export function DiscountModal({
   return (
     <ResponsiveDialog open={open} onOpenChange={handleOpenChange}>
       <ResponsiveDialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-        <ResponsiveDialogHeader className="pb-4">
-          <ResponsiveDialogTitle className="text-xl font-semibold flex items-center gap-2">
-            💰 {title}
+        <ResponsiveDialogHeader className="p-6 pb-4">
+          <ResponsiveDialogTitle className="text-xl font-semibold">
+            {title}
           </ResponsiveDialogTitle>
         </ResponsiveDialogHeader>
         
