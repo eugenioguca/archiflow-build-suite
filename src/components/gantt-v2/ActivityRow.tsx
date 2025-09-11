@@ -54,7 +54,7 @@ export function ActivityRow({
   return (
     <TableRow className={line.is_discount ? "bg-red-50/50" : ""}>
       {/* Actions column - moved to first position */}
-      <TableCell className="text-center border-r">
+      <TableCell className="gantt-freeze-actions col-actions text-center border-r">
         <div className="flex items-center justify-center gap-0.5 sm:gap-1">
           <Button
             variant="ghost"

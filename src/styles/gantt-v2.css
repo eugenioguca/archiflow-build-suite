@@ -5,18 +5,21 @@
   --sidebar-width: 240px;
   
   /* Column widths - fixed to prevent overlapping */
+  --gantt-col-actions: 100px;     /* Acciones */
   --gantt-col-no: 72px;           /* No. */
   --gantt-col-mayor: 280px;       /* Mayor */
   --gantt-col-importe: 180px;     /* Importe */
   --gantt-col-pct: 120px;         /* % */
   
   /* Mobile column widths - smaller for mobile */
+  --gantt-col-actions-mobile: 80px;
   --gantt-col-no-mobile: 48px;
   --gantt-col-mayor-mobile: 180px;
   --gantt-col-importe-mobile: 120px;
   --gantt-col-pct-mobile: 80px;
   
   /* Tablet column widths - medium for tablet */
+  --gantt-col-actions-tablet: 90px;
   --gantt-col-no-tablet: 60px;
   --gantt-col-mayor-tablet: 220px;
   --gantt-col-importe-tablet: 140px;
@@ -41,10 +44,19 @@ table.gantt-table .gantt-header {
 }
 
 /* ULTRA HIGH PRIORITY STICKY COLUMNS with table context */
+table.gantt-table th.gantt-freeze-actions,
+table.gantt-table td.gantt-freeze-actions {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 90 !important;
+  background: hsl(var(--background)) !important;
+  border-right: 1px solid hsl(var(--border)) !important;
+}
+
 table.gantt-table th.gantt-freeze-no,
 table.gantt-table td.gantt-freeze-no {
   position: sticky !important;
-  left: 0 !important;
+  left: var(--gantt-col-actions) !important;
   z-index: 90 !important;
   background: hsl(var(--background)) !important;
   border-right: 1px solid hsl(var(--border)) !important;
@@ -53,7 +65,7 @@ table.gantt-table td.gantt-freeze-no {
 table.gantt-table th.gantt-freeze-mayor,
 table.gantt-table td.gantt-freeze-mayor {
   position: sticky !important;
-  left: var(--gantt-col-no) !important;
+  left: calc(var(--gantt-col-actions) + var(--gantt-col-no)) !important;
   z-index: 90 !important;
   background: hsl(var(--background)) !important;
   border-right: 1px solid hsl(var(--border)) !important;
@@ -62,7 +74,7 @@ table.gantt-table td.gantt-freeze-mayor {
 table.gantt-table th.gantt-freeze-importe,
 table.gantt-table td.gantt-freeze-importe {
   position: sticky !important;
-  left: calc(var(--gantt-col-no) + var(--gantt-col-mayor)) !important;
+  left: calc(var(--gantt-col-actions) + var(--gantt-col-no) + var(--gantt-col-mayor)) !important;
   z-index: 90 !important;
   background: hsl(var(--background)) !important;
   border-right: 1px solid hsl(var(--border)) !important;
@@ -71,13 +83,19 @@ table.gantt-table td.gantt-freeze-importe {
 table.gantt-table th.gantt-freeze-pct,
 table.gantt-table td.gantt-freeze-pct {
   position: sticky !important;
-  left: calc(var(--gantt-col-no) + var(--gantt-col-mayor) + var(--gantt-col-importe)) !important;
+  left: calc(var(--gantt-col-actions) + var(--gantt-col-no) + var(--gantt-col-mayor) + var(--gantt-col-importe)) !important;
   z-index: 90 !important;
   background: hsl(var(--background)) !important;
   border-right: 1px solid hsl(var(--border)) !important;
 }
 
 /* Column width enforcement */
+.col-actions {
+  width: var(--gantt-col-actions);
+  min-width: var(--gantt-col-actions);
+  max-width: var(--gantt-col-actions);
+}
+
 .col-no {
   width: var(--gantt-col-no);
   min-width: var(--gantt-col-no);
@@ -105,7 +123,7 @@ table.gantt-table td.gantt-freeze-pct {
 /* Table layout - Force horizontal scroll and proper widths */
 table.gantt-table {
   table-layout: fixed !important;
-  min-width: calc(var(--gantt-col-no) + var(--gantt-col-mayor) + var(--gantt-col-importe) + var(--gantt-col-pct) + 1400px) !important;
+  min-width: calc(var(--gantt-col-actions) + var(--gantt-col-no) + var(--gantt-col-mayor) + var(--gantt-col-importe) + var(--gantt-col-pct) + 1400px) !important;
   width: max-content !important;
   border-collapse: separate !important;
   border-spacing: 0 !important;
@@ -137,6 +155,7 @@ table.gantt-table {
 @media (max-width: 767px) {
   :root {
     --sidebar-width: 0px; /* Mobile typically has no visible sidebar */
+    --gantt-col-actions: var(--gantt-col-actions-mobile);
     --gantt-col-no: var(--gantt-col-no-mobile);
     --gantt-col-mayor: var(--gantt-col-mayor-mobile);
     --gantt-col-importe: var(--gantt-col-importe-mobile);
@@ -150,19 +169,24 @@ table.gantt-table {
     padding-right: 8px;
   }
   
+  table.gantt-table th.gantt-freeze-no,
+  table.gantt-table td.gantt-freeze-no {
+    left: var(--gantt-col-actions-mobile) !important;
+  }
+  
   table.gantt-table th.gantt-freeze-mayor,
   table.gantt-table td.gantt-freeze-mayor {
-    left: var(--gantt-col-no-mobile) !important;
+    left: calc(var(--gantt-col-actions-mobile) + var(--gantt-col-no-mobile)) !important;
   }
   
   table.gantt-table th.gantt-freeze-importe,
   table.gantt-table td.gantt-freeze-importe {
-    left: calc(var(--gantt-col-no-mobile) + var(--gantt-col-mayor-mobile)) !important;
+    left: calc(var(--gantt-col-actions-mobile) + var(--gantt-col-no-mobile) + var(--gantt-col-mayor-mobile)) !important;
   }
   
   table.gantt-table th.gantt-freeze-pct,
   table.gantt-table td.gantt-freeze-pct {
-    left: calc(var(--gantt-col-no-mobile) + var(--gantt-col-mayor-mobile) + var(--gantt-col-importe-mobile)) !important;
+    left: calc(var(--gantt-col-actions-mobile) + var(--gantt-col-no-mobile) + var(--gantt-col-mayor-mobile) + var(--gantt-col-importe-mobile)) !important;
   }
   
   /* Month columns grid for mobile scroll snapping */
@@ -179,6 +203,7 @@ table.gantt-table {
 @media (min-width: 768px) and (max-width: 1023px) {
   :root {
     --sidebar-width: 240px; /* Tablet has sidebar */
+    --gantt-col-actions: var(--gantt-col-actions-tablet);
     --gantt-col-no: var(--gantt-col-no-tablet);
     --gantt-col-mayor: var(--gantt-col-mayor-tablet);
     --gantt-col-importe: var(--gantt-col-importe-tablet);
@@ -194,19 +219,24 @@ table.gantt-table {
     font-size: 0.875rem; /* text-sm */
   }
   
+  table.gantt-table th.gantt-freeze-no,
+  table.gantt-table td.gantt-freeze-no {
+    left: var(--gantt-col-actions-tablet) !important;
+  }
+  
   table.gantt-table th.gantt-freeze-mayor,
   table.gantt-table td.gantt-freeze-mayor {
-    left: var(--gantt-col-no-tablet) !important;
+    left: calc(var(--gantt-col-actions-tablet) + var(--gantt-col-no-tablet)) !important;
   }
   
   table.gantt-table th.gantt-freeze-importe,
   table.gantt-table td.gantt-freeze-importe {
-    left: calc(var(--gantt-col-no-tablet) + var(--gantt-col-mayor-tablet)) !important;
+    left: calc(var(--gantt-col-actions-tablet) + var(--gantt-col-no-tablet) + var(--gantt-col-mayor-tablet)) !important;
   }
   
   table.gantt-table th.gantt-freeze-pct,
   table.gantt-table td.gantt-freeze-pct {
-    left: calc(var(--gantt-col-no-tablet) + var(--gantt-col-mayor-tablet) + var(--gantt-col-importe-tablet)) !important;
+    left: calc(var(--gantt-col-actions-tablet) + var(--gantt-col-no-tablet) + var(--gantt-col-mayor-tablet) + var(--gantt-col-importe-tablet)) !important;
   }
 }
 
@@ -236,6 +266,11 @@ table.gantt-table {
 }
 
 /* Special row backgrounds for sticky cells - ULTRA HIGH PRIORITY */
+table.gantt-table tr.bg-muted\/50 td.gantt-freeze-actions,
+table.gantt-table tr.bg-muted\/50 th.gantt-freeze-actions {
+  background: hsl(var(--muted) / 0.5) !important;
+}
+
 table.gantt-table tr.bg-muted\/50 td.gantt-freeze-no,
 table.gantt-table tr.bg-muted\/50 th.gantt-freeze-no {
   background: hsl(var(--muted) / 0.5) !important;
@@ -257,6 +292,10 @@ table.gantt-table tr.bg-muted\/50 th.gantt-freeze-pct {
 }
 
 /* Red background rows (discount lines) */
+table.gantt-table tr.bg-red-50\/50 td.gantt-freeze-actions {
+  background: hsl(var(--destructive) / 0.1) !important;
+}
+
 table.gantt-table tr.bg-red-50\/50 td.gantt-freeze-no {
   background: hsl(var(--destructive) / 0.1) !important;
 }
@@ -274,6 +313,10 @@ table.gantt-table tr.bg-red-50\/50 td.gantt-freeze-pct {
 }
 
 /* Primary background rows (total lines) */
+table.gantt-table tr.bg-primary\/10 td.gantt-freeze-actions {
+  background: hsl(var(--primary) / 0.1) !important;
+}
+
 table.gantt-table tr.bg-primary\/10 td.gantt-freeze-no {
   background: hsl(var(--primary) / 0.1) !important;
 }

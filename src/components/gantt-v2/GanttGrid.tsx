@@ -52,7 +52,7 @@ export function GanttGrid({
             <TableHeader className="gantt-header">
               <TableRow>
                 {/* Actions column - moved to first position */}
-                <TableHead className="min-w-[80px] sm:min-w-[100px] text-xs sm:text-sm bg-muted/30 border-r">Acciones</TableHead>
+                <TableHead className="gantt-freeze-actions col-actions text-xs sm:text-sm bg-muted/30 border-r">Acciones</TableHead>
                 
                 {/* Fixed columns with proper sticky positioning */}
                 <TableHead className="gantt-freeze-no col-no text-xs sm:text-sm text-center font-semibold bg-muted/30 border-r">
@@ -102,7 +102,7 @@ export function GanttGrid({
               
               {/* Subtotal Row */}
               <TableRow className="bg-muted/50 font-medium">
-                <TableCell className="bg-muted/50 border-r"></TableCell>
+                <TableCell className="gantt-freeze-actions col-actions bg-muted/50 border-r"></TableCell>
                 <TableCell className="gantt-freeze-no col-no text-center font-semibold bg-muted/50 border-r"></TableCell>
                 <TableCell className="gantt-freeze-mayor col-mayor font-semibold bg-muted/50 border-r text-xs sm:text-sm">
                   SUBTOTAL
@@ -121,7 +121,7 @@ export function GanttGrid({
               {/* Discount Lines */}
               {discountLines.map((line) => (
                 <TableRow key={line.id} className="bg-red-50/50 border-l-2 border-red-200">
-                  <TableCell className="text-center bg-red-50/50 border-r">
+                  <TableCell className="gantt-freeze-actions col-actions text-center bg-red-50/50 border-r">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -150,7 +150,7 @@ export function GanttGrid({
               
               {/* Total Row */}
               <TableRow className="font-bold bg-primary/10 border-l-2 border-primary border-t-2">
-                <TableCell className="bg-primary/10 border-r"></TableCell>
+                <TableCell className="gantt-freeze-actions col-actions bg-primary/10 border-r"></TableCell>
                 <TableCell className="gantt-freeze-no col-no text-center bg-primary/10 border-r"></TableCell>
                 <TableCell className="gantt-freeze-mayor col-mayor bg-primary/10 border-r text-xs sm:text-sm">
                   TOTAL
