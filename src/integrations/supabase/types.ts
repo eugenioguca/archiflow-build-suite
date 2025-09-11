@@ -5239,6 +5239,7 @@ export type Database = {
           id: string
           mayor_id: string
           monto_total: number
+          orden: number | null
           partida_id: string
           precio_unitario: number
           proyecto_id: string
@@ -5253,6 +5254,7 @@ export type Database = {
           id?: string
           mayor_id: string
           monto_total?: number
+          orden?: number | null
           partida_id: string
           precio_unitario?: number
           proyecto_id: string
@@ -5267,6 +5269,7 @@ export type Database = {
           id?: string
           mayor_id?: string
           monto_total?: number
+          orden?: number | null
           partida_id?: string
           precio_unitario?: number
           proyecto_id?: string
@@ -7550,6 +7553,10 @@ export type Database = {
           details: string
           metric: string
         }[]
+      }
+      get_next_parametrico_order: {
+        Args: { cliente_id_param: string; proyecto_id_param: string }
+        Returns: number
       }
       get_parametric_budget_totals: {
         Args: { cliente_id_param: string; proyecto_id_param: string }

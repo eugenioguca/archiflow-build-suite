@@ -3,14 +3,33 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Download, Edit } from 'lucide-react';
+import { Plus, Download, Edit, Trash2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { usePresupuestoParametrico } from '@/hooks/usePresupuestoParametrico';
 import { useClientProjectFilters } from '@/hooks/useClientProjectFilters';
 import { CollapsibleFilters } from '@/components/CollapsibleFilters';
 import { PresupuestoParametricoFormModal } from '@/components/modals/PresupuestoParametricoFormModal';
+import { SortablePresupuestoRow } from '@/components/SortablePresupuestoRow';
 import { supabase } from '@/integrations/supabase/client';
 import dovitaLogo from '@/assets/dovita-logo.png';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  restrictToVerticalAxis,
+} from '@dnd-kit/modifiers';
 
 // Form data interface for modal
 interface PresupuestoFormData {
@@ -42,12 +61,50 @@ export function PresupuestoParametrico({
     isLoading,
     createPresupuesto,
     updatePresupuesto,
-    deletePresupuesto
+    deletePresupuesto,
+    reorderPresupuestos
   } = usePresupuestoParametrico(selectedClientId, selectedProjectId);
 
   // Modal states
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = presupuestos.findIndex((item) => item.id === active.id);
+    const newIndex = presupuestos.findIndex((item) => item.id === over.id);
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const reorderedItems = arrayMove(presupuestos, oldIndex, newIndex);
+      
+      // Create new order mapping
+      const newOrder = reorderedItems.map((item, index) => ({
+        id: item.id,
+        orden: index + 1
+      }));
+
+      // Update the order in the database
+      reorderPresupuestos.mutate(newOrder);
+    }
+  };
 
   // Handle form submission for create/edit
   const handleFormSubmit = async (data: PresupuestoFormData) => {
@@ -439,67 +496,41 @@ export function PresupuestoParametrico({
           </CardHeader>
           <CardContent>
             <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Departamento</TableHead>
-                    <TableHead>Mayor</TableHead>
-                    <TableHead>Partida</TableHead>
-                    <TableHead>Cantidad Req.</TableHead>
-                    <TableHead>Precio Unitario</TableHead>
-                    <TableHead>Monto Total</TableHead>
-                    <TableHead className="w-[100px]">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {presupuestos.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        <Badge variant="secondary">{item.departamento}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        {item.mayor?.codigo} - {item.mayor?.nombre}
-                      </TableCell>
-                      <TableCell>
-                        {item.partida?.codigo} - {item.partida?.nombre}
-                      </TableCell>
-                      <TableCell>{item.cantidad_requerida}</TableCell>
-                      <TableCell>
-                        ${item.precio_unitario.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell className="font-semibold">
-                        ${item.monto_total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditPartida(item);
-                            }}
-                            className="text-blue-600 hover:text-blue-700"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeletePartida(item.id);
-                            }}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+                modifiers={[restrictToVerticalAxis]}
+              >
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Departamento</TableHead>
+                      <TableHead>Mayor</TableHead>
+                      <TableHead>Partida</TableHead>
+                      <TableHead>Cantidad Req.</TableHead>
+                      <TableHead>Precio Unitario</TableHead>
+                      <TableHead>Monto Total</TableHead>
+                      <TableHead className="w-[140px]">Acciones</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    <SortableContext 
+                      items={presupuestos.map(item => item.id)} 
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {presupuestos.map((item) => (
+                        <SortablePresupuestoRow
+                          key={item.id}
+                          item={item}
+                          onEdit={handleEditPartida}
+                          onDelete={handleDeletePartida}
+                        />
+                      ))}
+                    </SortableContext>
+                  </TableBody>
+                </Table>
+              </DndContext>
             </div>
             
             <div className="mt-4 flex justify-end">
