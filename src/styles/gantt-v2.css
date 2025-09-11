@@ -49,45 +49,50 @@ table.gantt-table th.gantt-freeze-actions,
 table.gantt-table td.gantt-freeze-actions {
   position: sticky !important;
   left: 0 !important;
-  z-index: 90 !important;
+  z-index: 95 !important;
   background: hsl(var(--background)) !important;
   border-right: 1px solid hsl(var(--border)) !important;
+  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.1) !important;
 }
 
 table.gantt-table th.gantt-freeze-no,
 table.gantt-table td.gantt-freeze-no {
   position: sticky !important;
   left: var(--gantt-col-actions) !important;
-  z-index: 90 !important;
+  z-index: 94 !important;
   background: hsl(var(--background)) !important;
   border-right: 1px solid hsl(var(--border)) !important;
+  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.1) !important;
 }
 
 table.gantt-table th.gantt-freeze-mayor,
 table.gantt-table td.gantt-freeze-mayor {
   position: sticky !important;
   left: calc(var(--gantt-col-actions) + var(--gantt-col-no)) !important;
-  z-index: 90 !important;
+  z-index: 93 !important;
   background: hsl(var(--background)) !important;
   border-right: 1px solid hsl(var(--border)) !important;
+  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.1) !important;
 }
 
 table.gantt-table th.gantt-freeze-importe,
 table.gantt-table td.gantt-freeze-importe {
   position: sticky !important;
   left: calc(var(--gantt-col-actions) + var(--gantt-col-no) + var(--gantt-col-mayor)) !important;
-  z-index: 90 !important;
+  z-index: 92 !important;
   background: hsl(var(--background)) !important;
   border-right: 1px solid hsl(var(--border)) !important;
+  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.1) !important;
 }
 
 table.gantt-table th.gantt-freeze-pct,
 table.gantt-table td.gantt-freeze-pct {
   position: sticky !important;
   left: calc(var(--gantt-col-actions) + var(--gantt-col-no) + var(--gantt-col-mayor) + var(--gantt-col-importe)) !important;
-  z-index: 90 !important;
+  z-index: 91 !important;
   background: hsl(var(--background)) !important;
-  border-right: 1px solid hsl(var(--border)) !important;
+  border-right: 2px solid hsl(var(--border)) !important;
+  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.1) !important;
 }
 
 /* Column width enforcement */
