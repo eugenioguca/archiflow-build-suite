@@ -2901,6 +2901,8 @@ export type Database = {
           amount: number
           created_at: string | null
           created_by: string | null
+          es_importado: boolean | null
+          estado_sync: string | null
           id: string
           is_discount: boolean
           label: string | null
@@ -2915,6 +2917,8 @@ export type Database = {
           amount?: number
           created_at?: string | null
           created_by?: string | null
+          es_importado?: boolean | null
+          estado_sync?: string | null
           id?: string
           is_discount?: boolean
           label?: string | null
@@ -2929,6 +2933,8 @@ export type Database = {
           amount?: number
           created_at?: string | null
           created_by?: string | null
+          es_importado?: boolean | null
+          estado_sync?: string | null
           id?: string
           is_discount?: boolean
           label?: string | null
@@ -3017,6 +3023,63 @@ export type Database = {
           valor?: string
         }
         Relationships: []
+      }
+      cronograma_vinculos_parametrico: {
+        Row: {
+          cliente_id: string
+          created_at: string | null
+          cronograma_line_id: string
+          id: string
+          last_synced_at: string | null
+          last_synced_total: number | null
+          mayor_id: string
+          override_importe: boolean | null
+          proyecto_id: string
+          source: string
+          updated_at: string | null
+        }
+        Insert: {
+          cliente_id: string
+          created_at?: string | null
+          cronograma_line_id: string
+          id?: string
+          last_synced_at?: string | null
+          last_synced_total?: number | null
+          mayor_id: string
+          override_importe?: boolean | null
+          proyecto_id: string
+          source?: string
+          updated_at?: string | null
+        }
+        Update: {
+          cliente_id?: string
+          created_at?: string | null
+          cronograma_line_id?: string
+          id?: string
+          last_synced_at?: string | null
+          last_synced_total?: number | null
+          mayor_id?: string
+          override_importe?: boolean | null
+          proyecto_id?: string
+          source?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cronograma_vinculos_parametrico_cronograma_line_id_fkey"
+            columns: ["cronograma_line_id"]
+            isOneToOne: false
+            referencedRelation: "cronograma_gantt_line"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cronograma_vinculos_parametrico_mayor_id_fkey"
+            columns: ["mayor_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts_mayor"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       design_appointments: {
         Row: {
@@ -7486,6 +7549,17 @@ export type Database = {
           count: number
           details: string
           metric: string
+        }[]
+      }
+      get_parametric_budget_totals: {
+        Args: { cliente_id_param: string; proyecto_id_param: string }
+        Returns: {
+          cliente_id: string
+          mayor_codigo: string
+          mayor_id: string
+          mayor_nombre: string
+          proyecto_id: string
+          total_mayor: number
         }[]
       }
       get_profitability_analysis: {

@@ -154,14 +154,45 @@ export const usePresupuestoParametrico = (clienteId?: string, proyectoId?: strin
     },
   });
 
+  // Trigger sync to Gantt when parametric data changes
+  const triggerGanttSync = async () => {
+    if (!clienteId || !proyectoId) return;
+    
+    // Trigger sync via a custom event that the Gantt can listen to
+    window.dispatchEvent(new CustomEvent('parametric-budget-changed', {
+      detail: { clienteId, proyectoId }
+    }));
+  };
+
   return {
     presupuestos: presupuestoQuery.data || [],
     isLoading: presupuestoQuery.isLoading,
     isError: presupuestoQuery.isError,
     error: presupuestoQuery.error,
-    createPresupuesto,
-    updatePresupuesto,
-    deletePresupuesto,
+    createPresupuesto: {
+      ...createPresupuesto,
+      mutateAsync: async (data: any) => {
+        const result = await createPresupuesto.mutateAsync(data);
+        triggerGanttSync();
+        return result;
+      }
+    },
+    updatePresupuesto: {
+      ...updatePresupuesto,
+      mutateAsync: async (params: any) => {
+        const result = await updatePresupuesto.mutateAsync(params);
+        triggerGanttSync();
+        return result;
+      }
+    },
+    deletePresupuesto: {
+      ...deletePresupuesto,
+      mutateAsync: async (id: string) => {
+        const result = await deletePresupuesto.mutateAsync(id);
+        triggerGanttSync();
+        return result;
+      }
+    },
     refetch: presupuestoQuery.refetch,
   };
 };

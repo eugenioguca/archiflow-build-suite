@@ -11,6 +11,8 @@ import { DiscountModal } from './DiscountModal';
 import { useGantt } from '@/hooks/gantt-v2/useGantt';
 import { useMayoresTU } from '@/hooks/gantt-v2/useMayoresTU';
 import { useMatrixOverrides } from '@/hooks/gantt-v2/useMatrixOverrides';
+import { useGanttSync } from './hooks/useGanttSync';
+import { useParametricGanttSync } from '@/hooks/useParametricGanttSync';
 
 interface GanttPageProps {
   selectedClientId: string;
@@ -36,6 +38,10 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
 
   const { data: mayores = [] } = useMayoresTU();
   const { overrides } = useMatrixOverrides(selectedClientId, selectedProjectId);
+  const { syncFromParametric, isSyncing } = useParametricGanttSync(selectedClientId, selectedProjectId);
+  
+  // Enable automatic sync on parametric changes
+  useGanttSync(selectedClientId, selectedProjectId);
 
   // Modal state
   const [showMayorModal, setShowMayorModal] = useState(false);
@@ -197,7 +203,9 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
               onUpdatePlan={updatePlan.mutateAsync}
               onAddMayor={handleAddMayor}
               onAddDiscount={handleAddDiscount}
+              onSync={() => syncFromParametric.mutate()}
               isLoading={isLoading || isFetching}
+              isSyncing={isSyncing}
               canAddMayor={!!plan?.id}
               clientId={selectedClientId}
               projectId={selectedProjectId}

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Minus, Settings } from 'lucide-react';
+import { Plus, Minus, Settings, RefreshCw } from 'lucide-react';
 import { GanttPlan, GanttLine } from '@/hooks/gantt-v2/useGantt';
 import { MatrixOverride } from '@/hooks/gantt-v2/useMatrixOverrides';
 import { Mayor } from '@/hooks/gantt-v2/useMayoresTU';
@@ -20,7 +20,9 @@ interface GanttToolbarProps {
   onUpdatePlan: (updates: Partial<GanttPlan>) => Promise<any>;
   onAddMayor: () => void;
   onAddDiscount: () => void;
+  onSync: () => void;
   isLoading: boolean;
+  isSyncing: boolean;
   canAddMayor: boolean;
   clientId: string;
   projectId: string;
@@ -34,7 +36,9 @@ export function GanttToolbar({
   onUpdatePlan,
   onAddMayor,
   onAddDiscount,
+  onSync,
   isLoading,
+  isSyncing,
   canAddMayor,
   clientId,
   projectId
@@ -127,6 +131,18 @@ export function GanttToolbar({
               <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Añadir Descuento</span>
               <span className="sm:hidden">- Descuento</span>
+            </Button>
+
+            <Button 
+              onClick={onSync}
+              disabled={isLoading || isSyncing}
+              variant="secondary"
+              size="sm"
+              className="gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap"
+            >
+              <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span className="hidden lg:inline">Sincronizar desde Paramétrico</span>
+              <span className="lg:hidden">Sincronizar</span>
             </Button>
             
             <Button 

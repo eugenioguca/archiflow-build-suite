@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Trash2, Plus, Edit } from 'lucide-react';
 import { GanttLine, GanttActivity } from '@/hooks/gantt-v2/useGantt';
 import { Mayor } from '@/hooks/gantt-v2/useMayoresTU';
+import { SyncBadge } from './SyncBadge';
 import { expandRangeToMonthWeekCells } from '@/utils/gantt-v2/weekMath';
 import { formatCurrency } from '@/utils/gantt-v2/currency';
 
@@ -58,7 +59,10 @@ export function ActivityRow({
       </TableCell>
       
       <TableCell className="gantt-freeze-mayor col-mayor border-r">
-        <span className="font-medium text-sm">{mayorName}</span>
+        <div className="flex flex-col gap-1">
+          <span className="font-medium text-sm">{mayorName}</span>
+          <SyncBadge estadoSync={line.estado_sync} esImportado={line.es_importado} />
+        </div>
       </TableCell>
       
       <TableCell className="gantt-freeze-importe col-importe text-right border-r">

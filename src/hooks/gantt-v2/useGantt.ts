@@ -27,6 +27,9 @@ export interface GanttLine {
   created_at: string;
   updated_at: string;
   created_by?: string;
+  // Sync fields
+  estado_sync?: 'pendiente_fechas' | 'completo' | 'fuera_de_sync' | null;
+  es_importado?: boolean;
   // Relations
   mayor?: { id: string; codigo: string; nombre: string } | null;
   activities?: GanttActivity[];
