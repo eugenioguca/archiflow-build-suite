@@ -33,6 +33,7 @@
   overflow-y: visible !important;
   width: 100% !important;
   max-width: 100% !important;
+  contain: layout style !important;
 }
 
 /* Sticky Header - Maximum priority with table selector */
@@ -123,7 +124,7 @@ table.gantt-table td.gantt-freeze-pct {
 /* Table layout - Force horizontal scroll and proper widths */
 table.gantt-table {
   table-layout: fixed !important;
-  min-width: calc(var(--gantt-col-actions) + var(--gantt-col-no) + var(--gantt-col-mayor) + var(--gantt-col-importe) + var(--gantt-col-pct) + 1400px) !important;
+  min-width: calc(var(--gantt-col-actions) + var(--gantt-col-no) + var(--gantt-col-mayor) + var(--gantt-col-importe) + var(--gantt-col-pct) + 2000px) !important;
   width: max-content !important;
   border-collapse: separate !important;
   border-spacing: 0 !important;
@@ -142,7 +143,7 @@ table.gantt-table {
 .gantt-container {
   width: calc(100vw - var(--sidebar-width));
   max-width: calc(100vw - var(--sidebar-width));
-  overflow-x: hidden;
+  overflow: visible !important;
 }
 
 /* Ensure month columns have minimum width to force horizontal scroll */
