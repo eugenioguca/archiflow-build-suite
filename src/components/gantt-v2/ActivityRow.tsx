@@ -53,6 +53,31 @@ export function ActivityRow({
 
   return (
     <TableRow className={line.is_discount ? "bg-red-50/50" : ""}>
+      {/* Actions column - moved to first position */}
+      <TableCell className="text-center border-r">
+        <div className="flex items-center justify-center gap-0.5 sm:gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onEditLine(line)}
+            disabled={isLoading}
+            className="h-6 w-6 sm:h-8 sm:w-8 p-0"
+          >
+            <Edit className="h-2 w-2 sm:h-3 sm:w-3" />
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onDeleteLine(line.id)}
+            disabled={isLoading}
+            className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-destructive hover:text-destructive"
+          >
+            <Trash2 className="h-2 w-2 sm:h-3 sm:w-3" />
+          </Button>
+        </div>
+      </TableCell>
+      
       {/* Fixed columns with proper sticky positioning */}
       <TableCell className="gantt-freeze-no col-no text-center text-sm border-r">
         {line.line_no}
@@ -92,31 +117,6 @@ export function ActivityRow({
           </div>
         </TableCell>
       ))}
-      
-      {/* Actions column */}
-      <TableCell className="text-center">
-        <div className="flex items-center justify-center gap-0.5 sm:gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onEditLine(line)}
-            disabled={isLoading}
-            className="h-6 w-6 sm:h-8 sm:w-8 p-0"
-          >
-            <Edit className="h-2 w-2 sm:h-3 sm:w-3" />
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onDeleteLine(line.id)}
-            disabled={isLoading}
-            className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-destructive hover:text-destructive"
-          >
-            <Trash2 className="h-2 w-2 sm:h-3 sm:w-3" />
-          </Button>
-        </div>
-      </TableCell>
     </TableRow>
   );
 }

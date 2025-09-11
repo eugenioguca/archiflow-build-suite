@@ -51,6 +51,9 @@ export function GanttGrid({
           <Table className="gantt-table">
             <TableHeader className="gantt-header">
               <TableRow>
+                {/* Actions column - moved to first position */}
+                <TableHead className="min-w-[80px] sm:min-w-[100px] text-xs sm:text-sm bg-muted/30 border-r">Acciones</TableHead>
+                
                 {/* Fixed columns with proper sticky positioning */}
                 <TableHead className="gantt-freeze-no col-no text-xs sm:text-sm text-center font-semibold bg-muted/30 border-r">
                   No.
@@ -79,9 +82,6 @@ export function GanttGrid({
                     </div>
                   </TableHead>
                 ))}
-                
-                {/* Actions column */}
-                <TableHead className="min-w-[80px] sm:min-w-[100px] text-xs sm:text-sm">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -102,6 +102,7 @@ export function GanttGrid({
               
               {/* Subtotal Row */}
               <TableRow className="bg-muted/50 font-medium">
+                <TableCell className="bg-muted/50 border-r"></TableCell>
                 <TableCell className="gantt-freeze-no col-no text-center font-semibold bg-muted/50 border-r"></TableCell>
                 <TableCell className="gantt-freeze-mayor col-mayor font-semibold bg-muted/50 border-r text-xs sm:text-sm">
                   SUBTOTAL
@@ -115,12 +116,22 @@ export function GanttGrid({
                 {monthRange.map((month) => (
                   <TableCell key={month.value} className="border-r"></TableCell>
                 ))}
-                <TableCell></TableCell>
               </TableRow>
               
               {/* Discount Lines */}
               {discountLines.map((line) => (
                 <TableRow key={line.id} className="bg-red-50/50 border-l-2 border-red-200">
+                  <TableCell className="text-center bg-red-50/50 border-r">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDeleteLine(line.id)}
+                      disabled={isLoading || isFetching}
+                      className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-2 w-2 sm:h-3 sm:w-3" />
+                    </Button>
+                  </TableCell>
                   <TableCell className="gantt-freeze-no col-no text-center bg-red-50/50 border-r"></TableCell>
                   <TableCell className="gantt-freeze-mayor col-mayor bg-red-50/50 border-r font-medium text-xs sm:text-sm truncate" title={line.label || 'Descuento'}>
                     {line.label || 'Descuento'}
@@ -134,22 +145,12 @@ export function GanttGrid({
                   {monthRange.map((month) => (
                     <TableCell key={month.value} className="border-r bg-red-50/50"></TableCell>
                   ))}
-                  <TableCell className="text-center bg-red-50/50">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDeleteLine(line.id)}
-                      disabled={isLoading || isFetching}
-                      className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-2 w-2 sm:h-3 sm:w-3" />
-                    </Button>
-                  </TableCell>
                 </TableRow>
               ))}
               
               {/* Total Row */}
               <TableRow className="font-bold bg-primary/10 border-l-2 border-primary border-t-2">
+                <TableCell className="bg-primary/10 border-r"></TableCell>
                 <TableCell className="gantt-freeze-no col-no text-center bg-primary/10 border-r"></TableCell>
                 <TableCell className="gantt-freeze-mayor col-mayor bg-primary/10 border-r text-xs sm:text-sm">
                   TOTAL
@@ -163,7 +164,6 @@ export function GanttGrid({
                 {monthRange.map((month) => (
                   <TableCell key={month.value} className="border-r"></TableCell>
                 ))}
-                <TableCell></TableCell>
               </TableRow>
             </TableBody>
           </Table>
