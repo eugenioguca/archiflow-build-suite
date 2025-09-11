@@ -42,12 +42,13 @@ export function GanttGrid({
   const total = subtotal - totalDiscounts; // Subtract discounts from subtotal
 
   return (
-    <Card className="gantt-container relative" style={{ overflow: 'visible' }}>
-      <CardHeader className="pb-2 sm:pb-4">
-        <CardTitle className="text-lg sm:text-xl">Cronograma de Gantt</CardTitle>
-      </CardHeader>
-      <CardContent className="p-0" style={{ overflow: 'visible' }}>
-        <div className="gantt-scroll-container">
+    <div className="gantt-container" style={{ overflow: 'visible' }}>
+      <Card className="relative" style={{ overflow: 'visible' }}>
+        <CardHeader className="pb-2 sm:pb-4">
+          <CardTitle className="text-lg sm:text-xl">Cronograma de Gantt</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0" style={{ overflow: 'visible' }}>
+          <div className="gantt-scroll-container">
           <Table className="gantt-table">
             <TableHeader className="gantt-header">
               <TableRow>
@@ -187,7 +188,8 @@ export function GanttGrid({
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

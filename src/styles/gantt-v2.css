@@ -36,6 +36,15 @@
   contain: layout style !important;
 }
 
+/* CRITICAL: Ensure all parent containers have overflow: visible to not interfere with sticky */
+.gantt-container {
+  overflow: visible !important;
+}
+
+.gantt-container .p-0 {
+  overflow: visible !important;
+}
+
 /* Sticky Header - Maximum priority with table selector */
 table.gantt-table .gantt-header {
   position: sticky !important;
@@ -129,7 +138,7 @@ table.gantt-table td.gantt-freeze-pct {
 /* Table layout - Force horizontal scroll and proper widths */
 table.gantt-table {
   table-layout: fixed !important;
-  min-width: calc(var(--gantt-col-actions) + var(--gantt-col-no) + var(--gantt-col-mayor) + var(--gantt-col-importe) + var(--gantt-col-pct) + 2000px) !important;
+  min-width: calc(var(--gantt-col-actions) + var(--gantt-col-no) + var(--gantt-col-mayor) + var(--gantt-col-importe) + var(--gantt-col-pct) + 2400px) !important;
   width: max-content !important;
   border-collapse: separate !important;
   border-spacing: 0 !important;
