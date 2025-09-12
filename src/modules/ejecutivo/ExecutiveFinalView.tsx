@@ -29,7 +29,6 @@ interface FilterState {
   statusFilter: string;
   sortBy: 'mayor' | 'partida' | 'importe';
   sortOrder: 'asc' | 'desc';
-  showOnlyNegativeResiduals: boolean;
   groupByMayor: boolean;
 }
 
@@ -40,7 +39,6 @@ export default function ExecutiveFinalView({ selectedClientId, selectedProjectId
     statusFilter: 'all',
     sortBy: 'mayor',
     sortOrder: 'asc',
-    showOnlyNegativeResiduals: false,
     groupByMayor: false
   });
   
@@ -86,22 +84,15 @@ export default function ExecutiveFinalView({ selectedClientId, selectedProjectId
 
     // Status filter
     if (filters.statusFilter !== 'all') {
-      if (filters.statusFilter === 'dentro' && filters.showOnlyNegativeResiduals) {
-        filtered = filtered.filter(row => row.tipo === 'residual' && row.estado === 'dentro');
-      } else if (filters.statusFilter === 'excedido') {
+      if (filters.statusFilter === 'excedido') {
         filtered = filtered.filter(row => row.tipo === 'residual' && row.estado === 'excedido');
+      } else if (filters.statusFilter === 'dentro') {
+        filtered = filtered.filter(row => row.tipo === 'residual' && row.estado === 'dentro');
       } else if (filters.statusFilter === 'residual') {
         filtered = filtered.filter(row => row.tipo === 'residual');
       } else if (filters.statusFilter === 'subpartidas') {
         filtered = filtered.filter(row => row.tipo === 'subpartida');
       }
-    }
-
-    // Show only negative residuals
-    if (filters.showOnlyNegativeResiduals && filters.statusFilter === 'all') {
-      filtered = filtered.filter(row => 
-        row.tipo !== 'residual' || (row.tipo === 'residual' && row.importe < 0)
-      );
     }
 
     // Sort
@@ -644,15 +635,6 @@ export default function ExecutiveFinalView({ selectedClientId, selectedProjectId
               <div className="flex flex-col sm:flex-row gap-4 items-center">
                 <div className="flex items-center space-x-2">
                   <Switch
-                    id="negative-residuals"
-                    checked={filters.showOnlyNegativeResiduals}
-                    onCheckedChange={(checked) => setFilters(prev => ({ ...prev, showOnlyNegativeResiduals: checked }))}
-                  />
-                  <Label htmlFor="negative-residuals">Solo residuales negativos</Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
                     id="group-by-mayor"
                     checked={filters.groupByMayor}
                     onCheckedChange={(checked) => setFilters(prev => ({ ...prev, groupByMayor: checked }))}
@@ -661,7 +643,7 @@ export default function ExecutiveFinalView({ selectedClientId, selectedProjectId
                 </div>
 
                 <div className="text-sm text-muted-foreground ml-auto">
-                  Mostrando {filteredRows.length} de {finalRows.length} registros
+                  Mostrando {filters.groupByMayor ? groupedRows.size : filteredRows.length} de {finalRows.length} registros
                 </div>
               </div>
             </div>
@@ -687,157 +669,186 @@ export default function ExecutiveFinalView({ selectedClientId, selectedProjectId
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredRows.map((row) => {
-                    const isResidual = row.tipo === 'residual';
-                    const isSubpartida = row.tipo === 'subpartida';
+                  {filters.groupByMayor ? (
+                    // Render grouped rows
+                    Array.from(groupedRows.entries()).map(([mayorKey, group]) => (
+                      <tr key={mayorKey} className="border-b hover:bg-muted/20 transition-colors bg-muted/5">
+                        <td className="p-4 sticky left-0 bg-background">Construcción</td>
+                        <td className="p-4">
+                          <div>
+                            <p className="font-medium text-primary">{group.mayor}</p>
+                            <p className="text-xs text-muted-foreground">Resumen consolidado</p>
+                          </div>
+                        </td>
+                        <td className="p-4 text-muted-foreground">—</td>
+                        <td className="p-4 text-muted-foreground">—</td>
+                        <td className="p-4 text-center text-muted-foreground">—</td>
+                        <td className="p-4 text-center text-muted-foreground">—</td>
+                        <td className="p-4 text-right text-muted-foreground">—</td>
+                        <td className="p-4 text-right font-bold text-lg">
+                          ${group.total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className="p-4 text-center">
+                          <Badge variant="outline" className="bg-primary/10 text-primary">
+                            Agrupado ({group.rows.length})
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    // Render individual rows
+                    filteredRows.map((row) => {
+                      const isResidual = row.tipo === 'residual';
+                      const isSubpartida = row.tipo === 'subpartida';
 
-                    return (
-                      <Drawer key={row.id}>
-                        <DrawerTrigger asChild>
-                          <tr 
-                            className={`border-b hover:bg-muted/20 cursor-pointer transition-colors ${
-                              isResidual ? 'bg-muted/10' : ''
-                            }`}
-                            onClick={() => isResidual && setSelectedRowForDetails(row.parametrico_partida_id || null)}
-                          >
-                            <td className="p-4 sticky left-0 bg-background">{row.departamento}</td>
-                            <td className="p-4">
-                              <div>
-                                <p className="font-medium">{row.mayor_nombre}</p>
-                                <p className="text-xs text-muted-foreground">{row.mayor_codigo}</p>
-                              </div>
-                            </td>
-                            <td className="p-4">
-                              <div>
-                                <p className="font-medium">{row.partida_nombre}</p>
-                                <p className="text-xs text-muted-foreground">{row.partida_codigo}</p>
-                              </div>
-                            </td>
-                            <td className="p-4">
-                              {row.subpartida_nombre ? (
-                                <div className={isSubpartida ? 'ml-4' : ''}>
-                                  <p className="font-medium">
-                                    {isSubpartida ? '├─ ' : ''}{row.subpartida_nombre}
-                                  </p>
-                                  {row.subpartida_codigo && (
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <p className="text-xs text-muted-foreground cursor-help">
-                                          {row.subpartida_codigo}
-                                        </p>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>Código de catálogo: {row.subpartida_codigo}</p>
-                                        {row.unidad && <p>Unidad: {row.unidad}</p>}
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  )}
+                      return (
+                        <Drawer key={row.id}>
+                          <DrawerTrigger asChild>
+                            <tr 
+                              className={`border-b hover:bg-muted/20 cursor-pointer transition-colors ${
+                                isResidual ? 'bg-muted/10' : ''
+                              }`}
+                              onClick={() => isResidual && setSelectedRowForDetails(row.parametrico_partida_id || null)}
+                            >
+                              <td className="p-4 sticky left-0 bg-background">{row.departamento}</td>
+                              <td className="p-4">
+                                <div>
+                                  <p className="font-medium">{row.mayor_nombre}</p>
+                                  <p className="text-xs text-muted-foreground">{row.mayor_codigo}</p>
                                 </div>
-                              ) : (
-                                <span className="text-muted-foreground">—</span>
-                              )}
-                            </td>
-                            <td className="p-4 text-center">
-                              {row.unidad || '—'}
-                            </td>
-                            <td className="p-4 text-center">
-                              {row.cantidad ? row.cantidad.toLocaleString('es-MX') : '—'}
-                            </td>
-                            <td className="p-4 text-right">
-                              {row.precio_unitario 
-                                ? `$${row.precio_unitario.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
-                                : '—'
-                              }
-                            </td>
-                            <td className={`p-4 text-right font-semibold ${
-                              isResidual && row.estado === 'excedido' 
-                                ? 'text-destructive' 
-                                : isResidual && row.importe > 0
-                                ? 'text-green-600'
-                                : ''
-                            }`}>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span className="cursor-help">
-                                    ${Math.abs(row.importe).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  {isResidual && (
-                                    <p>Paramétrico - Suma subpartidas ejecutivas</p>
-                                  )}
-                                </TooltipContent>
-                              </Tooltip>
-                            </td>
-                            <td className="p-4 text-center">
-                              <Badge variant={
-                                row.tipo === 'residual' 
-                                  ? (row.estado === 'excedido' ? 'destructive' : 'secondary')
-                                  : 'outline'
-                              }>
-                                {row.tipo === 'residual' 
-                                  ? (row.estado === 'excedido' ? 'Excedido' : 'Residual')
-                                  : 'Subpartida'
+                              </td>
+                              <td className="p-4">
+                                <div>
+                                  <p className="font-medium">{row.partida_nombre}</p>
+                                  <p className="text-xs text-muted-foreground">{row.partida_codigo}</p>
+                                </div>
+                              </td>
+                              <td className="p-4">
+                                {row.subpartida_nombre ? (
+                                  <div className={isSubpartida ? 'ml-4' : ''}>
+                                    <p className="font-medium">
+                                      {isSubpartida ? '├─ ' : ''}{row.subpartida_nombre}
+                                    </p>
+                                    {row.subpartida_codigo && (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <p className="text-xs text-muted-foreground cursor-help">
+                                            {row.subpartida_codigo}
+                                          </p>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Código de catálogo: {row.subpartida_codigo}</p>
+                                          {row.unidad && <p>Unidad: {row.unidad}</p>}
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </td>
+                              <td className="p-4 text-center">
+                                {row.unidad || '—'}
+                              </td>
+                              <td className="p-4 text-center">
+                                {row.cantidad ? row.cantidad.toLocaleString('es-MX') : '—'}
+                              </td>
+                              <td className="p-4 text-right">
+                                {row.precio_unitario 
+                                  ? `$${row.precio_unitario.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                                  : '—'
                                 }
-                              </Badge>
-                            </td>
-                          </tr>
-                        </DrawerTrigger>
+                              </td>
+                              <td className={`p-4 text-right font-semibold ${
+                                isResidual && row.estado === 'excedido' 
+                                  ? 'text-destructive' 
+                                  : isResidual && row.importe > 0
+                                  ? 'text-green-600'
+                                  : ''
+                              }`}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="cursor-help">
+                                      ${Math.abs(row.importe).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    {isResidual && (
+                                      <p>Paramétrico - Suma subpartidas ejecutivas</p>
+                                    )}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </td>
+                              <td className="p-4 text-center">
+                                <Badge variant={
+                                  row.tipo === 'residual' 
+                                    ? (row.estado === 'excedido' ? 'destructive' : 'secondary')
+                                    : 'outline'
+                                }>
+                                  {row.tipo === 'residual' 
+                                    ? (row.estado === 'excedido' ? 'Excedido' : 'Residual')
+                                    : 'Subpartida'
+                                  }
+                                </Badge>
+                              </td>
+                            </tr>
+                          </DrawerTrigger>
 
-                        {isResidual && (
-                          <DrawerContent>
-                            <DrawerHeader>
-                              <DrawerTitle>
-                                Subpartidas de {row.partida_nombre}
-                              </DrawerTitle>
-                            </DrawerHeader>
-                            <div className="p-4 max-h-96 overflow-y-auto">
-                              {(() => {
-                                const subpartidas = getSubpartidasForRow(row.parametrico_partida_id!);
-                                
-                                if (subpartidas.length === 0) {
+                          {isResidual && (
+                            <DrawerContent>
+                              <DrawerHeader>
+                                <DrawerTitle>
+                                  Subpartidas de {row.partida_nombre}
+                                </DrawerTitle>
+                              </DrawerHeader>
+                              <div className="p-4 max-h-96 overflow-y-auto">
+                                {(() => {
+                                  const subpartidas = getSubpartidasForRow(row.parametrico_partida_id!);
+                                  
+                                  if (subpartidas.length === 0) {
+                                    return (
+                                      <div className="text-center py-8 text-muted-foreground">
+                                        No hay subpartidas ejecutivas para esta partida
+                                      </div>
+                                    );
+                                  }
+
+                                  const total = subpartidas.reduce((sum, sub) => sum + sub.importe, 0);
+
                                   return (
-                                    <div className="text-center py-8 text-muted-foreground">
-                                      No hay subpartidas ejecutivas para esta partida
-                                    </div>
-                                  );
-                                }
-
-                                const total = subpartidas.reduce((sum, sub) => sum + sub.importe, 0);
-
-                                return (
-                                  <div className="space-y-2">
-                                    {subpartidas.map((sub) => (
-                                      <div key={sub.id} className="flex justify-between items-center p-2 bg-muted/20 rounded">
-                                        <div>
-                                          <p className="font-medium">{sub.subpartida_nombre}</p>
-                                          <p className="text-sm text-muted-foreground">
-                                            {sub.cantidad} {sub.unidad} × ${sub.precio_unitario?.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                    <div className="space-y-2">
+                                      {subpartidas.map((sub) => (
+                                        <div key={sub.id} className="flex justify-between items-center p-2 bg-muted/20 rounded">
+                                          <div>
+                                            <p className="font-medium">{sub.subpartida_nombre}</p>
+                                            <p className="text-sm text-muted-foreground">
+                                              {sub.cantidad} {sub.unidad} × ${sub.precio_unitario?.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                            </p>
+                                          </div>
+                                          <p className="font-semibold">
+                                            ${sub.importe.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                                           </p>
                                         </div>
-                                        <p className="font-semibold">
-                                          ${sub.importe.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                                        </p>
+                                      ))}
+                                      <Separator />
+                                      <div className="flex justify-between items-center font-bold">
+                                        <span>Total Subpartidas:</span>
+                                        <span>${total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
                                       </div>
-                                    ))}
-                                    <Separator />
-                                    <div className="flex justify-between items-center font-bold">
-                                      <span>Total Subpartidas:</span>
-                                      <span>${total.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
                                     </div>
-                                  </div>
-                                );
-                              })()}
-                            </div>
-                          </DrawerContent>
-                        )}
-                      </Drawer>
-                    );
-                  })}
+                                  );
+                                })()}
+                              </div>
+                            </DrawerContent>
+                          )}
+                        </Drawer>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
               
-              {filteredRows.length === 0 && (
+              {(filters.groupByMayor ? groupedRows.size === 0 : filteredRows.length === 0) && (
                 <div className="text-center py-12 text-muted-foreground">
                   <Filter className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   No se encontraron registros que coincidan con los filtros
