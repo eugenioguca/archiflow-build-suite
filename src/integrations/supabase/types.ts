@@ -7565,6 +7565,7 @@ export type Database = {
           mayor_codigo: string
           mayor_id: string
           mayor_nombre: string
+          orden_minimo: number
           proyecto_id: string
           total_mayor: number
         }[]

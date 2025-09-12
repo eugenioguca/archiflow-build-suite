@@ -9,6 +9,7 @@ export interface ParametricTotal {
   mayor_codigo: string;
   mayor_nombre: string;
   total_mayor: number;
+  orden_minimo: number;
 }
 
 export interface SyncLink {
@@ -162,7 +163,7 @@ export const useParametricGanttSync = (clientId?: string, projectId?: string) =>
 
     const nextLineNo = existingLines && existingLines.length > 0 ? existingLines[0].line_no + 1 : 1;
 
-    // Create the Gantt line
+    // Create the Gantt line with correct order from parametric
     const { data: newLine, error: lineError } = await supabase
       .from('cronograma_gantt_line')
       .insert({
@@ -171,7 +172,7 @@ export const useParametricGanttSync = (clientId?: string, projectId?: string) =>
         mayor_id: total.mayor_id,
         amount: total.total_mayor,
         is_discount: false,
-        order_index: nextLineNo,
+        order_index: total.orden_minimo, // Use parametric order
         es_importado: true,
         estado_sync: 'pendiente_fechas' // Pending dates until user sets them
       })

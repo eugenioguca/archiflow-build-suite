@@ -80,9 +80,10 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
         }
       });
       
-      // Update associated activity if exists
+      // Update or create activity for the line
       const activity = editingLine.activities?.[0];
       if (activity) {
+        // Update existing activity
         await updateActivity.mutateAsync({
           id: activity.id,
           data: {
@@ -91,6 +92,23 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
             end_month: mayorData.end_month,
             end_week: mayorData.end_week
           }
+        });
+      } else {
+        // Create new activity for imported line
+        await createActivity.mutateAsync({
+          line_id: editingLine.id,
+          start_month: mayorData.start_month,
+          start_week: mayorData.start_week,
+          end_month: mayorData.end_month,
+          end_week: mayorData.end_week
+        });
+      }
+
+      // Update sync status to complete for imported lines
+      if (editingLine.es_importado) {
+        await updateLine.mutateAsync({
+          id: editingLine.id,
+          data: { estado_sync: 'completo' }
         });
       }
       
