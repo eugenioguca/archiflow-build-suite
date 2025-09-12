@@ -414,6 +414,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
       );
     }
   };
+  
   // Calculate financial summary correctly
   const mayorLines = lines.filter(line => !line.is_discount);
   const discountLines = lines.filter(line => line.is_discount);
@@ -441,198 +442,272 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
 
   // Filter non-discount lines for display
   const displayLines = lines.filter(line => !line.is_discount);
-
-  return (
-    <Document>
-      {/* Page 1: Integrated Gantt Chart */}
-      <Page size="LETTER" orientation="landscape" style={styles.page}>
-        {/* Corporate Header */}
-        <View style={styles.corporateHeader}>
-          <View style={styles.companySection}>
-            {renderCompanyLogo()}
-            <Text style={styles.companyContact}>
-              {[companyBranding?.website, companyBranding?.email, companyBranding?.phone].filter(Boolean).join(' | ')}
-            </Text>
-          </View>
-          <View style={styles.projectSection}>
-            <Text style={styles.documentTitle}>CRONOGRAMA DE GANTT</Text>
-            <Text style={styles.projectInfo}>{project?.project_name || 'Proyecto'}</Text>
-            <Text style={styles.projectInfo}>Cliente: {client?.full_name || 'Cliente'}</Text>
-          </View>
-        </View>
-
-        {/* Project Details */}
-        <View style={styles.projectDetails}>
-          <View style={styles.detailsLeft}>
-            <Text style={styles.detailLabel}>PROYECTO:</Text>
-            <Text style={styles.detailValue}>{project?.project_name ? `${project.project_name} – ${client?.full_name || 'Cliente'}` : 'N/A'}</Text>
-            <Text style={styles.detailLabel}>UBICACIÓN:</Text>
-            <Text style={styles.detailValue}>{project?.project_location || 'N/A'}</Text>
-            <Text style={styles.detailLabel}>SUPERFICIE DE TERRENO:</Text>
-            <Text style={styles.detailValue}>{project?.land_surface_area ? `${project.land_surface_area} m²` : 'N/A'}</Text>
-            <Text style={styles.detailLabel}>ÁREA DE CONSTRUCCIÓN:</Text>
-            <Text style={styles.detailValue}>{project?.construction_area ? `${project.construction_area} m²` : 'N/A'}</Text>
-          </View>
-          <View style={styles.detailsRight}>
-            <Text style={styles.detailLabel}>CLIENTE:</Text>
-            <Text style={styles.detailValue}>{client?.full_name || 'N/A'}</Text>
-            <Text style={styles.detailLabel}>INICIO:</Text>
-            <Text style={styles.detailValue}>{project?.construction_start_date || 'N/A'}</Text>
-            <Text style={styles.detailLabel}>DURACIÓN:</Text>
-            <Text style={styles.detailValue}>{plan.months_count} meses</Text>
-          </View>
-        </View>
-
-        {/* Financial Summary */}
-        <View style={styles.financialSummary}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>SUBTOTAL</Text>
-            <Text style={styles.summaryValue}>{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(subtotal)}</Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>DESCUENTOS</Text>
-            <Text style={[styles.summaryValue, { color: COLORS.success }]}>-{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(totalDescuentos)}</Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryLabel}>TOTAL</Text>
-            <Text style={styles.summaryValue}>{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(total)}</Text>
-          </View>
-        </View>
-
-        {/* Main Integrated Content */}
-        <View style={styles.mainContent}>
-          {/* Partidas Section - Left Side */}
-          <View style={styles.partidasSection}>
-            {/* Header */}
-            <View style={styles.partidasHeader}>
-              <Text style={[styles.headerCell, styles.noColumn]}>No.</Text>
-              <Text style={[styles.headerCell, styles.partidaColumn]}>PARTIDA</Text>
-              <Text style={[styles.headerCell, styles.importeColumn]}>IMPORTE</Text>
-              <Text style={[styles.headerCell, styles.percentColumn]}>%</Text>
-            </View>
-            
-            {/* Data Rows */}
-            {displayLines.map((line, lineIndex) => {
-              const mayor = mayores.find(m => m.id === line.mayor_id);
-              const percentage = subtotal > 0 ? ((line.amount || 0) / subtotal * 100).toFixed(1) : '0.0';
-              
-              return (
-                <View key={line.id} style={[styles.partidaRow, lineIndex % 2 === 1 ? styles.partidaRowZebra : null]}>
-                  <Text style={styles.noCell}>{lineIndex + 1}</Text>
-                  <Text style={styles.partidaNameCell}>
-                    {mayor?.nombre?.substring(0, 18) || 'Sin categoría'}
-                    {(mayor?.nombre?.length || 0) > 18 ? '...' : ''}
-                  </Text>
-                  <Text style={styles.importeCell}>
-                    {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(line.amount || 0)}
-                  </Text>
-                  <Text style={styles.percentCell}>{percentage}%</Text>
-                </View>
-              );
-            })}
-            
-            {/* Subtotal Row */}
-            <View style={[styles.partidaRow, { backgroundColor: '#f3f4f6' }]}>
-              <Text style={styles.noCell}></Text>
-              <Text style={[styles.partidaNameCell, { fontWeight: 'bold' }]}>SUBTOTAL</Text>
-              <Text style={[styles.importeCell, { fontWeight: 'bold' }]}>
-                {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(subtotal)}
-              </Text>
-              <Text style={[styles.percentCell, { fontWeight: 'bold' }]}>100.0%</Text>
-            </View>
-            
-            {/* Discount Rows */}
-            {discountLines.map((line) => (
-              <View key={line.id} style={[styles.partidaRow, { backgroundColor: '#f0fdf4' }]}>
-                <Text style={styles.noCell}></Text>
-                <Text style={[styles.partidaNameCell, { color: COLORS.success }]}>
-                  {line.label || 'Descuento'}
-                </Text>
-                <Text style={[styles.importeCell, { color: COLORS.success }]}>
-                  -{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(line.amount || 0)}
-                </Text>
-                <Text style={styles.percentCell}></Text>
+  
+  // Pagination logic for table rows
+  const ROW_HEIGHT = 24; // Height of each row in points
+  const HEADER_HEIGHT = 30; // Height of table header
+  const AVAILABLE_HEIGHT_FIRST_PAGE = 400; // Available space for table on first page (after headers, project details, etc.)
+  const AVAILABLE_HEIGHT_OTHER_PAGES = 520; // Available space on subsequent pages
+  const FOOTER_HEIGHT = 40; // Space for footer
+  
+  const rowsPerFirstPage = Math.floor((AVAILABLE_HEIGHT_FIRST_PAGE - HEADER_HEIGHT - FOOTER_HEIGHT) / ROW_HEIGHT);
+  const rowsPerOtherPages = Math.floor((AVAILABLE_HEIGHT_OTHER_PAGES - HEADER_HEIGHT - FOOTER_HEIGHT) / ROW_HEIGHT);
+  
+  // Split lines into pages
+  const pageChunks: GanttLine[][] = [];
+  let remainingLines = [...displayLines];
+  
+  // First page
+  if (remainingLines.length > 0) {
+    pageChunks.push(remainingLines.splice(0, rowsPerFirstPage));
+  }
+  
+  // Subsequent pages
+  while (remainingLines.length > 0) {
+    pageChunks.push(remainingLines.splice(0, rowsPerOtherPages));
+  }
+  
+  const totalPages = pageChunks.length + 1; // +1 for matrix page
+  
+  // Render table header component
+  const renderTableHeader = () => (
+    <View style={styles.partidasHeader}>
+      <Text style={[styles.headerCell, styles.noColumn]}>No.</Text>
+      <Text style={[styles.headerCell, styles.partidaColumn]}>PARTIDA</Text>
+      <Text style={[styles.headerCell, styles.importeColumn]}>IMPORTE</Text>
+      <Text style={[styles.headerCell, styles.percentColumn]}>%</Text>
+    </View>
+  );
+  
+  // Render cronograma header component
+  const renderCronogramaHeader = () => (
+    <View style={styles.cronogramaHeader}>
+      <View style={styles.monthsContainer}>
+        {months.map((month) => {
+          const year = Math.floor(parseInt(month) / 100);
+          const monthNum = parseInt(month) % 100;
+          const monthName = new Date(year, monthNum - 1).toLocaleDateString('es-MX', { month: 'short' });
+          
+          return (
+            <View key={month} style={styles.monthHeader}>
+              <Text style={styles.monthTitle}>{monthName.toUpperCase()} {year}</Text>
+              <View style={styles.weeksRow}>
+                <Text style={styles.weekNumber}>1</Text>
+                <Text style={styles.weekNumber}>2</Text>
+                <Text style={styles.weekNumber}>3</Text>
+                <Text style={styles.weekNumber}>4</Text>
               </View>
-            ))}
-            
-            {/* Total Row */}
-            <View style={[styles.partidaRow, { backgroundColor: '#f3f4f6' }]}>
-              <Text style={styles.noCell}></Text>
-              <Text style={[styles.partidaNameCell, { fontWeight: 'bold', color: COLORS.text }]}>TOTAL</Text>
-              <Text style={[styles.importeCell, { fontWeight: 'bold', color: COLORS.text }]}>
-                {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(total)}
-              </Text>
-              <Text style={[styles.percentCell, { fontWeight: 'bold', color: COLORS.text }]}>
-              </Text>
             </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+  
+  // Render table rows for a specific page
+  const renderTableRows = (pageLines: GanttLine[], startIndex: number) => (
+    <>
+      {pageLines.map((line, lineIndex) => {
+        const mayor = mayores.find(m => m.id === line.mayor_id);
+        const percentage = subtotal > 0 ? ((line.amount || 0) / subtotal * 100).toFixed(1) : '0.0';
+        const globalIndex = startIndex + lineIndex;
+        
+        return (
+          <View key={line.id} style={[styles.partidaRow, globalIndex % 2 === 1 ? styles.partidaRowZebra : null]}>
+            <Text style={styles.noCell}>{globalIndex + 1}</Text>
+            <Text style={styles.partidaNameCell}>
+              {mayor?.nombre?.substring(0, 18) || 'Sin categoría'}
+              {(mayor?.nombre?.length || 0) > 18 ? '...' : ''}
+            </Text>
+            <Text style={styles.importeCell}>
+              {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(line.amount || 0)}
+            </Text>
+            <Text style={styles.percentCell}>{percentage}%</Text>
           </View>
-
-          {/* Cronograma Section - Right Side */}
-          <View style={styles.cronogramaSection}>
-            {/* Headers */}
-            <View style={styles.cronogramaHeader}>
-              <View style={styles.monthsContainer}>
-                {months.map((month) => {
-                  const year = Math.floor(parseInt(month) / 100);
-                  const monthNum = parseInt(month) % 100;
-                  const monthName = new Date(year, monthNum - 1).toLocaleDateString('es-MX', { month: 'short' });
+        );
+      })}
+    </>
+  );
+  
+  // Render timeline rows for a specific page
+  const renderTimelineRows = (pageLines: GanttLine[], startIndex: number) => (
+    <>
+      {pageLines.map((line, lineIndex) => {
+        const globalIndex = startIndex + lineIndex;
+        return (
+          <View key={line.id} style={[styles.timelineRow, globalIndex % 2 === 1 ? styles.timelineRowZebra : null]}>
+            {months.map((month) => (
+              <View key={`${line.id}-${month}`} style={styles.monthTimelineSection}>
+                {[1, 2, 3, 4].map((week) => {
+                  // Check if this line has activities in this month/week
+                  const hasActivity = line.activities?.some(activity => {
+                    const cells = expandRangeToMonthWeekCells(
+                      activity.start_month,
+                      activity.start_week,
+                      activity.end_month,
+                      activity.end_week
+                    );
+                    return cells.some(cell => cell.month === month && cell.week === week);
+                  });
                   
                   return (
-                    <View key={month} style={styles.monthHeader}>
-                      <Text style={styles.monthTitle}>{monthName.toUpperCase()} {year}</Text>
-                      <View style={styles.weeksRow}>
-                        <Text style={styles.weekNumber}>1</Text>
-                        <Text style={styles.weekNumber}>2</Text>
-                        <Text style={styles.weekNumber}>3</Text>
-                        <Text style={styles.weekNumber}>4</Text>
-                      </View>
+                    <View key={`${line.id}-${month}-W${week}`} style={styles.weekTimelineCell}>
+                      {hasActivity && <View style={styles.activityBar} />}
                     </View>
                   );
                 })}
               </View>
-            </View>
-
-            {/* Timeline Rows */}
-            {displayLines.map((line, lineIndex) => (
-              <View key={line.id} style={[styles.timelineRow, lineIndex % 2 === 1 ? styles.timelineRowZebra : null]}>
-                {months.map((month) => (
-                  <View key={`${line.id}-${month}`} style={styles.monthTimelineSection}>
-                    {[1, 2, 3, 4].map((week) => {
-                      // Check if this line has activities in this month/week
-                      const hasActivity = line.activities?.some(activity => {
-                        const cells = expandRangeToMonthWeekCells(
-                          activity.start_month,
-                          activity.start_week,
-                          activity.end_month,
-                          activity.end_week
-                        );
-                        return cells.some(cell => cell.month === month && cell.week === week);
-                      });
-                      
-                      return (
-                        <View key={`${line.id}-${month}-W${week}`} style={styles.weekTimelineCell}>
-                          {hasActivity && <View style={styles.activityBar} />}
-                        </View>
-                      );
-                    })}
-                  </View>
-                ))}
-              </View>
             ))}
           </View>
-        </View>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            DOVITA • Confidencial
+        );
+      })}
+    </>
+  );
+  
+  // Render totals section (only on last page)
+  const renderTotals = () => (
+    <>
+      {/* Subtotal Row */}
+      <View style={[styles.partidaRow, { backgroundColor: '#f3f4f6' }]}>
+        <Text style={styles.noCell}></Text>
+        <Text style={[styles.partidaNameCell, { fontWeight: 'bold' }]}>SUBTOTAL</Text>
+        <Text style={[styles.importeCell, { fontWeight: 'bold' }]}>
+          {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(subtotal)}
+        </Text>
+        <Text style={[styles.percentCell, { fontWeight: 'bold' }]}>100.0%</Text>
+      </View>
+      
+      {/* Discount Rows */}
+      {discountLines.map((line) => (
+        <View key={line.id} style={[styles.partidaRow, { backgroundColor: '#f0fdf4' }]}>
+          <Text style={styles.noCell}></Text>
+          <Text style={[styles.partidaNameCell, { color: COLORS.success }]}>
+            {line.label || 'Descuento'}
           </Text>
-          <Text style={styles.footerText}>Página 1 de 2</Text>
-          <Text style={styles.footerText}>Generado: {new Date().toLocaleDateString('es-MX')}</Text>
+          <Text style={[styles.importeCell, { color: COLORS.success }]}>
+            -{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(line.amount || 0)}
+          </Text>
+          <Text style={styles.percentCell}></Text>
         </View>
-      </Page>
+      ))}
+      
+      {/* Total Row */}
+      <View style={[styles.partidaRow, { backgroundColor: '#f3f4f6' }]}>
+        <Text style={styles.noCell}></Text>
+        <Text style={[styles.partidaNameCell, { fontWeight: 'bold', color: COLORS.text }]}>TOTAL</Text>
+        <Text style={[styles.importeCell, { fontWeight: 'bold', color: COLORS.text }]}>
+          {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(total)}
+        </Text>
+        <Text style={[styles.percentCell, { fontWeight: 'bold', color: COLORS.text }]}>
+        </Text>
+      </View>
+    </>
+  );
 
-      {/* Page 2: Numerical Matrix */}
+  return (
+    <Document>
+      {/* Gantt Chart Pages */}
+      {pageChunks.map((pageLines, pageIndex) => {
+        const isFirstPage = pageIndex === 0;
+        const isLastGanttPage = pageIndex === pageChunks.length - 1;
+        const startIndex = pageIndex === 0 ? 0 : rowsPerFirstPage + (pageIndex - 1) * rowsPerOtherPages;
+        
+        return (
+          <Page key={`gantt-page-${pageIndex}`} size="LETTER" orientation="landscape" style={styles.page}>
+            {/* Corporate Header - Only on first page */}
+            {isFirstPage && (
+              <>
+                <View style={styles.corporateHeader}>
+                  <View style={styles.companySection}>
+                    {renderCompanyLogo()}
+                    <Text style={styles.companyContact}>
+                      {[companyBranding?.website, companyBranding?.email, companyBranding?.phone].filter(Boolean).join(' | ')}
+                    </Text>
+                  </View>
+                  <View style={styles.projectSection}>
+                    <Text style={styles.documentTitle}>CRONOGRAMA DE GANTT</Text>
+                    <Text style={styles.projectInfo}>{project?.project_name || 'Proyecto'}</Text>
+                    <Text style={styles.projectInfo}>Cliente: {client?.full_name || 'Cliente'}</Text>
+                  </View>
+                </View>
+
+                {/* Project Details */}
+                <View style={styles.projectDetails}>
+                  <View style={styles.detailsLeft}>
+                    <Text style={styles.detailLabel}>PROYECTO:</Text>
+                    <Text style={styles.detailValue}>{project?.project_name ? `${project.project_name} – ${client?.full_name || 'Cliente'}` : 'N/A'}</Text>
+                    <Text style={styles.detailLabel}>UBICACIÓN:</Text>
+                    <Text style={styles.detailValue}>{project?.project_location || 'N/A'}</Text>
+                    <Text style={styles.detailLabel}>SUPERFICIE DE TERRENO:</Text>
+                    <Text style={styles.detailValue}>{project?.land_surface_area ? `${project.land_surface_area} m²` : 'N/A'}</Text>
+                    <Text style={styles.detailLabel}>ÁREA DE CONSTRUCCIÓN:</Text>
+                    <Text style={styles.detailValue}>{project?.construction_area ? `${project.construction_area} m²` : 'N/A'}</Text>
+                  </View>
+                  <View style={styles.detailsRight}>
+                    <Text style={styles.detailLabel}>CLIENTE:</Text>
+                    <Text style={styles.detailValue}>{client?.full_name || 'N/A'}</Text>
+                    <Text style={styles.detailLabel}>INICIO:</Text>
+                    <Text style={styles.detailValue}>{project?.construction_start_date || 'N/A'}</Text>
+                    <Text style={styles.detailLabel}>DURACIÓN:</Text>
+                    <Text style={styles.detailValue}>{plan.months_count} meses</Text>
+                  </View>
+                </View>
+
+                {/* Financial Summary */}
+                <View style={styles.financialSummary}>
+                  <View style={styles.summaryItem}>
+                    <Text style={styles.summaryLabel}>SUBTOTAL</Text>
+                    <Text style={styles.summaryValue}>{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(subtotal)}</Text>
+                  </View>
+                  <View style={styles.summaryItem}>
+                    <Text style={styles.summaryLabel}>DESCUENTOS</Text>
+                    <Text style={[styles.summaryValue, { color: COLORS.success }]}>-{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(totalDescuentos)}</Text>
+                  </View>
+                  <View style={styles.summaryItem}>
+                    <Text style={styles.summaryLabel}>TOTAL</Text>
+                    <Text style={styles.summaryValue}>{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(total)}</Text>
+                  </View>
+                </View>
+              </>
+            )}
+
+            {/* Main Integrated Content */}
+            <View style={styles.mainContent}>
+              {/* Partidas Section - Left Side */}
+              <View style={styles.partidasSection}>
+                {/* Table Header - Always show */}
+                {renderTableHeader()}
+                
+                {/* Data Rows for this page */}
+                {renderTableRows(pageLines, startIndex)}
+                
+                {/* Totals - Only on last gantt page */}
+                {isLastGanttPage && renderTotals()}
+              </View>
+
+              {/* Cronograma Section - Right Side */}
+              <View style={styles.cronogramaSection}>
+                {/* Cronograma Header - Always show */}
+                {renderCronogramaHeader()}
+                
+                {/* Timeline Rows for this page */}
+                {renderTimelineRows(pageLines, startIndex)}
+              </View>
+            </View>
+
+            {/* Footer */}
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>
+                DOVITA • Confidencial
+              </Text>
+              <Text style={styles.footerText}>Página {pageIndex + 1} de {totalPages}</Text>
+              <Text style={styles.footerText}>Generado: {new Date().toLocaleDateString('es-MX')}</Text>
+            </View>
+          </Page>
+        );
+      })}
+
+      {/* Matrix Page - Always last page */}
       <Page size="LETTER" orientation="landscape" style={styles.page}>
         {/* Header */}
         <View style={styles.corporateHeader}>
@@ -858,7 +933,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
           <Text style={styles.footerText}>
             DOVITA • Confidencial
           </Text>
-          <Text style={styles.footerText}>Página 2 de 2</Text>
+          <Text style={styles.footerText}>Página {totalPages} de {totalPages}</Text>
           <Text style={styles.footerText}>Generado: {new Date().toLocaleDateString('es-MX')}</Text>
         </View>
       </Page>
