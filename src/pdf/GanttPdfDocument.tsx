@@ -443,30 +443,64 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
   // Filter non-discount lines for display
   const displayLines = lines.filter(line => !line.is_discount);
   
-  // Pagination logic for table rows
+  // Robust pagination logic for table rows
   const ROW_HEIGHT = 24; // Height of each row in points
   const HEADER_HEIGHT = 30; // Height of table header
+  const TOTALS_BLOCK_HEIGHT = 72; // Height for subtotal + discount rows + total (3 rows minimum)
   const AVAILABLE_HEIGHT_FIRST_PAGE = 400; // Available space for table on first page (after headers, project details, etc.)
   const AVAILABLE_HEIGHT_OTHER_PAGES = 520; // Available space on subsequent pages
   const FOOTER_HEIGHT = 40; // Space for footer
   
+  // Calculate actual totals block height based on discount lines
+  const actualTotalsHeight = (1 + discountLines.length + 1) * ROW_HEIGHT; // subtotal + discounts + total
+  
+  // Calculate rows that can fit per page
   const rowsPerFirstPage = Math.floor((AVAILABLE_HEIGHT_FIRST_PAGE - HEADER_HEIGHT - FOOTER_HEIGHT) / ROW_HEIGHT);
   const rowsPerOtherPages = Math.floor((AVAILABLE_HEIGHT_OTHER_PAGES - HEADER_HEIGHT - FOOTER_HEIGHT) / ROW_HEIGHT);
   
-  // Split lines into pages
-  const pageChunks: GanttLine[][] = [];
-  let remainingLines = [...displayLines];
-  
-  // First page
-  if (remainingLines.length > 0) {
-    pageChunks.push(remainingLines.splice(0, rowsPerFirstPage));
+  // Manual pagination with totals space reservation
+  function paginateRowsWithTotalsSpace(lines: GanttLine[]) {
+    const pages: GanttLine[][] = [];
+    let currentPage: GanttLine[] = [];
+    let remainingLines = [...lines];
+    let isFirstPage = true;
+    
+    while (remainingLines.length > 0) {
+      const maxRowsForThisPage = isFirstPage ? rowsPerFirstPage : rowsPerOtherPages;
+      const availableHeight = isFirstPage ? 
+        AVAILABLE_HEIGHT_FIRST_PAGE - HEADER_HEIGHT - FOOTER_HEIGHT : 
+        AVAILABLE_HEIGHT_OTHER_PAGES - HEADER_HEIGHT - FOOTER_HEIGHT;
+      
+      // If this is potentially the last page, reserve space for totals
+      const isLastPage = remainingLines.length <= maxRowsForThisPage;
+      const maxRowsConsideringTotals = isLastPage ? 
+        Math.floor((availableHeight - actualTotalsHeight) / ROW_HEIGHT) : 
+        maxRowsForThisPage;
+      
+      const rowsToTake = Math.min(remainingLines.length, Math.max(1, maxRowsConsideringTotals));
+      
+      // If we can't fit at least one row plus totals, move some rows to previous page
+      if (isLastPage && rowsToTake <= 0 && pages.length > 0) {
+        // Move last few rows from previous page to make room
+        const previousPage = pages[pages.length - 1];
+        const rowsToMove = Math.min(2, previousPage.length - 1); // Move at most 2 rows, keep at least 1
+        if (rowsToMove > 0) {
+          const movedRows = previousPage.splice(-rowsToMove);
+          remainingLines = [...movedRows, ...remainingLines];
+          continue;
+        }
+      }
+      
+      currentPage = remainingLines.splice(0, Math.max(1, rowsToTake));
+      pages.push(currentPage);
+      isFirstPage = false;
+    }
+    
+    return pages;
   }
   
-  // Subsequent pages
-  while (remainingLines.length > 0) {
-    pageChunks.push(remainingLines.splice(0, rowsPerOtherPages));
-  }
-  
+  // Apply robust pagination
+  const pageChunks = paginateRowsWithTotalsSpace(displayLines);
   const totalPages = pageChunks.length + 1; // +1 for matrix page
   
   // Render table header component
@@ -504,7 +538,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
     </View>
   );
   
-  // Render table rows for a specific page
+  // Render table rows for a specific page with wrap protection
   const renderTableRows = (pageLines: GanttLine[], startIndex: number) => (
     <>
       {pageLines.map((line, lineIndex) => {
@@ -513,7 +547,11 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
         const globalIndex = startIndex + lineIndex;
         
         return (
-          <View key={line.id} style={[styles.partidaRow, globalIndex % 2 === 1 ? styles.partidaRowZebra : null]}>
+          <View 
+            key={line.id} 
+            style={[styles.partidaRow, globalIndex % 2 === 1 ? styles.partidaRowZebra : null]}
+            wrap={false} // Prevent row from breaking across pages
+          >
             <Text style={styles.noCell}>{globalIndex + 1}</Text>
             <Text style={styles.partidaNameCell}>
               {mayor?.nombre?.substring(0, 18) || 'Sin categoría'}
@@ -529,13 +567,17 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
     </>
   );
   
-  // Render timeline rows for a specific page
+  // Render timeline rows for a specific page with wrap protection
   const renderTimelineRows = (pageLines: GanttLine[], startIndex: number) => (
     <>
       {pageLines.map((line, lineIndex) => {
         const globalIndex = startIndex + lineIndex;
         return (
-          <View key={line.id} style={[styles.timelineRow, globalIndex % 2 === 1 ? styles.timelineRowZebra : null]}>
+          <View 
+            key={line.id} 
+            style={[styles.timelineRow, globalIndex % 2 === 1 ? styles.timelineRowZebra : null]}
+            wrap={false} // Prevent row from breaking across pages
+          >
             {months.map((month) => (
               <View key={`${line.id}-${month}`} style={styles.monthTimelineSection}>
                 {[1, 2, 3, 4].map((week) => {
@@ -564,11 +606,11 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
     </>
   );
   
-  // Render totals section (only on last page)
+  // Render totals section (only on last page) with wrap protection
   const renderTotals = () => (
-    <>
+    <View wrap={false}> {/* Protect entire totals block from breaking */}
       {/* Subtotal Row */}
-      <View style={[styles.partidaRow, { backgroundColor: '#f3f4f6' }]}>
+      <View style={[styles.partidaRow, { backgroundColor: '#f3f4f6' }]} wrap={false}>
         <Text style={styles.noCell}></Text>
         <Text style={[styles.partidaNameCell, { fontWeight: 'bold' }]}>SUBTOTAL</Text>
         <Text style={[styles.importeCell, { fontWeight: 'bold' }]}>
@@ -579,7 +621,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
       
       {/* Discount Rows */}
       {discountLines.map((line) => (
-        <View key={line.id} style={[styles.partidaRow, { backgroundColor: '#f0fdf4' }]}>
+        <View key={line.id} style={[styles.partidaRow, { backgroundColor: '#f0fdf4' }]} wrap={false}>
           <Text style={styles.noCell}></Text>
           <Text style={[styles.partidaNameCell, { color: COLORS.success }]}>
             {line.label || 'Descuento'}
@@ -592,7 +634,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
       ))}
       
       {/* Total Row */}
-      <View style={[styles.partidaRow, { backgroundColor: '#f3f4f6' }]}>
+      <View style={[styles.partidaRow, { backgroundColor: '#f3f4f6' }]} wrap={false}>
         <Text style={styles.noCell}></Text>
         <Text style={[styles.partidaNameCell, { fontWeight: 'bold', color: COLORS.text }]}>TOTAL</Text>
         <Text style={[styles.importeCell, { fontWeight: 'bold', color: COLORS.text }]}>
@@ -601,7 +643,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
         <Text style={[styles.percentCell, { fontWeight: 'bold', color: COLORS.text }]}>
         </Text>
       </View>
-    </>
+    </View>
   );
 
   return (
