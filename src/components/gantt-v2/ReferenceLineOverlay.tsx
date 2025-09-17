@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ReferenceLine } from '@/hooks/gantt-v2/useReferenceLines';
+import { getTimelineLayout, xForMonthWeek, type TimelineLayout } from '@/utils/gantt-v2/timelineLayout';
 
 interface ReferenceLineOverlayProps {
   referenceLines: ReferenceLine[];
@@ -7,35 +8,59 @@ interface ReferenceLineOverlayProps {
 }
 
 export function ReferenceLineOverlay({ referenceLines, monthRange }: ReferenceLineOverlayProps) {
-  if (referenceLines.length === 0) return null;
+  const [layout, setLayout] = useState<TimelineLayout | null>(null);
+
+  // Update layout when component mounts or monthRange changes
+  useEffect(() => {
+    const updateLayout = () => {
+      const newLayout = getTimelineLayout(monthRange);
+      setLayout(newLayout);
+    };
+
+    // Initial layout calculation
+    updateLayout();
+
+    // Recalculate on window resize
+    const handleResize = () => {
+      requestAnimationFrame(updateLayout);
+    };
+
+    window.addEventListener('resize', handleResize);
+    
+    // Use ResizeObserver for more precise DOM changes
+    const resizeObserver = new ResizeObserver(() => {
+      requestAnimationFrame(updateLayout);
+    });
+
+    const ganttTable = document.querySelector('.gantt-table');
+    if (ganttTable) {
+      resizeObserver.observe(ganttTable);
+    }
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
+    };
+  }, [monthRange]);
+
+  if (referenceLines.length === 0 || !layout) return null;
 
   return (
     <div className="absolute inset-0 pointer-events-none z-10">
       {referenceLines.map((line) => {
-        // Find the month index
-        const monthIndex = monthRange.findIndex(m => m.value === line.position_month);
-        if (monthIndex === -1) return null;
-
-        // Calculate position based on month and week
-        // Each month column is divided into 4 weeks (W1, W2, W3, W4)
-        const monthColumnWidth = 120; // Should match CSS gantt-month-col width
-        const weekWidth = monthColumnWidth / 4;
-        
-        // Calculate left position:
-        // - Base position for the month column (considering freeze columns)
-        // - Plus offset for the specific week within the month
-        // - Position at the END of the selected week (not the next week)
-        const freezeColumnsWidth = 64 + 50 + 200 + 120 + 80; // actions + no + mayor + importe + %
-        const leftPosition = freezeColumnsWidth + (monthIndex * monthColumnWidth) + ((line.position_week - 1) * weekWidth) + weekWidth;
+        // Calculate precise position using timeline layout
+        const x = xForMonthWeek(layout, line.position_month, line.position_week as 1 | 2 | 3 | 4);
 
         return (
           <div
             key={line.id}
-            className="absolute top-0 bottom-0 w-0.5 z-10"
+            className="absolute top-0 bottom-0 pointer-events-none"
             style={{
-              left: `${leftPosition}px`,
-              backgroundColor: line.color,
-              boxShadow: `0 0 3px ${line.color}50`
+              left: `${x}px`,
+              width: '2px',
+              background: `linear-gradient(${line.color}, ${line.color})`,
+              boxShadow: `0 0 0 1px rgba(255,77,79,0.25)`,
+              zIndex: 3
             }}
           >
             {/* Optional label tooltip */}

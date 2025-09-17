@@ -616,10 +616,12 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
         const monthIndex = months.findIndex(m => m === line.position_month);
         if (monthIndex === -1) return null;
         
-        // Calculate position: each month is 25% divided by number of months, each week is 1/4 of month width
+        // Calculate position using the same logic as UI
+        // Each month gets equal percentage of timeline width, each week is 1/4 of month width
         const monthWidth = 100 / months.length; // Percentage width per month
         const weekWidth = monthWidth / 4;
-        const leftPosition = (monthIndex * monthWidth) + ((line.position_week - 1) * weekWidth) + weekWidth;
+        // Position at the END of the selected week (same as UI logic)
+        const leftPosition = (monthIndex * monthWidth) + (line.position_week * weekWidth);
         
         return (
           <View
