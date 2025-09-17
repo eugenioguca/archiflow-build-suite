@@ -24,8 +24,9 @@ export function ReferenceLineOverlay({ referenceLines, monthRange }: ReferenceLi
         // Calculate left position:
         // - Base position for the month column (considering freeze columns)
         // - Plus offset for the specific week within the month
+        // - Position at the END of the selected week (between selected week and next week)
         const freezeColumnsWidth = 64 + 50 + 200 + 120 + 80; // actions + no + mayor + importe + %
-        const leftPosition = freezeColumnsWidth + (monthIndex * monthColumnWidth) + ((line.position_week - 1) * weekWidth) + (weekWidth / 2);
+        const leftPosition = freezeColumnsWidth + (monthIndex * monthColumnWidth) + (line.position_week * weekWidth);
 
         return (
           <div

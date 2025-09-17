@@ -577,7 +577,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
   
   // Render timeline rows for a specific page with wrap protection
   const renderTimelineRows = (pageLines: GanttLine[], startIndex: number) => (
-    <>
+    <View style={{ position: 'relative' }}>
       {pageLines.map((line, lineIndex) => {
         const globalIndex = startIndex + lineIndex;
         return (
@@ -611,7 +611,32 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
           </View>
         );
       })}
-    </>
+      {/* Reference Lines for timeline rows */}
+      {referenceLines.map((line) => {
+        const monthIndex = months.findIndex(m => m === line.position_month);
+        if (monthIndex === -1) return null;
+        
+        // Calculate position: each month is 25% divided by number of months, each week is 1/4 of month width
+        const monthWidth = 100 / months.length; // Percentage width per month
+        const weekWidth = monthWidth / 4;
+        const leftPosition = (monthIndex * monthWidth) + (line.position_week * weekWidth);
+        
+        return (
+          <View
+            key={`timeline-${line.id}`}
+            style={{
+              position: 'absolute',
+              left: `${leftPosition}%`,
+              top: 0,
+              bottom: 0,
+              width: 1,
+              backgroundColor: line.color || '#ef4444',
+              zIndex: 10
+            }}
+          />
+        );
+      })}
+    </View>
   );
   
   // Render totals section (only on last page) with wrap protection
