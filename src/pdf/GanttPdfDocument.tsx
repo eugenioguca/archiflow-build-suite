@@ -543,31 +543,6 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
           );
         })}
       </View>
-      {/* Reference Lines for header */}
-      {referenceLines.map((line) => {
-        const monthIndex = months.findIndex(m => m === line.position_month);
-        if (monthIndex === -1) return null;
-        
-        // Calculate position: END of selected week (weekNumber is 1-based)
-        const monthWidth = 100 / months.length; // Percentage width per month
-        const weekWidth = monthWidth / 4;
-        const leftPosition = (monthIndex * monthWidth) + (line.position_week * weekWidth);
-        
-        return (
-          <View
-            key={`header-${line.id}`}
-            style={{
-              position: 'absolute',
-              left: `${leftPosition}%`,
-              top: 0,
-              bottom: 0,
-              width: 1,
-              backgroundColor: line.color || '#ef4444',
-              zIndex: 10
-            }}
-          />
-        );
-      })}
     </View>
   );
   
@@ -636,7 +611,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
           </View>
         );
       })}
-      {/* Reference Lines for timeline rows */}
+      {/* Reference Lines for timeline rows - continuous overlay */}
       {referenceLines.map((line) => {
         const monthIndex = months.findIndex(m => m === line.position_month);
         if (monthIndex === -1) return null;
@@ -653,10 +628,10 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
               position: 'absolute',
               left: `${leftPosition}%`,
               top: 0,
-              bottom: 0,
-              width: 1,
+              height: pageLines.length * 20, // Calculate exact height based on number of rows
+              width: 2,
               backgroundColor: line.color || '#ef4444',
-              zIndex: 10
+              zIndex: 15 // Higher z-index to appear above row backgrounds
             }}
           />
         );
