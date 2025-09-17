@@ -84,7 +84,8 @@ export function xForMonthWeek(layout: TimelineLayout, monthId: string, weekNumbe
     return 0;
   }
   
-  // Position at the END of the selected week
+  // Position at the END of the selected week (weekNumber is 1-based)
+  // Formula: month.left + (weekNumber * weekWidth) positions at END of week
   const x = month.left + (weekNumber * month.weekWidth);
   
   // Align to pixel boundary for crisp rendering

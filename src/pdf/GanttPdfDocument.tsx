@@ -543,6 +543,31 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
           );
         })}
       </View>
+      {/* Reference Lines for header */}
+      {referenceLines.map((line) => {
+        const monthIndex = months.findIndex(m => m === line.position_month);
+        if (monthIndex === -1) return null;
+        
+        // Calculate position: END of selected week (weekNumber is 1-based)
+        const monthWidth = 100 / months.length; // Percentage width per month
+        const weekWidth = monthWidth / 4;
+        const leftPosition = (monthIndex * monthWidth) + (line.position_week * weekWidth);
+        
+        return (
+          <View
+            key={`header-${line.id}`}
+            style={{
+              position: 'absolute',
+              left: `${leftPosition}%`,
+              top: 0,
+              bottom: 0,
+              width: 1,
+              backgroundColor: line.color || '#ef4444',
+              zIndex: 10
+            }}
+          />
+        );
+      })}
     </View>
   );
   
@@ -616,11 +641,9 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
         const monthIndex = months.findIndex(m => m === line.position_month);
         if (monthIndex === -1) return null;
         
-        // Calculate position using the same logic as UI
-        // Each month gets equal percentage of timeline width, each week is 1/4 of month width
+        // Calculate position: END of selected week (weekNumber is 1-based)  
         const monthWidth = 100 / months.length; // Percentage width per month
         const weekWidth = monthWidth / 4;
-        // Position at the END of the selected week (same as UI logic)
         const leftPosition = (monthIndex * monthWidth) + (line.position_week * weekWidth);
         
         return (
