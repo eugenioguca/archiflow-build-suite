@@ -11,6 +11,7 @@ import { Mayor } from '@/hooks/gantt-v2/useMayoresTU';
 import { generateMonthRange } from '@/utils/gantt-v2/monthRange';
 import { GanttV2PDFExport } from './GanttV2PDFExport';
 import { CompanyBrandingModal } from './CompanyBrandingModal';
+import { ReferenceLineManager } from './ReferenceLineManager';
 
 interface GanttToolbarProps {
   plan?: GanttPlan | null;
@@ -166,6 +167,15 @@ export function GanttToolbar({
                 projectId={projectId}
               />
             )}
+          </div>
+
+          {/* Reference Lines Manager */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            <ReferenceLineManager 
+              planId={plan?.id}
+              startMonth={plan?.start_month}
+              monthsCount={plan?.months_count}
+            />
           </div>
         </div>
       </CardContent>

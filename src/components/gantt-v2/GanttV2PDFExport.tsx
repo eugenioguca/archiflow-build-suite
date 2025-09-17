@@ -4,6 +4,7 @@ import { FileDown } from 'lucide-react';
 import { GanttPlan, GanttLine } from '@/hooks/gantt-v2/useGantt';
 import { MatrixOverride } from '@/hooks/gantt-v2/useMatrixOverrides';
 import { Mayor } from '@/hooks/gantt-v2/useMayoresTU';
+import { useReferenceLines } from '@/hooks/gantt-v2/useReferenceLines';
 import { useToast } from '@/hooks/use-toast';
 import { buildGanttPdf } from '@/pdf/GanttPdfBuilder';
 
@@ -27,6 +28,7 @@ export function GanttV2PDFExport({
   className
 }: GanttV2PDFExportProps) {
   const { toast } = useToast();
+  const { referenceLines } = useReferenceLines(plan.id);
 
   const exportToPDF = async () => {
     try {
@@ -36,6 +38,7 @@ export function GanttV2PDFExport({
         lines,
         mayores,
         overrides,
+        referenceLines,
         clientId,
         projectId
       });

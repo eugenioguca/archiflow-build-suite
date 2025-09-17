@@ -2988,6 +2988,57 @@ export type Database = {
         }
         Relationships: []
       }
+      cronograma_gantt_reference_lines: {
+        Row: {
+          color: string | null
+          created_at: string
+          created_by: string
+          id: string
+          label: string | null
+          plan_id: string
+          position_month: string
+          position_week: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          label?: string | null
+          plan_id: string
+          position_month: string
+          position_week: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          label?: string | null
+          plan_id?: string
+          position_month?: string
+          position_week?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cronograma_gantt_reference_lines_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cronograma_gantt_reference_lines_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "cronograma_gantt_plan"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cronograma_matriz_manual: {
         Row: {
           cliente_id: string

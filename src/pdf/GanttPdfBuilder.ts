@@ -4,18 +4,20 @@ import { supabase } from '@/integrations/supabase/client';
 import type { GanttPlan, GanttLine } from '@/hooks/gantt-v2/useGantt';
 import type { MatrixOverride } from '@/hooks/gantt-v2/useMatrixOverrides';
 import type { Mayor } from '@/hooks/gantt-v2/useMayoresTU';
+import type { ReferenceLine } from '@/hooks/gantt-v2/useReferenceLines';
 
 interface BuildGanttPdfOptions {
   plan: GanttPlan;
   lines: GanttLine[];
   mayores: Mayor[];
   overrides: MatrixOverride[];
+  referenceLines?: ReferenceLine[];
   clientId: string;
   projectId: string;
 }
 
 export async function buildGanttPdf(options: BuildGanttPdfOptions): Promise<Blob> {
-  const { plan, lines, mayores, overrides, clientId, projectId } = options;
+  const { plan, lines, mayores, overrides, referenceLines = [], clientId, projectId } = options;
 
   try {
     // Fetch required data
@@ -47,6 +49,7 @@ export async function buildGanttPdf(options: BuildGanttPdfOptions): Promise<Blob
         lines,
         mayores,
         overrides,
+        referenceLines,
         client,
         project,
         companyBranding

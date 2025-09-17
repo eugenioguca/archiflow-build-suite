@@ -361,6 +361,13 @@ interface GanttPdfContentProps {
   lines: GanttLine[];
   mayores: Mayor[];
   overrides: MatrixOverride[];
+  referenceLines?: Array<{
+    id: string;
+    position_month: string;
+    position_week: number;
+    label: string;
+    color: string;
+  }>;
   client: any;
   project: any;
   companyBranding: any;
@@ -371,6 +378,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
   lines,
   mayores,
   overrides,
+  referenceLines = [],
   client,
   project,
   companyBranding

@@ -6,8 +6,10 @@ import { Trash2 } from 'lucide-react';
 import { GanttPlan, GanttLine, GanttActivity } from '@/hooks/gantt-v2/useGantt';
 import { Mayor } from '@/hooks/gantt-v2/useMayoresTU';
 import { ActivityRow } from './ActivityRow';
+import { ReferenceLineOverlay } from './ReferenceLineOverlay';
 import { generateMonthRange } from '@/utils/gantt-v2/monthRange';
 import { formatCurrency } from '@/utils/gantt-v2/currency';
+import { useReferenceLines } from '@/hooks/gantt-v2/useReferenceLines';
 
 interface GanttGridProps {
   plan?: GanttPlan | null;
@@ -33,6 +35,7 @@ export function GanttGrid({
   if (!plan) return null;
 
   const monthRange = generateMonthRange(plan.start_month, plan.months_count);
+  const { referenceLines } = useReferenceLines(plan.id);
   
   // Calculate totals
   const mayorLines = lines.filter(line => !line.is_discount);
@@ -47,8 +50,9 @@ export function GanttGrid({
         <CardHeader className="pb-2 sm:pb-4">
           <CardTitle className="text-lg sm:text-xl">Cronograma de Gantt</CardTitle>
         </CardHeader>
-        <CardContent className="p-0" style={{ overflow: 'visible' }}>
-          <div className="gantt-scroll-container">
+        <CardContent className="p-0 relative" style={{ overflow: 'visible' }}>
+          <div className="gantt-scroll-container relative">
+          <ReferenceLineOverlay referenceLines={referenceLines} monthRange={monthRange} />
           <Table className="gantt-table">
             <TableHeader className="gantt-header">
               <TableRow>
