@@ -614,38 +614,47 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
     </View>
   );
   
-  // Render reference lines as continuous overlays for a page
-  const renderReferenceLines = (pageLines: GanttLine[]) => (
-    <>
-      {referenceLines.map((line) => {
-        const monthIndex = months.findIndex(m => m === line.position_month);
-        if (monthIndex === -1) return null;
-        
-        // Calculate position: END of selected week (weekNumber is 1-based)  
-        const monthWidth = 100 / months.length; // Percentage width per month
-        const weekWidth = monthWidth / 4;
-        const leftPosition = (monthIndex * monthWidth) + (line.position_week * weekWidth);
-        
-        // Calculate height: header height + all visible rows
-        const totalHeight = HEADER_HEIGHT + (pageLines.length * ROW_HEIGHT);
-        
-        return (
-          <View
-            key={`ref-line-${line.id}`}
-            style={{
-              position: 'absolute',
-              left: `${leftPosition}%`,
-              top: 0,
-              height: totalHeight,
-              width: 2,
-              backgroundColor: line.color || '#ef4444',
-              zIndex: 20 // Very high z-index to appear above everything
-            }}
-          />
-        );
-      })}
-    </>
-  );
+  // Render reference lines as continuous overlays for a page - only over data rows (partidas)
+  const renderReferenceLines = (pageLines: GanttLine[]) => {
+    // Filter to only include partida lines (not discount lines)
+    const partidaLines = pageLines.filter(line => !line.is_discount);
+    
+    // Only render if there are partida lines on this page
+    if (partidaLines.length === 0) return null;
+    
+    return (
+      <>
+        {referenceLines.map((line) => {
+          const monthIndex = months.findIndex(m => m === line.position_month);
+          if (monthIndex === -1) return null;
+          
+          // Calculate position: END of selected week (weekNumber is 1-based)  
+          const monthWidth = 100 / months.length; // Percentage width per month
+          const weekWidth = monthWidth / 4;
+          const leftPosition = (monthIndex * monthWidth) + (line.position_week * weekWidth);
+          
+          // Calculate height: ONLY for partida rows (excluding header, subtotals, discounts, totals)
+          // Start from top of first data row (after header) and extend only through partida rows
+          const dataRowsHeight = partidaLines.length * ROW_HEIGHT;
+          
+          return (
+            <View
+              key={`ref-line-${line.id}`}
+              style={{
+                position: 'absolute',
+                left: `${leftPosition}%`,
+                top: HEADER_HEIGHT, // Start after the cronograma header (blue header)
+                height: dataRowsHeight, // Only cover the partida rows
+                width: 2,
+                backgroundColor: line.color || '#ef4444',
+                zIndex: 50 // Very high z-index to appear above row backgrounds and activities
+              }}
+            />
+          );
+        })}
+      </>
+    );
+  };
   
   // Render totals section (only on last page) with wrap protection
   const renderTotals = () => (
