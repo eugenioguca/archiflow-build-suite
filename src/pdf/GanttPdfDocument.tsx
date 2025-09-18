@@ -611,7 +611,12 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
           </View>
         );
       })}
-      {/* Reference Lines for timeline rows - continuous overlay */}
+    </View>
+  );
+  
+  // Render reference lines as continuous overlays for a page
+  const renderReferenceLines = (pageLines: GanttLine[]) => (
+    <>
       {referenceLines.map((line) => {
         const monthIndex = months.findIndex(m => m === line.position_month);
         if (monthIndex === -1) return null;
@@ -621,22 +626,25 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
         const weekWidth = monthWidth / 4;
         const leftPosition = (monthIndex * monthWidth) + (line.position_week * weekWidth);
         
+        // Calculate height: header height + all visible rows
+        const totalHeight = HEADER_HEIGHT + (pageLines.length * ROW_HEIGHT);
+        
         return (
           <View
-            key={`timeline-${line.id}`}
+            key={`ref-line-${line.id}`}
             style={{
               position: 'absolute',
               left: `${leftPosition}%`,
               top: 0,
-              height: pageLines.length * 20, // Calculate exact height based on number of rows
+              height: totalHeight,
               width: 2,
               backgroundColor: line.color || '#ef4444',
-              zIndex: 15 // Higher z-index to appear above row backgrounds
+              zIndex: 20 // Very high z-index to appear above everything
             }}
           />
         );
       })}
-    </View>
+    </>
   );
   
   // Render totals section (only on last page) with wrap protection
@@ -765,8 +773,14 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                 {/* Cronograma Header - Always show */}
                 {renderCronogramaHeader()}
                 
-                {/* Timeline Rows for this page */}
-                {renderTimelineRows(pageLines, startIndex)}
+                {/* Timeline Rows and Reference Lines Container */}
+                <View style={{ position: 'relative' }}>
+                  {/* Timeline Rows for this page */}
+                  {renderTimelineRows(pageLines, startIndex)}
+                  
+                  {/* Reference Lines Overlay - continuous across all rows */}
+                  {renderReferenceLines(pageLines)}
+                </View>
               </View>
             </View>
 
