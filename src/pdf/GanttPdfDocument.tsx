@@ -614,7 +614,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
     </View>
   );
   
-  // Render reference lines as continuous overlays for a page - only over data rows (partidas)
+  // Render reference lines as continuous overlays covering only the partida rows in each page
   const renderReferenceLines = (pageLines: GanttLine[]) => {
     // Filter to only include partida lines (not discount lines)
     const partidaLines = pageLines.filter(line => !line.is_discount);
@@ -628,14 +628,18 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
           const monthIndex = months.findIndex(m => m === line.position_month);
           if (monthIndex === -1) return null;
           
-          // Calculate position: END of selected week (weekNumber is 1-based)  
+          // Calculate horizontal position: END of selected week (weekNumber is 1-based)  
           const monthWidth = 100 / months.length; // Percentage width per month
           const weekWidth = monthWidth / 4;
           const leftPosition = (monthIndex * monthWidth) + (line.position_week * weekWidth);
           
-          // Calculate height: ONLY for partida rows (excluding header, subtotals, discounts, totals)
-          // Start from top of first data row (after header) and extend only through partida rows
-          const dataRowsHeight = partidaLines.length * ROW_HEIGHT;
+          // Calculate vertical positioning:
+          // The timeline rows start right after the cronograma header (blue header with months/weeks)
+          // Each timeline row has exactly ROW_HEIGHT height
+          // We need to cover from first partida row to last partida row on this page
+          const cronogramaHeaderHeight = 60; // Height of the blue cronograma header with months/weeks
+          const firstRowTop = cronogramaHeaderHeight; // First timeline row starts after cronograma header
+          const totalRowsHeight = partidaLines.length * ROW_HEIGHT; // Height covering all partida rows
           
           return (
             <View
@@ -643,11 +647,11 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
               style={{
                 position: 'absolute',
                 left: `${leftPosition}%`,
-                top: HEADER_HEIGHT, // Start after the cronograma header (blue header)
-                height: dataRowsHeight, // Only cover the partida rows
+                top: firstRowTop, // Start right after cronograma header (blue header)
+                height: totalRowsHeight, // Cover exactly all partida rows, no more, no less
                 width: 2,
                 backgroundColor: line.color || '#ef4444',
-                zIndex: 50 // Very high z-index to appear above row backgrounds and activities
+                zIndex: 100 // Extremely high z-index to appear above row backgrounds, alternating colors, and activities
               }}
             />
           );
