@@ -1073,10 +1073,28 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
             <Text style={styles.explanationsTitle}>Tabla de Explicaciones</Text>
             <View style={styles.explanationsTable}>
               {matrixExplanations.map((explanation, index) => (
-                <View key={explanation.id} style={{
-                  ...styles.explanationRow,
-                  ...(index % 2 === 1 ? styles.explanationRowZebra : {})
-                }}>
+                <View key={explanation.id} style={
+                  index % 2 === 1 
+                    ? {
+                        flexDirection: 'row',
+                        paddingVertical: 4,
+                        paddingHorizontal: 8,
+                        alignItems: 'flex-start',
+                        borderWidth: 0,
+                        borderColor: 'transparent',
+                        borderStyle: 'solid',
+                        backgroundColor: COLORS.secondary,
+                      }
+                    : {
+                        flexDirection: 'row',
+                        paddingVertical: 4,
+                        paddingHorizontal: 8,
+                        alignItems: 'flex-start',
+                        borderWidth: 0,
+                        borderColor: 'transparent',
+                        borderStyle: 'solid',
+                      }
+                }>
                   <Text style={styles.explanationTitle}>{explanation.title}</Text>
                   <Text style={styles.explanationDescription}>{explanation.description}</Text>
                 </View>
