@@ -632,7 +632,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
     if (referenceLines.length === 0) return null;
 
     return (
-      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 15 }}>
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 }}>
         {referenceLines.map((refLine) => {
           const monthIndex = months.findIndex(m => m === refLine.position_month);
           if (monthIndex === -1) return null;
@@ -656,7 +656,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                 height: totalOverlayHeight,
                 width: 2,
                 backgroundColor: refLine.color || '#ef4444',
-                zIndex: 15 // Above everything else
+                zIndex: 999 // Maximum z-index to guarantee visibility above all elements
               }}
             />
           );
@@ -681,22 +681,9 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
             ]}
             wrap={false} // Prevent row from breaking across pages
           >
-            {/* Zebra background - rendered first with zIndex: 0 (background level) */}
-            {globalIndex % 2 === 1 && (
-              <View
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: ROW_HEIGHT,
-                  backgroundColor: COLORS.secondary,
-                  zIndex: 0 // Background level - behind everything else
-                }}
-              />
-            )}
+            {/* Content cells - natural flow without position/zIndex conflicts */}
             {months.map((month) => (
-              <View key={`${line.id}-${month}`} style={[styles.monthTimelineSection, { zIndex: 5, position: 'relative' }]}>
+              <View key={`${line.id}-${month}`} style={styles.monthTimelineSection}>
                 {[1, 2, 3, 4].map((week) => {
                   // Check if this line has activities in this month/week
                   const hasActivity = line.activities?.some(activity => {
@@ -710,25 +697,30 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                   });
                   
                   return (
-                    <View key={`${line.id}-${month}-W${week}`} style={[styles.weekTimelineCell, { zIndex: 5, position: 'relative' }]}>
+                    <View key={`${line.id}-${month}-W${week}`} style={styles.weekTimelineCell}>
                       {hasActivity && (
-                        <View 
-                          style={[
-                            styles.activityBar, 
-                            { 
-                              zIndex: 10, // High z-index to be clearly visible above zebra background
-                              position: 'relative',
-                              backgroundColor: COLORS.accent, // Ensure blue color is explicitly set
-                              opacity: 1 // Ensure full opacity
-                            }
-                          ]} 
-                        />
+                        <View style={styles.activityBar} />
                       )}
                     </View>
                   );
                 })}
               </View>
             ))}
+
+            {/* Zebra background - rendered LAST with negative zIndex to be truly behind everything */}
+            {globalIndex % 2 === 1 && (
+              <View
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: ROW_HEIGHT,
+                  backgroundColor: COLORS.secondary,
+                  zIndex: -1 // Negative z-index ensures it's behind all content
+                }}
+              />
+            )}
           </View>
         );
       })}
