@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     position: 'relative', // Essential for absolute positioning of reference lines
   },
   timelineRowZebra: {
-    backgroundColor: COLORS.secondary,
+    // backgroundColor removed - handled by absolute background element with zIndex:1
   },
   monthTimelineSection: {
     flex: 1,
