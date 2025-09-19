@@ -681,7 +681,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
             ]}
             wrap={false} // Prevent row from breaking across pages
           >
-            {/* Zebra background - rendered first with zIndex: 1 */}
+            {/* Zebra background - rendered first with zIndex: 0 (background level) */}
             {globalIndex % 2 === 1 && (
               <View
                 style={{
@@ -691,12 +691,12 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                   width: '100%',
                   height: ROW_HEIGHT,
                   backgroundColor: COLORS.secondary,
-                  zIndex: 1
+                  zIndex: 0 // Background level - behind everything else
                 }}
               />
             )}
             {months.map((month) => (
-              <View key={`${line.id}-${month}`} style={[styles.monthTimelineSection, { zIndex: 2 }]}>
+              <View key={`${line.id}-${month}`} style={[styles.monthTimelineSection, { zIndex: 5, position: 'relative' }]}>
                 {[1, 2, 3, 4].map((week) => {
                   // Check if this line has activities in this month/week
                   const hasActivity = line.activities?.some(activity => {
@@ -710,8 +710,20 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                   });
                   
                   return (
-                    <View key={`${line.id}-${month}-W${week}`} style={[styles.weekTimelineCell, { zIndex: 2 }]}>
-                      {hasActivity && <View style={[styles.activityBar, { zIndex: 3 }]} />}
+                    <View key={`${line.id}-${month}-W${week}`} style={[styles.weekTimelineCell, { zIndex: 5, position: 'relative' }]}>
+                      {hasActivity && (
+                        <View 
+                          style={[
+                            styles.activityBar, 
+                            { 
+                              zIndex: 10, // High z-index to be clearly visible above zebra background
+                              position: 'relative',
+                              backgroundColor: COLORS.accent, // Ensure blue color is explicitly set
+                              opacity: 1 // Ensure full opacity
+                            }
+                          ]} 
+                        />
+                      )}
                     </View>
                   );
                 })}
