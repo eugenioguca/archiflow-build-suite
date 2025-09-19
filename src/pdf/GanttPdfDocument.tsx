@@ -632,7 +632,14 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
     if (referenceLines.length === 0) return null;
 
     return (
-      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 }}>
+      <View style={{ 
+        position: 'absolute', 
+        top: 0, 
+        left: 0, 
+        right: 0, 
+        bottom: 0, 
+        zIndex: 9999 // Increase z-index even higher
+      }}>
         {referenceLines.map((refLine) => {
           const monthIndex = months.findIndex(m => m === refLine.position_month);
           if (monthIndex === -1) return null;
@@ -654,9 +661,10 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                 left: `${leftPosition}%`,
                 top: 0,
                 height: totalOverlayHeight,
-                width: 2,
+                width: 3, // Increase width slightly for better visibility
                 backgroundColor: refLine.color || '#ef4444',
-                zIndex: 999 // Maximum z-index to guarantee visibility above all elements
+                zIndex: 9999, // Maximum z-index to guarantee visibility above all elements
+                opacity: 1 // Ensure full opacity
               }}
             />
           );
