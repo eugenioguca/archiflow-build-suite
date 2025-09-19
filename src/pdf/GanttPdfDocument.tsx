@@ -627,20 +627,57 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
     </>
   );
   
-  // Render timeline rows for a specific page with wrap protection AND reference lines individual per row
+  // Render red lines overlay - completely separate from row rendering
+  const renderRedLinesOverlay = (pageLines: GanttLine[], startIndex: number) => {
+    if (referenceLines.length === 0) return null;
+
+    return (
+      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 15 }}>
+        {referenceLines.map((refLine) => {
+          const monthIndex = months.findIndex(m => m === refLine.position_month);
+          if (monthIndex === -1) return null;
+          
+          // Calculate horizontal position: END of selected week (weekNumber is 1-based)  
+          const monthWidth = 100 / months.length; // Percentage width per month
+          const weekWidth = monthWidth / 4;
+          const leftPosition = (monthIndex * monthWidth) + (refLine.position_week * weekWidth);
+          
+          // Calculate total height needed for all visible rows (only partida rows, not discount rows)
+          const partidaRows = pageLines.filter(line => !line.is_discount);
+          const totalOverlayHeight = partidaRows.length * ROW_HEIGHT;
+          
+          return (
+            <View
+              key={`red-line-overlay-${refLine.id}`}
+              style={{
+                position: 'absolute',
+                left: `${leftPosition}%`,
+                top: 0,
+                height: totalOverlayHeight,
+                width: 2,
+                backgroundColor: refLine.color || '#ef4444',
+                zIndex: 15 // Above everything else
+              }}
+            />
+          );
+        })}
+      </View>
+    );
+  };
+
+  // Render timeline rows for a specific page with wrap protection (RED LINES REMOVED FROM INDIVIDUAL ROWS)
   const renderTimelineRows = (pageLines: GanttLine[], startIndex: number) => (
     <View style={{ position: 'relative' }}>
-      {/* Timeline rows with individual red lines */}
+      {/* Timeline rows WITHOUT individual red lines */}
       {pageLines.map((line, lineIndex) => {
         const globalIndex = startIndex + lineIndex;
-        const isPartidaRow = !line.is_discount; // Only show reference lines on partida rows
         
         return (
           <View 
             key={line.id} 
             style={[
               styles.timelineRow,
-              { position: 'relative' } // Enable absolute positioning for lines within row
+              { position: 'relative' } // Enable absolute positioning for other elements
             ]}
             wrap={false} // Prevent row from breaking across pages
           >
@@ -680,34 +717,12 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                 })}
               </View>
             ))}
-            {/* Red reference lines for this specific row (only for partida rows) */}
-            {isPartidaRow && referenceLines.map((refLine) => {
-              const monthIndex = months.findIndex(m => m === refLine.position_month);
-              if (monthIndex === -1) return null;
-              
-              // Calculate horizontal position: END of selected week (weekNumber is 1-based)  
-              const monthWidth = 100 / months.length; // Percentage width per month
-              const weekWidth = monthWidth / 4;
-              const leftPosition = (monthIndex * monthWidth) + (refLine.position_week * weekWidth);
-              
-              return (
-                <View
-                  key={`ref-line-${refLine.id}-row-${line.id}`}
-                  style={{
-                    position: 'absolute',
-                    left: `${leftPosition}%`,
-                    top: 0,
-                    height: ROW_HEIGHT, // Full height of this row
-                    width: 2,
-                    backgroundColor: refLine.color || '#ef4444',
-                    zIndex: 10 // Above everything: background (1), cells (2), activity bars (3)
-                  }}
-                />
-              );
-            })}
           </View>
         );
       })}
+      
+      {/* RED LINES OVERLAY - Rendered AFTER all rows as independent overlay */}
+      {renderRedLinesOverlay(pageLines, startIndex)}
     </View>
   );
   
