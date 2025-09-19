@@ -4369,6 +4369,44 @@ export type Database = {
           },
         ]
       }
+      matrix_explanations: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          order_index: number
+          plan_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          order_index?: number
+          plan_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          order_index?: number
+          plan_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matrix_explanations_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "cronograma_gantt_plan"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mexican_states: {
         Row: {
           code: string

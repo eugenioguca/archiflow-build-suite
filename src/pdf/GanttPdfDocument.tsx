@@ -354,7 +354,52 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
   },
+  
+  // Matrix Explanations
+  explanationsSection: {
+    marginTop: 15,
+    marginBottom: 10,
+  },
+  explanationsTitle: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  explanationsTable: {
+    borderWidth: 0, // No visible borders
+  },
+  explanationRow: {
+    flexDirection: 'row',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    alignItems: 'flex-start',
+  },
+  explanationRowZebra: {
+    backgroundColor: COLORS.secondary,
+  },
+  explanationTitle: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    width: '25%',
+    paddingRight: 8,
+  },
+  explanationDescription: {
+    fontSize: 8,
+    color: COLORS.text,
+    width: '75%',
+    lineHeight: 1.3,
+  },
 });
+
+interface MatrixExplanation {
+  id: string;
+  title: string;
+  description: string;
+  order_index: number;
+}
 
 interface GanttPdfContentProps {
   plan: GanttPlan;
@@ -368,6 +413,7 @@ interface GanttPdfContentProps {
     label: string;
     color: string;
   }>;
+  matrixExplanations?: MatrixExplanation[];
   client: any;
   project: any;
   companyBranding: any;
@@ -379,6 +425,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
   mayores,
   overrides,
   referenceLines = [],
+  matrixExplanations = [],
   client,
   project,
   companyBranding
@@ -1011,6 +1058,24 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
             </View>
           ))}
         </View>
+
+        {/* Matrix Explanations Table */}
+        {matrixExplanations && matrixExplanations.length > 0 && (
+          <View style={styles.explanationsSection}>
+            <Text style={styles.explanationsTitle}>Tabla de Explicaciones</Text>
+            <View style={styles.explanationsTable}>
+              {matrixExplanations.map((explanation, index) => (
+                <View key={explanation.id} style={[
+                  styles.explanationRow,
+                  index % 2 === 1 ? styles.explanationRowZebra : null
+                ]}>
+                  <Text style={styles.explanationTitle}>{explanation.title}</Text>
+                  <Text style={styles.explanationDescription}>{explanation.description}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Notes */}
         <View style={styles.notes}>

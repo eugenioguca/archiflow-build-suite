@@ -8,6 +8,7 @@ import { MatrixSection } from './MatrixSection';
 import { ActivityModal } from './ActivityModal';
 import { MayorSelectionModal } from './MayorSelectionModal';
 import { DiscountModal } from './DiscountModal';
+import { MatrixExplanationsManager } from '@/components/MatrixExplanationsManager';
 import { useGantt } from '@/hooks/gantt-v2/useGantt';
 import { useMayoresTU } from '@/hooks/gantt-v2/useMayoresTU';
 import { useMatrixOverrides } from '@/hooks/gantt-v2/useMatrixOverrides';
@@ -250,6 +251,14 @@ export function GanttPage({ selectedClientId, selectedProjectId }: GanttPageProp
             clientId={selectedClientId}
             projectId={selectedProjectId}
           />
+
+          {/* Matrix Explanations Manager */}
+          {plan?.id && (
+            <MatrixExplanationsManager 
+              planId={plan.id} 
+              className="lg:col-span-2"
+            />
+          )}
 
           {/* Mayor Selection Modal */}
           <MayorSelectionModal
