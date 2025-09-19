@@ -669,7 +669,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
   const renderTimelineRows = (pageLines: GanttLine[], startIndex: number) => (
     <View style={{ position: 'relative' }}>
       {/* Timeline rows WITHOUT individual red lines */}
-      {pageLines.map((line, lineIndex) => {
+       {pageLines.map((line, lineIndex) => {
         const globalIndex = startIndex + lineIndex;
         
         return (
@@ -677,11 +677,14 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
             key={line.id} 
             style={[
               styles.timelineRow,
-              { position: 'relative' } // Enable absolute positioning for other elements
+              { 
+                backgroundColor: globalIndex % 2 === 1 ? COLORS.secondary : 'transparent', // Direct zebra background
+                position: 'relative' // Enable absolute positioning for other elements
+              }
             ]}
             wrap={false} // Prevent row from breaking across pages
           >
-            {/* Content cells - natural flow without position/zIndex conflicts */}
+            {/* Timeline cells with natural flow */}
             {months.map((month) => (
               <View key={`${line.id}-${month}`} style={styles.monthTimelineSection}>
                 {[1, 2, 3, 4].map((week) => {
@@ -699,28 +702,22 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                   return (
                     <View key={`${line.id}-${month}-W${week}`} style={styles.weekTimelineCell}>
                       {hasActivity && (
-                        <View style={styles.activityBar} />
+                        <View 
+                          style={[
+                            styles.activityBar,
+                            {
+                              backgroundColor: COLORS.accent, // Explicit blue color
+                              opacity: 1, // Full opacity
+                              zIndex: 1 // Ensure visibility above background
+                            }
+                          ]} 
+                        />
                       )}
                     </View>
                   );
                 })}
               </View>
             ))}
-
-            {/* Zebra background - rendered LAST with negative zIndex to be truly behind everything */}
-            {globalIndex % 2 === 1 && (
-              <View
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: ROW_HEIGHT,
-                  backgroundColor: COLORS.secondary,
-                  zIndex: -1 // Negative z-index ensures it's behind all content
-                }}
-              />
-            )}
           </View>
         );
       })}
