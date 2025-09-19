@@ -368,24 +368,18 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   explanationsTable: {
-    borderWidth: 0,
-    borderColor: 'transparent',
-    borderStyle: 'solid',
+    // No border properties needed - removed to fix "Invalid border width: undefined" error in @react-pdf/renderer 4.3.0
   },
   explanationRow: {
     flexDirection: 'row',
     paddingVertical: 4,
     paddingHorizontal: 8,
     alignItems: 'flex-start',
-    borderWidth: 0,
-    borderColor: 'transparent',
-    borderStyle: 'solid',
+    // No border properties needed - removed to fix "Invalid border width: undefined" error in @react-pdf/renderer 4.3.0
   },
   explanationRowZebra: {
     backgroundColor: COLORS.secondary,
-    borderWidth: 0,
-    borderColor: 'transparent',
-    borderStyle: 'solid',
+    // No border properties needed - removed to fix "Invalid border width: undefined" error in @react-pdf/renderer 4.3.0
   },
   explanationTitle: {
     fontSize: 8,
@@ -393,16 +387,14 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     width: '25%',
     paddingRight: 8,
-    borderWidth: 0,
-    borderColor: 'transparent',
+    // No border properties needed - removed to fix "Invalid border width: undefined" error in @react-pdf/renderer 4.3.0
   },
   explanationDescription: {
     fontSize: 8,
     color: COLORS.text,
     width: '75%',
     lineHeight: 1.3,
-    borderWidth: 0,
-    borderColor: 'transparent',
+    // No border properties needed - removed to fix "Invalid border width: undefined" error in @react-pdf/renderer 4.3.0
   },
 });
 
@@ -1084,9 +1076,6 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                         paddingVertical: 4,
                         paddingHorizontal: 8,
                         alignItems: 'flex-start',
-                        borderWidth: 0,
-                        borderColor: 'transparent',
-                        borderStyle: 'solid',
                         backgroundColor: COLORS.secondary,
                       }
                     : {
@@ -1094,9 +1083,6 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                         paddingVertical: 4,
                         paddingHorizontal: 8,
                         alignItems: 'flex-start',
-                        borderWidth: 0,
-                        borderColor: 'transparent',
-                        borderStyle: 'solid',
                       }
                 }>
                   <Text style={styles.explanationTitle}>{explanation.title}</Text>
