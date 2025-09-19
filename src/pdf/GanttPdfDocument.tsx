@@ -587,12 +587,25 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
           <View 
             key={line.id} 
             style={[
-              styles.timelineRow, 
-              globalIndex % 2 === 1 ? styles.timelineRowZebra : null,
+              styles.timelineRow,
               { position: 'relative' } // Enable absolute positioning for lines within row
             ]}
             wrap={false} // Prevent row from breaking across pages
           >
+            {/* Zebra background - rendered first with zIndex: 1 */}
+            {globalIndex % 2 === 1 && (
+              <View
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: ROW_HEIGHT,
+                  backgroundColor: COLORS.secondary,
+                  zIndex: 1
+                }}
+              />
+            )}
             {months.map((month) => (
               <View key={`${line.id}-${month}`} style={styles.monthTimelineSection}>
                 {[1, 2, 3, 4].map((week) => {
@@ -615,7 +628,6 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                 })}
               </View>
             ))}
-            
             {/* Red reference lines for this specific row (only for partida rows) */}
             {isPartidaRow && referenceLines.map((refLine) => {
               const monthIndex = months.findIndex(m => m === refLine.position_month);
@@ -636,7 +648,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                     height: ROW_HEIGHT, // Full height of this row
                     width: 2,
                     backgroundColor: refLine.color || '#ef4444',
-                    zIndex: 10 // Above activity bars but within row context
+                    zIndex: 10 // Above everything: background (1), cells (2), activity bars (3)
                   }}
                 />
               );
