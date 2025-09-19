@@ -368,16 +368,24 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   explanationsTable: {
-    borderWidth: 0, // No visible borders
+    borderWidth: 0,
+    borderColor: 'transparent',
+    borderStyle: 'solid',
   },
   explanationRow: {
     flexDirection: 'row',
     paddingVertical: 4,
     paddingHorizontal: 8,
     alignItems: 'flex-start',
+    borderWidth: 0,
+    borderColor: 'transparent',
+    borderStyle: 'solid',
   },
   explanationRowZebra: {
     backgroundColor: COLORS.secondary,
+    borderWidth: 0,
+    borderColor: 'transparent',
+    borderStyle: 'solid',
   },
   explanationTitle: {
     fontSize: 8,
