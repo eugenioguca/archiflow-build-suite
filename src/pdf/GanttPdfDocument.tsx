@@ -393,12 +393,16 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     width: '25%',
     paddingRight: 8,
+    borderWidth: 0,
+    borderColor: 'transparent',
   },
   explanationDescription: {
     fontSize: 8,
     color: COLORS.text,
     width: '75%',
     lineHeight: 1.3,
+    borderWidth: 0,
+    borderColor: 'transparent',
   },
 });
 
