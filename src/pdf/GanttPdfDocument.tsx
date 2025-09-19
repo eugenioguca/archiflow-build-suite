@@ -651,7 +651,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                   position: 'absolute',
                   top: 0,
                   left: 0,
-                  right: 0,
+                  width: '100%',
                   height: ROW_HEIGHT,
                   backgroundColor: COLORS.secondary,
                   zIndex: 1
@@ -659,7 +659,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
               />
             )}
             {months.map((month) => (
-              <View key={`${line.id}-${month}`} style={styles.monthTimelineSection}>
+              <View key={`${line.id}-${month}`} style={[styles.monthTimelineSection, { zIndex: 2 }]}>
                 {[1, 2, 3, 4].map((week) => {
                   // Check if this line has activities in this month/week
                   const hasActivity = line.activities?.some(activity => {
@@ -673,8 +673,8 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                   });
                   
                   return (
-                    <View key={`${line.id}-${month}-W${week}`} style={styles.weekTimelineCell}>
-                      {hasActivity && <View style={styles.activityBar} />}
+                    <View key={`${line.id}-${month}-W${week}`} style={[styles.weekTimelineCell, { zIndex: 2 }]}>
+                      {hasActivity && <View style={[styles.activityBar, { zIndex: 3 }]} />}
                     </View>
                   );
                 })}
