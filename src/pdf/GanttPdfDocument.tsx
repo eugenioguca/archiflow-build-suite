@@ -254,6 +254,7 @@ const styles = StyleSheet.create({
     height: 24,
     borderBottomWidth: 0.5,
     borderBottomColor: COLORS.border,
+    position: 'relative', // Essential for absolute positioning of reference lines
   },
   timelineRowZebra: {
     backgroundColor: COLORS.secondary,
