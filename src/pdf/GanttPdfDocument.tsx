@@ -575,16 +575,22 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
     </>
   );
   
-  // Render timeline rows for a specific page with wrap protection AND reference lines overlay
+  // Render timeline rows for a specific page with wrap protection AND reference lines individual per row
   const renderTimelineRows = (pageLines: GanttLine[], startIndex: number) => (
     <View style={{ position: 'relative' }}>
-      {/* Timeline rows */}
+      {/* Timeline rows with individual red lines */}
       {pageLines.map((line, lineIndex) => {
         const globalIndex = startIndex + lineIndex;
+        const isPartidaRow = !line.is_discount; // Only show reference lines on partida rows
+        
         return (
           <View 
             key={line.id} 
-            style={[styles.timelineRow, globalIndex % 2 === 1 ? styles.timelineRowZebra : null]}
+            style={[
+              styles.timelineRow, 
+              globalIndex % 2 === 1 ? styles.timelineRowZebra : null,
+              { position: 'relative' } // Enable absolute positioning for lines within row
+            ]}
             wrap={false} // Prevent row from breaking across pages
           >
             {months.map((month) => (
@@ -609,41 +615,33 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                 })}
               </View>
             ))}
+            
+            {/* Red reference lines for this specific row (only for partida rows) */}
+            {isPartidaRow && referenceLines.map((refLine) => {
+              const monthIndex = months.findIndex(m => m === refLine.position_month);
+              if (monthIndex === -1) return null;
+              
+              // Calculate horizontal position: END of selected week (weekNumber is 1-based)  
+              const monthWidth = 100 / months.length; // Percentage width per month
+              const weekWidth = monthWidth / 4;
+              const leftPosition = (monthIndex * monthWidth) + (refLine.position_week * weekWidth);
+              
+              return (
+                <View
+                  key={`ref-line-${refLine.id}-row-${line.id}`}
+                  style={{
+                    position: 'absolute',
+                    left: `${leftPosition}%`,
+                    top: 0,
+                    height: ROW_HEIGHT, // Full height of this row
+                    width: 2,
+                    backgroundColor: refLine.color || '#ef4444',
+                    zIndex: 10 // Above activity bars but within row context
+                  }}
+                />
+              );
+            })}
           </View>
-        );
-      })}
-      
-      {/* Reference Lines Overlay - render AFTER all timeline rows to ensure proper layering */}
-      {referenceLines.map((line) => {
-        // Filter to only include partida lines (not discount lines) for height calculation
-        const partidaLines = pageLines.filter(lineItem => !lineItem.is_discount);
-        
-        if (partidaLines.length === 0) return null;
-        
-        const monthIndex = months.findIndex(m => m === line.position_month);
-        if (monthIndex === -1) return null;
-        
-        // Calculate horizontal position: END of selected week (weekNumber is 1-based)  
-        const monthWidth = 100 / months.length; // Percentage width per month
-        const weekWidth = monthWidth / 4;
-        const leftPosition = (monthIndex * monthWidth) + (line.position_week * weekWidth);
-        
-        // Calculate vertical positioning: cover exactly all partida rows in this page
-        const totalRowsHeight = partidaLines.length * ROW_HEIGHT;
-        
-        return (
-          <View
-            key={`ref-line-${line.id}`}
-            style={{
-              position: 'absolute',
-              left: `${leftPosition}%`,
-              top: 0, // Start from top of timeline rows container
-              height: totalRowsHeight, // Cover exactly all partida rows
-              width: 2,
-              backgroundColor: line.color || '#ef4444',
-              zIndex: 999 // Maximum z-index to appear above everything
-            }}
-          />
         );
       })}
     </View>
