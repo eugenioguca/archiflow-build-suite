@@ -575,9 +575,10 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
     </>
   );
   
-  // Render timeline rows for a specific page with wrap protection
+  // Render timeline rows for a specific page with wrap protection AND reference lines overlay
   const renderTimelineRows = (pageLines: GanttLine[], startIndex: number) => (
     <View style={{ position: 'relative' }}>
+      {/* Timeline rows */}
       {pageLines.map((line, lineIndex) => {
         const globalIndex = startIndex + lineIndex;
         return (
@@ -611,54 +612,44 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
           </View>
         );
       })}
+      
+      {/* Reference Lines Overlay - render AFTER all timeline rows to ensure proper layering */}
+      {referenceLines.map((line) => {
+        // Filter to only include partida lines (not discount lines) for height calculation
+        const partidaLines = pageLines.filter(lineItem => !lineItem.is_discount);
+        
+        if (partidaLines.length === 0) return null;
+        
+        const monthIndex = months.findIndex(m => m === line.position_month);
+        if (monthIndex === -1) return null;
+        
+        // Calculate horizontal position: END of selected week (weekNumber is 1-based)  
+        const monthWidth = 100 / months.length; // Percentage width per month
+        const weekWidth = monthWidth / 4;
+        const leftPosition = (monthIndex * monthWidth) + (line.position_week * weekWidth);
+        
+        // Calculate vertical positioning: cover exactly all partida rows in this page
+        const totalRowsHeight = partidaLines.length * ROW_HEIGHT;
+        
+        return (
+          <View
+            key={`ref-line-${line.id}`}
+            style={{
+              position: 'absolute',
+              left: `${leftPosition}%`,
+              top: 0, // Start from top of timeline rows container
+              height: totalRowsHeight, // Cover exactly all partida rows
+              width: 2,
+              backgroundColor: line.color || '#ef4444',
+              zIndex: 999 // Maximum z-index to appear above everything
+            }}
+          />
+        );
+      })}
     </View>
   );
   
-  // Render reference lines as continuous overlays covering only the partida rows in each page
-  const renderReferenceLines = (pageLines: GanttLine[]) => {
-    // Filter to only include partida lines (not discount lines)
-    const partidaLines = pageLines.filter(line => !line.is_discount);
-    
-    // Only render if there are partida lines on this page
-    if (partidaLines.length === 0) return null;
-    
-    return (
-      <>
-        {referenceLines.map((line) => {
-          const monthIndex = months.findIndex(m => m === line.position_month);
-          if (monthIndex === -1) return null;
-          
-          // Calculate horizontal position: END of selected week (weekNumber is 1-based)  
-          const monthWidth = 100 / months.length; // Percentage width per month
-          const weekWidth = monthWidth / 4;
-          const leftPosition = (monthIndex * monthWidth) + (line.position_week * weekWidth);
-          
-          // Calculate vertical positioning:
-          // The timeline rows start right after the cronograma header (blue header with months/weeks)
-          // Each timeline row has exactly ROW_HEIGHT height
-          // We need to cover from first partida row to last partida row on this page
-          const cronogramaHeaderHeight = 60; // Height of the blue cronograma header with months/weeks
-          const firstRowTop = cronogramaHeaderHeight; // First timeline row starts after cronograma header
-          const totalRowsHeight = partidaLines.length * ROW_HEIGHT; // Height covering all partida rows
-          
-          return (
-            <View
-              key={`ref-line-${line.id}`}
-              style={{
-                position: 'absolute',
-                left: `${leftPosition}%`,
-                top: firstRowTop, // Start right after cronograma header (blue header)
-                height: totalRowsHeight, // Cover exactly all partida rows, no more, no less
-                width: 2,
-                backgroundColor: line.color || '#ef4444',
-                zIndex: 100 // Extremely high z-index to appear above row backgrounds, alternating colors, and activities
-              }}
-            />
-          );
-        })}
-      </>
-    );
-  };
+  // NOTE: Reference lines are now integrated directly into renderTimelineRows for proper layering
   
   // Render totals section (only on last page) with wrap protection
   const renderTotals = () => (
@@ -786,14 +777,8 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                 {/* Cronograma Header - Always show */}
                 {renderCronogramaHeader()}
                 
-                {/* Timeline Rows and Reference Lines Container */}
-                <View style={{ position: 'relative' }}>
-                  {/* Timeline Rows for this page */}
-                  {renderTimelineRows(pageLines, startIndex)}
-                  
-                  {/* Reference Lines Overlay - continuous across all rows */}
-                  {renderReferenceLines(pageLines)}
-                </View>
+                {/* Timeline Rows with integrated Reference Lines */}
+                {renderTimelineRows(pageLines, startIndex)}
               </View>
             </View>
 
