@@ -730,7 +730,8 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
         );
       })}
       
-      {/* RED LINES REMOVED FROM HERE - Now rendered as global page overlay */}
+      {/* RED LINES OVERLAY - Rendered AFTER all rows as independent overlay */}
+      {renderRedLinesOverlay(pageLines, startIndex)}
     </View>
   );
   
@@ -865,18 +866,6 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                 {/* Timeline Rows with integrated Reference Lines */}
                 {renderTimelineRows(pageLines, startIndex)}
               </View>
-            </View>
-
-            {/* GLOBAL RED LINES OVERLAY - Covers entire main content area */}
-            <View style={{ 
-              position: 'absolute', 
-              top: isFirstPage ? 160 : 40, // Account for header on first page
-              left: 0, 
-              right: 0,
-              bottom: 40, // Account for footer
-              zIndex: 10000 // Highest z-index to guarantee visibility above all sections
-            }}>
-              {renderRedLinesOverlay(pageLines, startIndex)}
             </View>
 
             {/* Footer */}
