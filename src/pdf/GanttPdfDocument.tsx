@@ -627,50 +627,38 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
     </>
   );
   
-  // Render red lines overlay - Global overlay covering entire cronograma section
-  const renderRedLinesOverlay = (pageLines: GanttLine[], startIndex: number) => {
+  // Render independent red lines overlay - completely separated from row rendering
+  const renderIndependentRedLines = (pageLines: GanttLine[]) => {
     if (referenceLines.length === 0) return null;
 
-    return (
-      <View style={{ 
-        position: 'absolute', 
-        top: HEADER_HEIGHT, // Start after the header
-        left: 0, 
-        right: 0, 
-        bottom: 0, 
-        zIndex: 10000 // Maximum z-index to guarantee visibility above all elements including grey backgrounds
-      }}>
-        {referenceLines.map((refLine) => {
-          const monthIndex = months.findIndex(m => m === refLine.position_month);
-          if (monthIndex === -1) return null;
-          
-          // Calculate horizontal position: END of selected week (weekNumber is 1-based)  
-          const monthWidth = 100 / months.length; // Percentage width per month
-          const weekWidth = monthWidth / 4;
-          const leftPosition = (monthIndex * monthWidth) + (refLine.position_week * weekWidth);
-          
-          // Calculate total height needed for all visible rows (only partida rows, not discount rows)
-          const partidaRows = pageLines.filter(line => !line.is_discount);
-          const totalOverlayHeight = partidaRows.length * ROW_HEIGHT;
-          
-          return (
-            <View
-              key={`red-line-overlay-${refLine.id}`}
-              style={{
-                position: 'absolute',
-                left: `${leftPosition}%`,
-                top: 0,
-                height: totalOverlayHeight,
-                width: 1.5,
-                backgroundColor: refLine.color || '#ef4444',
-                zIndex: 10000, // Maximum z-index to guarantee visibility above all elements
-                opacity: 1 // Ensure full opacity
-              }}
-            />
-          );
-        })}
-      </View>
-    );
+    // Calculate total height for partida rows only (excluding totals)
+    const partidaRows = pageLines.filter(line => !line.is_discount);
+    const totalRowsHeight = partidaRows.length * ROW_HEIGHT;
+
+    return referenceLines.map((refLine) => {
+      const monthIndex = months.findIndex(m => m === refLine.position_month);
+      if (monthIndex === -1) return null;
+      
+      // Calculate horizontal position: END of selected week (weekNumber is 1-based)  
+      const monthWidth = 100 / months.length; // Percentage width per month
+      const weekWidth = monthWidth / 4;
+      const leftPosition = (monthIndex * monthWidth) + (refLine.position_week * weekWidth);
+      
+      return (
+        <View
+          key={`independent-red-line-${refLine.id}`}
+          style={{
+            position: 'absolute',
+            left: `${leftPosition}%`,
+            top: HEADER_HEIGHT, // Start after cronograma header
+            height: totalRowsHeight, // Cover only partida rows
+            borderLeftWidth: 1.5,
+            borderLeftColor: refLine.color || '#ef4444',
+            borderLeftStyle: 'solid'
+          }}
+        />
+      );
+    });
   };
 
   // Render timeline rows for a specific page with wrap protection (RED LINES REMOVED FROM INDIVIDUAL ROWS)
@@ -863,8 +851,8 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                 {/* Timeline Rows WITHOUT integrated Reference Lines */}
                 {renderTimelineRows(pageLines, startIndex)}
                 
-                {/* RED LINES OVERLAY - Global overlay covering entire cronograma section */}
-                {renderRedLinesOverlay(pageLines, startIndex)}
+                {/* INDEPENDENT RED LINES - Rendered as separate elements after all content */}
+                {renderIndependentRedLines(pageLines)}
               </View>
             </View>
 
