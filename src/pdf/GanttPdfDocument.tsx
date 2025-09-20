@@ -627,18 +627,18 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
     </>
   );
   
-  // Render red lines overlay - completely separate from row rendering
+  // Render red lines overlay - Global overlay covering entire cronograma section
   const renderRedLinesOverlay = (pageLines: GanttLine[], startIndex: number) => {
     if (referenceLines.length === 0) return null;
 
     return (
       <View style={{ 
         position: 'absolute', 
-        top: 0, 
+        top: HEADER_HEIGHT, // Start after the header
         left: 0, 
         right: 0, 
         bottom: 0, 
-        zIndex: 9999 // Increase z-index even higher
+        zIndex: 10000 // Maximum z-index to guarantee visibility above all elements including grey backgrounds
       }}>
         {referenceLines.map((refLine) => {
           const monthIndex = months.findIndex(m => m === refLine.position_month);
@@ -663,7 +663,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                 height: totalOverlayHeight,
                 width: 1.5,
                 backgroundColor: refLine.color || '#ef4444',
-                zIndex: 9999, // Maximum z-index to guarantee visibility above all elements
+                zIndex: 10000, // Maximum z-index to guarantee visibility above all elements
                 opacity: 1 // Ensure full opacity
               }}
             />
@@ -675,7 +675,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
 
   // Render timeline rows for a specific page with wrap protection (RED LINES REMOVED FROM INDIVIDUAL ROWS)
   const renderTimelineRows = (pageLines: GanttLine[], startIndex: number) => (
-    <View style={{ position: 'relative' }}>
+    <>
       {/* Timeline rows WITHOUT individual red lines */}
        {pageLines.map((line, lineIndex) => {
         const globalIndex = startIndex + lineIndex;
@@ -729,10 +729,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
           </View>
         );
       })}
-      
-      {/* RED LINES OVERLAY - Rendered AFTER all rows as independent overlay */}
-      {renderRedLinesOverlay(pageLines, startIndex)}
-    </View>
+    </>
   );
   
   // NOTE: Reference lines are now integrated directly into renderTimelineRows for proper layering
@@ -859,12 +856,15 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
               </View>
 
               {/* Cronograma Section - Right Side */}
-              <View style={styles.cronogramaSection}>
+              <View style={[styles.cronogramaSection, { position: 'relative' }]}>
                 {/* Cronograma Header - Always show */}
                 {renderCronogramaHeader()}
                 
-                {/* Timeline Rows with integrated Reference Lines */}
+                {/* Timeline Rows WITHOUT integrated Reference Lines */}
                 {renderTimelineRows(pageLines, startIndex)}
+                
+                {/* RED LINES OVERLAY - Global overlay covering entire cronograma section */}
+                {renderRedLinesOverlay(pageLines, startIndex)}
               </View>
             </View>
 
