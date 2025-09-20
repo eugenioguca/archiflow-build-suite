@@ -661,7 +661,7 @@ const GanttPdfContent: React.FC<GanttPdfContentProps> = ({
                 left: `${leftPosition}%`,
                 top: 0,
                 height: totalOverlayHeight,
-                width: 3, // Increase width slightly for better visibility
+                width: 1.5,
                 backgroundColor: refLine.color || '#ef4444',
                 zIndex: 9999, // Maximum z-index to guarantee visibility above all elements
                 opacity: 1 // Ensure full opacity
