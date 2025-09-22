@@ -6,27 +6,38 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { CalendarDays, Building2, Wrench, Camera, FileText, Users, BarChart3, MapPin, Menu, Calculator } from "lucide-react";
+import { 
+  CalendarDays, 
+  Building2, 
+  Wrench, 
+  Camera, 
+  FileText, 
+  Users, 
+  BarChart3, 
+  Calculator,
+  Package,
+  Shield,
+  Edit,
+  ArrowUpRight,
+  Clock,
+  DollarSign,
+  AlertTriangle,
+  CheckCircle,
+  TrendingUp
+} from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ConstructionProjectsGrid } from "@/components/ConstructionProjectsGrid";
-import { ConstructionDashboard } from "@/components/ConstructionDashboard";
-import { AdvancedBudgetManager } from "@/components/AdvancedBudgetManager";
-import { ConstructionGanttAdvanced } from "@/components/ConstructionGanttAdvanced";
-import { EquipmentManager } from "@/components/EquipmentManager";
+import { ConstructionExecutiveBudget } from "@/components/construction/ConstructionExecutiveBudget";
+import { ConstructionSchedule } from "@/components/construction/ConstructionSchedule";
+import { ConstructionMaterials } from "@/components/construction/ConstructionMaterials";
+import { ConstructionEquipmentManager } from "@/components/construction/ConstructionEquipmentManager";
+import { ConstructionCrews } from "@/components/construction/ConstructionCrews";
+import { ConstructionQuality } from "@/components/construction/ConstructionQuality";
 import { ProgressPhotosManager } from "@/components/ProgressPhotosManager";
-import { QualityInspections } from "@/components/QualityInspections";
-import { WorkReportsManager } from "@/components/WorkReportsManager";
-import { MaterialRequirements } from "@/components/MaterialRequirements";
-import { ConstructionTeamsManager } from "@/components/ConstructionTeamsManager";
 import { ConstructionReports } from "@/components/ConstructionReports";
-import { ConstructionAnalytics } from "@/components/ConstructionAnalytics";
-import { ConstructionTeamManager } from "@/components/ConstructionTeamManager";
-import { ProjectDatesManager } from "@/components/ProjectDatesManager";
-import { ModuleNotifications } from "@/components/ModuleNotifications";
-
+import ProfitabilityAnalysis from "@/components/ProfitabilityAnalysis";
+import { DocumentsPanel } from "@/components/DocumentsPanel";
 
 interface ConstructionProject {
   id: string;
@@ -43,15 +54,32 @@ interface ConstructionProject {
   };
 }
 
+interface ProjectStats {
+  totalExpenses: number;
+  totalMaterials: number;
+  activeTeams: number;
+  completedActivities: number;
+  totalActivities: number;
+  qualityIssues: number;
+  pendingRequests: number;
+}
+
 export function Construction() {
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const [projects, setProjects] = useState<ConstructionProject[]>([]);
   const [selectedProject, setSelectedProject] = useState<ConstructionProject | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("dashboard");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<"principal" | "gestion" | "documentacion">("principal");
+  const [activeTab, setActiveTab] = useState("overview");
+  const [projectStats, setProjectStats] = useState<ProjectStats>({
+    totalExpenses: 0,
+    totalMaterials: 0,
+    activeTeams: 0,
+    completedActivities: 0,
+    totalActivities: 0,
+    qualityIssues: 0,
+    pendingRequests: 0
+  });
 
   useEffect(() => {
     if (user) {
@@ -59,22 +87,11 @@ export function Construction() {
     }
   }, [user]);
 
-  // Find which category contains the active tab
   useEffect(() => {
-    const navigationCategories = {
-      principal: ["dashboard", "budget", "timeline"],
-      gestion: ["equipment", "materials", "team", "teams", "quality"],
-      documentacion: ["photos", "reports", "analytics"]
-    };
-    
-    const categoryKey = Object.keys(navigationCategories).find(key => 
-      navigationCategories[key as keyof typeof navigationCategories].includes(activeTab)
-    ) as "principal" | "gestion" | "documentacion";
-    
-    if (categoryKey) {
-      setActiveCategory(categoryKey);
+    if (selectedProject) {
+      fetchProjectStats();
     }
-  }, [activeTab]);
+  }, [selectedProject]);
 
   const fetchConstructionProjects = async () => {
     try {
@@ -107,7 +124,6 @@ export function Construction() {
 
       setProjects(data || []);
       
-      // Auto-select first project if none selected
       if (!selectedProject && data && data.length > 0) {
         setSelectedProject(data[0]);
       }
@@ -116,6 +132,50 @@ export function Construction() {
       toast.error("Error al cargar los proyectos");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProjectStats = async () => {
+    if (!selectedProject) return;
+
+    try {
+      // Fetch expenses for this project
+      const { data: expenses } = await supabase
+        .from("unified_financial_transactions")
+        .select("monto_total")
+        .eq("empresa_proyecto_id", selectedProject.id)
+        .eq("tipo_movimiento", "gasto")
+        .eq("departamento", "construccion");
+
+      // Fetch material requests
+      const { data: materials } = await supabase
+        .from("unified_financial_transactions")
+        .select("id")
+        .eq("empresa_proyecto_id", selectedProject.id)
+        .eq("departamento", "construccion")
+        .contains("metadata", { type: "material_request" });
+
+      // Fetch construction equipment for this project
+      const { data: equipment } = await supabase
+        .from("construction_equipment")
+        .select("id")
+        .eq("project_id", selectedProject.id)
+        .eq("status", "active");
+
+      // Calculate stats
+      const totalExpenses = expenses?.reduce((sum, exp) => sum + (exp.monto_total || 0), 0) || 0;
+      
+      setProjectStats({
+        totalExpenses,
+        totalMaterials: materials?.length || 0,
+        activeTeams: equipment?.length || 0,
+        completedActivities: 0, // TODO: Get from cronograma
+        totalActivities: 0, // TODO: Get from cronograma  
+        qualityIssues: 0, // TODO: Get from quality_checklists
+        pendingRequests: materials?.length || 0
+      });
+    } catch (error) {
+      console.error("Error fetching project stats:", error);
     }
   };
 
@@ -146,389 +206,338 @@ export function Construction() {
     );
   }
 
-  // Component to render project selector
+  const OverviewKPIs = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Progreso Total</p>
+              <p className="text-2xl font-bold text-primary">
+                {selectedProject?.overall_progress_percentage || 0}%
+              </p>
+            </div>
+            <TrendingUp className="h-8 w-8 text-primary" />
+          </div>
+          <Progress value={selectedProject?.overall_progress_percentage || 0} className="mt-2" />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Gastos Totales</p>
+              <p className="text-2xl font-bold text-green-600">
+                ${projectStats.totalExpenses.toLocaleString()}
+              </p>
+            </div>
+            <DollarSign className="h-8 w-8 text-green-600" />
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Presupuesto: ${(selectedProject?.construction_budget || 0).toLocaleString()}
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Solicitudes Material</p>
+              <p className="text-2xl font-bold text-blue-600">
+                {projectStats.pendingRequests}
+              </p>
+            </div>
+            <Package className="h-8 w-8 text-blue-600" />
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            {projectStats.totalMaterials} materiales activos
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Actividades</p>
+              <p className="text-2xl font-bold text-orange-600">
+                {projectStats.completedActivities}/{projectStats.totalActivities}
+              </p>
+            </div>
+            <CheckCircle className="h-8 w-8 text-orange-600" />
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            {projectStats.qualityIssues} temas de calidad
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
   const ProjectSelector = () => (
-    <Card className="h-fit">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base font-semibold flex items-center gap-2">
-          <Building2 className="h-4 w-4" />
-          Proyectos Activos
-        </CardTitle>
+    <Card className="mb-6">
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              Proyectos de Construcción
+            </CardTitle>
+            <CardDescription>Selecciona un proyecto para gestionar su construcción</CardDescription>
+          </div>
+          <Badge variant="secondary">{projects.length} proyectos activos</Badge>
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-          {projects.map((project) => (
-            <div
-              key={project.id}
-              className={`p-3 rounded border cursor-pointer transition-colors text-sm ${
-                selectedProject?.id === project.id
-                  ? "bg-primary/10 border-primary"
-                  : "hover:bg-muted border-border"
-              }`}
-              onClick={() => {
-                setSelectedProject(project);
-                setSidebarOpen(false);
-              }}
-            >
-              <div className="space-y-2">
-                <div className="font-medium truncate">
-                  {project.project_name}
-                </div>
-                <div className="text-xs text-muted-foreground truncate">
-                  {project.clients.full_name}
-                </div>
-                <div className="flex items-center justify-between">
-                  <Progress 
-                    value={project.overall_progress_percentage || 0} 
-                    className="h-1 flex-1 mr-2"
-                  />
-                  <span className="text-xs font-medium">
-                    {project.overall_progress_percentage || 0}%
+        <Select 
+          value={selectedProject?.id || ""} 
+          onValueChange={(value) => {
+            const project = projects.find(p => p.id === value);
+            if (project) setSelectedProject(project);
+          }}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Seleccionar proyecto" />
+          </SelectTrigger>
+          <SelectContent>
+            {projects.map((project) => (
+              <SelectItem key={project.id} value={project.id}>
+                <div className="flex items-center justify-between w-full">
+                  <span>{project.project_name}</span>
+                  <span className="text-xs text-muted-foreground ml-2">
+                    {project.clients.full_name}
                   </span>
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </CardContent>
     </Card>
   );
 
-  // Categorized navigation structure
-  const navigationCategories = {
-    principal: {
-      label: "Principal",
-      tabs: [
-        { value: "dashboard", label: "Dashboard", icon: BarChart3 },
-        { value: "budget", label: "Presupuesto", icon: FileText },
-        { value: "timeline", label: "Cronograma", icon: CalendarDays },
-      ]
-    },
-      gestion: {
-        label: "Gestión",
-        tabs: [
-          { value: "equipment", label: "Equipos", icon: Wrench },
-          { value: "materials", label: "Materiales", icon: Building2 },
-          { value: "team", label: "Equipo", icon: Users },
-          { value: "teams", label: "Cuadrillas", icon: Users },
-          { value: "quality", label: "Calidad", icon: Building2 },
-        ]
-      },
-    documentacion: {
-      label: "Documentación",
-      tabs: [
-        { value: "photos", label: "Fotos", icon: Camera },
-        { value: "reports", label: "Reportes", icon: FileText },
-        { value: "analytics", label: "Análisis", icon: BarChart3 },
-      ]
-    },
-  };
-
-  // Flat array for mobile dropdown
-  const tabOptions = Object.values(navigationCategories).flatMap(category => category.tabs);
-
   return (
-    <div className="container mx-auto p-4 space-y-4">
-      {/* Compact Header */}
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div>
-            <h1 className="text-lg sm:text-xl font-bold">Construcción</h1>
-            <p className="text-sm text-muted-foreground">Gestión de proyectos</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <ModuleNotifications module="construction" />
-          <Badge variant="secondary" className="text-xs">
-            {projects.length} proyectos
-          </Badge>
+        <div>
+          <h1 className="text-2xl font-bold">Módulo de Construcción</h1>
+          <p className="text-muted-foreground">Gestión integral de proyectos de construcción</p>
         </div>
       </div>
 
-      {/* Project Selection - Top for all devices */}
-      <div className="w-full">
-        <ProjectSelector />
-      </div>
+      {/* Project Selector */}
+      <ProjectSelector />
 
-      {/* Main Content Area */}
-      <div className="w-full space-y-4">
-        {selectedProject && (
-          <div className="space-y-4 sm:space-y-6">
-            {/* Mobile Project Header */}
-            {isMobile && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="min-w-0 flex-1">
-                      <CardTitle className="text-base truncate">
-                        {selectedProject.project_name}
-                      </CardTitle>
-                      <CardDescription className="text-sm">
-                        {selectedProject.clients.full_name}
-                      </CardDescription>
-                    </div>
-                    <Badge variant={selectedProject.status === "construction" ? "default" : "secondary"} className="text-xs">
-                      {selectedProject.status === "construction" ? "Construcción" : "Diseño OK"}
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    <div className="text-center p-2 bg-muted/50 rounded">
-                      <div className="text-lg font-bold text-primary">
-                        {selectedProject.overall_progress_percentage || 0}%
-                      </div>
-                      <div className="text-xs text-muted-foreground">Progreso</div>
-                    </div>
-                    <div className="text-center p-2 bg-muted/50 rounded">
-                      <div className="text-sm font-bold text-green-600">
-                        ${(selectedProject.construction_budget || selectedProject.budget || 0).toLocaleString()}
-                      </div>
-                      <div className="text-xs text-muted-foreground">Presupuesto</div>
-                    </div>
-                  </div>
-                </CardHeader>
-              </Card>
-            )}
+      {selectedProject && (
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-9">
+            <TabsTrigger value="overview" className="flex items-center gap-1 text-xs">
+              <BarChart3 className="h-3 w-3" />
+              Vista General
+            </TabsTrigger>
+            <TabsTrigger value="budget" className="flex items-center gap-1 text-xs">
+              <Calculator className="h-3 w-3" />
+              Presupuesto
+            </TabsTrigger>
+            <TabsTrigger value="schedule" className="flex items-center gap-1 text-xs">
+              <CalendarDays className="h-3 w-3" />
+              Cronograma
+            </TabsTrigger>
+            <TabsTrigger value="materials" className="flex items-center gap-1 text-xs">
+              <Package className="h-3 w-3" />
+              Materiales
+            </TabsTrigger>
+            <TabsTrigger value="equipment" className="flex items-center gap-1 text-xs">
+              <Wrench className="h-3 w-3" />
+              Equipos
+            </TabsTrigger>
+            <TabsTrigger value="crews" className="flex items-center gap-1 text-xs">
+              <Users className="h-3 w-3" />
+              Cuadrillas
+            </TabsTrigger>
+            <TabsTrigger value="quality" className="flex items-center gap-1 text-xs">
+              <Shield className="h-3 w-3" />
+              Calidad
+            </TabsTrigger>
+            <TabsTrigger value="photos" className="flex items-center gap-1 text-xs">
+              <Camera className="h-3 w-3" />
+              Fotos
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="flex items-center gap-1 text-xs">
+              <FileText className="h-3 w-3" />
+              Reportes
+            </TabsTrigger>
+          </TabsList>
 
-            {/* Desktop Project Header - Compact */}
-            {!isMobile && (
+          {/* Vista General */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="space-y-6">
+              {/* Project Header */}
               <Card>
-                <CardHeader className="pb-4">
+                <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-lg">
-                        {selectedProject.project_name}
-                      </CardTitle>
-                      <CardDescription>
+                      <CardTitle className="text-xl">{selectedProject.project_name}</CardTitle>
+                      <CardDescription className="flex items-center gap-2">
                         {selectedProject.clients.full_name}
+                        <Badge variant={selectedProject.status === "construction" ? "default" : "secondary"}>
+                          {selectedProject.status === "construction" ? "En construcción" : "Listo para construcción"}
+                        </Badge>
                       </CardDescription>
                     </div>
-                    <Badge variant={selectedProject.status === "construction" ? "default" : "secondary"}>
-                      {selectedProject.status === "construction" ? "Construcción" : "Diseño OK"}
-                    </Badge>
+                    <div className="text-right">
+                      <p className="text-sm text-muted-foreground">Presupuesto de construcción</p>
+                      <p className="text-lg font-bold text-green-600">
+                        ${(selectedProject.construction_budget || selectedProject.budget || 0).toLocaleString()}
+                      </p>
+                    </div>
                   </div>
-                  
-                   <div className="grid grid-cols-5 gap-4 mt-3">
-                     <div className="text-center p-3 bg-muted/50 rounded">
-                       <div className="text-xl font-bold text-primary">
-                         {selectedProject.overall_progress_percentage || 0}%
-                       </div>
-                       <div className="text-xs text-muted-foreground">Progreso</div>
-                     </div>
-                     <div className="text-center p-3 bg-muted/50 rounded">
-                       <div className="text-lg font-bold text-green-600">
-                         ${(selectedProject.construction_budget || selectedProject.budget || 0).toLocaleString()}
-                       </div>
-                       <div className="text-xs text-muted-foreground">Presupuesto</div>
-                     </div>
-                     <div className="text-center p-3 bg-muted/50 rounded">
-                       <div className="text-sm font-bold text-blue-600">
-                         {selectedProject.construction_start_date 
-                           ? new Date(selectedProject.construction_start_date).toLocaleDateString()
-                           : "Sin iniciar"
-                         }
-                       </div>
-                       <div className="text-xs text-muted-foreground">Inicio</div>
-                     </div>
-                     <div className="text-center p-3 bg-muted/50 rounded">
-                       <div className="text-sm font-bold text-orange-600">
-                         {selectedProject.estimated_completion_date
-                           ? new Date(selectedProject.estimated_completion_date).toLocaleDateString()
-                           : "Sin fecha estimada"
-                         }
-                       </div>
-                       <div className="text-xs text-muted-foreground">Estimado</div>
-                     </div>
-                     <div className="text-center p-3 bg-muted/50 rounded">
-                       <ProjectDatesManager 
-                         projectId={selectedProject.id}
-                         constructionStartDate={selectedProject.construction_start_date}
-                         estimatedCompletionDate={selectedProject.estimated_completion_date}
-                         onDatesUpdated={fetchConstructionProjects}
-                         trigger={
-                           <Button variant="ghost" size="sm" className="h-auto p-1 text-xs">
-                             Editar fechas
-                           </Button>
-                         }
-                       />
-                       <div className="text-xs text-muted-foreground mt-1">Gestión</div>
-                     </div>
-                   </div>
                 </CardHeader>
               </Card>
-            )}
 
-            {/* Adaptive Navigation System */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                {/* Mobile: Dropdown */}
-                {isMobile ? (
-                  <div className="space-y-4">
-                    <Select value={activeTab} onValueChange={setActiveTab}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue>
-                          {tabOptions.find(tab => tab.value === activeTab)?.label || "Selecciona una sección"}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(navigationCategories).map(([categoryKey, category]) => (
-                          <div key={categoryKey}>
-                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
-                              {category.label}
-                            </div>
-                            {category.tabs.map((tab) => (
-                              <SelectItem key={tab.value} value={tab.value}>
-                                <div className="flex items-center gap-2">
-                                  <tab.icon className="h-4 w-4" />
-                                  {tab.label}
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </div>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                ) : (
-                  /* Tablet & Desktop: Categorized Navigation */
-                  <div className="space-y-4">
-                    {/* Category Selection - Hidden on Desktop */}
-                    <div className="block md:hidden">
-                      <div className="flex space-x-1 p-1 bg-muted rounded-lg">
-                        {Object.entries(navigationCategories).map(([categoryKey, category]) => (
-                          <Button
-                            key={categoryKey}
-                            variant={activeCategory === categoryKey ? "default" : "ghost"}
-                            size="sm"
-                            className="flex-1 text-xs"
-                            onClick={() => setActiveCategory(categoryKey as keyof typeof navigationCategories)}
-                          >
-                            {category.label}
-                          </Button>
-                        ))}
-                      </div>
+              {/* KPIs */}
+              <OverviewKPIs />
+
+              {/* Timeline resumen */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4" />
+                      Timeline del Proyecto
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex justify-between items-center py-2 border-b">
+                      <span className="text-sm">Inicio de construcción</span>
+                      <span className="text-sm font-medium">
+                        {selectedProject.construction_start_date 
+                          ? new Date(selectedProject.construction_start_date).toLocaleDateString()
+                          : "Por definir"
+                        }
+                      </span>
                     </div>
+                    <div className="flex justify-between items-center py-2 border-b">
+                      <span className="text-sm">Fecha estimada de finalización</span>
+                      <span className="text-sm font-medium">
+                        {selectedProject.estimated_completion_date
+                          ? new Date(selectedProject.estimated_completion_date).toLocaleDateString()
+                          : "Por definir"
+                        }
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-sm">Días transcurridos</span>
+                      <span className="text-sm font-medium">
+                        {selectedProject.construction_start_date 
+                          ? Math.ceil((new Date().getTime() - new Date(selectedProject.construction_start_date).getTime()) / (1000 * 60 * 60 * 24))
+                          : 0
+                        } días
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
 
-                    {/* Tab Lists */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      Alertas y Notificaciones
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
                     <div className="space-y-3">
-                      {/* Desktop: All categories visible */}
-                      <div className="hidden md:block space-y-6">
-                        {Object.entries(navigationCategories).map(([categoryKey, category]) => (
-                          <div key={categoryKey} className="space-y-2">
-                            <h3 className="text-sm font-medium text-muted-foreground px-1">
-                              {category.label}
-                            </h3>
-                            <TabsList className="grid w-full grid-cols-3 h-auto">
-                              {category.tabs.map((tab) => (
-                                <TabsTrigger 
-                                  key={tab.value} 
-                                  value={tab.value} 
-                                  className="flex items-center gap-2 text-xs py-2 px-3"
-                                >
-                                  <tab.icon className="h-4 w-4" />
-                                  <span>{tab.label}</span>
-                                </TabsTrigger>
-                              ))}
-                            </TabsList>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Tablet: Active category only */}
-                      <div className="block md:hidden">
-                        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1">
-                          {navigationCategories[activeCategory].tabs.map((tab) => (
-                            <TabsTrigger 
-                              key={tab.value} 
-                              value={tab.value} 
-                              className="flex flex-col items-center gap-1 text-xs py-2 px-2 h-auto"
-                            >
-                              <tab.icon className="h-4 w-4" />
-                              <span className="text-xs truncate">{tab.label}</span>
-                            </TabsTrigger>
-                          ))}
-                        </TabsList>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <TabsContent value="dashboard" className="mt-6">
-                  <ConstructionDashboard projectId={selectedProject.id} />
-                </TabsContent>
-
-                <TabsContent value="budget" className="mt-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Calculator className="h-5 w-5" />
-                        Presupuesto y Planeación
-                      </CardTitle>
-                      <CardDescription>
-                        El presupuesto detallado ahora se gestiona en el módulo de Presupuestos y Planeación
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="bg-muted/30 border border-dashed rounded-lg p-6 text-center space-y-3">
-                        <Calculator className="w-12 h-12 text-primary mx-auto" />
-                        <div>
-                          <h3 className="text-lg font-semibold">Ir a Presupuestos y Planeación</h3>
-                          <p className="text-muted-foreground text-sm">
-                            Gestiona presupuestos paramétricos, cronogramas de Gantt y planes de pago
-                          </p>
+                      {projectStats.pendingRequests > 0 && (
+                        <div className="flex items-center gap-2 p-2 bg-yellow-50 rounded border-l-4 border-yellow-400">
+                          <Clock className="h-4 w-4 text-yellow-600" />
+                          <span className="text-sm">{projectStats.pendingRequests} solicitudes pendientes</span>
                         </div>
-                        <Button onClick={() => window.location.href = '/presupuestos-planeacion'} className="gap-2">
-                          <Calculator className="h-4 w-4" />
-                          Abrir Módulo
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
+                      )}
+                      {projectStats.qualityIssues > 0 && (
+                        <div className="flex items-center gap-2 p-2 bg-red-50 rounded border-l-4 border-red-400">
+                          <AlertTriangle className="h-4 w-4 text-red-600" />
+                          <span className="text-sm">{projectStats.qualityIssues} temas de calidad</span>
+                        </div>
+                      )}
+                      {projectStats.pendingRequests === 0 && projectStats.qualityIssues === 0 && (
+                        <div className="flex items-center gap-2 p-2 bg-green-50 rounded border-l-4 border-green-400">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          <span className="text-sm">No hay alertas pendientes</span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
 
-                <TabsContent value="timeline" className="mt-6">
-                  <ConstructionGanttAdvanced projectId={selectedProject.id} />
-                </TabsContent>
+          {/* Presupuesto Ejecutivo */}
+          <TabsContent value="budget">
+            <ConstructionExecutiveBudget 
+              projectId={selectedProject.id}
+              clientId={selectedProject.client_id}
+            />
+          </TabsContent>
 
-                <TabsContent value="equipment" className="mt-6">
-                  <EquipmentManager projectId={selectedProject.id} />
-                </TabsContent>
+          {/* Cronograma */}
+          <TabsContent value="schedule">
+            <ConstructionSchedule 
+              projectId={selectedProject.id}
+              clientId={selectedProject.client_id}
+            />
+          </TabsContent>
 
-                <TabsContent value="photos" className="mt-6">
-                  <ProgressPhotosManager projectId={selectedProject.id} />
-                </TabsContent>
+          {/* Materiales */}
+          <TabsContent value="materials">
+            <ConstructionMaterials 
+              projectId={selectedProject.id}
+              clientId={selectedProject.client_id}
+            />
+          </TabsContent>
 
-                <TabsContent value="quality" className="mt-6">
-                  <QualityInspections projectId={selectedProject.id} />
-                </TabsContent>
+          {/* Equipos */}
+          <TabsContent value="equipment">
+            <ConstructionEquipmentManager 
+              projectId={selectedProject.id}
+              clientId={selectedProject.client_id}
+            />
+          </TabsContent>
 
-                <TabsContent value="reports" className="mt-6">
-                  <ConstructionReports projectId={selectedProject.id} />
-                </TabsContent>
+          {/* Cuadrillas */}
+          <TabsContent value="crews">
+            <ConstructionCrews 
+              projectId={selectedProject.id}
+              clientId={selectedProject.client_id}
+            />
+          </TabsContent>
 
-                <TabsContent value="work-reports" className="mt-6">
-                  <WorkReportsManager projectId={selectedProject.id} />
-                </TabsContent>
+          {/* Calidad */}
+          <TabsContent value="quality">
+            <ConstructionQuality 
+              projectId={selectedProject.id}
+              clientId={selectedProject.client_id}
+            />
+          </TabsContent>
 
-                <TabsContent value="materials" className="mt-6">
-                  <MaterialRequirements projectId={selectedProject.id} />
-                </TabsContent>
+          {/* Fotos */}
+          <TabsContent value="photos">
+            <ProgressPhotosManager 
+              projectId={selectedProject.id}
+            />
+          </TabsContent>
 
-                <TabsContent value="team" className="mt-6">
-                  <ConstructionTeamManager projectId={selectedProject.id} />
-                </TabsContent>
-
-                <TabsContent value="teams" className="mt-6">
-                  <ConstructionTeamsManager projectId={selectedProject.id} />
-                </TabsContent>
-
-                <TabsContent value="analytics" className="mt-6">
-                  <ConstructionAnalytics projectId={selectedProject.id} />
-                </TabsContent>
-
-
-            </Tabs>
-          </div>
-        )}
-      </div>
+          {/* Reportes */}
+          <TabsContent value="reports">
+            <ConstructionReports 
+              projectId={selectedProject.id}
+            />
+          </TabsContent>
+        </Tabs>
+      )}
     </div>
   );
 }

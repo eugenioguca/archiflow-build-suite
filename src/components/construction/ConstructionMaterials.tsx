@@ -60,23 +60,16 @@ export const ConstructionMaterials: React.FC<ConstructionMaterialsProps> = ({
     try {
       setLoading(true);
       
-      // Obtener solicitudes de materiales desde transacciones unificadas
-      const { data: requestsData, error } = await supabase
+      // Obtener transacciones financieras relacionadas con gastos de construcción
+      const { data, error } = await supabase
         .from('unified_financial_transactions')
         .select(`
           id,
           referencia_unica,
           descripcion,
           monto_total,
-          tipo_movimiento,
           created_at,
-          departamento,
-          mayor_id,
-          partida_id,
-          subpartida_id,
-          chart_of_accounts_mayor!left(nombre),
-          chart_of_accounts_partidas!left(nombre),
-          chart_of_accounts_subpartidas!left(nombre)
+          tiene_factura
         `)
         .eq('empresa_proyecto_id', projectId)
         .eq('tipo_movimiento', 'gasto')
@@ -85,23 +78,24 @@ export const ConstructionMaterials: React.FC<ConstructionMaterialsProps> = ({
 
       if (error) throw error;
 
-      const formattedRequests = requestsData?.map(request => ({
-        id: request.id,
-        reference_code: request.referencia_unica || '',
-        description: request.descripcion || '',
-        amount: request.monto_total || 0,
-        status: 'pending', // TODO: Add status field to unified_financial_transactions
-        created_at: request.created_at,
-        metadata: { construction_request: true }, 
-        mayor_nombre: request.chart_of_accounts_mayor?.nombre,
-        partida_nombre: request.chart_of_accounts_partidas?.nombre,
-        subpartida_nombre: request.chart_of_accounts_subpartidas?.nombre,
+      // Convertir a formato MaterialRequest
+      const formattedRequests: MaterialRequest[] = data?.map(transaction => ({
+        id: transaction.id,
+        reference_code: transaction.referencia_unica || `REQ-${Date.now()}`,
+        description: transaction.descripcion,
+        amount: transaction.monto_total,
+        status: transaction.tiene_factura ? 'delivered' : 'pending',
+        created_at: transaction.created_at,
+        metadata: { construction_request: true },
+        mayor_nombre: 'Construcción',
+        partida_nombre: 'Materiales',  
+        subpartida_nombre: transaction.descripcion.substring(0, 50)
       })) || [];
 
       setRequests(formattedRequests);
     } catch (error) {
       console.error('Error fetching material requests:', error);
-      toast.error('Error al cargar las solicitudes de materiales');
+      toast.error('Error al cargar las solicitudes de material');
     } finally {
       setLoading(false);
     }
@@ -120,12 +114,27 @@ export const ConstructionMaterials: React.FC<ConstructionMaterialsProps> = ({
 
   const updateRequestStatus = async (requestId: string, newStatus: string) => {
     try {
-      // TODO: Add status field to unified_financial_transactions and implement status updates
-      toast.success('Estado actualizado (funcionalidad pendiente)');
-      fetchMaterialRequests();
+      const { error } = await supabase
+        .from('unified_financial_transactions')
+        .update({ 
+          tiene_factura: newStatus === 'delivered',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      // Actualizar estado local
+      setRequests(prev => 
+        prev.map(req => 
+          req.id === requestId ? { ...req, status: newStatus as any } : req
+        )
+      );
+
+      toast.success('Estado actualizado correctamente');
     } catch (error) {
-      console.error('Error updating status:', error);
-      toast.error('Error al actualizar estado');
+      console.error('Error updating request status:', error);
+      toast.error('Error al actualizar el estado');
     }
   };
 
