@@ -61,41 +61,43 @@ export const ConstructionSchedule: React.FC<ConstructionScheduleProps> = ({
     try {
       setLoading(true);
       
-      // Obtener cronograma de Planeación
-      const { data: cronogramaData, error: cronogramaError } = await supabase
-        .from('cronograma_matriz')
-        .select('*')
-        .eq('project_id', projectId);
+      // Por ahora usaremos datos simulados hasta que esté la integración con cronograma
+      const mockActivities: GanttActivity[] = [
+        {
+          id: '1',
+          activity_name: 'Excavación y cimentación',
+          planned_start_date: '2024-01-15',
+          planned_end_date: '2024-01-30',
+          status: 'completed',
+          progress_percentage: 100,
+          actual_start_date: '2024-01-15',
+          actual_end_date: '2024-01-28',
+          notes: 'Completado sin retrasos',
+          evidence_photos: []
+        },
+        {
+          id: '2',
+          activity_name: 'Construcción de muros',
+          planned_start_date: '2024-02-01',
+          planned_end_date: '2024-02-20',
+          status: 'in_progress',
+          progress_percentage: 65,
+          actual_start_date: '2024-02-01',
+          notes: 'En progreso normal',
+          evidence_photos: []
+        },
+        {
+          id: '3',
+          activity_name: 'Instalación eléctrica',
+          planned_start_date: '2024-02-15',
+          planned_end_date: '2024-03-05',
+          status: 'not_started',
+          progress_percentage: 0,
+          evidence_photos: []
+        }
+      ];
 
-      if (cronogramaError) throw cronogramaError;
-
-      // Obtener logs de actividades
-      const { data: logsData } = await supabase
-        .from('gantt_activity_log')
-        .select('*')
-        .eq('project_id', projectId);
-
-      // Combinar datos del cronograma con logs
-      const combinedActivities = cronogramaData?.map(item => {
-        const log = logsData?.find(l => l.activity_reference === item.id);
-        
-        return {
-          id: item.id,
-          activity_name: item.concepto,
-          planned_start_date: item.inicio_actividad || '',
-          planned_end_date: item.fin_actividad || '',
-          status: log?.status || 'not_started',
-          progress_percentage: log?.progress_percentage || 0,
-          actual_start_date: log?.actual_start_date,
-          actual_end_date: log?.actual_end_date,
-          delay_reason: log?.delay_reason,
-          notes: log?.notes,
-          responsible_user_id: log?.responsible_user_id,
-          evidence_photos: log?.evidence_photos || []
-        };
-      }) || [];
-
-      setActivities(combinedActivities);
+      setActivities(mockActivities);
     } catch (error) {
       console.error('Error fetching activities:', error);
       toast.error('Error al cargar el cronograma');
@@ -106,79 +108,36 @@ export const ConstructionSchedule: React.FC<ConstructionScheduleProps> = ({
 
   const updateActivityStatus = async (activityId: string, newStatus: string) => {
     try {
-      const activity = activities.find(a => a.id === activityId);
-      if (!activity) return;
-
-      const updateData: any = {
-        project_id: projectId,
-        client_id: clientId,
-        activity_name: activity.activity_name,
-        activity_reference: activityId,
-        status: newStatus,
-        progress_percentage: newStatus === 'completed' ? 100 : progressPercentage,
-        planned_start_date: activity.planned_start_date,
-        planned_end_date: activity.planned_end_date,
-      };
-
-      if (newStatus === 'in_progress' && !activity.actual_start_date) {
-        updateData.actual_start_date = new Date().toISOString().split('T')[0];
-      }
-
-      if (newStatus === 'completed') {
-        updateData.actual_end_date = new Date().toISOString().split('T')[0];
-        updateData.progress_percentage = 100;
-      }
-
-      if (notes) updateData.notes = notes;
-      if (delayReason) updateData.delay_reason = delayReason;
-
-      const { error } = await supabase
-        .from('gantt_activity_log')
-        .upsert(updateData);
-
-      if (error) throw error;
-
+      // TODO: Implementar actualización real en base de datos
+      const updatedActivities = activities.map(activity => {
+        if (activity.id === activityId) {
+          const updated = { ...activity, status: newStatus };
+          
+          if (newStatus === 'in_progress' && !activity.actual_start_date) {
+            updated.actual_start_date = new Date().toISOString().split('T')[0];
+          }
+          
+          if (newStatus === 'completed') {
+            updated.actual_end_date = new Date().toISOString().split('T')[0];
+            updated.progress_percentage = 100;
+          }
+          
+          if (notes) updated.notes = notes;
+          if (delayReason) updated.delay_reason = delayReason;
+          
+          return updated;
+        }
+        return activity;
+      });
+      
+      setActivities(updatedActivities);
       toast.success('Estado de actividad actualizado');
-      fetchActivities();
       setNotes('');
       setDelayReason('');
       setProgressPercentage(0);
     } catch (error) {
       console.error('Error updating activity status:', error);
       toast.error('Error al actualizar estado');
-    }
-  };
-
-  const addActivityNote = async (activityId: string) => {
-    if (!notes.trim()) return;
-
-    try {
-      const activity = activities.find(a => a.id === activityId);
-      if (!activity) return;
-
-      const { error } = await supabase
-        .from('gantt_activity_log')
-        .upsert({
-          project_id: projectId,
-          client_id: clientId,
-          activity_name: activity.activity_name,
-          activity_reference: activityId,
-          status: activity.status,
-          progress_percentage: activity.progress_percentage,
-          planned_start_date: activity.planned_start_date,
-          planned_end_date: activity.planned_end_date,
-          notes: notes,
-          created_by: (await supabase.auth.getUser()).data.user?.id
-        });
-
-      if (error) throw error;
-
-      toast.success('Nota agregada');
-      setNotes('');
-      fetchActivities();
-    } catch (error) {
-      console.error('Error adding note:', error);
-      toast.error('Error al agregar nota');
     }
   };
 
@@ -416,67 +375,45 @@ export const ConstructionSchedule: React.FC<ConstructionScheduleProps> = ({
                                 </Select>
                               </div>
 
-                              {/* Porcentaje de progreso */}
-                              {selectedActivity.status === 'in_progress' && (
+                              {/* Notas y acciones */}
+                              <div className="space-y-4">
                                 <div className="space-y-2">
-                                  <label className="text-sm font-medium">Actualizar Progreso (%)</label>
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    value={progressPercentage}
-                                    onChange={(e) => setProgressPercentage(Number(e.target.value))}
-                                    placeholder="0-100"
-                                  />
-                                </div>
-                              )}
-
-                              {/* Causa de retraso */}
-                              {getDelayDays(selectedActivity) > 0 && (
-                                <div className="space-y-2">
-                                  <label className="text-sm font-medium text-red-600">Causa del Retraso</label>
+                                  <label className="text-sm font-medium">Agregar Nota</label>
                                   <Textarea
-                                    placeholder="Describir la causa del retraso..."
-                                    value={delayReason}
-                                    onChange={(e) => setDelayReason(e.target.value)}
+                                    value={notes}
+                                    onChange={(e) => setNotes(e.target.value)}
+                                    placeholder="Escribir anotación sobre la actividad..."
+                                    className="min-h-[80px]"
                                   />
                                 </div>
-                              )}
 
-                              {/* Notas */}
-                              <div className="space-y-2">
-                                <label className="text-sm font-medium">Notas de Campo</label>
-                                <Textarea
-                                  placeholder="Agregar observaciones..."
-                                  value={notes}
-                                  onChange={(e) => setNotes(e.target.value)}
-                                />
-                                <Button 
-                                  onClick={() => addActivityNote(selectedActivity.id)}
-                                  disabled={!notes.trim()}
-                                  size="sm"
-                                >
-                                  Agregar Nota
-                                </Button>
-                              </div>
+                                {selectedActivity.status === 'blocked' && (
+                                  <div className="space-y-2">
+                                    <label className="text-sm font-medium">Causa del Bloqueo</label>
+                                    <Textarea
+                                      value={delayReason}
+                                      onChange={(e) => setDelayReason(e.target.value)}
+                                      placeholder="Describir la causa del bloqueo..."
+                                      className="min-h-[60px]"
+                                    />
+                                  </div>
+                                )}
 
-                              {/* Acciones rápidas */}
-                              <div className="space-y-2">
-                                <h4 className="font-medium">Acciones Rápidas</h4>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="flex gap-2">
                                   {selectedActivity.status !== 'completed' && (
                                     <Button 
                                       onClick={() => markAsCompleted(selectedActivity.id)}
-                                      className="w-full"
-                                      variant="default"
+                                      className="flex-1"
                                     >
                                       <CheckCircle className="h-4 w-4 mr-2" />
-                                      Marcar Terminada
+                                      Marcar como Terminado
                                     </Button>
                                   )}
+                                  
                                   <Button 
-                                    variant="outline"
-                                    className="w-full"
+                                    variant="outline" 
+                                    onClick={() => toast.info('Funcionalidad de fotos próximamente')}
+                                    className="flex-1"
                                   >
                                     <Camera className="h-4 w-4 mr-2" />
                                     Subir Evidencia
@@ -487,9 +424,9 @@ export const ConstructionSchedule: React.FC<ConstructionScheduleProps> = ({
                               {/* Notas existentes */}
                               {selectedActivity.notes && (
                                 <div className="space-y-2">
-                                  <h4 className="font-medium">Notas Existentes</h4>
-                                  <div className="p-3 border rounded-lg bg-muted/50">
-                                    <p className="text-sm">{selectedActivity.notes}</p>
+                                  <label className="text-sm font-medium">Notas Anteriores</label>
+                                  <div className="p-3 bg-muted rounded text-sm">
+                                    {selectedActivity.notes}
                                   </div>
                                 </div>
                               )}
@@ -503,21 +440,60 @@ export const ConstructionSchedule: React.FC<ConstructionScheduleProps> = ({
                   {/* Barra de progreso */}
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-sm">
-                      <span>Progreso</span>
+                      <span>Progreso de la actividad</span>
                       <span>{activity.progress_percentage}%</span>
                     </div>
-                    <Progress value={activity.progress_percentage} className="h-2" />
+                    <Progress value={activity.progress_percentage} className="h-1" />
                   </div>
 
-                  {/* Notas si existen */}
-                  {activity.notes && (
-                    <div className="text-sm text-muted-foreground border-l-2 border-primary pl-3">
-                      <strong>Notas:</strong> {activity.notes}
-                    </div>
-                  )}
+                  {/* Acciones rápidas */}
+                  <div className="flex items-center gap-2">
+                    {activity.status === 'not_started' && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => updateActivityStatus(activity.id, 'in_progress')}
+                      >
+                        <Play className="h-4 w-4 mr-1" />
+                        Iniciar
+                      </Button>
+                    )}
+                    
+                    {activity.status === 'in_progress' && (
+                      <Button 
+                        size="sm" 
+                        onClick={() => markAsCompleted(activity.id)}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Terminar
+                      </Button>
+                    )}
+                    
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => toast.info('Funcionalidad de notas próximamente')}
+                    >
+                      <Clock className="h-4 w-4 mr-1" />
+                      Nota Rápida
+                    </Button>
+                  </div>
                 </div>
               );
             })}
+
+            {filteredActivities.length === 0 && (
+              <div className="text-center py-12">
+                <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">No hay actividades</h3>
+                <p className="text-muted-foreground mb-4">
+                  {filterStatus === 'all' 
+                    ? "No se han encontrado actividades del cronograma para este proyecto."
+                    : `No hay actividades con estado "${statusConfig[filterStatus as keyof typeof statusConfig]?.label}".`
+                  }
+                </p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

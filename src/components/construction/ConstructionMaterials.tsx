@@ -62,15 +62,15 @@ export const ConstructionMaterials: React.FC<ConstructionMaterialsProps> = ({
       
       // Obtener solicitudes de materiales desde transacciones unificadas
       const { data: requestsData, error } = await supabase
-        .from('unified_transactions')
+        .from('unified_financial_transactions')
         .select(`
           id,
-          reference_code,
-          description,
-          amount,
-          status,
+          referencia_unica,
+          descripcion,
+          monto_total,
+          tipo_movimiento,
           created_at,
-          metadata,
+          departamento,
           mayor_id,
           partida_id,
           subpartida_id,
@@ -78,21 +78,21 @@ export const ConstructionMaterials: React.FC<ConstructionMaterialsProps> = ({
           chart_of_accounts_partidas!left(nombre),
           chart_of_accounts_subpartidas!left(nombre)
         `)
-        .eq('project_id', projectId)
-        .eq('transaction_type', 'expense')
-        .or('metadata->>construction_request.eq.true,description.ilike.%material%')
+        .eq('empresa_proyecto_id', projectId)
+        .eq('tipo_movimiento', 'gasto')
+        .eq('departamento', 'construccion')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
       const formattedRequests = requestsData?.map(request => ({
         id: request.id,
-        reference_code: request.reference_code,
-        description: request.description,
-        amount: request.amount,
-        status: request.status,
+        reference_code: request.referencia_unica || '',
+        description: request.descripcion || '',
+        amount: request.monto_total || 0,
+        status: 'pending', // TODO: Add status field to unified_financial_transactions
         created_at: request.created_at,
-        metadata: request.metadata,
+        metadata: { construction_request: true }, 
         mayor_nombre: request.chart_of_accounts_mayor?.nombre,
         partida_nombre: request.chart_of_accounts_partidas?.nombre,
         subpartida_nombre: request.chart_of_accounts_subpartidas?.nombre,
@@ -109,21 +109,8 @@ export const ConstructionMaterials: React.FC<ConstructionMaterialsProps> = ({
 
   const confirmDelivery = async (requestId: string) => {
     try {
-      const { error } = await supabase
-        .from('unified_transactions')
-        .update({ 
-          status: 'reconciled',
-          metadata: { 
-            ...requests.find(r => r.id === requestId)?.metadata,
-            delivery_confirmed_at: new Date().toISOString(),
-            confirmed_by_construction: true
-          }
-        })
-        .eq('id', requestId);
-
-      if (error) throw error;
-
-      toast.success('Entrega confirmada y conciliada');
+      // TODO: Implement delivery confirmation logic
+      toast.success('Entrega confirmada (funcionalidad pendiente)');
       fetchMaterialRequests();
     } catch (error) {
       console.error('Error confirming delivery:', error);
@@ -133,14 +120,8 @@ export const ConstructionMaterials: React.FC<ConstructionMaterialsProps> = ({
 
   const updateRequestStatus = async (requestId: string, newStatus: string) => {
     try {
-      const { error } = await supabase
-        .from('unified_transactions')
-        .update({ status: newStatus })
-        .eq('id', requestId);
-
-      if (error) throw error;
-
-      toast.success('Estado actualizado');
+      // TODO: Add status field to unified_financial_transactions and implement status updates
+      toast.success('Estado actualizado (funcionalidad pendiente)');
       fetchMaterialRequests();
     } catch (error) {
       console.error('Error updating status:', error);
@@ -205,24 +186,20 @@ export const ConstructionMaterials: React.FC<ConstructionMaterialsProps> = ({
                   <DialogTitle>Nueva Solicitud de Material</DialogTitle>
                 </DialogHeader>
                 
-                <UnifiedTransactionForm
-                  projectId={projectId}
-                  clientId={clientId}
-                  transactionType="expense"
-                  defaultValues={{
-                    departamento: 'construccion',
-                    description: 'Solicitud de material - ',
-                    metadata: {
-                      construction_request: true,
-                      requested_by: 'construction'
-                    }
-                  }}
-                  onSuccess={() => {
-                    setShowNewRequestDialog(false);
-                    fetchMaterialRequests();
-                    toast.success('Solicitud de material creada');
-                  }}
-                />
+                <div className="p-4 text-center">
+                  <p className="text-muted-foreground">
+                    Formulario de solicitud de material (próximamente)
+                  </p>
+                  <Button 
+                    onClick={() => {
+                      setShowNewRequestDialog(false);
+                      toast.info('Funcionalidad en desarrollo');
+                    }}
+                    className="mt-4"
+                  >
+                    Cerrar
+                  </Button>
+                </div>
               </DialogContent>
             </Dialog>
           </div>
