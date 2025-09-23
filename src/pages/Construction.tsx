@@ -28,7 +28,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ConstructionExecutiveBudget } from "@/components/construction/ConstructionExecutiveBudget";
+import { ConstructionBudget } from "@/components/construction/ConstructionBudget";
 import { ConstructionSchedule } from "@/components/construction/ConstructionSchedule";
 import { ConstructionMaterials } from "@/components/construction/ConstructionMaterials";
 import { ConstructionEquipmentManager } from "@/components/construction/ConstructionEquipmentManager";
@@ -477,7 +477,7 @@ export function Construction() {
 
           {/* Presupuesto Ejecutivo */}
           <TabsContent value="budget">
-            <ConstructionExecutiveBudget 
+            <ConstructionBudget 
               projectId={selectedProject.id}
               clientId={selectedProject.client_id}
             />

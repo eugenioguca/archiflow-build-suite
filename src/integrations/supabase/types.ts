@@ -205,6 +205,51 @@ export type Database = {
           },
         ]
       }
+      budget_annotations: {
+        Row: {
+          annotation_type: string
+          budget_item_id: string
+          content: string
+          created_at: string
+          created_by: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          annotation_type?: string
+          budget_item_id: string
+          content: string
+          created_at?: string
+          created_by: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          annotation_type?: string
+          budget_item_id?: string
+          content?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_annotations_budget_item_id_fkey"
+            columns: ["budget_item_id"]
+            isOneToOne: false
+            referencedRelation: "construction_budget_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budget_annotations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       budget_change_log: {
         Row: {
           budget_item_id: string
@@ -309,6 +354,51 @@ export type Database = {
             columns: ["budget_id"]
             isOneToOne: false
             referencedRelation: "project_budgets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      budget_supply_status: {
+        Row: {
+          budget_item_id: string
+          created_at: string
+          id: string
+          last_updated_at: string
+          notes: string | null
+          status: string
+          updated_by: string
+        }
+        Insert: {
+          budget_item_id: string
+          created_at?: string
+          id?: string
+          last_updated_at?: string
+          notes?: string | null
+          status?: string
+          updated_by: string
+        }
+        Update: {
+          budget_item_id?: string
+          created_at?: string
+          id?: string
+          last_updated_at?: string
+          notes?: string | null
+          status?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_supply_status_budget_item_id_fkey"
+            columns: ["budget_item_id"]
+            isOneToOne: false
+            referencedRelation: "construction_budget_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budget_supply_status_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1574,10 +1664,14 @@ export type Database = {
         Row: {
           actual_completion_date: string | null
           actual_start_date: string | null
+          baseline_quantity: number | null
+          baseline_total: number | null
+          baseline_unit_price: number | null
           budget_version: number | null
           category: string
           created_at: string
           created_by: string
+          current_eac_method: string | null
           drawing_references: Json | null
           environmental_considerations: string | null
           equipment_cost: number | null
@@ -1586,12 +1680,14 @@ export type Database = {
           executed_amount: number | null
           executed_quantity: number | null
           id: string
+          is_baseline_locked: boolean | null
           item_code: string | null
           item_description: string | null
           item_name: string
           item_order: number
           labor_cost: number | null
           level_depth: number | null
+          manual_eac_price: number | null
           material_cost: number | null
           overhead_percentage: number | null
           parent_item_id: string | null
@@ -1604,6 +1700,7 @@ export type Database = {
           remaining_quantity: number | null
           risk_factor: number | null
           safety_requirements: Json | null
+          source_budget_item_id: string | null
           specialty: string | null
           specifications: string | null
           status: string | null
@@ -1618,10 +1715,14 @@ export type Database = {
         Insert: {
           actual_completion_date?: string | null
           actual_start_date?: string | null
+          baseline_quantity?: number | null
+          baseline_total?: number | null
+          baseline_unit_price?: number | null
           budget_version?: number | null
           category: string
           created_at?: string
           created_by: string
+          current_eac_method?: string | null
           drawing_references?: Json | null
           environmental_considerations?: string | null
           equipment_cost?: number | null
@@ -1630,12 +1731,14 @@ export type Database = {
           executed_amount?: number | null
           executed_quantity?: number | null
           id?: string
+          is_baseline_locked?: boolean | null
           item_code?: string | null
           item_description?: string | null
           item_name: string
           item_order?: number
           labor_cost?: number | null
           level_depth?: number | null
+          manual_eac_price?: number | null
           material_cost?: number | null
           overhead_percentage?: number | null
           parent_item_id?: string | null
@@ -1648,6 +1751,7 @@ export type Database = {
           remaining_quantity?: number | null
           risk_factor?: number | null
           safety_requirements?: Json | null
+          source_budget_item_id?: string | null
           specialty?: string | null
           specifications?: string | null
           status?: string | null
@@ -1662,10 +1766,14 @@ export type Database = {
         Update: {
           actual_completion_date?: string | null
           actual_start_date?: string | null
+          baseline_quantity?: number | null
+          baseline_total?: number | null
+          baseline_unit_price?: number | null
           budget_version?: number | null
           category?: string
           created_at?: string
           created_by?: string
+          current_eac_method?: string | null
           drawing_references?: Json | null
           environmental_considerations?: string | null
           equipment_cost?: number | null
@@ -1674,12 +1782,14 @@ export type Database = {
           executed_amount?: number | null
           executed_quantity?: number | null
           id?: string
+          is_baseline_locked?: boolean | null
           item_code?: string | null
           item_description?: string | null
           item_name?: string
           item_order?: number
           labor_cost?: number | null
           level_depth?: number | null
+          manual_eac_price?: number | null
           material_cost?: number | null
           overhead_percentage?: number | null
           parent_item_id?: string | null
@@ -1692,6 +1802,7 @@ export type Database = {
           remaining_quantity?: number | null
           risk_factor?: number | null
           safety_requirements?: Json | null
+          source_budget_item_id?: string | null
           specialty?: string | null
           specifications?: string | null
           status?: string | null
@@ -2101,6 +2212,61 @@ export type Database = {
             foreignKeyName: "construction_phases_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "financial_summary_by_client_project"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
+      construction_settings: {
+        Row: {
+          alert_threshold_days: number
+          created_at: string
+          created_by: string
+          eac_method_default: string
+          id: string
+          lead_days_default: number
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          alert_threshold_days?: number
+          created_at?: string
+          created_by: string
+          eac_method_default?: string
+          id?: string
+          lead_days_default?: number
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          alert_threshold_days?: number
+          created_at?: string
+          created_by?: string
+          eac_method_default?: string
+          id?: string
+          lead_days_default?: number
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "construction_settings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_settings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_settings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
             referencedRelation: "financial_summary_by_client_project"
             referencedColumns: ["project_id"]
           },
@@ -6842,6 +7008,67 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      transaction_allocations: {
+        Row: {
+          allocated_amount: number
+          allocated_quantity: number
+          allocation_notes: string | null
+          budget_item_id: string
+          created_at: string
+          created_by: string
+          id: string
+          unified_transaction_id: string
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          allocated_amount?: number
+          allocated_quantity?: number
+          allocation_notes?: string | null
+          budget_item_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          unified_transaction_id: string
+          unit_price?: number
+          updated_at?: string
+        }
+        Update: {
+          allocated_amount?: number
+          allocated_quantity?: number
+          allocation_notes?: string | null
+          budget_item_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          unified_transaction_id?: string
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_allocations_budget_item_id_fkey"
+            columns: ["budget_item_id"]
+            isOneToOne: false
+            referencedRelation: "construction_budget_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_allocations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_allocations_unified_transaction_id_fkey"
+            columns: ["unified_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "unified_financial_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       treasury_material_payment_items: {
         Row: {
