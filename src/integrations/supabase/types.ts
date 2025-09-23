@@ -242,6 +242,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "budget_annotations_budget_item_id_fkey"
+            columns: ["budget_item_id"]
+            isOneToOne: false
+            referencedRelation: "v_construction_budget_rollup"
+            referencedColumns: ["budget_item_id"]
+          },
+          {
             foreignKeyName: "budget_annotations_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -393,6 +400,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "construction_budget_items"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budget_supply_status_budget_item_id_fkey"
+            columns: ["budget_item_id"]
+            isOneToOne: false
+            referencedRelation: "v_construction_budget_rollup"
+            referencedColumns: ["budget_item_id"]
           },
           {
             foreignKeyName: "budget_supply_status_updated_by_fkey"
@@ -1828,6 +1842,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "construction_budget_items"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_budget_items_parent_item_id_fkey"
+            columns: ["parent_item_id"]
+            isOneToOne: false
+            referencedRelation: "v_construction_budget_rollup"
+            referencedColumns: ["budget_item_id"]
           },
           {
             foreignKeyName: "construction_budget_items_phase_id_fkey"
@@ -4506,6 +4527,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "material_requirements_budget_item_id_fkey"
+            columns: ["budget_item_id"]
+            isOneToOne: false
+            referencedRelation: "v_construction_budget_rollup"
+            referencedColumns: ["budget_item_id"]
+          },
+          {
             foreignKeyName: "material_requirements_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -6544,6 +6572,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "quality_inspections_budget_item_id_fkey"
+            columns: ["budget_item_id"]
+            isOneToOne: false
+            referencedRelation: "v_construction_budget_rollup"
+            referencedColumns: ["budget_item_id"]
+          },
+          {
             foreignKeyName: "quality_inspections_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -7053,6 +7088,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "construction_budget_items"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_allocations_budget_item_id_fkey"
+            columns: ["budget_item_id"]
+            isOneToOne: false
+            referencedRelation: "v_construction_budget_rollup"
+            referencedColumns: ["budget_item_id"]
           },
           {
             foreignKeyName: "transaction_allocations_created_by_fkey"
@@ -7764,6 +7806,52 @@ export type Database = {
           },
         ]
       }
+      v_construction_budget_rollup: {
+        Row: {
+          budget_item_id: string | null
+          cantidad_base: number | null
+          completion_percentage: number | null
+          comprado_qty: number | null
+          comprado_total: number | null
+          created_at: string | null
+          current_eac_method: string | null
+          eac_total: number | null
+          eac_unit_price: number | null
+          is_baseline_locked: boolean | null
+          item_name: string | null
+          manual_eac_price: number | null
+          mayor: string | null
+          partida: string | null
+          precio_base: number | null
+          precio_prom_ponderado: number | null
+          project_id: string | null
+          saldo_qty: number | null
+          source_budget_item_id: string | null
+          subpartida: string | null
+          supply_status: string | null
+          total_base: number | null
+          unidad: string | null
+          updated_at: string | null
+          variacion_pct: number | null
+          variacion_total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "construction_budget_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "construction_budget_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "financial_summary_by_client_project"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
     }
     Functions: {
       analyze_import_quality: {
@@ -8059,6 +8147,10 @@ export type Database = {
       safe_mass_delete_chart_accounts: {
         Args: { record_ids: string[]; table_name: string }
         Returns: Json
+      }
+      sync_construction_budget_snapshot: {
+        Args: { project_id_param: string }
+        Returns: undefined
       }
       test_chat_access: {
         Args: { test_project_id: string }
