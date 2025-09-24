@@ -83,12 +83,7 @@ export const ConstructionBudgetTabs: React.FC<ConstructionBudgetTabsProps> = ({ 
     refetchRollup
   } = useConstructionBudget(projectId);
 
-  // Sync snapshot on mount if executive budget is empty
-  useEffect(() => {
-    if (projectId && !isLoadingExecutive && executiveBudget.length === 0) {
-      syncSnapshot.mutate(projectId);
-    }
-  }, [projectId, isLoadingExecutive, executiveBudget.length, syncSnapshot]);
+  // No auto-sync for executive budget - it should show Planning data directly
 
   // Calculate KPIs from rollup data
   const kpis = rollupBudget.reduce(
@@ -144,17 +139,33 @@ export const ConstructionBudgetTabs: React.FC<ConstructionBudgetTabsProps> = ({ 
     return matchesText && matchesMayor && matchesVariation;
   });
 
-  // Group executive data
-  const groupedExecutive = executiveBudget.reduce((acc, item) => {
-    if (!acc[item.category]) {
-      acc[item.category] = {};
+  // Filter executive data based on search
+  const filteredExecutive = executiveBudget.filter(item => {
+    if (!filterText) return true;
+    const searchTerm = filterText.toLowerCase();
+    const mayorNombre = item.partida_ejecutivo?.parametrico?.mayor?.nombre || '';
+    const partidaNombre = item.partida_ejecutivo?.parametrico?.partida?.nombre || '';
+    const subpartidaNombre = item.nombre_snapshot || '';
+    
+    return mayorNombre.toLowerCase().includes(searchTerm) ||
+           partidaNombre.toLowerCase().includes(searchTerm) ||
+           subpartidaNombre.toLowerCase().includes(searchTerm);
+  });
+
+  // Group filtered executive data by Planning hierarchy (Mayor → Partida → Subpartida)
+  const groupedExecutive = filteredExecutive.reduce((acc, item) => {
+    const mayorNombre = item.partida_ejecutivo?.parametrico?.mayor?.nombre || 'Sin Mayor';
+    const partidaNombre = item.partida_ejecutivo?.parametrico?.partida?.nombre || 'Sin Partida';
+    
+    if (!acc[mayorNombre]) {
+      acc[mayorNombre] = {};
     }
-    if (!acc[item.category][item.subcategory]) {
-      acc[item.category][item.subcategory] = [];
+    if (!acc[mayorNombre][partidaNombre]) {
+      acc[mayorNombre][partidaNombre] = [];
     }
-    acc[item.category][item.subcategory].push(item);
+    acc[mayorNombre][partidaNombre].push(item);
     return acc;
-  }, {} as Record<string, Record<string, typeof executiveBudget>>);
+  }, {} as Record<string, Record<string, typeof filteredExecutive>>);
 
   // Group rollup data
   const groupedRollup = filteredRollup.reduce((acc, item) => {
@@ -188,28 +199,32 @@ export const ConstructionBudgetTabs: React.FC<ConstructionBudgetTabsProps> = ({ 
         <TabsContent value="executive" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calculator className="h-5 w-5" />
-                Presupuesto Ejecutivo (Base)
-              </CardTitle>
-            </CardHeader>
+               <CardTitle className="flex items-center gap-2">
+                 <Calculator className="h-5 w-5" />
+                 Presupuesto Ejecutivo (Base)
+               </CardTitle>
+               <p className="text-sm text-muted-foreground">
+                 Basado en Planeación — solo lectura aquí
+               </p>
+             </CardHeader>
             <CardContent>
               {/* Filters */}
-              <div className="flex gap-4 mb-6">
-                <Input
-                  placeholder="Buscar por mayor, partida o subpartida..."
-                  value={filterText}
-                  onChange={(e) => setFilterText(e.target.value)}
-                  className="flex-1"
-                />
-                <Button
-                  onClick={() => syncSnapshot.mutate(projectId)}
-                  disabled={syncSnapshot.isPending}
-                  variant="outline"
-                >
-                  Sincronizar
-                </Button>
-              </div>
+               <div className="flex gap-4 mb-6">
+                 <Input
+                   placeholder="Buscar por mayor, partida o subpartida..."
+                   value={filterText}
+                   onChange={(e) => setFilterText(e.target.value)}
+                   className="flex-1"
+                 />
+                 <Button
+                   onClick={() => syncSnapshot.mutate(projectId)}
+                   disabled={syncSnapshot.isPending}
+                   variant="outline"
+                   size="sm"
+                 >
+                   Sincronizar Snapshot
+                 </Button>
+               </div>
 
               {/* Executive Budget Hierarchical Table */}
               {isLoadingExecutive ? (
@@ -258,22 +273,22 @@ export const ConstructionBudgetTabs: React.FC<ConstructionBudgetTabsProps> = ({ 
                               {/* Subpartidas */}
                               {expandedPartidas.has(partidaName) && (
                                 <div className="space-y-1 p-2">
-                                  {/* Header */}
-                                  <div className="grid grid-cols-6 gap-4 p-2 text-sm font-medium text-muted-foreground border-b">
-                                    <div>Subpartida</div>
-                                    <div className="text-center">Unidad</div>
-                                    <div className="text-center">Cantidad Base</div>
-                                    <div className="text-center">Precio Base</div>
-                                    <div className="text-center">Importe Base</div>
-                                    <div className="text-center">Acciones</div>
-                                  </div>
-                                  {items.map((item) => (
-                                    <div key={item.id} className="grid grid-cols-6 gap-4 p-3 border rounded bg-background items-center">
-                                      <div className="text-sm">{item.item_name}</div>
-                                      <div className="text-sm text-center">{item.unit_of_measure}</div>
-                                      <div className="text-sm text-center">{item.baseline_quantity.toLocaleString()}</div>
-                                      <div className="text-sm text-center">{formatCurrency(item.baseline_unit_price)}</div>
-                                      <div className="text-sm text-center font-medium">{formatCurrency(item.baseline_total)}</div>
+                  {/* Header - matching Planning module format */}
+                                   <div className="grid grid-cols-6 gap-4 p-2 text-sm font-medium text-muted-foreground border-b">
+                                     <div>Subpartida</div>
+                                     <div className="text-center">Unidad</div>
+                                     <div className="text-center">Cantidad</div>
+                                     <div className="text-center">Precio Unitario</div>
+                                     <div className="text-right">Importe</div>
+                                     <div className="text-center">Acciones</div>
+                                   </div>
+                                   {items.map((item) => (
+                                     <div key={item.id} className="grid grid-cols-6 gap-4 p-3 border rounded bg-background items-center">
+                                       <div className="text-sm">{item.nombre_snapshot}</div>
+                                       <div className="text-sm text-center">{item.unidad}</div>
+                                       <div className="text-sm text-center">{item.cantidad.toLocaleString()}</div>
+                                       <div className="text-sm text-center">{formatCurrency(item.precio_unitario)}</div>
+                                       <div className="text-sm text-right font-medium">{formatCurrency(item.importe)}</div>
                                       <div className="flex justify-center">
                                         <Sheet>
                                           <SheetTrigger asChild>
@@ -292,38 +307,38 @@ export const ConstructionBudgetTabs: React.FC<ConstructionBudgetTabsProps> = ({ 
                                             
                                             {selectedItem && (
                                               <div className="space-y-6 mt-6">
-                                                <div className="space-y-4">
-                                                  <div>
-                                                    <label className="text-sm font-medium">Partida</label>
-                                                    <p className="text-sm text-muted-foreground">{selectedItem.item_name}</p>
-                                                  </div>
-                                                  <div className="grid grid-cols-2 gap-4">
-                                                    <div>
-                                                      <label className="text-sm font-medium">Cantidad Base</label>
-                                                      <p className="text-sm">{selectedItem.baseline_quantity} {selectedItem.unit_of_measure}</p>
-                                                    </div>
-                                                    <div>
-                                                      <label className="text-sm font-medium">Importe Base</label>
-                                                      <p className="text-sm font-medium">{formatCurrency(selectedItem.baseline_total)}</p>
-                                                    </div>
-                                                  </div>
-                                                </div>
+                                                 <div className="space-y-4">
+                                                   <div>
+                                                     <label className="text-sm font-medium">Partida</label>
+                                                     <p className="text-sm text-muted-foreground">{selectedItem.nombre_snapshot}</p>
+                                                   </div>
+                                                   <div className="grid grid-cols-2 gap-4">
+                                                     <div>
+                                                       <label className="text-sm font-medium">Cantidad</label>
+                                                       <p className="text-sm">{selectedItem.cantidad} {selectedItem.unidad}</p>
+                                                     </div>
+                                                     <div>
+                                                       <label className="text-sm font-medium">Importe</label>
+                                                       <p className="text-sm font-medium">{formatCurrency(selectedItem.importe)}</p>
+                                                     </div>
+                                                   </div>
+                                                 </div>
 
-                                                <Button 
-                                                  onClick={() => createMaterialRequest.mutate({
-                                                    budgetItemId: selectedItem.id,
-                                                    projectId: projectId,
-                                                    description: `Solicitud de material - ${selectedItem.item_name}`,
-                                                    quantity: selectedItem.baseline_quantity,
-                                                    unitPrice: selectedItem.baseline_unit_price,
-                                                    unit: selectedItem.unit_of_measure
-                                                  })}
-                                                  disabled={createMaterialRequest.isPending}
-                                                  className="w-full"
-                                                >
-                                                  <Package className="h-4 w-4 mr-2" />
-                                                  Solicitar Material
-                                                </Button>
+                                                 <Button 
+                                                   onClick={() => createMaterialRequest.mutate({
+                                                     budgetItemId: selectedItem.id,
+                                                     projectId: projectId,
+                                                     description: `Solicitud de material - ${selectedItem.nombre_snapshot}`,
+                                                     quantity: selectedItem.cantidad,
+                                                     unitPrice: selectedItem.precio_unitario,
+                                                     unit: selectedItem.unidad
+                                                   })}
+                                                   disabled={createMaterialRequest.isPending}
+                                                   className="w-full"
+                                                 >
+                                                   <Package className="h-4 w-4 mr-2" />
+                                                   Solicitar Material
+                                                 </Button>
 
                                                 <div className="space-y-2">
                                                   <label className="text-sm font-medium">Agregar Nota</label>
@@ -360,20 +375,15 @@ export const ConstructionBudgetTabs: React.FC<ConstructionBudgetTabsProps> = ({ 
                   ))}
 
                   {Object.keys(groupedExecutive).length === 0 && (
-                    <div className="text-center py-12">
-                      <Calculator className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                      <h3 className="text-lg font-medium mb-2">No hay presupuesto base</h3>
-                      <p className="text-muted-foreground mb-4">
-                        Sincroniza el presupuesto desde Planeación para ver los datos base.
-                      </p>
-                      <Button 
-                        onClick={() => syncSnapshot.mutate(projectId)}
-                        disabled={syncSnapshot.isPending}
-                      >
-                        Sincronizar Presupuesto
-                      </Button>
-                    </div>
-                  )}
+                     <div className="text-center py-12">
+                       <Calculator className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                       <h3 className="text-lg font-medium mb-2">No hay presupuesto ejecutivo</h3>
+                       <p className="text-muted-foreground mb-4">
+                         No se encontró un presupuesto ejecutivo para este proyecto.<br />
+                         Debe crearse primero en el módulo de Planeación.
+                       </p>
+                     </div>
+                   )}
                 </div>
               )}
             </CardContent>

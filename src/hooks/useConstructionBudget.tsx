@@ -33,17 +33,39 @@ export interface ConstructionBudgetItem {
 
 export interface ConstructionBudgetExecutive {
   id: string;
-  project_id: string;
-  source_budget_item_id: string;
-  item_name: string;
-  category: string;
-  subcategory: string;
-  unit_of_measure: string;
-  baseline_quantity: number;
-  baseline_unit_price: number;
-  baseline_total: number;
+  cliente_id: string;
+  proyecto_id: string;
+  partida_ejecutivo_id: string;
+  subpartida_id: string;
+  nombre_snapshot: string;
+  codigo_snapshot: string;
+  unidad: string;
+  cantidad: number;
+  precio_unitario: number;
+  importe: number;
   created_at: string;
   updated_at: string;
+  subpartida: {
+    codigo: string;
+    nombre: string;
+  } | null;
+  partida_ejecutivo: {
+    id: string;
+    parametrico_id: string;
+    parametrico: {
+      id: string;
+      mayor_id: string;
+      partida_id: string;
+      mayor: {
+        codigo: string;
+        nombre: string;
+      } | null;
+      partida: {
+        codigo: string;
+        nombre: string;
+      } | null;
+    } | null;
+  } | null;
 }
 
 export const useConstructionBudget = (projectId?: string) => {
@@ -76,20 +98,48 @@ export const useConstructionBudget = (projectId?: string) => {
     },
   });
 
-  // Get executive budget (snapshot/baseline)
+  // Get executive budget (from Planning - same data source)
   const executiveBudgetQuery = useQuery({
     queryKey: ['construction-budget-executive', projectId],
     queryFn: async () => {
       if (!projectId) return [];
       
+      // First get the project's client_id
+      const { data: project, error: projectError } = await supabase
+        .from('client_projects')
+        .select('client_id')
+        .eq('id', projectId)
+        .single();
+        
+      if (projectError || !project) {
+        console.error('Error fetching project:', projectError);
+        return [];
+      }
+      
+      // Use the same query as Planning module for consistency
       const { data, error } = await supabase
-        .from('construction_budget_items')
-        .select('*')
-        .eq('project_id', projectId)
-        .order('category, subcategory, item_name');
+        .from('presupuesto_ejecutivo_subpartida')
+        .select(`
+          *,
+          subpartida:chart_of_accounts_subpartidas(codigo, nombre),
+          partida_ejecutivo:presupuesto_ejecutivo_partida(
+            id,
+            parametrico_id,
+            parametrico:presupuesto_parametrico(
+              id,
+              mayor_id,
+              partida_id,
+              mayor:chart_of_accounts_mayor(codigo, nombre),
+              partida:chart_of_accounts_partidas(codigo, nombre)
+            )
+          )
+        `)
+        .eq('cliente_id', project.client_id)
+        .eq('proyecto_id', projectId)
+        .order('created_at', { ascending: true });
       
       if (error) throw error;
-      return data as ConstructionBudgetExecutive[];
+      return data || [];
     },
     enabled: !!projectId,
   });
