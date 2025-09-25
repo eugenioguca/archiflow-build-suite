@@ -477,9 +477,10 @@ export function Construction() {
 
           {/* Presupuesto */}
           <TabsContent value="budget">
-            <ConstructionBudgetTabs 
-              projectId={selectedProject.id}
-            />
+          <ConstructionBudgetTabs 
+            selectedClientId={selectedProject.client_id}
+            selectedProjectId={selectedProject.id}
+          />
           </TabsContent>
 
           {/* Cronograma */}
