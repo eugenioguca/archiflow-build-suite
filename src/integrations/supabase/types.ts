@@ -3081,6 +3081,13 @@ export type Database = {
             referencedRelation: "cronograma_gantt_line"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cronograma_gantt_activity_line_id_fkey"
+            columns: ["line_id"]
+            isOneToOne: false
+            referencedRelation: "v_planning_gantt_for_construction"
+            referencedColumns: ["source_activity_id"]
+          },
         ]
       }
       cronograma_gantt_line: {
@@ -3309,6 +3316,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cronograma_gantt_line"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cronograma_vinculos_parametrico_cronograma_line_id_fkey"
+            columns: ["cronograma_line_id"]
+            isOneToOne: false
+            referencedRelation: "v_planning_gantt_for_construction"
+            referencedColumns: ["source_activity_id"]
           },
           {
             foreignKeyName: "cronograma_vinculos_parametrico_mayor_id_fkey"
@@ -7909,6 +7923,36 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "financial_summary_by_client_project"
             referencedColumns: ["project_id"]
+          },
+        ]
+      }
+      v_planning_gantt_for_construction: {
+        Row: {
+          amount: number | null
+          duration_days_plan: number | null
+          end_date_plan: string | null
+          end_month: string | null
+          end_week: number | null
+          is_discount: boolean | null
+          mayor_codigo: string | null
+          mayor_id: string | null
+          mayor_nombre: string | null
+          nombre_actividad: string | null
+          order_index: number | null
+          plan_id: string | null
+          project_id: string | null
+          source_activity_id: string | null
+          start_date_plan: string | null
+          start_month: string | null
+          start_week: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cronograma_gantt_line_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "cronograma_gantt_plan"
+            referencedColumns: ["id"]
           },
         ]
       }

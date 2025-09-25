@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, CheckCircle, AlertTriangle, Calendar, Clock, User, Camera, Package, Wrench } from 'lucide-react';
+import { Play, CheckCircle, AlertTriangle, Calendar, Clock, User, Camera, Package, Wrench, Filter, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from 'date-fns';
@@ -30,6 +32,7 @@ interface ConstructionActivity {
   notes?: string;
   amount: number;
   material_readiness?: 'solicitado' | 'listo' | 'pendiente';
+  duration_days?: number;
 }
 
 interface ConstructionScheduleProps {
@@ -38,10 +41,10 @@ interface ConstructionScheduleProps {
 }
 
 const statusConfig = {
-  no_iniciado: { label: 'No iniciado', icon: Calendar, color: 'bg-muted', textColor: 'text-muted-foreground' },
-  en_proceso: { label: 'En proceso', icon: Play, color: 'bg-blue-500', textColor: 'text-white' },
-  bloqueado: { label: 'Bloqueado', icon: AlertTriangle, color: 'bg-red-500', textColor: 'text-white' },
-  terminado: { label: 'Terminado', icon: CheckCircle, color: 'bg-green-500', textColor: 'text-white' },
+  no_iniciado: { label: 'No iniciado', icon: Calendar, color: 'bg-gray-100 text-gray-700', badgeVariant: 'secondary' as const },
+  en_proceso: { label: 'En proceso', icon: Play, color: 'bg-blue-100 text-blue-700', badgeVariant: 'default' as const },
+  bloqueado: { label: 'Bloqueado', icon: AlertTriangle, color: 'bg-red-100 text-red-700', badgeVariant: 'destructive' as const },
+  terminado: { label: 'Terminado', icon: CheckCircle, color: 'bg-green-100 text-green-700', badgeVariant: 'default' as const },
 };
 
 const materialReadinessConfig = {
@@ -61,41 +64,30 @@ export const ConstructionSchedule: React.FC<ConstructionScheduleProps> = ({
   const [delayReason, setDelayReason] = useState('');
   const [progressPercentage, setProgressPercentage] = useState(0);
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterWeek, setFilterWeek] = useState<string>('all');
+  const [filterMayor, setFilterMayor] = useState<string>('all');
   const [materialAlerts, setMaterialAlerts] = useState<any[]>([]);
 
   useEffect(() => {
     fetchActivities();
   }, [projectId]);
 
-  const getMaterialReadiness = async (projectId: string): Promise<Record<string, 'solicitado' | 'listo' | 'pendiente'>> => {
-    try {
-      // Simplified material readiness - returns pendiente for now
-      // This can be enhanced later with proper TU integration
-      return {};
-    } catch (error) {
-      console.error('Error checking material readiness:', error);
-      return {};
-    }
-  };
-
   const fetchActivities = async () => {
     try {
       setLoading(true);
       
-      // Get planning gantt activities
+      // Get planning gantt activities from the new VIEW
       const planningActivities = await getGanttByProject(projectId, clientId);
       
       // Get construction status for each activity
       const constructionStatus = await getGanttConstructionStatus(projectId);
       
-      // Get material readiness
-      const materialReadiness = await getMaterialReadiness(projectId);
+      // Get material readiness (simplified for now)
+      const materialReadiness: Record<string, 'solicitado' | 'listo' | 'pendiente'> = {};
       
       // Combine planning data with construction status
       const constructionActivities: ConstructionActivity[] = planningActivities.map(activity => {
         const status = constructionStatus[activity.id];
-        const readiness = materialReadiness[activity.mayor_id];
+        const readiness = materialReadiness[activity.mayor_id] || 'pendiente';
         
         return {
           id: activity.id,
@@ -112,7 +104,9 @@ export const ConstructionSchedule: React.FC<ConstructionScheduleProps> = ({
           delay_reason: status?.causa_retraso,
           notes: status?.nota,
           amount: activity.amount,
-          material_readiness: readiness
+          material_readiness: readiness,
+          duration_days: activity.start_date_plan && activity.end_date_plan ? 
+            Math.ceil((new Date(activity.end_date_plan).getTime() - new Date(activity.start_date_plan).getTime()) / (1000 * 60 * 60 * 24)) : 0
         };
       });
 
@@ -135,7 +129,7 @@ export const ConstructionSchedule: React.FC<ConstructionScheduleProps> = ({
 
     const alerts = activities.filter(activity => {
       const startDate = new Date(activity.planned_start_date);
-      return startDate <= alertThreshold && activity.material_readiness === 'pendiente';
+      return startDate <= alertThreshold && startDate > today && activity.material_readiness === 'pendiente';
     });
 
     setMaterialAlerts(alerts);
@@ -170,7 +164,7 @@ export const ConstructionSchedule: React.FC<ConstructionScheduleProps> = ({
       if (notes) logData.nota = notes;
       if (delayReason) logData.causa_retraso = delayReason;
 
-      // Insert log entry - using any to work around type issues
+      // Insert log entry
       const { error } = await (supabase as any)
         .from('gantt_activity_log')
         .insert([logData]);
@@ -190,31 +184,11 @@ export const ConstructionSchedule: React.FC<ConstructionScheduleProps> = ({
     }
   };
 
-  const markAsCompleted = async (activityId: string) => {
-    await updateActivityStatus(activityId, 'terminado');
-  };
-
   // Filtros
   const filteredActivities = activities.filter(activity => {
     const matchesStatus = filterStatus === 'all' || activity.status === filterStatus;
-    
-    let matchesWeek = true;
-    if (filterWeek !== 'all') {
-      const now = new Date();
-      const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-      const endOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 6));
-      
-      const activityStart = new Date(activity.planned_start_date);
-      const activityEnd = new Date(activity.planned_end_date);
-      
-      if (filterWeek === 'current_week') {
-        matchesWeek = (activityStart >= startOfWeek && activityStart <= endOfWeek) ||
-                     (activityEnd >= startOfWeek && activityEnd <= endOfWeek) ||
-                     (activityStart <= startOfWeek && activityEnd >= endOfWeek);
-      }
-    }
-    
-    return matchesStatus && matchesWeek;
+    const matchesMayor = filterMayor === 'all' || activity.mayor_id === filterMayor;
+    return matchesStatus && matchesMayor;
   });
 
   // Calcular retrasos
@@ -234,6 +208,20 @@ export const ConstructionSchedule: React.FC<ConstructionScheduleProps> = ({
     }
     
     return 0;
+  };
+
+  // Obtener mayores únicos para filtro
+  const uniqueMayores = Array.from(new Set(activities.map(a => a.mayor_id)))
+    .map(mayorId => activities.find(a => a.mayor_id === mayorId))
+    .filter(Boolean);
+
+  // Métricas
+  const metrics = {
+    no_iniciado: activities.filter(a => a.status === 'no_iniciado').length,
+    en_proceso: activities.filter(a => a.status === 'en_proceso').length,
+    bloqueado: activities.filter(a => a.status === 'bloqueado').length,
+    terminado: activities.filter(a => a.status === 'terminado').length,
+    retraso: activities.filter(a => getDelayDays(a) > 0).length,
   };
 
   if (loading) {
@@ -282,16 +270,26 @@ export const ConstructionSchedule: React.FC<ConstructionScheduleProps> = ({
         </Card>
       )}
 
-      {/* Filtros y controles */}
+      {/* Barra superior con filtros y métricas */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Cronograma de Construcción
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Cronograma de Construcción
+            </CardTitle>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="gap-2">
+                <Download className="h-4 w-4" />
+                Exportar
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-4">
+          {/* Filtros */}
+          <div className="flex gap-4 items-center">
+            <Filter className="h-4 w-4 text-muted-foreground" />
             <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Filtrar por estado" />
@@ -306,28 +304,30 @@ export const ConstructionSchedule: React.FC<ConstructionScheduleProps> = ({
               </SelectContent>
             </Select>
             
-            <Select value={filterWeek} onValueChange={setFilterWeek}>
+            <Select value={filterMayor} onValueChange={setFilterMayor}>
               <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filtrar por tiempo" />
+                <SelectValue placeholder="Filtrar por mayor" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas las actividades</SelectItem>
-                <SelectItem value="current_week">Semana actual</SelectItem>
-                <SelectItem value="overdue">Retrasadas</SelectItem>
-                <SelectItem value="critical">Críticas</SelectItem>
+                <SelectItem value="all">Todos los mayores</SelectItem>
+                {uniqueMayores.map((activity) => (
+                  <SelectItem key={activity!.mayor_id} value={activity!.mayor_id}>
+                    {activity!.mayor_name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Resumen */}
-          <div className="grid grid-cols-4 gap-4">
+          {/* Métricas */}
+          <div className="grid grid-cols-5 gap-4">
             {Object.entries(statusConfig).map(([status, config]) => {
-              const count = activities.filter(a => a.status === status).length;
+              const count = metrics[status as keyof typeof metrics];
               const StatusIcon = config.icon;
               return (
                 <div key={status} className="flex items-center gap-2 p-3 border rounded-lg">
                   <div className={`p-2 rounded ${config.color}`}>
-                    <StatusIcon className={`h-4 w-4 ${config.textColor}`} />
+                    <StatusIcon className="h-4 w-4" />
                   </div>
                   <div>
                     <p className="text-sm font-medium">{count}</p>
@@ -336,276 +336,291 @@ export const ConstructionSchedule: React.FC<ConstructionScheduleProps> = ({
                 </div>
               );
             })}
+            <div className="flex items-center gap-2 p-3 border rounded-lg">
+              <div className="p-2 rounded bg-orange-100 text-orange-700">
+                <Clock className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">{metrics.retraso}</p>
+                <p className="text-xs text-muted-foreground">Con retraso</p>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Lista de actividades */}
+      {/* Tabla plana + mini-Gantt */}
       <Card>
         <CardContent className="p-0">
-          <div className="space-y-2 p-4">
-            {filteredActivities.map((activity) => {
-              const StatusIcon = statusConfig[activity.status]?.icon;
-              const delayDays = getDelayDays(activity);
-              
-              return (
-                <div key={activity.id} className="border rounded-lg p-4 space-y-3">
-                  {/* Header de actividad */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-medium">{activity.activity_name}</h4>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                        <span>Inicio: {format(new Date(activity.planned_start_date), 'dd/MMM/yyyy', { locale: es })}</span>
-                        <span>Fin: {format(new Date(activity.planned_end_date), 'dd/MMM/yyyy', { locale: es })}</span>
-                        {delayDays > 0 && (
-                          <span className="text-red-500 font-medium">
-                            Retraso: {delayDays} días
-                          </span>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-muted/50 sticky top-0">
+                <TableRow>
+                  <TableHead className="w-[200px]">Actividad</TableHead>
+                  <TableHead className="w-[150px]">Mayor</TableHead>
+                  <TableHead className="w-[120px]">Inicio Plan</TableHead>
+                  <TableHead className="w-[120px]">Fin Plan</TableHead>
+                  <TableHead className="w-[120px]">Inicio Real</TableHead>
+                  <TableHead className="w-[120px]">Fin Real</TableHead>
+                  <TableHead className="w-[100px]">% Avance</TableHead>
+                  <TableHead className="w-[80px]">Δ días</TableHead>
+                  <TableHead className="w-[120px]">Estado</TableHead>
+                  <TableHead className="w-[120px]">Materiales</TableHead>
+                  <TableHead className="w-[200px]">Acciones</TableHead>
+                  <TableHead className="w-[300px]">Timeline</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredActivities.map((activity) => {
+                  const StatusIcon = statusConfig[activity.status]?.icon;
+                  const delayDays = getDelayDays(activity);
+                  const MaterialIcon = materialReadinessConfig[activity.material_readiness || 'pendiente']?.icon;
+                  
+                  return (
+                    <TableRow key={activity.id} className="hover:bg-muted/50">
+                      <TableCell>
+                        <div>
+                          <p className="font-medium text-sm">{activity.activity_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {activity.duration_days} días
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <p className="text-sm">{activity.mayor_name}</p>
+                      </TableCell>
+                      <TableCell>
+                        <p className="text-sm">
+                          {format(new Date(activity.planned_start_date), 'dd/MM/yy', { locale: es })}
+                        </p>
+                      </TableCell>
+                      <TableCell>
+                        <p className="text-sm">
+                          {format(new Date(activity.planned_end_date), 'dd/MM/yy', { locale: es })}
+                        </p>
+                      </TableCell>
+                      <TableCell>
+                        {activity.actual_start_date && (
+                          <p className="text-sm">
+                            {format(new Date(activity.actual_start_date), 'dd/MM/yy', { locale: es })}
+                          </p>
                         )}
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <Badge 
-                        variant="secondary" 
-                        className={`${statusConfig[activity.status]?.color} ${statusConfig[activity.status]?.textColor}`}
-                      >
-                        {StatusIcon && <StatusIcon className="h-3 w-3 mr-1" />}
-                        {statusConfig[activity.status]?.label}
-                      </Badge>
-                      
-                      {activity.material_readiness && (
+                      </TableCell>
+                      <TableCell>
+                        {activity.actual_end_date && (
+                          <p className="text-sm">
+                            {format(new Date(activity.actual_end_date), 'dd/MM/yy', { locale: es })}
+                          </p>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Progress value={activity.progress_percentage} className="w-12 h-2" />
+                          <span className="text-xs text-muted-foreground">
+                            {activity.progress_percentage}%
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {delayDays > 0 && (
+                          <Badge variant="destructive" className="text-xs">
+                            +{delayDays}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={statusConfig[activity.status]?.badgeVariant}
+                          className="text-xs"
+                        >
+                          <StatusIcon className="h-3 w-3 mr-1" />
+                          {statusConfig[activity.status]?.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
                         <Badge 
                           variant="outline" 
-                          className={materialReadinessConfig[activity.material_readiness]?.color}
+                          className={`text-xs ${materialReadinessConfig[activity.material_readiness || 'pendiente']?.color}`}
                         >
-                          <Package className="h-3 w-3 mr-1" />
-                          {materialReadinessConfig[activity.material_readiness]?.label}
+                          <MaterialIcon className="h-3 w-3 mr-1" />
+                          {materialReadinessConfig[activity.material_readiness || 'pendiente']?.label}
                         </Badge>
-                      )}
-                      
-                      <Sheet>
-                        <SheetTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => setSelectedActivity(activity)}
-                          >
-                            Control
-                          </Button>
-                        </SheetTrigger>
-                        <SheetContent>
-                          <SheetHeader>
-                            <SheetTitle>Control de Actividad</SheetTitle>
-                          </SheetHeader>
-                          
-                          {selectedActivity && (
-                            <div className="space-y-6 mt-6">
-                              {/* Información básica */}
-                              <div className="space-y-4">
-                                <div>
-                                  <label className="text-sm font-medium">Actividad</label>
-                                  <p className="text-sm text-muted-foreground">{selectedActivity.activity_name}</p>
-                                  <p className="text-xs text-muted-foreground">Mayor: {selectedActivity.mayor_name}</p>
-                                </div>
-                                
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <label className="text-sm font-medium">Inicio Planeado</label>
-                                    <p className="text-sm">{format(new Date(selectedActivity.planned_start_date), 'dd/MMM/yyyy', { locale: es })}</p>
-                                  </div>
-                                  <div>
-                                    <label className="text-sm font-medium">Fin Planeado</label>
-                                    <p className="text-sm">{format(new Date(selectedActivity.planned_end_date), 'dd/MMM/yyyy', { locale: es })}</p>
-                                  </div>
-                                </div>
-
-                                {selectedActivity.actual_start_date && (
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <label className="text-sm font-medium">Inicio Real</label>
-                                      <p className="text-sm">{format(new Date(selectedActivity.actual_start_date), 'dd/MMM/yyyy', { locale: es })}</p>
-                                    </div>
-                                    {selectedActivity.actual_end_date && (
-                                      <div>
-                                        <label className="text-sm font-medium">Fin Real</label>
-                                        <p className="text-sm">{format(new Date(selectedActivity.actual_end_date), 'dd/MMM/yyyy', { locale: es })}</p>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Progreso */}
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <label className="text-sm font-medium">Progreso</label>
-                                  <span className="text-sm">{selectedActivity.progress_percentage}%</span>
-                                </div>
-                                <Progress value={selectedActivity.progress_percentage} className="h-2" />
-                              </div>
-
-                              {/* Estado */}
-                              <div className="space-y-2">
-                                <label className="text-sm font-medium">Estado de la Actividad</label>
-                                <Select 
-                                  value={selectedActivity.status} 
-                                  onValueChange={(value: 'no_iniciado' | 'en_proceso' | 'bloqueado' | 'terminado') => updateActivityStatus(selectedActivity.id, value)}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {Object.entries(statusConfig).map(([value, config]) => (
-                                      <SelectItem key={value} value={value}>
-                                        {config.label}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-
-                              {/* Notas y acciones */}
-                              <div className="space-y-4">
-                                <div className="space-y-2">
-                                  <label className="text-sm font-medium">Agregar Nota</label>
-                                  <Textarea
-                                    value={notes}
-                                    onChange={(e) => setNotes(e.target.value)}
-                                    placeholder="Escribir anotación sobre la actividad..."
-                                    className="min-h-[80px]"
-                                  />
-                                </div>
-
-                                {selectedActivity.status === 'bloqueado' && (
-                                  <div className="space-y-2">
-                                    <label className="text-sm font-medium">Causa del Bloqueo</label>
-                                    <Textarea
-                                      value={delayReason}
-                                      onChange={(e) => setDelayReason(e.target.value)}
-                                      placeholder="Describir la causa del bloqueo..."
-                                      className="min-h-[60px]"
-                                    />
-                                  </div>
-                                )}
-                                
-                                {/* Material Readiness */}
-                                <div className="space-y-2">
-                                  <label className="text-sm font-medium">Estado de Materiales</label>
-                                  <div className="flex items-center gap-2">
-                                    {selectedActivity.material_readiness && (
-                                      <Badge 
-                                        variant="outline" 
-                                        className={materialReadinessConfig[selectedActivity.material_readiness]?.color}
-                                      >
-                                        <Package className="h-3 w-3 mr-1" />
-                                        {materialReadinessConfig[selectedActivity.material_readiness]?.label}
-                                      </Badge>
-                                    )}
-                                    <Button variant="outline" size="sm" className="gap-2">
-                                      <Wrench className="h-4 w-4" />
-                                      Solicitar materiales
-                                    </Button>
-                                  </div>
-                                </div>
-
-                                <div className="flex gap-2">
-                                  {selectedActivity.status !== 'terminado' && (
-                                    <Button 
-                                      onClick={() => markAsCompleted(selectedActivity.id)}
-                                      className="flex-1"
-                                    >
-                                      <CheckCircle className="h-4 w-4 mr-2" />
-                                      Marcar como Terminado
-                                    </Button>
-                                  )}
-                                  
-                                  {selectedActivity.status === 'no_iniciado' && (
-                                    <Button 
-                                      variant="outline"
-                                      onClick={() => updateActivityStatus(selectedActivity.id, 'en_proceso')}
-                                      className="flex-1"
-                                    >
-                                      <Play className="h-4 w-4 mr-2" />
-                                      Iniciar
-                                    </Button>
-                                  )}
-                                  
-                                  {selectedActivity.status !== 'bloqueado' && selectedActivity.status !== 'terminado' && (
-                                    <Button 
-                                      variant="outline"
-                                      onClick={() => updateActivityStatus(selectedActivity.id, 'bloqueado')}
-                                      className="flex-1"
-                                    >
-                                      <AlertTriangle className="h-4 w-4 mr-2" />
-                                      Bloquear
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          {activity.status === 'no_iniciado' && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => updateActivityStatus(activity.id, 'en_proceso')}
+                              className="text-xs h-7"
+                            >
+                              Iniciar
+                            </Button>
                           )}
-                        </SheetContent>
-                      </Sheet>
-                    </div>
-                  </div>
+                          {activity.status === 'en_proceso' && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => updateActivityStatus(activity.id, 'terminado')}
+                              className="text-xs h-7"
+                            >
+                              Terminar
+                            </Button>
+                          )}
+                          <Sheet>
+                            <SheetTrigger asChild>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => setSelectedActivity(activity)}
+                                className="text-xs h-7"
+                              >
+                                Control
+                              </Button>
+                            </SheetTrigger>
+                            <SheetContent className="w-[600px] sm:w-[600px]">
+                              <SheetHeader>
+                                <SheetTitle>Control de Actividad</SheetTitle>
+                              </SheetHeader>
+                              
+                              {selectedActivity && (
+                                <div className="mt-6">
+                                  <Tabs defaultValue="execution" className="w-full">
+                                    <TabsList className="grid w-full grid-cols-4">
+                                      <TabsTrigger value="execution">Ejecución</TabsTrigger>
+                                      <TabsTrigger value="materials">Materiales</TabsTrigger>
+                                      <TabsTrigger value="risks">Riesgos</TabsTrigger>
+                                      <TabsTrigger value="relations">Relaciones</TabsTrigger>
+                                    </TabsList>
+                                    
+                                    <TabsContent value="execution" className="space-y-4 mt-4">
+                                      <div>
+                                        <h4 className="font-medium">{selectedActivity.activity_name}</h4>
+                                        <p className="text-sm text-muted-foreground">Mayor: {selectedActivity.mayor_name}</p>
+                                      </div>
+                                      
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                          <label className="text-sm font-medium">Inicio Planeado</label>
+                                          <p className="text-sm">{format(new Date(selectedActivity.planned_start_date), 'dd/MMM/yyyy', { locale: es })}</p>
+                                        </div>
+                                        <div>
+                                          <label className="text-sm font-medium">Fin Planeado</label>
+                                          <p className="text-sm">{format(new Date(selectedActivity.planned_end_date), 'dd/MMM/yyyy', { locale: es })}</p>
+                                        </div>
+                                      </div>
 
-                  {/* Barra de progreso */}
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-sm">
-                      <span>Progreso</span>
-                      <span className="font-medium">{activity.progress_percentage}%</span>
-                    </div>
-                    <Progress value={activity.progress_percentage} className="h-2" />
-                  </div>
+                                      <div>
+                                        <label className="text-sm font-medium block mb-2">% Avance Real</label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          max="100"
+                                          value={progressPercentage}
+                                          onChange={(e) => setProgressPercentage(Number(e.target.value))}
+                                          placeholder="0"
+                                        />
+                                      </div>
 
-                  {/* Botones de acción rápida */}
-                  <div className="flex gap-2">
-                    {activity.status === 'no_iniciado' && (
-                      <Button 
-                        size="sm" 
-                        onClick={() => updateActivityStatus(activity.id, 'en_proceso')}
-                      >
-                        <Play className="h-4 w-4 mr-1" />
-                        Iniciar
-                      </Button>
-                    )}
-                    
-                    {activity.status === 'en_proceso' && (
-                      <Button 
-                        size="sm" 
-                        onClick={() => markAsCompleted(activity.id)}
-                      >
-                        <CheckCircle className="h-4 w-4 mr-1" />
-                        Terminar
-                      </Button>
-                    )}
-                    
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => toast.info('Funcionalidad de notas próximamente')}
-                    >
-                      <Clock className="h-4 w-4 mr-1" />
-                      Nota Rápida
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
+                                      <div>
+                                        <label className="text-sm font-medium block mb-2">Causa de Retraso</label>
+                                        <Select value={delayReason} onValueChange={setDelayReason}>
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Seleccionar causa" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="materiales">Falta de materiales</SelectItem>
+                                            <SelectItem value="clima">Condiciones climáticas</SelectItem>
+                                            <SelectItem value="personal">Falta de personal</SelectItem>
+                                            <SelectItem value="equipos">Falta de equipos</SelectItem>
+                                            <SelectItem value="permisos">Permisos pendientes</SelectItem>
+                                            <SelectItem value="otros">Otros</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
 
-            {filteredActivities.length === 0 && (
-              <div className="text-center py-12">
-                <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">No hay actividades</h3>
-                <p className="text-muted-foreground mb-4">
-                  {filterStatus === 'all' 
-                    ? 'No se encontraron actividades para este proyecto. Las actividades se cargarán desde el Gantt de Planeación.'
-                    : `No hay actividades con el estado "${statusConfig[filterStatus as keyof typeof statusConfig]?.label}".`
-                  }
-                </p>
-              </div>
-            )}
+                                      <div>
+                                        <label className="text-sm font-medium block mb-2">Notas</label>
+                                        <Textarea
+                                          value={notes}
+                                          onChange={(e) => setNotes(e.target.value)}
+                                          placeholder="Agregar notas de la actividad..."
+                                          rows={3}
+                                        />
+                                      </div>
+
+                                      <div className="flex gap-2 pt-4">
+                                        <Button 
+                                          onClick={() => updateActivityStatus(selectedActivity.id, 'en_proceso')}
+                                          disabled={selectedActivity.status === 'en_proceso'}
+                                        >
+                                          Iniciar
+                                        </Button>
+                                        <Button 
+                                          onClick={() => updateActivityStatus(selectedActivity.id, 'terminado')}
+                                          disabled={selectedActivity.status === 'terminado'}
+                                        >
+                                          Terminar
+                                        </Button>
+                                        <Button 
+                                          variant="destructive"
+                                          onClick={() => updateActivityStatus(selectedActivity.id, 'bloqueado')}
+                                        >
+                                          Bloquear
+                                        </Button>
+                                      </div>
+                                    </TabsContent>
+                                    
+                                    <TabsContent value="materials" className="space-y-4 mt-4">
+                                      <p className="text-sm text-muted-foreground">
+                                        Control de materiales para el mayor: {selectedActivity.mayor_name}
+                                      </p>
+                                      <div className="p-4 border rounded">
+                                        <p className="text-sm">Readiness: {materialReadinessConfig[selectedActivity.material_readiness || 'pendiente']?.label}</p>
+                                        <Button className="mt-2 w-full">
+                                          Solicitar Material
+                                        </Button>
+                                      </div>
+                                    </TabsContent>
+                                    
+                                    <TabsContent value="risks" className="space-y-4 mt-4">
+                                      <p className="text-sm text-muted-foreground">
+                                        Gestión de riesgos para la actividad
+                                      </p>
+                                      {/* Risk management UI */}
+                                    </TabsContent>
+                                    
+                                    <TabsContent value="relations" className="space-y-4 mt-4">
+                                      <div className="space-y-2">
+                                        <p><strong>Mayor:</strong> {selectedActivity.mayor_name}</p>
+                                        <p><strong>Importe:</strong> ${selectedActivity.amount.toLocaleString()}</p>
+                                        <p><strong>Duración:</strong> {selectedActivity.duration_days} días</p>
+                                      </div>
+                                    </TabsContent>
+                                  </Tabs>
+                                </div>
+                              )}
+                            </SheetContent>
+                          </Sheet>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="relative h-8 bg-gray-100 rounded">
+                          {/* Timeline visualization placeholder */}
+                          <div className="absolute inset-0 flex items-center">
+                            <div className="h-2 bg-gray-300 rounded-full flex-1 mr-2"></div>
+                            {activity.status !== 'no_iniciado' && (
+                              <div className="h-2 bg-blue-500 rounded-full" style={{width: `${activity.progress_percentage}%`}}></div>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>

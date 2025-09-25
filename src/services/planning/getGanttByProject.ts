@@ -36,94 +36,41 @@ export const getGanttByProject = async (projectId: string, clientId?: string): P
     throw new Error('Project ID is required');
   }
 
-  // Get the gantt plan for this project
-  const { data: plan, error: planError } = await supabase
-    .from('cronograma_gantt_plan')
-    .select('id')
-    .eq('proyecto_id', projectId)
-    .maybeSingle();
+  // Use the new read-only VIEW for Planning Gantt data
+  const { data: activities, error } = await supabase
+    .from('v_planning_gantt_for_construction')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('order_index', { ascending: true });
 
-  if (planError) {
-    throw new Error(`Error fetching gantt plan: ${planError.message}`);
+  if (error) {
+    throw new Error(`Error fetching gantt activities: ${error.message}`);
   }
 
-  if (!plan) {
-    // No gantt plan exists yet, return empty array
+  if (!activities || activities.length === 0) {
     return [];
   }
 
-  // Get gantt lines with activities and mayor information
-  const { data: lines, error: linesError } = await supabase
-    .from('cronograma_gantt_line')
-    .select(`
-      id,
-      mayor_id,
-      amount,
-      order_index,
-      activities:cronograma_gantt_activity(
-        id,
-        start_month,
-        start_week,
-        end_month,
-        end_week
-      ),
-      mayor:chart_of_accounts_mayor!inner(
-        id,
-        codigo,
-        nombre
-      )
-    `)
-    .eq('plan_id', plan.id)
-    .eq('is_discount', false)
-    .order('order_index', { ascending: true });
-
-  if (linesError) {
-    throw new Error(`Error fetching gantt lines: ${linesError.message}`);
-  }
-
-  // Convert lines to activities format
-  const activities: PlanningGanttActivity[] = [];
-  
-  (lines || []).forEach((line: any, lineIndex) => {
-    const activity = line.activities?.[0]; // Each line should have one activity
-    
-    if (activity && line.mayor) {
-      // Convert month format from YYYY-MM to display format if needed
-      const startMonth = activity.start_month;
-      const endMonth = activity.end_month;
-      
-      // Calculate approximate dates for display
-      const startYear = parseInt(startMonth.substring(0, 4));
-      const startMonthNum = parseInt(startMonth.substring(5, 7));
-      const endYear = parseInt(endMonth.substring(0, 4));
-      const endMonthNum = parseInt(endMonth.substring(5, 7));
-      
-      // Approximate start/end dates based on week within month
-      const startDate = new Date(startYear, startMonthNum - 1, (activity.start_week - 1) * 7 + 1);
-      const endDate = new Date(endYear, endMonthNum - 1, activity.end_week * 7);
-      
-      // Handle mayor - it might be an array or object from the join
-      const mayorData = Array.isArray(line.mayor) ? line.mayor[0] : line.mayor;
-      
-      activities.push({
-        id: activity.id,
-        mayor_id: line.mayor_id,
-        mayor: mayorData,
-        start_month: startMonth,
-        start_week: activity.start_week,
-        end_month: endMonth,
-        end_week: activity.end_week,
-        amount: line.amount || 0,
-        start_date_plan: startDate.toISOString().split('T')[0],
-        end_date_plan: endDate.toISOString().split('T')[0],
-        nombre_actividad: mayorData?.nombre || `Actividad ${lineIndex + 1}`,
-        importe_mayor: line.amount || 0,
-        orden: line.order_index || lineIndex + 1
-      });
-    }
-  });
-
-  return activities;
+  // Convert VIEW data to expected format
+  return activities.map((activity: any) => ({
+    id: activity.source_activity_id,
+    mayor_id: activity.mayor_id,
+    mayor: {
+      id: activity.mayor_id,
+      codigo: activity.mayor_codigo,
+      nombre: activity.mayor_nombre
+    },
+    start_month: activity.start_month,
+    start_week: activity.start_week,
+    end_month: activity.end_month,
+    end_week: activity.end_week,
+    amount: activity.amount || 0,
+    start_date_plan: activity.start_date_plan,
+    end_date_plan: activity.end_date_plan,
+    nombre_actividad: activity.nombre_actividad,
+    importe_mayor: activity.amount || 0,
+    orden: activity.order_index
+  }));
 };
 
 export const getGanttConstructionStatus = async (projectId: string): Promise<Record<string, any>> => {
