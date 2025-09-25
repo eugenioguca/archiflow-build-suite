@@ -67,7 +67,7 @@ export const getGanttByProject = async (projectId: string, clientId?: string): P
         end_month,
         end_week
       ),
-      mayor:chart_of_accounts_mayor(
+      mayor:chart_of_accounts_mayor!inner(
         id,
         codigo,
         nombre
@@ -84,7 +84,7 @@ export const getGanttByProject = async (projectId: string, clientId?: string): P
   // Convert lines to activities format
   const activities: PlanningGanttActivity[] = [];
   
-  (lines || []).forEach((line, lineIndex) => {
+  (lines || []).forEach((line: any, lineIndex) => {
     const activity = line.activities?.[0]; // Each line should have one activity
     
     if (activity && line.mayor) {
@@ -102,10 +102,13 @@ export const getGanttByProject = async (projectId: string, clientId?: string): P
       const startDate = new Date(startYear, startMonthNum - 1, (activity.start_week - 1) * 7 + 1);
       const endDate = new Date(endYear, endMonthNum - 1, activity.end_week * 7);
       
+      // Handle mayor - it might be an array or object from the join
+      const mayorData = Array.isArray(line.mayor) ? line.mayor[0] : line.mayor;
+      
       activities.push({
         id: activity.id,
         mayor_id: line.mayor_id,
-        mayor: line.mayor,
+        mayor: mayorData,
         start_month: startMonth,
         start_week: activity.start_week,
         end_month: endMonth,
@@ -113,7 +116,7 @@ export const getGanttByProject = async (projectId: string, clientId?: string): P
         amount: line.amount || 0,
         start_date_plan: startDate.toISOString().split('T')[0],
         end_date_plan: endDate.toISOString().split('T')[0],
-        nombre_actividad: line.mayor.nombre || `Actividad ${lineIndex + 1}`,
+        nombre_actividad: mayorData?.nombre || `Actividad ${lineIndex + 1}`,
         importe_mayor: line.amount || 0,
         orden: line.order_index || lineIndex + 1
       });
@@ -128,34 +131,40 @@ export const getGanttConstructionStatus = async (projectId: string): Promise<Rec
     return {};
   }
 
-  // Get latest status for each activity from gantt_activity_log
-  const { data: logs, error } = await supabase
-    .from('gantt_activity_log')
-    .select('*')
-    .eq('project_id', projectId)
-    .order('created_at', { ascending: false });
+  try {
+    // Get latest status for each activity from gantt_activity_log
+    // Using any to work around type issues until types are regenerated
+    const { data: logs, error } = await supabase
+      .from('gantt_activity_log' as any)
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Error fetching construction logs:', error);
+    if (error) {
+      console.error('Error fetching construction logs:', error);
+      return {};
+    }
+
+    // Group by source_activity_id and take the latest entry
+    const statusByActivity: Record<string, any> = {};
+    
+    (logs || []).forEach((log: any) => {
+      if (!statusByActivity[log.source_activity_id]) {
+        statusByActivity[log.source_activity_id] = {
+          estado: log.estado,
+          avance_real_pct: log.avance_real_pct || 0,
+          start_real: log.start_real,
+          end_real: log.end_real,
+          causa_retraso: log.causa_retraso,
+          nota: log.nota,
+          updated_at: log.created_at
+        };
+      }
+    });
+
+    return statusByActivity;
+  } catch (error) {
+    console.error('Error in getGanttConstructionStatus:', error);
     return {};
   }
-
-  // Group by source_activity_id and take the latest entry
-  const statusByActivity: Record<string, any> = {};
-  
-  (logs || []).forEach(log => {
-    if (!statusByActivity[log.source_activity_id]) {
-      statusByActivity[log.source_activity_id] = {
-        estado: log.estado,
-        avance_real_pct: log.avance_real_pct || 0,
-        start_real: log.start_real,
-        end_real: log.end_real,
-        causa_retraso: log.causa_retraso,
-        nota: log.nota,
-        updated_at: log.created_at
-      };
-    }
-  });
-
-  return statusByActivity;
 };

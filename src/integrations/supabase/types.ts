@@ -3996,6 +3996,66 @@ export type Database = {
         }
         Relationships: []
       }
+      gantt_activity_log: {
+        Row: {
+          avance_real_pct: number | null
+          causa_retraso: string | null
+          created_at: string
+          end_real: string | null
+          estado: string
+          id: string
+          nota: string | null
+          project_id: string
+          source_activity_id: string
+          start_real: string | null
+          updated_at: string
+          usuario_id: string | null
+        }
+        Insert: {
+          avance_real_pct?: number | null
+          causa_retraso?: string | null
+          created_at?: string
+          end_real?: string | null
+          estado: string
+          id?: string
+          nota?: string | null
+          project_id: string
+          source_activity_id: string
+          start_real?: string | null
+          updated_at?: string
+          usuario_id?: string | null
+        }
+        Update: {
+          avance_real_pct?: number | null
+          causa_retraso?: string | null
+          created_at?: string
+          end_real?: string | null
+          estado?: string
+          id?: string
+          nota?: string | null
+          project_id?: string
+          source_activity_id?: string
+          start_real?: string | null
+          updated_at?: string
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gantt_activity_log_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gantt_activity_log_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "financial_summary_by_client_project"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
       general_ledger_accounts: {
         Row: {
           account_code: string
