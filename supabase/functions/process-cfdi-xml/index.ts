@@ -229,7 +229,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -310,8 +310,8 @@ function parseXMLContent(xmlContent: string): CFDIData {
         nombre: receptorNombre,
         usoCFDI
       },
-      folio,
-      serie,
+      folio: folio || undefined,
+      serie: serie || undefined,
       fecha,
       tipoComprobante,
       formaPago,
@@ -324,7 +324,7 @@ function parseXMLContent(xmlContent: string): CFDIData {
     
   } catch (error) {
     console.error('XML parsing error:', error);
-    throw new Error(`Error parsing XML: ${error.message}`);
+    throw new Error(`Error parsing XML: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 

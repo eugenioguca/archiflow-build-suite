@@ -44,33 +44,21 @@ serve(async (req) => {
     const xmlContent = await xmlFile.text();
     console.log('Processing payment complement XML...');
 
-    // Parse XML to extract complement data
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+    // Parse XML to extract complement data using text parsing
+    // Since DOMParser is not available in Deno, we'll use regex parsing
+    console.log('Parsing XML content...');
 
-    // Check for parsing errors
-    const parserError = xmlDoc.querySelector('parsererror');
-    if (parserError) {
-      console.error('XML parsing error:', parserError.textContent);
+    // Basic validation - check if it's valid XML
+    if (!xmlContent.includes('<?xml') || !xmlContent.includes('cfdi:Comprobante')) {
       return new Response(
         JSON.stringify({ success: false, error: 'Invalid XML format' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Extract complement data
-    const comprobante = xmlDoc.querySelector('cfdi\\:Comprobante, Comprobante');
-    if (!comprobante) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Invalid CFDI complement format' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Get complement UUID
-    const complementUuid = comprobante.getAttribute('Folio') || 
-                          comprobante.getAttribute('UUID') ||
-                          xmlDoc.querySelector('tfd\\:TimbreFiscalDigital, TimbreFiscalDigital')?.getAttribute('UUID');
+    // Extract complement UUID from TimbreFiscalDigital
+    const uuidMatch = xmlContent.match(/UUID="([^"]+)"/i);
+    const complementUuid = uuidMatch ? uuidMatch[1] : null;
 
     if (!complementUuid) {
       return new Response(
@@ -79,24 +67,16 @@ serve(async (req) => {
       );
     }
 
-    // Extract payment data
-    const pagos = xmlDoc.querySelector('pago20\\:Pagos, Pagos');
-    const pago = xmlDoc.querySelector('pago20\\:Pago, Pago');
+    // Extract payment data using regex
+    const montoMatch = xmlContent.match(/Monto="([^"]+)"/i);
+    const fechaMatch = xmlContent.match(/FechaPago="([^"]+)"/i);
+    const formaPagoMatch = xmlContent.match(/FormaDePagoP="([^"]+)"/i);
+    const doctoMatch = xmlContent.match(/IdDocumento="([^"]+)"/i);
 
-    if (!pago) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Payment data not found in complement' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const montoPago = parseFloat(pago.getAttribute('Monto') || '0');
-    const fechaPago = pago.getAttribute('FechaPago');
-    const formaPago = pago.getAttribute('FormaDePagoP');
-
-    // Find the related CFDI document
-    const doctoRelacionado = xmlDoc.querySelector('pago20\\:DoctoRelacionado, DoctoRelacionado');
-    const cfdiUuidOriginal = doctoRelacionado?.getAttribute('IdDocumento');
+    const montoPago = montoMatch ? parseFloat(montoMatch[1]) : 0;
+    const fechaPago = fechaMatch ? fechaMatch[1] : null;
+    const formaPago = formaPagoMatch ? formaPagoMatch[1] : null;
+    const cfdiUuidOriginal = doctoMatch ? doctoMatch[1] : null;
 
     let originalCfdiId = cfdiDocumentId;
 
@@ -215,7 +195,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message || 'Internal server error' 
+        error: error instanceof Error ? error.message : 'Internal server error'
       }),
       { 
         status: 500,
