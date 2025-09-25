@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Play, Pause, CheckCircle, AlertTriangle, Calendar, Clock, User, Camera } from 'lucide-react';
+import { ChevronDown, ChevronRight, Play, Pause, CheckCircle, AlertTriangle, Calendar, Clock, User, Camera, Package, Wrench } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,20 +12,24 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { getGanttByProject, getGanttConstructionStatus, type GanttConstructionActivity } from '@/services/planning/getGanttByProject';
 
-interface GanttActivity {
+interface ConstructionActivity {
   id: string;
+  source_activity_id: string;
   activity_name: string;
+  mayor_name: string;
+  mayor_id: string;
   planned_start_date: string;
   planned_end_date: string;
-  status: string;
+  status: 'no_iniciado' | 'en_proceso' | 'bloqueado' | 'terminado';
   progress_percentage: number;
   actual_start_date?: string;
   actual_end_date?: string;
   delay_reason?: string;
   notes?: string;
-  responsible_user_id?: string;
-  evidence_photos: string[];
+  amount: number;
+  material_readiness?: 'solicitado' | 'listo' | 'pendiente';
 }
 
 interface ConstructionScheduleProps {
@@ -34,24 +38,31 @@ interface ConstructionScheduleProps {
 }
 
 const statusConfig = {
-  not_started: { label: 'No iniciado', icon: Calendar, color: 'bg-muted', textColor: 'text-muted-foreground' },
-  in_progress: { label: 'En proceso', icon: Play, color: 'bg-blue-500', textColor: 'text-white' },
-  blocked: { label: 'Bloqueado', icon: AlertTriangle, color: 'bg-red-500', textColor: 'text-white' },
-  completed: { label: 'Terminado', icon: CheckCircle, color: 'bg-green-500', textColor: 'text-white' },
+  no_iniciado: { label: 'No iniciado', icon: Calendar, color: 'bg-muted', textColor: 'text-muted-foreground' },
+  en_proceso: { label: 'En proceso', icon: Play, color: 'bg-blue-500', textColor: 'text-white' },
+  bloqueado: { label: 'Bloqueado', icon: AlertTriangle, color: 'bg-red-500', textColor: 'text-white' },
+  terminado: { label: 'Terminado', icon: CheckCircle, color: 'bg-green-500', textColor: 'text-white' },
+};
+
+const materialReadinessConfig = {
+  pendiente: { label: 'Pendiente', icon: Package, color: 'bg-red-100 text-red-700' },
+  solicitado: { label: 'Solicitado', icon: Clock, color: 'bg-yellow-100 text-yellow-700' },
+  listo: { label: 'Listo', icon: CheckCircle, color: 'bg-green-100 text-green-700' },
 };
 
 export const ConstructionSchedule: React.FC<ConstructionScheduleProps> = ({
   projectId,
   clientId
 }) => {
-  const [activities, setActivities] = useState<GanttActivity[]>([]);
+  const [activities, setActivities] = useState<ConstructionActivity[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedActivity, setSelectedActivity] = useState<GanttActivity | null>(null);
+  const [selectedActivity, setSelectedActivity] = useState<ConstructionActivity | null>(null);
   const [notes, setNotes] = useState('');
   const [delayReason, setDelayReason] = useState('');
   const [progressPercentage, setProgressPercentage] = useState(0);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterWeek, setFilterWeek] = useState<string>('all');
+  const [materialAlerts, setMaterialAlerts] = useState<any[]>([]);
 
   useEffect(() => {
     fetchActivities();
@@ -61,88 +72,145 @@ export const ConstructionSchedule: React.FC<ConstructionScheduleProps> = ({
     try {
       setLoading(true);
       
-      // Por ahora usaremos datos simulados hasta que esté la integración con cronograma
-      const mockActivities: GanttActivity[] = [
-        {
-          id: '1',
-          activity_name: 'Excavación y cimentación',
-          planned_start_date: '2024-01-15',
-          planned_end_date: '2024-01-30',
-          status: 'completed',
-          progress_percentage: 100,
-          actual_start_date: '2024-01-15',
-          actual_end_date: '2024-01-28',
-          notes: 'Completado sin retrasos',
-          evidence_photos: []
-        },
-        {
-          id: '2',
-          activity_name: 'Construcción de muros',
-          planned_start_date: '2024-02-01',
-          planned_end_date: '2024-02-20',
-          status: 'in_progress',
-          progress_percentage: 65,
-          actual_start_date: '2024-02-01',
-          notes: 'En progreso normal',
-          evidence_photos: []
-        },
-        {
-          id: '3',
-          activity_name: 'Instalación eléctrica',
-          planned_start_date: '2024-02-15',
-          planned_end_date: '2024-03-05',
-          status: 'not_started',
-          progress_percentage: 0,
-          evidence_photos: []
-        }
-      ];
+      // Get planning gantt activities
+      const planningActivities = await getGanttByProject(projectId, clientId);
+      
+      // Get construction status for each activity
+      const constructionStatus = await getGanttConstructionStatus(projectId);
+      
+      // Get material readiness
+      const materialReadiness = await getMaterialReadiness(projectId);
+      
+      // Combine planning data with construction status
+      const constructionActivities: ConstructionActivity[] = planningActivities.map(activity => {
+        const status = constructionStatus[activity.id];
+        const readiness = materialReadiness[activity.mayor_id];
+        
+        return {
+          id: activity.id,
+          source_activity_id: activity.id,
+          activity_name: activity.nombre_actividad,
+          mayor_name: activity.mayor?.nombre || 'Sin mayor',
+          mayor_id: activity.mayor_id,
+          planned_start_date: activity.start_date_plan || '',
+          planned_end_date: activity.end_date_plan || '',
+          status: status?.estado || 'no_iniciado',
+          progress_percentage: status?.avance_real_pct || 0,
+          actual_start_date: status?.start_real,
+          actual_end_date: status?.end_real,
+          delay_reason: status?.causa_retraso,
+          notes: status?.nota,
+          amount: activity.amount,
+          material_readiness: readiness
+        };
+      });
 
-      setActivities(mockActivities);
+      setActivities(constructionActivities);
+      
+      // Check for material alerts
+      await checkMaterialAlerts(constructionActivities);
+      
     } catch (error) {
       console.error('Error fetching activities:', error);
-      toast.error('Error al cargar el cronograma');
+      toast.error('Error al cargar el cronograma: ' + (error as Error).message);
     } finally {
       setLoading(false);
     }
   };
 
-  const updateActivityStatus = async (activityId: string, newStatus: string) => {
+  const getMaterialReadiness = async (projectId: string): Promise<Record<string, 'solicitado' | 'listo' | 'pendiente'>> => {
     try {
-      // TODO: Implementar actualización real en base de datos
-      const updatedActivities = activities.map(activity => {
-        if (activity.id === activityId) {
-          const updated = { ...activity, status: newStatus };
-          
-          if (newStatus === 'in_progress' && !activity.actual_start_date) {
-            updated.actual_start_date = new Date().toISOString().split('T')[0];
-          }
-          
-          if (newStatus === 'completed') {
-            updated.actual_end_date = new Date().toISOString().split('T')[0];
-            updated.progress_percentage = 100;
-          }
-          
-          if (notes) updated.notes = notes;
-          if (delayReason) updated.delay_reason = delayReason;
-          
-          return updated;
-        }
-        return activity;
-      });
+      // Query construction budget rollups to check material status
+      const { data: rollups, error } = await supabase
+        .from('v_construction_budget_rollup')
+        .select('mayor_id, allocated_amount, remaining_amount')
+        .eq('project_id', projectId);
+
+      if (error) throw error;
+
+      const readiness: Record<string, 'solicitado' | 'listo' | 'pendiente'> = {};
       
-      setActivities(updatedActivities);
+      (rollups || []).forEach(rollup => {
+        const allocatedPct = rollup.allocated_amount / (rollup.allocated_amount + rollup.remaining_amount) * 100;
+        
+        if (allocatedPct >= 80) {
+          // Check if materials are delivered (would need TU integration)
+          readiness[rollup.mayor_id] = 'solicitado';
+        } else {
+          readiness[rollup.mayor_id] = 'pendiente';
+        }
+      });
+
+      return readiness;
+    } catch (error) {
+      console.error('Error checking material readiness:', error);
+      return {};
+    }
+  };
+
+  const checkMaterialAlerts = async (activities: ConstructionActivity[]) => {
+    const today = new Date();
+    const alertThreshold = new Date(today.getTime() + 4 * 24 * 60 * 60 * 1000); // +4 days
+
+    const alerts = activities.filter(activity => {
+      const startDate = new Date(activity.planned_start_date);
+      return startDate <= alertThreshold && activity.material_readiness === 'pendiente';
+    });
+
+    setMaterialAlerts(alerts);
+  };
+
+  const updateActivityStatus = async (activityId: string, newStatus: 'no_iniciado' | 'en_proceso' | 'bloqueado' | 'terminado') => {
+    try {
+      const activity = activities.find(a => a.id === activityId);
+      if (!activity) return;
+
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuario no autenticado');
+
+      const logData: any = {
+        project_id: projectId,
+        source_activity_id: activityId,
+        estado: newStatus,
+        avance_real_pct: newStatus === 'terminado' ? 100 : progressPercentage || activity.progress_percentage,
+        usuario_id: user.id
+      };
+
+      if (newStatus === 'en_proceso' && !activity.actual_start_date) {
+        logData.start_real = new Date().toISOString().split('T')[0];
+      }
+
+      if (newStatus === 'terminado') {
+        logData.end_real = new Date().toISOString().split('T')[0];
+        logData.avance_real_pct = 100;
+      }
+
+      if (notes) logData.nota = notes;
+      if (delayReason) logData.causa_retraso = delayReason;
+
+      // Insert log entry
+      const { error } = await supabase
+        .from('gantt_activity_log')
+        .insert([logData]);
+
+      if (error) throw error;
+
+      // Refresh activities
+      await fetchActivities();
+      
       toast.success('Estado de actividad actualizado');
       setNotes('');
       setDelayReason('');
       setProgressPercentage(0);
     } catch (error) {
       console.error('Error updating activity status:', error);
-      toast.error('Error al actualizar estado');
+      toast.error('Error al actualizar estado: ' + (error as Error).message);
     }
   };
 
   const markAsCompleted = async (activityId: string) => {
-    await updateActivityStatus(activityId, 'completed');
+    await updateActivityStatus(activityId, 'terminado');
   };
 
   // Filtros
@@ -169,14 +237,14 @@ export const ConstructionSchedule: React.FC<ConstructionScheduleProps> = ({
   });
 
   // Calcular retrasos
-  const getDelayDays = (activity: GanttActivity) => {
-    if (activity.status === 'completed' && activity.actual_end_date) {
+  const getDelayDays = (activity: ConstructionActivity) => {
+    if (activity.status === 'terminado' && activity.actual_end_date) {
       const planned = new Date(activity.planned_end_date);
       const actual = new Date(activity.actual_end_date);
       return Math.ceil((actual.getTime() - planned.getTime()) / (1000 * 60 * 60 * 24));
     }
     
-    if (activity.status === 'in_progress') {
+    if (activity.status === 'en_proceso') {
       const planned = new Date(activity.planned_end_date);
       const today = new Date();
       if (today > planned) {
@@ -203,6 +271,36 @@ export const ConstructionSchedule: React.FC<ConstructionScheduleProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Material Alerts */}
+      {materialAlerts.length > 0 && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-orange-700">
+              <Package className="h-5 w-5" />
+              Materiales por solicitar (próximos 7 días)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {materialAlerts.map(activity => (
+                <div key={activity.id} className="flex items-center justify-between p-2 bg-white rounded border">
+                  <div>
+                    <p className="font-medium">{activity.activity_name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Inicia: {format(new Date(activity.planned_start_date), 'dd/MMM/yyyy', { locale: es })}
+                    </p>
+                  </div>
+                  <Button size="sm" className="gap-2">
+                    <Wrench className="h-4 w-4" />
+                    Solicitar materiales
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Filtros y controles */}
       <Card>
         <CardHeader>
@@ -286,14 +384,24 @@ export const ConstructionSchedule: React.FC<ConstructionScheduleProps> = ({
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3">
                       <Badge 
                         variant="secondary" 
-                        className={`${statusConfig[activity.status as keyof typeof statusConfig]?.color} ${statusConfig[activity.status as keyof typeof statusConfig]?.textColor}`}
+                        className={`${statusConfig[activity.status]?.color} ${statusConfig[activity.status]?.textColor}`}
                       >
                         {StatusIcon && <StatusIcon className="h-3 w-3 mr-1" />}
-                        {statusConfig[activity.status as keyof typeof statusConfig]?.label}
+                        {statusConfig[activity.status]?.label}
                       </Badge>
+                      
+                      {activity.material_readiness && (
+                        <Badge 
+                          variant="outline" 
+                          className={materialReadinessConfig[activity.material_readiness]?.color}
+                        >
+                          <Package className="h-3 w-3 mr-1" />
+                          {materialReadinessConfig[activity.material_readiness]?.label}
+                        </Badge>
+                      )}
                       
                       <Sheet>
                         <SheetTrigger asChild>
@@ -317,6 +425,7 @@ export const ConstructionSchedule: React.FC<ConstructionScheduleProps> = ({
                                 <div>
                                   <label className="text-sm font-medium">Actividad</label>
                                   <p className="text-sm text-muted-foreground">{selectedActivity.activity_name}</p>
+                                  <p className="text-xs text-muted-foreground">Mayor: {selectedActivity.mayor_name}</p>
                                 </div>
                                 
                                 <div className="grid grid-cols-2 gap-4">
@@ -387,7 +496,7 @@ export const ConstructionSchedule: React.FC<ConstructionScheduleProps> = ({
                                   />
                                 </div>
 
-                                {selectedActivity.status === 'blocked' && (
+                                {selectedActivity.status === 'bloqueado' && (
                                   <div className="space-y-2">
                                     <label className="text-sm font-medium">Causa del Bloqueo</label>
                                     <Textarea
@@ -398,9 +507,29 @@ export const ConstructionSchedule: React.FC<ConstructionScheduleProps> = ({
                                     />
                                   </div>
                                 )}
+                                
+                                {/* Material Readiness */}
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium">Estado de Materiales</label>
+                                  <div className="flex items-center gap-2">
+                                    {selectedActivity.material_readiness && (
+                                      <Badge 
+                                        variant="outline" 
+                                        className={materialReadinessConfig[selectedActivity.material_readiness]?.color}
+                                      >
+                                        <Package className="h-3 w-3 mr-1" />
+                                        {materialReadinessConfig[selectedActivity.material_readiness]?.label}
+                                      </Badge>
+                                    )}
+                                    <Button variant="outline" size="sm" className="gap-2">
+                                      <Wrench className="h-4 w-4" />
+                                      Solicitar materiales
+                                    </Button>
+                                  </div>
+                                </div>
 
                                 <div className="flex gap-2">
-                                  {selectedActivity.status !== 'completed' && (
+                                  {selectedActivity.status !== 'terminado' && (
                                     <Button 
                                       onClick={() => markAsCompleted(selectedActivity.id)}
                                       className="flex-1"
