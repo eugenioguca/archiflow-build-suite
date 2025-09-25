@@ -20,13 +20,21 @@ import {
   Truck,
   DollarSign,
   BarChart3,
-  FileText
+  FileText,
+  RefreshCw,
+  Search,
+  FileX,
+  MessageSquare,
+  ShoppingCart,
+  ExternalLink
 } from 'lucide-react';
 import { useConstructionBudget } from '@/hooks/useConstructionBudget';
+import { useExecutiveBudgetShared } from '@/hooks/useExecutiveBudgetShared';
 import { formatCurrency } from '@/lib/utils';
 
 interface ConstructionBudgetTabsProps {
-  projectId: string;
+  selectedClientId?: string;
+  selectedProjectId?: string;
 }
 
 const statusConfig = {
@@ -62,28 +70,86 @@ const statusConfig = {
   },
 };
 
-export const ConstructionBudgetTabs: React.FC<ConstructionBudgetTabsProps> = ({ projectId }) => {
+export const ConstructionBudgetTabs: React.FC<ConstructionBudgetTabsProps> = ({ 
+  selectedClientId, 
+  selectedProjectId 
+}) => {
   const [activeTab, setActiveTab] = useState('executive');
   const [filterText, setFilterText] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [filterMayor, setFilterMayor] = useState('all');
   const [filterVariation, setFilterVariation] = useState(false);
   const [expandedMayores, setExpandedMayores] = useState<Set<string>>(new Set());
   const [expandedPartidas, setExpandedPartidas] = useState<Set<string>>(new Set());
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
   
+  // Executive budget data (read-only from planning) - exact same as Vista Final
+  const { 
+    finalRows: executiveRows,
+    totals: executiveTotals,
+    groupedByMayor,
+    isLoading: isLoadingExecutive,
+    hasData: hasExecutiveData 
+  } = useExecutiveBudgetShared(selectedClientId, selectedProjectId);
+
+  // Construction control data
   const {
-    executiveBudget,
     rollupBudget,
-    isLoadingExecutive,
     isLoadingRollup,
     syncSnapshot,
     updateEAC,
     createMaterialRequest,
-    refetchExecutive,
     refetchRollup
-  } = useConstructionBudget(projectId);
+  } = useConstructionBudget(selectedProjectId);
 
-  // No auto-sync for executive budget - it should show Planning data directly
+  const handleSyncSnapshot = async () => {
+    if (!selectedProjectId) return;
+    setIsSyncing(true);
+    try {
+      await syncSnapshot.mutateAsync(selectedProjectId);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Toggle functions for executive view
+  const toggleMayor = (mayorName: string) => {
+    const newExpanded = new Set(expandedMayores);
+    if (newExpanded.has(mayorName)) {
+      newExpanded.delete(mayorName);
+    } else {
+      newExpanded.add(mayorName);
+    }
+    setExpandedMayores(newExpanded);
+  };
+
+  const togglePartida = (partidaName: string) => {
+    const newExpanded = new Set(expandedPartidas);
+    if (newExpanded.has(partidaName)) {
+      newExpanded.delete(partidaName);
+    } else {
+      newExpanded.add(partidaName);
+    }
+    setExpandedPartidas(newExpanded);
+  };
+
+  // Group executive data for hierarchical display
+  const groupedExecutive = executiveRows.reduce((acc, row) => {
+    if (row.tipo !== 'subpartida') return acc;
+    
+    const mayorKey = `${row.mayor_codigo} - ${row.mayor_nombre}`;
+    const partidaKey = `${row.partida_codigo} - ${row.partida_nombre}`;
+    
+    if (!acc[mayorKey]) {
+      acc[mayorKey] = {};
+    }
+    if (!acc[mayorKey][partidaKey]) {
+      acc[mayorKey][partidaKey] = [];
+    }
+    acc[mayorKey][partidaKey].push(row);
+    return acc;
+  }, {} as Record<string, Record<string, typeof executiveRows>>);
 
   // Calculate KPIs from rollup data
   const kpis = rollupBudget.reduce(
@@ -106,26 +172,6 @@ export const ConstructionBudgetTabs: React.FC<ConstructionBudgetTabsProps> = ({ 
     return 'text-red-600';
   };
 
-  const toggleMayor = (mayorName: string) => {
-    const newExpanded = new Set(expandedMayores);
-    if (newExpanded.has(mayorName)) {
-      newExpanded.delete(mayorName);
-    } else {
-      newExpanded.add(mayorName);
-    }
-    setExpandedMayores(newExpanded);
-  };
-
-  const togglePartida = (partidaName: string) => {
-    const newExpanded = new Set(expandedPartidas);
-    if (newExpanded.has(partidaName)) {
-      newExpanded.delete(partidaName);
-    } else {
-      newExpanded.add(partidaName);
-    }
-    setExpandedPartidas(newExpanded);
-  };
-
   // Filter rollup data
   const filteredRollup = rollupBudget.filter(item => {
     const matchesText = !filterText || 
@@ -138,34 +184,6 @@ export const ConstructionBudgetTabs: React.FC<ConstructionBudgetTabsProps> = ({ 
     
     return matchesText && matchesMayor && matchesVariation;
   });
-
-  // Filter executive data based on search
-  const filteredExecutive = executiveBudget.filter(item => {
-    if (!filterText) return true;
-    const searchTerm = filterText.toLowerCase();
-    const mayorNombre = item.partida_ejecutivo?.parametrico?.mayor?.nombre || '';
-    const partidaNombre = item.partida_ejecutivo?.parametrico?.partida?.nombre || '';
-    const subpartidaNombre = item.nombre_snapshot || '';
-    
-    return mayorNombre.toLowerCase().includes(searchTerm) ||
-           partidaNombre.toLowerCase().includes(searchTerm) ||
-           subpartidaNombre.toLowerCase().includes(searchTerm);
-  });
-
-  // Group filtered executive data by Planning hierarchy (Mayor → Partida → Subpartida)
-  const groupedExecutive = filteredExecutive.reduce((acc, item) => {
-    const mayorNombre = item.partida_ejecutivo?.parametrico?.mayor?.nombre || 'Sin Mayor';
-    const partidaNombre = item.partida_ejecutivo?.parametrico?.partida?.nombre || 'Sin Partida';
-    
-    if (!acc[mayorNombre]) {
-      acc[mayorNombre] = {};
-    }
-    if (!acc[mayorNombre][partidaNombre]) {
-      acc[mayorNombre][partidaNombre] = [];
-    }
-    acc[mayorNombre][partidaNombre].push(item);
-    return acc;
-  }, {} as Record<string, Record<string, typeof filteredExecutive>>);
 
   // Group rollup data
   const groupedRollup = filteredRollup.reduce((acc, item) => {
@@ -217,7 +235,7 @@ export const ConstructionBudgetTabs: React.FC<ConstructionBudgetTabsProps> = ({ 
                    className="flex-1"
                  />
                  <Button
-                   onClick={() => syncSnapshot.mutate(projectId)}
+                   onClick={() => syncSnapshot.mutate(selectedProjectId)}
                    disabled={syncSnapshot.isPending}
                    variant="outline"
                    size="sm"
@@ -273,7 +291,6 @@ export const ConstructionBudgetTabs: React.FC<ConstructionBudgetTabsProps> = ({ 
                               {/* Subpartidas */}
                               {expandedPartidas.has(partidaName) && (
                                 <div className="space-y-1 p-2">
-                  {/* Header - matching Planning module format */}
                                    <div className="grid grid-cols-6 gap-4 p-2 text-sm font-medium text-muted-foreground border-b">
                                      <div>Subpartida</div>
                                      <div className="text-center">Unidad</div>
@@ -284,10 +301,10 @@ export const ConstructionBudgetTabs: React.FC<ConstructionBudgetTabsProps> = ({ 
                                    </div>
                                    {items.map((item) => (
                                      <div key={item.id} className="grid grid-cols-6 gap-4 p-3 border rounded bg-background items-center">
-                                       <div className="text-sm">{item.nombre_snapshot}</div>
+                                       <div className="text-sm">{item.subpartida_nombre}</div>
                                        <div className="text-sm text-center">{item.unidad}</div>
-                                       <div className="text-sm text-center">{item.cantidad.toLocaleString()}</div>
-                                       <div className="text-sm text-center">{formatCurrency(item.precio_unitario)}</div>
+                                       <div className="text-sm text-center">{item.cantidad?.toLocaleString()}</div>
+                                       <div className="text-sm text-center">{formatCurrency(item.precio_unitario || 0)}</div>
                                        <div className="text-sm text-right font-medium">{formatCurrency(item.importe)}</div>
                                       <div className="flex justify-center">
                                         <Sheet>
@@ -310,7 +327,7 @@ export const ConstructionBudgetTabs: React.FC<ConstructionBudgetTabsProps> = ({ 
                                                  <div className="space-y-4">
                                                    <div>
                                                      <label className="text-sm font-medium">Partida</label>
-                                                     <p className="text-sm text-muted-foreground">{selectedItem.nombre_snapshot}</p>
+                                                     <p className="text-sm text-muted-foreground">{selectedItem.subpartida_nombre}</p>
                                                    </div>
                                                    <div className="grid grid-cols-2 gap-4">
                                                      <div>
@@ -327,8 +344,8 @@ export const ConstructionBudgetTabs: React.FC<ConstructionBudgetTabsProps> = ({ 
                                                  <Button 
                                                    onClick={() => createMaterialRequest.mutate({
                                                      budgetItemId: selectedItem.id,
-                                                     projectId: projectId,
-                                                     description: `Solicitud de material - ${selectedItem.nombre_snapshot}`,
+                                                     projectId: selectedProjectId,
+                                                     description: `Solicitud de material - ${selectedItem.subpartida_nombre}`,
                                                      quantity: selectedItem.cantidad,
                                                      unitPrice: selectedItem.precio_unitario,
                                                      unit: selectedItem.unidad
@@ -670,7 +687,7 @@ export const ConstructionBudgetTabs: React.FC<ConstructionBudgetTabsProps> = ({ 
                                                     <Button 
                                                       onClick={() => createMaterialRequest.mutate({
                                                         budgetItemId: selectedItem.budget_item_id,
-                                                        projectId: projectId,
+                                                        projectId: selectedProjectId,
                                                         description: `Solicitud de material - ${selectedItem.subpartida}`,
                                                         quantity: selectedItem.saldo_qty,
                                                         unitPrice: selectedItem.eac_unit_price,
