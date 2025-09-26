@@ -109,6 +109,7 @@ interface ProgressPhoto {
 }
 
 const ClientPortal: React.FC = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
