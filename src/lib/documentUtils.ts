@@ -300,14 +300,113 @@ export const urlCache = new UrlCache();
  * Obtiene URL con cache para evitar regeneración constante
  */
 /**
+ * Función específica para abrir manuales de operación con fallbacks anti-bloqueo
+ */
+export const openOperationManualInNewTab = async (
+  filePath: string
+): Promise<{ success: boolean; error?: string; fallbackUsed?: string }> => {
+  try {
+    console.log('openOperationManualInNewTab - Starting with:', filePath);
+    
+    // Helper para detectar si Chrome bloquea la URL
+    const attemptOpen = (url: string, windowFeatures?: string): Promise<{ success: boolean; blocked: boolean }> => {
+      return new Promise((resolve) => {
+        const startTime = Date.now();
+        let newWindow: Window | null = null;
+        
+        try {
+          newWindow = window.open(url, '_blank', windowFeatures || 'noopener,noreferrer');
+        } catch (error) {
+          console.log('window.open threw error:', error);
+          resolve({ success: false, blocked: true });
+          return;
+        }
+        
+        // Si newWindow es null, probable bloqueo
+        if (!newWindow) {
+          console.log('window.open returned null - likely blocked');
+          resolve({ success: false, blocked: true });
+          return;
+        }
+        
+        // Si se cierra inmediatamente, probable bloqueo
+        setTimeout(() => {
+          if (newWindow.closed) {
+            console.log('Window closed immediately - likely blocked');
+            resolve({ success: false, blocked: true });
+          } else {
+            console.log('Window opened successfully');
+            resolve({ success: true, blocked: false });
+          }
+        }, 100);
+      });
+    };
+
+    // Estrategia 1: URL estándar del manual de operación
+    const bucketInfo = getBucketForDocument('operation_manual');
+    const normalizedPath = normalizePath(filePath, bucketInfo.bucket);
+    
+    const { data: publicData } = supabase.storage
+      .from(bucketInfo.bucket)
+      .getPublicUrl(normalizedPath);
+    
+    console.log('Attempting standard operation manual URL:', publicData.publicUrl);
+    const standardResult = await attemptOpen(publicData.publicUrl);
+    
+    if (standardResult.success) {
+      return { success: true };
+    }
+    
+    // Estrategia 2: URL con diferentes parámetros de ventana
+    if (standardResult.blocked) {
+      console.log('Standard URL blocked, trying with different window parameters');
+      const altWindowResult = await attemptOpen(publicData.publicUrl, 'width=1200,height=800,scrollbars=yes,resizable=yes');
+      
+      if (altWindowResult.success) {
+        return { success: true, fallbackUsed: 'alternative_window_params' };
+      }
+    }
+    
+    // Estrategia 3: Forzar descarga como fallback definitivo
+    console.log('All open attempts failed, falling back to download');
+    const downloadResult = await downloadDocument(filePath, `manual_${Date.now()}.pdf`, 'operation_manual');
+    
+    if (downloadResult.success) {
+      return { 
+        success: true, 
+        fallbackUsed: 'download',
+        error: 'El navegador bloqueó la apertura del manual. Se ha descargado automáticamente.' 
+      };
+    }
+    
+    return { 
+      success: false, 
+      error: 'No se pudo abrir ni descargar el manual. Posible bloqueo del navegador o problema de conectividad.'
+    };
+    
+  } catch (error) {
+    console.error('openOperationManualInNewTab - Fatal error:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Error desconocido'
+    };
+  }
+};
+
+/**
  * Abre un documento en una nueva pestaña con fallbacks robustos
  */
 export const openDocumentInNewTab = async (
   filePath: string,
   source?: string
-): Promise<{ success: boolean; error?: string }> => {
+): Promise<{ success: boolean; error?: string; fallbackUsed?: string }> => {
   try {
     console.log('openDocumentInNewTab - Starting with:', { filePath, source });
+    
+    // Para manuales de operación, usar función especializada
+    if (source === 'operation_manual') {
+      return await openOperationManualInNewTab(filePath);
+    }
     
     // Helper function for intelligent tab opening detection
     const openWithDetection = (url: string): Promise<boolean> => {

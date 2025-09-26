@@ -108,9 +108,21 @@ export function OperationManuals() {
     try {
       const result = await openDocumentInNewTab(manual.file_url, 'operation_manual');
       if (result.success) {
+        let description = "El manual se ha abierto en una nueva pestaña.";
+        
+        // Mostrar información específica sobre fallbacks usados
+        if (result.fallbackUsed === 'download') {
+          description = "El navegador bloqueó la apertura automática. El manual se ha descargado.";
+        } else if (result.fallbackUsed === 'alternative_window_params') {
+          description = "El manual se abrió usando parámetros alternativos de ventana.";
+        } else if (result.error) {
+          description = result.error;
+        }
+        
         toast({
-          title: "Manual abierto",
-          description: "El manual se ha abierto en una nueva pestaña.",
+          title: "Manual procesado",
+          description,
+          variant: result.fallbackUsed ? "default" : "default"
         });
       } else {
         throw new Error(result.error || 'No se pudo abrir el manual');
