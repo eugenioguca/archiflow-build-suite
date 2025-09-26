@@ -308,41 +308,39 @@ export const openOperationManualInNewTab = async (
   try {
     console.log('openOperationManualInNewTab - Starting with:', filePath);
     
-    // Helper para detectar si Chrome bloquea la URL
-    const attemptOpen = (url: string, windowFeatures?: string): Promise<{ success: boolean; blocked: boolean }> => {
-      return new Promise((resolve) => {
-        const startTime = Date.now();
-        let newWindow: Window | null = null;
-        
+    // Si ya es una URL completa, usarla directamente
+    if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+      console.log('Using complete URL directly:', filePath);
+      const newWindow = window.open(filePath, '_blank', 'noopener,noreferrer');
+      
+      if (newWindow) {
+        return { success: true };
+      } else {
+        // Fallback: descargar si no se puede abrir
         try {
-          newWindow = window.open(url, '_blank', windowFeatures || 'noopener,noreferrer');
-        } catch (error) {
-          console.log('window.open threw error:', error);
-          resolve({ success: false, blocked: true });
-          return;
+          const link = document.createElement('a');
+          link.href = filePath;
+          link.download = `manual_${Date.now()}.pdf`;
+          link.target = '_blank';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          return { 
+            success: true, 
+            fallbackUsed: 'download',
+            error: 'El navegador bloqueó la apertura del manual. Se ha iniciado la descarga.' 
+          };
+        } catch (downloadError) {
+          return { 
+            success: false, 
+            error: 'No se pudo abrir ni descargar el manual.'
+          };
         }
-        
-        // Si newWindow es null, probable bloqueo
-        if (!newWindow) {
-          console.log('window.open returned null - likely blocked');
-          resolve({ success: false, blocked: true });
-          return;
-        }
-        
-        // Si se cierra inmediatamente, probable bloqueo
-        setTimeout(() => {
-          if (newWindow.closed) {
-            console.log('Window closed immediately - likely blocked');
-            resolve({ success: false, blocked: true });
-          } else {
-            console.log('Window opened successfully');
-            resolve({ success: true, blocked: false });
-          }
-        }, 100);
-      });
-    };
-
-    // Estrategia 1: URL estándar del manual de operación
+      }
+    }
+    
+    // Para paths relativos, usar lógica de bucket
     const bucketInfo = getBucketForDocument('operation_manual');
     const normalizedPath = normalizePath(filePath, bucketInfo.bucket);
     
@@ -350,39 +348,28 @@ export const openOperationManualInNewTab = async (
       .from(bucketInfo.bucket)
       .getPublicUrl(normalizedPath);
     
-    console.log('Attempting standard operation manual URL:', publicData.publicUrl);
-    const standardResult = await attemptOpen(publicData.publicUrl);
+    console.log('Using bucket URL:', publicData.publicUrl);
+    const newWindow = window.open(publicData.publicUrl, '_blank', 'noopener,noreferrer');
     
-    if (standardResult.success) {
+    if (newWindow) {
       return { success: true };
-    }
-    
-    // Estrategia 2: URL con diferentes parámetros de ventana
-    if (standardResult.blocked) {
-      console.log('Standard URL blocked, trying with different window parameters');
-      const altWindowResult = await attemptOpen(publicData.publicUrl, 'width=1200,height=800,scrollbars=yes,resizable=yes');
+    } else {
+      // Fallback: descargar
+      const downloadResult = await downloadDocument(filePath, `manual_${Date.now()}.pdf`, 'operation_manual');
       
-      if (altWindowResult.success) {
-        return { success: true, fallbackUsed: 'alternative_window_params' };
+      if (downloadResult.success) {
+        return { 
+          success: true, 
+          fallbackUsed: 'download',
+          error: 'El navegador bloqueó la apertura del manual. Se ha descargado automáticamente.' 
+        };
       }
-    }
-    
-    // Estrategia 3: Forzar descarga como fallback definitivo
-    console.log('All open attempts failed, falling back to download');
-    const downloadResult = await downloadDocument(filePath, `manual_${Date.now()}.pdf`, 'operation_manual');
-    
-    if (downloadResult.success) {
+      
       return { 
-        success: true, 
-        fallbackUsed: 'download',
-        error: 'El navegador bloqueó la apertura del manual. Se ha descargado automáticamente.' 
+        success: false, 
+        error: 'No se pudo abrir ni descargar el manual.'
       };
     }
-    
-    return { 
-      success: false, 
-      error: 'No se pudo abrir ni descargar el manual. Posible bloqueo del navegador o problema de conectividad.'
-    };
     
   } catch (error) {
     console.error('openOperationManualInNewTab - Fatal error:', error);
