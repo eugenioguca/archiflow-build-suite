@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Book, Search, Download, ExternalLink, FileText, Filter, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { openDocumentInNewTab, downloadDocument } from '@/lib/documentUtils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface Manual {
@@ -103,89 +104,45 @@ export function OperationManuals() {
     return FileText;
   };
 
-  const openFile = async (url: string, newTab = false) => {
-    console.log('openFile called with:', { url, newTab });
-    
-    if (newTab) {
-      try {
-        // Validate URL first
-        if (!url || typeof url !== 'string') {
-          throw new Error('URL inválida');
-        }
-        
-        // Check if URL is accessible
-        console.log('Attempting to open manual in new tab:', url);
-        
-        // Use robust opening with detection
-        const beforeOpen = Date.now();
-        const originalFocus = document.hasFocus();
-        
-        const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
-        
-        // If we get a window reference, it's successful
-        if (newWindow && !newWindow.closed) {
-          console.log('Manual opened successfully');
-          toast({
-            title: "Manual abierto",
-            description: "El manual se ha abierto en una nueva pestaña.",
-          });
-          return;
-        }
-        
-        // Check for popup blockers or other issues
-        setTimeout(() => {
-          const focusLost = originalFocus && !document.hasFocus();
-          if (!focusLost) {
-            console.warn('Manual may not have opened - no focus change detected');
-            toast({
-              title: "Posible problema al abrir",
-              description: "Si el manual no se abrió, verifica que los popups estén permitidos o intenta descargar el archivo.",
-              variant: "destructive"
-            });
-          }
-        }, 500);
-        
-      } catch (error) {
-        console.error('Error opening manual:', error);
+  const handleViewDocument = async (manual: Manual) => {
+    try {
+      const result = await openDocumentInNewTab(manual.file_url, 'operation_manual');
+      if (result.success) {
         toast({
-          title: "Error al abrir manual",
-          description: "No se pudo abrir el manual. Intenta descargarlo en su lugar.",
-          variant: "destructive"
+          title: "Manual abierto",
+          description: "El manual se ha abierto en una nueva pestaña.",
         });
+      } else {
+        throw new Error(result.error || 'No se pudo abrir el manual');
       }
-    } else {
-      // Download functionality
-      try {
-        console.log('Attempting to download manual:', url);
-        
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`Error al obtener el archivo: ${response.status}`);
-        }
-        
-        const blob = await response.blob();
-        const downloadUrl = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = '';
-        document.body.appendChild(link);
-        link.click();
-        URL.revokeObjectURL(downloadUrl);
-        document.body.removeChild(link);
-        
+    } catch (error) {
+      console.error('Error opening manual:', error);
+      toast({
+        title: "Error al abrir manual",
+        description: error instanceof Error ? error.message : "No se pudo abrir el manual.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDownloadDocument = async (manual: Manual) => {
+    try {
+      const result = await downloadDocument(manual.file_url, manual.title + '.pdf', 'operation_manual');
+      if (result.success) {
         toast({
           title: "Descarga iniciada",
           description: "El manual se está descargando.",
         });
-        
-      } catch (error) {
-        console.error('Error downloading manual:', error);
-        toast({
-          title: "Error al descargar",
-          description: "No se pudo descargar el manual. Verifica tu conexión e intenta de nuevo.",
-          variant: "destructive"
-        });
+      } else {
+        throw new Error(result.error || 'No se pudo descargar el manual');
       }
+    } catch (error) {
+      console.error('Error downloading manual:', error);
+      toast({
+        title: "Error al descargar",
+        description: error instanceof Error ? error.message : "No se pudo descargar el manual.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -369,7 +326,7 @@ export function OperationManuals() {
                         
                         <div className="flex items-center space-x-1 ml-2">
                           <Button
-                            onClick={() => openFile(manual.file_url, true)}
+                            onClick={() => handleViewDocument(manual)}
                             variant="outline"
                             size="sm"
                             className="h-8 px-2"
@@ -377,7 +334,7 @@ export function OperationManuals() {
                             <ExternalLink className="h-3 w-3" />
                           </Button>
                           <Button
-                            onClick={() => openFile(manual.file_url, false)}
+                            onClick={() => handleDownloadDocument(manual)}
                             variant="outline"
                             size="sm"
                             className="h-8 px-2"

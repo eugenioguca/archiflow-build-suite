@@ -8,10 +8,19 @@ export interface DocumentSource {
 
 /**
  * Determina el bucket correcto y su configuración basado en la fuente del documento
- * ACTUALIZADO: Todo ahora va al bucket unificado project-documents
+ * ACTUALIZADO: Soporte para múltiples buckets incluyendo operation-manuals
  */
 export const getBucketForDocument = (source?: string): DocumentSource => {
-  // Sistema unificado: todos los documentos van al bucket project-documents
+  // Manejar manuales de operación
+  if (source === 'operation_manual') {
+    return {
+      source: 'project',
+      bucket: 'operation-manuals',
+      isPublic: true
+    };
+  }
+  
+  // Sistema unificado: todos los demás documentos van al bucket project-documents
   return {
     source: 'project',
     bucket: 'project-documents',
@@ -21,10 +30,19 @@ export const getBucketForDocument = (source?: string): DocumentSource => {
 
 /**
  * Detecta el bucket desde el file_path si es posible
- * ACTUALIZADO: Sistema unificado siempre usa project-documents
+ * ACTUALIZADO: Detecta operation-manuals y usa project-documents para el resto
  */
 export const detectBucketFromPath = (filePath: string): DocumentSource => {
-  // Sistema unificado: todos los documentos van al bucket project-documents
+  // Detectar si es un manual de operación por el path
+  if (filePath.includes('operation-manuals/') || filePath.includes('manuals/')) {
+    return {
+      source: 'project',
+      bucket: 'operation-manuals',
+      isPublic: true
+    };
+  }
+  
+  // Sistema unificado: todos los demás documentos van al bucket project-documents
   return {
     source: 'project',
     bucket: 'project-documents',
