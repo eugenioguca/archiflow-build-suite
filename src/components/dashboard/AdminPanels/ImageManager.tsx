@@ -40,7 +40,7 @@ export function ImageManager({ open, onOpenChange, onImageUpdated }: ImageManage
       'image/*': ['.jpeg', '.jpg', '.png', '.webp']
     },
     maxFiles: 1,
-    maxSize: 5 * 1024 * 1024 // 5MB
+    maxSize: 10 * 1024 * 1024 // 10MB
   });
 
   const handleUpload = async () => {
@@ -213,7 +213,7 @@ export function ImageManager({ open, onOpenChange, onImageUpdated }: ImageManage
                   }
                 </p>
                 <p className="text-xs text-muted-foreground mt-2">
-                  JPG, PNG, WEBP (máx. 5MB)
+                  JPG, PNG, WEBP (máx. 10MB)
                 </p>
               </div>
             ) : (
