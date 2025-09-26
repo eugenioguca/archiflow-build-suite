@@ -8225,7 +8225,9 @@ export type Database = {
         Returns: boolean
       }
       log_security_event: {
-        Args: { p_event_data?: Json; p_event_type: string; p_user_id?: string }
+        Args:
+          | { event_data?: Json; event_type: string }
+          | { p_event_data?: Json; p_event_type: string; p_user_id?: string }
         Returns: undefined
       }
       mask_sensitive_data: {
