@@ -338,12 +338,19 @@ export function OperationManuals() {
                         
                         <div className="flex items-center space-x-1 ml-2">
                           <Button
-                            onClick={() => handleViewDocument(manual)}
                             variant="outline"
                             size="sm"
+                            asChild
                             className="h-8 px-2"
                           >
-                            <ExternalLink className="h-3 w-3" />
+                            <a 
+                              href={manual.file_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
                           </Button>
                           <Button
                             onClick={() => handleDownloadDocument(manual)}
