@@ -17,25 +17,67 @@ import { toast } from "sonner";
 import { Eye, X, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-// Form validation schema
+  // Enhanced form validation schema with comprehensive data validation
 const formSchema = z.object({
-  fecha: z.date(),
-  sucursal_id: z.string().min(1, "Sucursal es requerida"),
-  empresa_proyecto_id: z.string().optional(),
-  tipo_movimiento: z.enum(["ingreso", "egreso"]),
-  monto: z.number().min(0.01, "Monto debe ser mayor a 0"),
-  departamento: z.string().min(1, "Departamento es requerido"),
-  mayor_id: z.string().optional(),
-  partida_id: z.string().optional(),
-  subpartida_id: z.string().optional(),
-  unidad: z.enum(["PZA", "M2", "M3", "ML", "KG", "TON", "LT", "GAL", "M"]).default("PZA"),
-  cantidad_requerida: z.number().min(0.01, "La cantidad debe ser mayor a 0").default(1),
-  cliente_proveedor_id: z.string().optional(),
-  tipo_entidad: z.enum(["cliente", "proveedor"]).optional(),
+  fecha: z.date()
+    .min(new Date('2020-01-01'), "Fecha debe ser posterior a 2020")
+    .max(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), "Fecha no puede ser más de 30 días en el futuro"),
+  sucursal_id: z.string()
+    .min(1, "Sucursal es requerida")
+    .uuid("ID de sucursal inválido"),
+  empresa_proyecto_id: z.string()
+    .uuid("ID de proyecto inválido")
+    .optional()
+    .or(z.literal("")),
+  tipo_movimiento: z.enum(["ingreso", "egreso"], {
+    errorMap: () => ({ message: "Tipo de movimiento debe ser 'ingreso' o 'egreso'" })
+  }),
+  monto: z.number()
+    .min(0.01, "Monto debe ser mayor a 0")
+    .max(999999999.99, "Monto excede el límite máximo")
+    .transform(val => Number(val.toFixed(2))),
+  departamento: z.string()
+    .min(1, "Departamento es requerido")
+    .max(100, "Nombre de departamento muy largo")
+    .trim(),
+  mayor_id: z.string()
+    .uuid("ID de mayor inválido")
+    .optional()
+    .or(z.literal("")),
+  partida_id: z.string()
+    .uuid("ID de partida inválido")
+    .optional()
+    .or(z.literal("")),
+  subpartida_id: z.string()
+    .uuid("ID de subpartida inválido")
+    .optional()
+    .or(z.literal("")),
+  unidad: z.enum(["PZA", "M2", "M3", "ML", "KG", "TON", "LT", "GAL", "M"], {
+    errorMap: () => ({ message: "Unidad de medida no válida" })
+  }).default("PZA"),
+  cantidad_requerida: z.number()
+    .min(0.01, "La cantidad debe ser mayor a 0")
+    .max(999999.99, "Cantidad excede el límite máximo")
+    .transform(val => Number(val.toFixed(3)))
+    .default(1),
+  cliente_proveedor_id: z.string()
+    .uuid("ID de cliente/proveedor inválido")
+    .optional()
+    .or(z.literal("")),
+  tipo_entidad: z.enum(["cliente", "proveedor"], {
+    errorMap: () => ({ message: "Tipo de entidad debe ser 'cliente' o 'proveedor'" })
+  }).optional(),
   tiene_factura: z.boolean(),
-  folio_factura: z.string().optional(),
-  descripcion: z.string().optional(),
+  folio_factura: z.string()
+    .max(50, "Folio de factura muy largo")
+    .trim()
+    .optional(),
+  descripcion: z.string()
+    .max(500, "Descripción muy larga (máximo 500 caracteres)")
+    .trim()
+    .optional(),
 }).refine((data) => {
+  // Validate invoice folio when has_invoice is true
   if (data.tiene_factura && !data.folio_factura?.trim()) {
     return false;
   }
@@ -43,6 +85,33 @@ const formSchema = z.object({
 }, {
   message: "Folio de factura es requerido cuando se marca 'Tiene factura'",
   path: ["folio_factura"],
+}).refine((data) => {
+  // Validate entity selection when client/provider is selected
+  if (data.cliente_proveedor_id && !data.tipo_entidad) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Debe especificar si es cliente o proveedor",
+  path: ["tipo_entidad"],
+}).refine((data) => {
+  // Validate hierarchical relationships in chart of accounts
+  if (data.partida_id && !data.mayor_id) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Debe seleccionar un Mayor antes de seleccionar una Partida",
+  path: ["partida_id"],
+}).refine((data) => {
+  // Validate subpartida requires partida
+  if (data.subpartida_id && !data.partida_id) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Debe seleccionar una Partida antes de seleccionar una Subpartida",
+  path: ["subpartida_id"],
 });
 
 type FormData = z.infer<typeof formSchema>;

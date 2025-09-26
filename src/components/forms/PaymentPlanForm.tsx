@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,6 +21,27 @@ interface PaymentPlanFormProps {
   planType?: 'design_payment' | 'construction_payment';
   isSubmitting?: boolean;
 }
+
+// Enhanced validation schema for payment plans
+const paymentPlanSchema = z.object({
+  plan_name: z.string()
+    .min(3, "Nombre debe tener al menos 3 caracteres")
+    .max(100, "Nombre muy largo (máximo 100 caracteres)")
+    .trim()
+    .refine(name => name.length > 0, "Nombre es requerido"),
+  plan_type: z.enum(['design_payment', 'construction_payment'], {
+    errorMap: () => ({ message: "Tipo de plan debe ser 'design_payment' o 'construction_payment'" })
+  }),
+  total_amount: z.number()
+    .min(1, "Monto debe ser mayor a 0")
+    .max(99999999.99, "Monto excede el límite máximo")
+    .transform(val => Number(val.toFixed(2))),
+  notes: z.string()
+    .max(1000, "Notas muy largas (máximo 1000 caracteres)")
+    .trim()
+    .optional()
+    .or(z.literal(""))
+});
 
 interface PaymentPlanFormData {
   plan_name: string;
