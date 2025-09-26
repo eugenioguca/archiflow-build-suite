@@ -1,12 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, Calendar, Expand } from 'lucide-react';
+import { Calendar, Expand } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { ImageManager } from './AdminPanels/ImageManager';
 import { ImageViewerModal } from '@/components/ui/image-viewer-modal';
-import { usePermissions } from '@/hooks/usePermissions';
-import { useUserRole } from '@/hooks/useUserRole';
 
 interface MonthlyImage {
   id: string;
@@ -20,14 +17,9 @@ interface MonthlyImage {
 
 export function MonthlyFeaturedImage() {
   const [currentImage, setCurrentImage] = useState<MonthlyImage | null>(null);
-  const [showManager, setShowManager] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [loading, setLoading] = useState(true);
-  const { hasModuleAccess } = usePermissions();
-  const { isAdmin } = useUserRole();
   
-  // Check if user has access to tools module (where user management is located)
-  const canManageImages = isAdmin && hasModuleAccess('tools');
   const currentMonth = new Date().getMonth() + 1;
   const currentYear = new Date().getFullYear();
 
@@ -87,27 +79,9 @@ export function MonthlyFeaturedImage() {
               <h3 className="text-lg font-semibold text-muted-foreground">
                 No hay imagen para {getMonthName(currentMonth)} {currentYear}
               </h3>
-              {canManageImages && (
-                <Button
-                  onClick={() => setShowManager(true)}
-                  className="mt-4"
-                  size="sm"
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Agregar imagen
-                </Button>
-              )}
             </div>
           </div>
         </CardContent>
-        
-        {showManager && (
-          <ImageManager
-            open={showManager}
-            onOpenChange={setShowManager}
-            onImageUpdated={fetchCurrentImage}
-          />
-        )}
       </Card>
     );
   }
@@ -153,25 +127,9 @@ export function MonthlyFeaturedImage() {
                   {currentImage.description}
                 </p>
               )}
-              <div className="flex items-center justify-between mt-3 pointer-events-auto">
-                <span className="text-sm text-gray-300 font-medium">
-                  {getMonthName(currentMonth)} {currentYear}
-                </span>
-                {canManageImages && (
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowManager(true);
-                    }}
-                    variant="secondary"
-                    size="sm"
-                    className="bg-white/20 hover:bg-white/30 text-white border-white/30"
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Editar
-                  </Button>
-                )}
-              </div>
+              <span className="text-sm text-gray-300 font-medium">
+                {getMonthName(currentMonth)} {currentYear}
+              </span>
             </div>
           </div>
         </CardContent>
