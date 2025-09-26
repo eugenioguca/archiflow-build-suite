@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -322,7 +323,7 @@ const ClientPortal: React.FC = () => {
             variant="outline" 
             onClick={() => {
               supabase.auth.signOut();
-              window.location.href = '/auth';
+              navigate('/auth');
             }}
             className="flex items-center gap-2"
           >

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +19,7 @@ interface CalendarEvent {
 
 export function ImprovedCalendarWidget() {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const navigate = useNavigate();
   const [showQuickCreator, setShowQuickCreator] = useState(false);
   const [viewMode, setViewMode] = useState<'upcoming' | 'month'>('month');
   const { events, createEvent } = usePersonalCalendar();
@@ -273,7 +275,7 @@ export function ImprovedCalendarWidget() {
                     Volver al mes
                   </Button>
                   <Button
-                    onClick={() => window.location.href = '/calendar'}
+                    onClick={() => navigate('/calendar')}
                     variant="outline"
                     size="sm"
                     className="text-xs h-7"

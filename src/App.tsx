@@ -6,7 +6,7 @@ import { ClientProjectAlertNotification } from "@/components/calendar/ClientProj
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Layout from "@/components/Layout";
 import Index from "./pages/Index";
@@ -40,6 +40,7 @@ const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, isApproved, needsOnboarding, profile } = useAuth();
+  const navigate = useNavigate();
 
   if (loading) {
     return (
@@ -56,8 +57,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   // Show onboarding if user needs to complete profile
   if (needsOnboarding) {
     return <UserOnboarding user={user} profile={profile} onComplete={() => {
-      // Use navigation instead of reload
-      window.location.href = '/dashboard';
+      navigate('/dashboard');
     }} />;
   }
 
@@ -71,6 +71,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function ClientProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, isApproved, needsOnboarding, profile } = useAuth();
+  const navigate = useNavigate();
 
   if (loading) {
     return (
@@ -87,8 +88,7 @@ function ClientProtectedRoute({ children }: { children: React.ReactNode }) {
   // Show onboarding if user needs to complete profile
   if (needsOnboarding) {
     return <UserOnboarding user={user} profile={profile} onComplete={() => {
-      // Use navigation instead of reload
-      window.location.href = '/dashboard';
+      navigate('/dashboard');
     }} />;
   }
 

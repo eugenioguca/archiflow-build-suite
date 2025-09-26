@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { usePaymentPlans } from '@/hooks/usePaymentPlans';
@@ -296,9 +297,10 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
   };
 
   const handleLogout = async () => {
+    const navigate = useNavigate();
     try {
       await supabase.auth.signOut();
-      window.location.href = '/auth';
+      navigate('/auth');
     } catch (error) {
       console.error('Error signing out:', error);
       toast.error('Error al cerrar sesión');

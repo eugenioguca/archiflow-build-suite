@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -565,7 +565,10 @@ export default function Design() {
                   <p className="text-muted-foreground mb-4">
                     Los proyectos aparecerán aquí cuando pasen del módulo de ventas
                   </p>
-                  <Button variant="outline" onClick={() => window.location.href = '/sales'}>
+                  <Button variant="outline" onClick={() => {
+                    const navigate = useNavigate();
+                    navigate('/sales');
+                  }}>
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Ir a Ventas
                   </Button>
