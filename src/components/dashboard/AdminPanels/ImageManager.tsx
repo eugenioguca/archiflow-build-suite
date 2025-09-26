@@ -53,32 +53,60 @@ export function ImageManager({ open, onOpenChange, onImageUpdated }: ImageManage
       return;
     }
 
+    console.log('🖼️ Iniciando subida de imagen del mes...', {
+      fileName: selectedFile.name,
+      fileSize: selectedFile.size,
+      fileType: selectedFile.type,
+      month: currentMonth,
+      year: currentYear
+    });
+
     setUploading(true);
     try {
       // First, deactivate any existing image for this month/year
-      await supabase
+      console.log('🖼️ Desactivando imágenes existentes...');
+      const { error: updateError } = await supabase
         .from('monthly_featured_images')
         .update({ is_active: false })
         .eq('month', currentMonth)
         .eq('year', currentYear)
         .eq('is_active', true);
 
+      if (updateError) {
+        console.error('Error desactivando imágenes existentes:', updateError);
+        throw updateError;
+      }
+
       // Upload the file to Supabase Storage
       const fileExt = selectedFile.name.split('.').pop();
       const fileName = `${currentYear}-${currentMonth}-${Date.now()}.${fileExt}`;
       
+      console.log('🖼️ Subiendo archivo a Storage...', { fileName });
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('monthly-images')
         .upload(fileName, selectedFile);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Error subiendo archivo:', uploadError);
+        toast({
+          title: "Error en la subida",
+          description: `Error de storage: ${uploadError.message}`,
+          variant: "destructive"
+        });
+        throw uploadError;
+      }
+
+      console.log('🖼️ Archivo subido exitosamente:', uploadData);
 
       // Get the public URL
       const { data: { publicUrl } } = supabase.storage
         .from('monthly-images')
         .getPublicUrl(fileName);
 
+      console.log('🖼️ URL pública generada:', publicUrl);
+
       // Insert the new image record
+      console.log('🖼️ Insertando registro en base de datos...');
       const { error: insertError } = await supabase
         .from('monthly_featured_images')
         .insert({
@@ -90,8 +118,17 @@ export function ImageManager({ open, onOpenChange, onImageUpdated }: ImageManage
           is_active: true
         });
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Error insertando en base de datos:', insertError);
+        toast({
+          title: "Error guardando datos",
+          description: `Error de base de datos: ${insertError.message}`,
+          variant: "destructive"
+        });
+        throw insertError;
+      }
 
+      console.log('🖼️ Imagen del mes actualizada exitosamente!');
       toast({
         title: "Éxito",
         description: "Imagen del mes actualizada correctamente"
@@ -99,11 +136,17 @@ export function ImageManager({ open, onOpenChange, onImageUpdated }: ImageManage
 
       onImageUpdated();
       handleClose();
-    } catch (error) {
-      console.error('Error uploading image:', error);
+    } catch (error: any) {
+      console.error('🖼️ Error completo:', error);
+      
+      let errorMessage = "No se pudo subir la imagen";
+      if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Error",
-        description: "No se pudo subir la imagen",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
