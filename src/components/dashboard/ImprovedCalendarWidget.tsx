@@ -190,10 +190,10 @@ export function ImprovedCalendarWidget() {
                 
                 <div className="grid grid-cols-7 gap-1 flex-1 min-h-0">
                   {/* Calendar days */}
-                  {calendarDays.map((day, index) => (
-                    <div
-                      key={index}
-                      className={`
+                   {calendarDays.map((day, index) => (
+                     <div
+                       key={day ? `day-${day.date}` : `empty-${index}`}
+                       className={`
                         text-sm p-1 min-h-[32px] flex flex-col items-center justify-start relative border border-muted/30 rounded-lg
                         ${!day ? 'bg-muted/10' : 
                           day.isToday 

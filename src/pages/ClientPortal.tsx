@@ -355,7 +355,7 @@ const ClientPortal: React.FC = () => {
             variant="outline" 
             onClick={() => {
               supabase.auth.signOut();
-              window.location.href = '/auth';
+              navigate('/auth');
             }}
             className="flex items-center gap-2"
           >

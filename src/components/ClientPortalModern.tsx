@@ -85,6 +85,7 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
   previewData 
 }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [clientProjects, setClientProjects] = useState<ClientProject[]>([]);
   const [selectedProject, setSelectedProject] = useState<ClientProject | null>(null);
   const [clientName, setClientName] = useState<string>('');
@@ -297,7 +298,6 @@ const ClientPortalModern: React.FC<ClientPortalModernProps> = ({
   };
 
   const handleLogout = async () => {
-    const navigate = useNavigate();
     try {
       await supabase.auth.signOut();
       navigate('/auth');

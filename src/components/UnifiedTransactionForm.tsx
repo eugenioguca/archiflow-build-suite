@@ -467,8 +467,8 @@ export function UnifiedTransactionForm({ open, onOpenChange }: UnifiedTransactio
               <AlertDescription className="text-sm">
                 <div className="font-medium text-destructive mb-2">Errores de validación:</div>
                 <ul className="space-y-1">
-                  {formErrors.map((error, index) => (
-                    <li key={index} className="flex items-center gap-2 text-destructive">
+                   {formErrors.map((error, index) => (
+                     <li key={`error-${index}-${error.substring(0, 10)}`} className="flex items-center gap-2 text-destructive">
                       <div className="w-2 h-2 bg-destructive rounded-full flex-shrink-0" />
                       {error}
                     </li>

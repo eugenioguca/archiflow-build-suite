@@ -97,7 +97,7 @@ export function UserStatsCards({ users }: UserStatsCardsProps) {
       {statsCards.map((stat, index) => {
         const Icon = stat.icon;
         return (
-          <Card key={index} className="border-border/50 hover:border-border transition-colors">
+          <Card key={stat.title} className="border-border/50 hover:border-border transition-colors">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">

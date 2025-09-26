@@ -1083,8 +1083,8 @@ export function ChartOfAccountsExcelManager({ onImportComplete }: ChartOfAccount
                   <div className="border border-red-200 rounded-lg p-4 bg-red-50">
                     <h4 className="font-medium text-red-800 mb-2">Errores encontrados:</h4>
                     <ul className="text-sm text-red-700 space-y-1">
-                      {importResult.errors.map((error, index) => (
-                        <li key={index}>• {error}</li>
+                       {importResult.errors.map((error, index) => (
+                         <li key={`error-${index}-${error.substring(0, 20)}`}>• {error}</li>
                       ))}
                     </ul>
                   </div>

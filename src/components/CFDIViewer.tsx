@@ -247,27 +247,27 @@ export function CFDIViewer({ isOpen, onClose, cfdiData }: CFDIViewerProps) {
               )}
 
               {/* Conceptos */}
-              {cfdiData.conceptos && cfdiData.conceptos.length > 0 && (
+              {cfdiData.conceptos && Array.isArray(cfdiData.conceptos) && cfdiData.conceptos.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">Conceptos</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {cfdiData.conceptos.map((concepto: any, index: number) => (
-                        <div key={index} className="border rounded p-3">
+                       {cfdiData.conceptos.map((concepto: any, index: number) => (
+                         <div key={`concepto-${concepto?.descripcion || 'concepto'}-${index}`} className="border rounded p-3">
                           <div className="grid grid-cols-2 gap-2 text-sm">
                             <div>
-                              <span className="font-medium">Descripción:</span> {concepto.descripcion}
+                              <span className="font-medium">Descripción:</span> {concepto?.descripcion || 'N/A'}
                             </div>
                             <div>
-                              <span className="font-medium">Cantidad:</span> {concepto.cantidad}
+                              <span className="font-medium">Cantidad:</span> {concepto?.cantidad || 'N/A'}
                             </div>
                             <div>
-                              <span className="font-medium">Valor Unitario:</span> {formatCurrency(concepto.valorUnitario)}
+                              <span className="font-medium">Valor Unitario:</span> {formatCurrency(concepto?.valorUnitario || 0)}
                             </div>
                             <div>
-                              <span className="font-medium">Importe:</span> {formatCurrency(concepto.importe)}
+                              <span className="font-medium">Importe:</span> {formatCurrency(concepto?.importe || 0)}
                             </div>
                           </div>
                         </div>

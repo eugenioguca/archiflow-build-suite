@@ -377,7 +377,7 @@ export const PaymentPlanForm: React.FC<PaymentPlanFormProps> = ({
                         
                         <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
                           {customInstallments.map((installment, index) => (
-                            <div key={index} className="grid grid-cols-12 gap-3 items-center p-3 border rounded-lg bg-background hover:bg-muted/20 transition-colors">
+                            <div key={`installment-${index}`} className="grid grid-cols-12 gap-3 items-center p-3 border rounded-lg bg-background hover:bg-muted/20 transition-colors">
                               <div className="col-span-4">
                                 <Input
                                   placeholder="Ej: Anticipo inicial"

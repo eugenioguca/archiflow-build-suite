@@ -466,13 +466,13 @@ export function MaterialFinanceRequests({ selectedClientId, selectedProjectId }:
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {getSupplierSummaries().map((summary, index) => (
-                <div key={index} className="bg-white p-3 rounded border">
-                  <p className="font-medium text-gray-900">{summary.supplier_name}</p>
+                <div key={`supplier-${summary?.supplier_name || index}`} className="bg-white p-3 rounded border">
+                  <p className="font-medium text-gray-900">{summary?.supplier_name || 'Proveedor sin nombre'}</p>
                   <p className="text-lg font-bold text-green-600">
-                    ${summary.total_amount.toLocaleString()}
+                    ${(summary?.total_amount || 0).toLocaleString()}
                   </p>
                   <p className="text-sm text-gray-600">
-                    {summary.items_count} material{summary.items_count !== 1 ? 'es' : ''}
+                    {summary?.items_count || 0} material{(summary?.items_count || 0) !== 1 ? 'es' : ''}
                   </p>
                 </div>
               ))}
