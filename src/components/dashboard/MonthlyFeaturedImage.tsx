@@ -127,15 +127,15 @@ export function MonthlyFeaturedImage() {
                   {currentImage.description}
                 </p>
               )}
-              <span className="text-sm text-gray-300 font-medium">
-                {getMonthName(currentMonth)} {currentYear}
-              </span>
+              <div className="mt-3">
+                <span className="text-sm text-gray-300 font-medium">
+                  {getMonthName(currentMonth)} {currentYear}
+                </span>
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* Image Manager Modal */}
 
       {/* Image Viewer Modal */}
       {showImageViewer && (
