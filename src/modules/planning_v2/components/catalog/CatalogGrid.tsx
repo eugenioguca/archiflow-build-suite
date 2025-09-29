@@ -260,6 +260,33 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
 function renderCell(concepto: any, column: any) {
   const value = concepto[column.key];
 
+  // Computed fields with lock icon and price intelligence
+  if (column.type === 'computed') {
+    if (column.key === 'cantidad' || column.key === 'pu' || column.key === 'total') {
+      return (
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Lock className="h-3 w-3" />
+            <span>
+              {column.key === 'total' || column.key === 'pu'
+                ? formatAsCurrency(value || 0)
+                : toDisplayPrecision(value || 0)}
+            </span>
+          </div>
+          {/* Show price intelligence for PU field */}
+          {column.key === 'pu' && concepto.wbs_code && concepto.unit && (
+            <PriceReferenceChip
+              wbsCode={concepto.wbs_code}
+              unit={concepto.unit}
+              currentPrice={value}
+              windowDays={90}
+            />
+          )}
+        </div>
+      );
+    }
+  }
+
   // Format based on field type
   if (column.key === 'cantidad_real' || column.key === 'cantidad') {
     return toDisplayPrecision(value || 0);

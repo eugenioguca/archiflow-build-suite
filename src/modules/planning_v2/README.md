@@ -245,5 +245,127 @@ Todas las tablas Planning v2 tienen RLS habilitado:
 
 ---
 
-**Última actualización**: Phase 4 - 29 de septiembre de 2025  
-**Estado**: ✅ Beta (Phases 0-4 completadas)
+## Phase 5: Price Intelligence & Alerts ✅
+
+### Overview
+Sistema de inteligencia de precios con histórico automático y alertas para validación de presupuestos.
+
+### Key Features
+- **Captura Automática**: Observaciones de precios al publicar presupuestos
+- **Estadísticas**: Mediana, P25, P75, último precio visto (ventana de 90 días)
+- **Alertas Inteligentes**: 
+  - ⚠️ Warning (>15% desviación): Revisión recomendada
+  - 🚫 Error (>30% desviación): Justificación obligatoria
+- **Normalización de Unidades**: Conversión entre unidades (ml↔m³, kg↔ton, etc.)
+- **UX en Español**: Todos los mensajes y validaciones
+
+### Database Schema
+
+```sql
+-- Observaciones de precios históricos
+planning_price_observations:
+  - wbs_code, unit, pu, currency
+  - observation_date, provider, project_id, budget_id
+  - source ('budget' | 'tu')
+  - exchange_rate, pu_mxn (normalizado a MXN)
+  - metadata (JSONB para datos adicionales)
+
+-- Normalización de unidades
+planning_unit_normalizations:
+  - from_unit, to_unit, conversion_factor
+  - Conversiones comunes: ml→m³, kg→ton, cm→m, etc.
+```
+
+### Flujo de Captura de Precios
+
+1. **Al Publicar Presupuesto**:
+   - Por cada concepto sumable con WBS code
+   - Crear observación con: PU, unidad, proveedor, fecha
+   - Normalizar a MXN (exchange_rate)
+
+2. **Desde TU** (futuro):
+   - Sincronización batch: `pu_real = total / cantidad`
+   - Source='tu' para diferenciar origen
+
+### Análisis Estadístico
+
+- **Mediana (50th percentile)**: Precio recomendado baseline
+- **P25/P75**: Rango intercuartil para análisis de varianza
+- **Tamaño de Muestra**: Número de observaciones en ventana
+- **Último Visto**: Observación más reciente con fecha
+
+### Umbrales de Alerta
+
+```typescript
+const DEVIATION_WARNING_THRESHOLD = 15;  // 15% → Badge amarillo
+const DEVIATION_ERROR_THRESHOLD = 30;    // 30% → Badge rojo + justificación
+```
+
+**Configurables** por organización según necesidades.
+
+### Integración UI
+
+#### 1. PriceReferenceChip
+- **Ubicación**: Junto a campos `precio_real` y `pu`
+- **Badge Colors**:
+  - 🔵 Gris: Sin datos históricos
+  - 🟢 Verde: Dentro de rango aceptable
+  - 🟡 Amarillo: Warning (>15%)
+  - 🔴 Rojo: Error (>30%)
+- **Tooltip**: Estadísticas completas al hover
+
+#### 2. PriceValidationDialog
+- Aparece cuando desviación >30%
+- Campo de justificación obligatorio
+- Bloquea guardado hasta que se justifique
+
+### Files
+
+```
+src/modules/planning_v2/
+├── services/
+│   └── priceIntelligenceService.ts    # Core: estadísticas, alertas, captura
+├── hooks/
+│   └── usePriceIntelligence.ts        # Hook para grid integration
+├── components/catalog/
+│   ├── PriceReferenceChip.tsx         # Badge con stats de precio
+│   └── PriceValidationDialog.tsx      # Modal de justificación
+└── services/
+    └── snapshotService.ts              # Actualizado: crea observaciones al publicar
+```
+
+### Testing Checklist
+- [ ] Observaciones creadas correctamente al publicar
+- [ ] Cálculos estadísticos precisos (mediana, percentiles)
+- [ ] Umbrales de alerta funcionan (15%, 30%)
+- [ ] Justificación obligatoria para >30%
+- [ ] Normalización de unidades activa
+- [ ] Performance con gran volumen de histórico
+- [ ] Mensajes y copy en español (es-MX)
+- [ ] Manejo elegante sin datos históricos
+- [ ] PriceReferenceChip se muestra correctamente
+- [ ] Tooltip con estadísticas completas
+
+### Mejoras Futuras
+- **Edge Function** para sincronización batch desde TU
+- **Conversión de Moneda** con tasas históricas
+- **Tracking por Proveedor** para análisis específico
+- **Estadísticas Granulares**: proyecto vs. globales
+- **ML Predictions**: Predicción de precios futuros
+- **Análisis de Tendencias**: Gráficas de evolución temporal
+
+### Acceptance Criteria
+- ✅ Tabla `planning_price_observations` con RLS
+- ✅ Tabla `planning_unit_normalizations` poblada
+- ✅ Función de estadísticas (mediana, P25, P75)
+- ✅ Servicio de inteligencia de precios
+- ✅ Hook `usePriceIntelligence` funcional
+- ✅ Componente `PriceReferenceChip` con badges
+- ✅ Diálogo de validación con justificación
+- ✅ Captura automática en `publishBudget`
+- ✅ Todo en español (es-MX)
+
+---
+
+**Última actualización**: Phase 5 - 29 de septiembre de 2025  
+**Estado**: ✅ Beta (Phases 0-5 completadas)
