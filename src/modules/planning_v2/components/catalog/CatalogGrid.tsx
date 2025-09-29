@@ -1,22 +1,36 @@
 /**
  * Main Catalog Grid Component
  */
-import { useState, useEffect } from 'react';
-import { Plus, Settings, Eye, EyeOff } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Plus, Settings } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { useCatalogGrid } from '../../hooks/useCatalogGrid';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { useColumnSettings } from '../../hooks/useColumnSettings';
 import { ColumnManager } from './ColumnManager';
-import { WBSSelector } from './WBSSelector';
+import { DraggableConceptoRow } from './DraggableConceptoRow';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatAsCurrency, toDisplayPrecision, formatAsPercentage } from '../../utils/monetary';
 import { ChevronDown, ChevronRight, Lock } from 'lucide-react';
 import { PriceReferenceChip } from './PriceReferenceChip';
+import { toast } from 'sonner';
 
 interface CatalogGridProps {
   budgetId: string;
@@ -70,7 +84,94 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
     createPartida,
     createConcepto,
     updateConcepto,
+    reorderConcepto,
   } = useCatalogGrid(budgetId);
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) return;
+
+    const activeId = active.id.toString();
+    const overId = over.id.toString();
+
+    // Find active and over rows
+    const activeRow = rows.find(r => r.id === activeId);
+    const overRow = rows.find(r => r.id === overId);
+
+    if (!activeRow || !overRow || activeRow.type !== 'concepto' || overRow.type !== 'concepto') {
+      return;
+    }
+
+    const activeConcepto = activeRow.concepto!;
+    const overConcepto = overRow.concepto!;
+
+    // Calculate new order index and partida
+    const newPartidaId = overConcepto.partida_id;
+    const newOrderIndex = overConcepto.order_index;
+
+    if (activeConcepto.id && newPartidaId) {
+      reorderConcepto(activeConcepto.id, newPartidaId, newOrderIndex);
+      toast.success('Concepto reordenado');
+    }
+  }, [rows, reorderConcepto]);
+
+  // Keyboard navigation (Alt + Arrow keys)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!e.altKey || selectedRows.size !== 1) return;
+
+      const selectedId = Array.from(selectedRows)[0];
+      const selectedRow = rows.find(r => r.id === selectedId);
+      
+      if (!selectedRow || selectedRow.type !== 'concepto') return;
+
+      const conceptoRows = rows.filter(r => r.type === 'concepto');
+      const currentIndex = conceptoRows.findIndex(r => r.id === selectedId);
+
+      if (currentIndex === -1) return;
+
+      let targetIndex = -1;
+      if (e.key === 'ArrowUp' && currentIndex > 0) {
+        targetIndex = currentIndex - 1;
+        e.preventDefault();
+      } else if (e.key === 'ArrowDown' && currentIndex < conceptoRows.length - 1) {
+        targetIndex = currentIndex + 1;
+        e.preventDefault();
+      }
+
+      if (targetIndex >= 0) {
+        const targetRow = conceptoRows[targetIndex];
+        const activeConcepto = selectedRow.concepto!;
+        const targetConcepto = targetRow.concepto!;
+
+        if (activeConcepto.id && targetConcepto.partida_id) {
+          reorderConcepto(
+            activeConcepto.id,
+            targetConcepto.partida_id,
+            targetConcepto.order_index
+          );
+          toast.success('Concepto movido con teclado');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [rows, selectedRows, reorderConcepto]);
 
   useKeyboardShortcuts({
     onDuplicate: () => console.log('Duplicate'),
@@ -123,6 +224,9 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
               <Badge variant="secondary">{hiddenCount} ocultas</Badge>
             )}
           </div>
+          <span className="text-xs text-muted-foreground ml-2">
+            Tip: Alt+↑/↓ para mover con teclado
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -148,142 +252,117 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
 
       {/* Grid */}
       <ScrollArea className="flex-1">
-        <div className="min-w-max">
-          {/* Header */}
-          <div className="sticky top-0 z-10 bg-background border-b">
-            <div className="flex">
-              <div className="w-12 border-r flex items-center justify-center">
-                <input
-                  type="checkbox"
-                  checked={selectedRows.size > 0}
-                  onChange={() => selectedRows.size > 0 ? clearSelection() : selectAll()}
-                  className="rounded"
-                />
-              </div>
-              {visibleColumns.map((col) => (
-                <div
-                  key={col.key}
-                  className={`px-3 py-2 text-sm font-medium border-r min-w-[120px] ${
-                    col.type === 'computed' ? 'bg-muted/30' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-1">
-                    {col.label}
-                    {col.type === 'computed' && (
-                      <Lock className="h-3 w-3 text-muted-foreground" />
-                    )}
-                  </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="min-w-max">
+            {/* Header */}
+            <div className="sticky top-0 z-10 bg-background border-b">
+              <div className="flex">
+                <div className="w-12 border-r flex items-center justify-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedRows.size > 0}
+                    onChange={() => selectedRows.size > 0 ? clearSelection() : selectAll()}
+                    className="rounded"
+                  />
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Rows */}
-          <div>
-            {rows.map((row) => {
-              if (row.type === 'partida') {
-                return (
+                {visibleColumns.map((col) => (
                   <div
-                    key={row.id}
-                    className="flex items-center bg-muted/50 border-b hover:bg-muted"
+                    key={col.key}
+                    className={`px-3 py-2 text-sm font-medium border-r min-w-[120px] ${
+                      col.type === 'computed' ? 'bg-muted/30' : ''
+                    }`}
                   >
-                    <div className="w-12 border-r flex items-center justify-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => togglePartida(row.partida!.id)}
-                      >
-                        {row.isCollapsed ? (
-                          <ChevronRight className="h-4 w-4" />
-                        ) : (
-                          <ChevronDown className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                    <div className="px-3 py-3 font-medium flex-1">
-                      {row.partida!.name}
-                    </div>
-                  </div>
-                );
-              }
-
-              if (row.type === 'subtotal') {
-                return (
-                  <div
-                    key={row.id}
-                    className="flex items-center bg-primary/5 border-b font-medium"
-                  >
-                    <div className="w-12 border-r"></div>
-                    {visibleColumns.map((col, i) => (
-                      <div
-                        key={col.key}
-                        className="px-3 py-2 text-sm border-r min-w-[120px]"
-                      >
-                        {i === 0 ? 'Subtotal' : col.key === 'total' ? formatAsCurrency(row.subtotal!) : ''}
-                      </div>
-                    ))}
-                  </div>
-                );
-              }
-
-              // Concepto row
-              const concepto = row.concepto!;
-              const isSelected = selectedRows.has(row.id);
-              const needsWBS = concepto.active && concepto.sumable && !concepto.wbs_code;
-              const isZeroQuantity = concepto.cantidad_real === 0 || concepto.cantidad_real == null;
-
-              const rowContent = (
-                <div
-                  key={row.id}
-                  className={`flex items-center border-b hover:bg-muted/30 ${
-                    isSelected ? 'bg-primary/10' : ''
-                  } ${needsWBS ? 'bg-destructive/5' : ''}`}
-                >
-                  <div className="w-12 border-r flex items-center justify-center">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleRowSelection(row.id)}
-                      className="rounded"
-                    />
-                  </div>
-                  {visibleColumns.map((col, idx) => (
-                    <div
-                      key={col.key}
-                      className={`px-3 py-2 text-sm border-r min-w-[120px] ${
-                        col.type === 'computed' ? 'bg-muted/10' : ''
-                      }`}
-                    >
-                      {idx === 0 && needsWBS && (
-                        <Badge variant="destructive" className="mr-2 text-xs">
-                          Falta WBS
-                        </Badge>
+                    <div className="flex items-center gap-1">
+                      {col.label}
+                      {col.type === 'computed' && (
+                        <Lock className="h-3 w-3 text-muted-foreground" />
                       )}
-                      {renderCell(concepto, col)}
                     </div>
-                  ))}
-                </div>
-              );
+                  </div>
+                ))}
+              </div>
+            </div>
 
-              if (isZeroQuantity) {
-                return (
-                  <TooltipProvider key={row.id}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        {rowContent}
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Cantidad en 0: este renglón no suma.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                );
-              }
+            {/* Rows */}
+            <SortableContext
+              items={rows.filter(r => r.type === 'concepto').map(r => r.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div>
+                {rows.map((row) => {
+                  if (row.type === 'partida') {
+                    return (
+                      <div
+                        key={row.id}
+                        className="flex items-center bg-muted/50 border-b hover:bg-muted"
+                      >
+                        <div className="w-12 border-r flex items-center justify-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => togglePartida(row.partida!.id)}
+                          >
+                            {row.isCollapsed ? (
+                              <ChevronRight className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                        <div className="px-3 py-3 font-medium flex-1">
+                          {row.partida!.name}
+                        </div>
+                      </div>
+                    );
+                  }
 
-              return rowContent;
-            })}
+                  if (row.type === 'subtotal') {
+                    return (
+                      <div
+                        key={row.id}
+                        className="flex items-center bg-primary/5 border-b font-medium"
+                      >
+                        <div className="w-12 border-r"></div>
+                        {visibleColumns.map((col, i) => (
+                          <div
+                            key={col.key}
+                            className="px-3 py-2 text-sm border-r min-w-[120px]"
+                          >
+                            {i === 0 ? 'Subtotal' : col.key === 'total' ? formatAsCurrency(row.subtotal!) : ''}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+
+                  // Concepto rows with drag & drop
+                  const concepto = row.concepto!;
+                  const isSelected = selectedRows.has(row.id);
+                  const needsWBS = concepto.active && concepto.sumable && !concepto.wbs_code;
+                  const isZeroQuantity = concepto.cantidad_real === 0 || concepto.cantidad_real == null;
+
+                  return (
+                    <DraggableConceptoRow
+                      key={row.id}
+                      id={row.id}
+                      concepto={concepto}
+                      isSelected={isSelected}
+                      needsWBS={needsWBS}
+                      isZeroQuantity={isZeroQuantity}
+                      visibleColumns={visibleColumns}
+                      onToggleSelection={() => toggleRowSelection(row.id)}
+                      renderCell={renderCell}
+                    />
+                  );
+                })}
+              </div>
+            </SortableContext>
           </div>
-        </div>
+        </DndContext>
       </ScrollArea>
 
       {/* Column Manager */}

@@ -224,6 +224,23 @@ export function useCatalogGrid(budgetId: string) {
     toast({ title: `${conceptoIds.length} conceptos eliminados` });
   }, [selectedRows, budgetId, queryClient, toast]);
 
+  const reorderConcepto = useCallback(async (
+    conceptoId: string,
+    newPartidaId: string,
+    newOrderIndex: number
+  ) => {
+    try {
+      await updateConcepto(conceptoId, {
+        partida_id: newPartidaId,
+        order_index: newOrderIndex,
+      });
+      queryClient.invalidateQueries({ queryKey: ['planning-budget', budgetId] });
+    } catch (error) {
+      console.error('Error reordering concepto:', error);
+      toast({ title: 'Error al reordenar concepto', variant: 'destructive' });
+    }
+  }, [updateConcepto, budgetId, queryClient, toast]);
+
   return {
     budget: data?.budget,
     partidas: data?.partidas || [],
@@ -251,5 +268,6 @@ export function useCatalogGrid(budgetId: string) {
     deleteConcepto: deleteConceptoMutation.mutate,
     bulkUpdateConceptos,
     bulkDelete,
+    reorderConcepto,
   };
 }
