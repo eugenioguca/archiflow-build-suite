@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatAsCurrency, toDisplayPrecision, formatAsPercentage } from '../../utils/monetary';
 import { ChevronDown, ChevronRight, Lock } from 'lucide-react';
 import { PriceReferenceChip } from './PriceReferenceChip';
@@ -214,8 +215,9 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
               const concepto = row.concepto!;
               const isSelected = selectedRows.has(row.id);
               const needsWBS = concepto.active && concepto.sumable && !concepto.wbs_code;
+              const isZeroQuantity = concepto.cantidad_real === 0 || concepto.cantidad_real == null;
 
-              return (
+              const rowContent = (
                 <div
                   key={row.id}
                   className={`flex items-center border-b hover:bg-muted/30 ${
@@ -247,6 +249,23 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                   ))}
                 </div>
               );
+
+              if (isZeroQuantity) {
+                return (
+                  <TooltipProvider key={row.id}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        {rowContent}
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Cantidad en 0: este renglón no suma.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                );
+              }
+
+              return rowContent;
             })}
           </div>
         </div>
