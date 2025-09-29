@@ -11,6 +11,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { useImportExport } from '../../hooks/useImportExport';
 import { ColumnMappingStep } from './ColumnMappingStep';
@@ -33,6 +35,7 @@ export function ImportDialog({
 }: ImportDialogProps) {
   const [currentStep, setCurrentStep] = useState<ImportStep>('upload');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [referenceTotal, setReferenceTotal] = useState<string>('');
 
   const {
     importData,
@@ -160,6 +163,23 @@ export function ImportDialog({
                 )}
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="reference-total">
+                  Total de referencia (MXN) - Opcional
+                </Label>
+                <Input
+                  id="reference-total"
+                  type="number"
+                  placeholder="Ej: 7730845.47"
+                  value={referenceTotal}
+                  onChange={(e) => setReferenceTotal(e.target.value)}
+                  step="0.01"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Si conoce el total esperado del Excel, ingréselo para validar la importación
+                </p>
+              </div>
+
               <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-sm">
                 <p className="font-medium">Formato requerido:</p>
                 <ul className="list-disc list-inside space-y-1 text-muted-foreground">
@@ -182,7 +202,10 @@ export function ImportDialog({
           )}
 
           {currentStep === 'preview' && importData && (
-            <PreviewValidationStep data={importData} />
+            <PreviewValidationStep 
+              data={importData}
+              referenceTotal={referenceTotal ? parseFloat(referenceTotal) : null}
+            />
           )}
         </div>
 
