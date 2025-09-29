@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import type { BudgetListItem } from '../types';
+import { NewBudgetWizard } from '../components/wizard/NewBudgetWizard';
 
 export default function PlanningV2Index() {
   const navigate = useNavigate();
@@ -84,9 +85,10 @@ export default function PlanningV2Index() {
     }
   };
 
+  const [wizardOpen, setWizardOpen] = useState(false);
+
   const handleNewBudget = () => {
-    // TODO: Open create budget dialog
-    console.log('Crear nuevo presupuesto');
+    setWizardOpen(true);
   };
 
   const filteredBudgets = budgets.filter((budget) =>
@@ -209,6 +211,8 @@ export default function PlanningV2Index() {
           )}
         </CardContent>
       </Card>
+
+      <NewBudgetWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
     </div>
   );
 }

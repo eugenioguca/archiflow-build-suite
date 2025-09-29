@@ -59,7 +59,7 @@ export async function getBudgetById(id: string) {
  * Create new budget
  */
 export async function createBudget(
-  budget: Omit<PlanningBudget, 'id' | 'created_at' | 'updated_at'>
+  budget: Omit<PlanningBudget, 'id' | 'created_at' | 'updated_at' | 'created_by'>
 ) {
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) throw new Error('Usuario no autenticado');
