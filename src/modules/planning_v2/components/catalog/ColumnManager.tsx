@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+import { FormulaAutocomplete } from './FormulaAutocomplete';
 
 interface Column {
   key: string;
@@ -201,15 +201,11 @@ export function ColumnManager({ open, onOpenChange, columns, onColumnsChange }: 
               {newColumn.type === 'computed' && (
                 <div className="space-y-2">
                   <Label>Fórmula</Label>
-                  <Textarea
-                    placeholder="cantidad_real * precio_real"
+                  <FormulaAutocomplete
                     value={newColumn.formula || ''}
-                    onChange={(e) => setNewColumn({ ...newColumn, formula: e.target.value })}
-                    rows={3}
+                    onChange={(value) => setNewColumn({ ...newColumn, formula: value })}
+                    placeholder="cantidad_real * precio_real"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Usa claves de campo existentes. Ej: cantidad_real, precio_real, desperdicio_pct
-                  </p>
                 </div>
               )}
 

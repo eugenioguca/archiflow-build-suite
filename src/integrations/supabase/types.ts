@@ -6065,6 +6065,33 @@ export type Database = {
           },
         ]
       }
+      planning_v2_user_settings: {
+        Row: {
+          budget_id: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          visible_columns: Json
+        }
+        Insert: {
+          budget_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          visible_columns?: Json
+        }
+        Update: {
+          budget_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          visible_columns?: Json
+        }
+        Relationships: []
+      }
       planning_v2_webhooks: {
         Row: {
           created_at: string

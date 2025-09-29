@@ -1,10 +1,11 @@
 /**
  * Main Catalog Grid Component
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Settings, Eye, EyeOff } from 'lucide-react';
 import { useCatalogGrid } from '../../hooks/useCatalogGrid';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
+import { useColumnSettings } from '../../hooks/useColumnSettings';
 import { ColumnManager } from './ColumnManager';
 import { WBSSelector } from './WBSSelector';
 import { Button } from '@/components/ui/button';
@@ -39,6 +40,20 @@ const DEFAULT_COLUMNS = [
 export function CatalogGrid({ budgetId }: CatalogGridProps) {
   const [columns, setColumns] = useState(DEFAULT_COLUMNS);
   const [columnManagerOpen, setColumnManagerOpen] = useState(false);
+  const { settings, saveSettings, isLoading: isLoadingSettings } = useColumnSettings(budgetId);
+
+  // Load saved settings when available
+  useEffect(() => {
+    if (settings && settings.length > 0) {
+      setColumns(settings);
+    }
+  }, [settings]);
+
+  // Save settings when columns change (debounced via mutation)
+  const handleColumnsChange = (newColumns: typeof DEFAULT_COLUMNS) => {
+    setColumns(newColumns);
+    saveSettings(newColumns);
+  };
 
   const {
     budget,
@@ -276,7 +291,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
         open={columnManagerOpen}
         onOpenChange={setColumnManagerOpen}
         columns={columns}
-        onColumnsChange={setColumns}
+        onColumnsChange={handleColumnsChange}
       />
     </div>
   );
