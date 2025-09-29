@@ -40,7 +40,7 @@ export const tuActualsAdapter = {
   },
 
   /**
-   * Fetch actuals from TU for a specific WBS code
+   * Fetch actuals from TU for a specific WBS code with timeout
    */
   async getActualsByWBS(
     wbsCode: string,
@@ -54,99 +54,126 @@ export const tuActualsAdapter = {
     }
 
     try {
-      // First, get the WBS dimensions
-      const { data: wbsData, error: wbsError } = await supabase
-        .from('planning_wbs_codes')
-        .select('departamento, mayor, partida, subpartida')
-        .eq('code', wbsCode)
-        .single();
+      // Create timeout promise (5 seconds)
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('TU_TIMEOUT')), 5000);
+      });
 
-      if (wbsError) {
-        console.error('Error fetching WBS code:', wbsError);
-        return [];
-      }
+      // Race between actual fetch and timeout
+      const result = await Promise.race([
+        this.fetchActualsInternal(wbsCode, projectId, fromDate, toDate),
+        timeoutPromise,
+      ]);
 
-      if (!wbsData) {
-        console.warn('WBS code not found:', wbsCode);
-        return [];
-      }
-
-      // Build query for TU transactions
-      let query = supabase
-        .from('unified_financial_transactions')
-        .select(`
-          id,
-          monto_total,
-          cantidad_requerida,
-          moneda,
-          fecha_requerida,
-          proveedor_sugerido,
-          descripcion_concepto,
-          descripcion_larga,
-          tiene_factura,
-          chart_of_accounts_departamentos!inner(departamento),
-          chart_of_accounts_mayor!inner(codigo, nombre),
-          chart_of_accounts_partidas!inner(codigo, nombre),
-          chart_of_accounts_subpartidas(codigo, nombre)
-        `);
-
-      // Filter by project if provided
-      if (projectId) {
-        query = query.eq('empresa_proyecto_id', projectId);
-      }
-
-      // Filter by date range if provided
-      if (fromDate) {
-        query = query.gte('fecha_requerida', fromDate);
-      }
-      if (toDate) {
-        query = query.lte('fecha_requerida', toDate);
-      }
-
-      // Filter by WBS dimensions
-      if (wbsData.departamento) {
-        query = query.eq('chart_of_accounts_departamentos.departamento', wbsData.departamento);
-      }
-      if (wbsData.mayor) {
-        query = query.eq('chart_of_accounts_mayor.codigo', wbsData.mayor);
-      }
-      if (wbsData.partida) {
-        query = query.eq('chart_of_accounts_partidas.codigo', wbsData.partida);
-      }
-      if (wbsData.subpartida) {
-        query = query.eq('chart_of_accounts_subpartidas.codigo', wbsData.subpartida);
-      }
-
-      const { data, error } = await query.order('fecha_requerida', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching TU actuals:', error);
-        return [];
-      }
-
-      // Map to TUActual format
-      return (data || []).map((item: any) => ({
-        id: item.id,
-        wbs_code: wbsCode,
-        monto_total: item.monto_total || 0,
-        cantidad_requerida: item.cantidad_requerida,
-        moneda: item.moneda || 'MXN',
-        fecha_requerida: item.fecha_requerida,
-        proveedor_sugerido: item.proveedor_sugerido,
-        descripcion_concepto: item.descripcion_concepto,
-        descripcion_larga: item.descripcion_larga,
-        tiene_factura: item.tiene_factura || false,
-        transaction_link: `/unified-transactions?id=${item.id}`,
-        departamento: item.chart_of_accounts_departamentos?.departamento || null,
-        mayor: item.chart_of_accounts_mayor?.nombre || null,
-        partida: item.chart_of_accounts_partidas?.nombre || null,
-        subpartida: item.chart_of_accounts_subpartidas?.nombre || null,
-      }));
+      return result;
     } catch (error) {
-      console.error('Error in getActualsByWBS:', error);
+      if (error instanceof Error && error.message === 'TU_TIMEOUT') {
+        console.warn('TU fetch timeout for WBS:', wbsCode);
+      } else {
+        console.error('Error in getActualsByWBS:', error);
+      }
       // Return empty array to allow Planning v2 to continue working
       return [];
     }
+  },
+
+  /**
+   * Internal fetch without timeout wrapper
+   */
+  async fetchActualsInternal(
+    wbsCode: string,
+    projectId?: string,
+    fromDate?: string,
+    toDate?: string
+  ): Promise<TUActual[]> {
+    // First, get the WBS dimensions
+    const { data: wbsData, error: wbsError } = await supabase
+      .from('planning_wbs_codes')
+      .select('departamento, mayor, partida, subpartida')
+      .eq('code', wbsCode)
+      .single();
+
+    if (wbsError) {
+      console.error('Error fetching WBS code:', wbsError);
+      return [];
+    }
+
+    if (!wbsData) {
+      console.warn('WBS code not found:', wbsCode);
+      return [];
+    }
+
+    // Build query for TU transactions
+    let query = supabase
+      .from('unified_financial_transactions')
+      .select(`
+        id,
+        monto_total,
+        cantidad_requerida,
+        moneda,
+        fecha_requerida,
+        proveedor_sugerido,
+        descripcion_concepto,
+        descripcion_larga,
+        tiene_factura,
+        chart_of_accounts_departamentos!inner(departamento),
+        chart_of_accounts_mayor!inner(codigo, nombre),
+        chart_of_accounts_partidas!inner(codigo, nombre),
+        chart_of_accounts_subpartidas(codigo, nombre)
+      `);
+
+    // Filter by project if provided
+    if (projectId) {
+      query = query.eq('empresa_proyecto_id', projectId);
+    }
+
+    // Filter by date range if provided
+    if (fromDate) {
+      query = query.gte('fecha_requerida', fromDate);
+    }
+    if (toDate) {
+      query = query.lte('fecha_requerida', toDate);
+    }
+
+    // Filter by WBS dimensions
+    if (wbsData.departamento) {
+      query = query.eq('chart_of_accounts_departamentos.departamento', wbsData.departamento);
+    }
+    if (wbsData.mayor) {
+      query = query.eq('chart_of_accounts_mayor.codigo', wbsData.mayor);
+    }
+    if (wbsData.partida) {
+      query = query.eq('chart_of_accounts_partidas.codigo', wbsData.partida);
+    }
+    if (wbsData.subpartida) {
+      query = query.eq('chart_of_accounts_subpartidas.codigo', wbsData.subpartida);
+    }
+
+    const { data, error } = await query.order('fecha_requerida', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching TU actuals:', error);
+      return [];
+    }
+
+    // Map to TUActual format
+    return (data || []).map((item: any) => ({
+      id: item.id,
+      wbs_code: wbsCode,
+      monto_total: item.monto_total || 0,
+      cantidad_requerida: item.cantidad_requerida,
+      moneda: item.moneda || 'MXN',
+      fecha_requerida: item.fecha_requerida,
+      proveedor_sugerido: item.proveedor_sugerido,
+      descripcion_concepto: item.descripcion_concepto,
+      descripcion_larga: item.descripcion_larga,
+      tiene_factura: item.tiene_factura || false,
+      transaction_link: `/unified-transactions?id=${item.id}`,
+      departamento: item.chart_of_accounts_departamentos?.departamento || null,
+      mayor: item.chart_of_accounts_mayor?.nombre || null,
+      partida: item.chart_of_accounts_partidas?.nombre || null,
+      subpartida: item.chart_of_accounts_subpartidas?.nombre || null,
+    }));
   },
 
   /**

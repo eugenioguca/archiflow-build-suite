@@ -81,7 +81,7 @@ export function Summary({ budgetId }: SummaryProps) {
     queryFn: () => getSnapshots(budgetId),
   });
 
-  // Fetch actuals from TU (read-only)
+  // Fetch actuals from TU (read-only) with timeout handling
   const { data: actualsData, isLoading: actualsLoading, error: actualsError } = useQuery({
     queryKey: ['planning-tu-actuals', budgetId, showActuals],
     queryFn: async () => {
@@ -90,19 +90,36 @@ export function Summary({ budgetId }: SummaryProps) {
       const partidaIds = totals?.partidas.map(p => p.partida_id) || [];
       const actualsMap = new Map<string, number>();
 
-      for (const partidaId of partidaIds) {
-        const actual = await tuActualsAdapter.getActualsForPartida(
-          partidaId,
-          budgetData?.budget.project_id
-        );
-        if (actual) {
-          actualsMap.set(partidaId, actual.total_amount);
-        }
-      }
+      // Create timeout promise (5 seconds)
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('TU_TIMEOUT')), 5000);
+      });
 
-      return actualsMap;
+      // Fetch with timeout
+      try {
+        const fetchPromise = (async () => {
+          for (const partidaId of partidaIds) {
+            const actual = await tuActualsAdapter.getActualsForPartida(
+              partidaId,
+              budgetData?.budget.project_id
+            );
+            if (actual) {
+              actualsMap.set(partidaId, actual.total_amount);
+            }
+          }
+          return actualsMap;
+        })();
+
+        return await Promise.race([fetchPromise, timeoutPromise]);
+      } catch (error) {
+        if (error instanceof Error && error.message === 'TU_TIMEOUT') {
+          throw new Error('Tiempo de espera agotado al consultar TU');
+        }
+        throw error;
+      }
     },
     enabled: showActuals && !!budgetData && !!totals,
+    retry: false, // No retry on timeout
   });
 
   // Publish mutation
@@ -188,22 +205,25 @@ export function Summary({ budgetId }: SummaryProps) {
             ) : (
               <>
                 {PLANNING_V2_TU_READONLY && (
-                  <div className="mb-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Label htmlFor="show-actuals" className="cursor-pointer">
-                        Mostrar Real vs Presupuesto
-                      </Label>
-                      <Switch
-                        id="show-actuals"
-                        checked={showActuals}
-                        onCheckedChange={setShowActuals}
-                      />
+                  <div className="mb-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor="show-actuals" className="cursor-pointer">
+                          Mostrar Real vs Presupuesto
+                        </Label>
+                        <Switch
+                          id="show-actuals"
+                          checked={showActuals}
+                          onCheckedChange={setShowActuals}
+                        />
+                      </div>
                     </div>
-                    {actualsError && (
-                      <Alert variant="destructive" className="py-2 px-3">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription className="text-xs">
-                          Error al cargar datos reales
+                    
+                    {actualsError && showActuals && (
+                      <Alert className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20">
+                        <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
+                        <AlertDescription className="text-sm text-yellow-800 dark:text-yellow-300">
+                          No pudimos consultar TU ahora. Tus cálculos siguen disponibles.
                         </AlertDescription>
                       </Alert>
                     )}
@@ -216,7 +236,7 @@ export function Summary({ budgetId }: SummaryProps) {
                       <TableHead>Partida</TableHead>
                       <TableHead className="text-right">Conceptos</TableHead>
                       <TableHead className="text-right">Presupuesto</TableHead>
-                      {showActuals && PLANNING_V2_TU_READONLY && (
+                      {showActuals && PLANNING_V2_TU_READONLY && !actualsError && (
                         <>
                           <TableHead className="text-right">Ejercido (TU)</TableHead>
                           <TableHead className="text-right">Variación</TableHead>
@@ -244,7 +264,7 @@ export function Summary({ budgetId }: SummaryProps) {
                           <TableCell className="text-right font-mono">
                             {formatAsCurrency(partida.subtotal)}
                           </TableCell>
-                          {showActuals && PLANNING_V2_TU_READONLY && (
+                          {showActuals && PLANNING_V2_TU_READONLY && !actualsError && (
                             <>
                               <TableCell className="text-right font-mono">
                                 {actualsLoading ? (
@@ -256,7 +276,8 @@ export function Summary({ budgetId }: SummaryProps) {
                                     href={`/unified-transactions?partida=${partida.partida_id}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 hover:text-primary"
+                                    className="inline-flex items-center gap-1 hover:text-primary hover:underline"
+                                    title="Ver en TU (Transacciones Unificadas)"
                                   >
                                     {formatAsCurrency(actualAmount)}
                                     <ExternalLink className="h-3 w-3" />
