@@ -276,7 +276,8 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
     switch (step) {
       case 1:
         return (
-          <div className="space-y-4">
+          <Form {...form}>
+            <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nombre del presupuesto *</Label>
               <Input
@@ -427,6 +428,7 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
               />
             </div>
           </div>
+          </Form>
         );
 
       case 2:
