@@ -5351,6 +5351,365 @@ export type Database = {
         }
         Relationships: []
       }
+      planning_budgets: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          created_by: string
+          currency: string
+          id: string
+          name: string
+          project_id: string | null
+          settings: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          created_by: string
+          currency?: string
+          id?: string
+          name: string
+          project_id?: string | null
+          settings?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          created_by?: string
+          currency?: string
+          id?: string
+          name?: string
+          project_id?: string | null
+          settings?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_budgets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_budgets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_budgets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "financial_summary_by_client_project"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
+      planning_conceptos: {
+        Row: {
+          active: boolean
+          cantidad: number | null
+          cantidad_real: number | null
+          code: string | null
+          created_at: string
+          desperdicio_pct: number | null
+          honorarios_pct: number | null
+          id: string
+          long_description: string | null
+          order_index: number
+          partida_id: string
+          precio_real: number | null
+          props: Json | null
+          provider: string | null
+          pu: number | null
+          short_description: string
+          sumable: boolean
+          total: number | null
+          total_real: number | null
+          unit: string
+          updated_at: string
+          wbs_code: string | null
+        }
+        Insert: {
+          active?: boolean
+          cantidad?: number | null
+          cantidad_real?: number | null
+          code?: string | null
+          created_at?: string
+          desperdicio_pct?: number | null
+          honorarios_pct?: number | null
+          id?: string
+          long_description?: string | null
+          order_index?: number
+          partida_id: string
+          precio_real?: number | null
+          props?: Json | null
+          provider?: string | null
+          pu?: number | null
+          short_description: string
+          sumable?: boolean
+          total?: number | null
+          total_real?: number | null
+          unit: string
+          updated_at?: string
+          wbs_code?: string | null
+        }
+        Update: {
+          active?: boolean
+          cantidad?: number | null
+          cantidad_real?: number | null
+          code?: string | null
+          created_at?: string
+          desperdicio_pct?: number | null
+          honorarios_pct?: number | null
+          id?: string
+          long_description?: string | null
+          order_index?: number
+          partida_id?: string
+          precio_real?: number | null
+          props?: Json | null
+          provider?: string | null
+          pu?: number | null
+          short_description?: string
+          sumable?: boolean
+          total?: number | null
+          total_real?: number | null
+          unit?: string
+          updated_at?: string
+          wbs_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_conceptos_partida_id_fkey"
+            columns: ["partida_id"]
+            isOneToOne: false
+            referencedRelation: "planning_partidas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planning_partidas: {
+        Row: {
+          active: boolean
+          budget_id: string
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          order_index: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          budget_id: string
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          order_index?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          budget_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          order_index?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_partidas_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "planning_budgets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planning_price_observations: {
+        Row: {
+          created_at: string
+          currency: string
+          date: string
+          id: string
+          project_id: string | null
+          props: Json | null
+          provider: string | null
+          pu: number
+          region: string | null
+          source: string
+          unit: string
+          wbs_code: string | null
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          date?: string
+          id?: string
+          project_id?: string | null
+          props?: Json | null
+          provider?: string | null
+          pu: number
+          region?: string | null
+          source: string
+          unit: string
+          wbs_code?: string | null
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          date?: string
+          id?: string
+          project_id?: string | null
+          props?: Json | null
+          provider?: string | null
+          pu?: number
+          region?: string | null
+          source?: string
+          unit?: string
+          wbs_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_price_observations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_price_observations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "financial_summary_by_client_project"
+            referencedColumns: ["project_id"]
+          },
+          {
+            foreignKeyName: "planning_price_observations_wbs_code_fkey"
+            columns: ["wbs_code"]
+            isOneToOne: false
+            referencedRelation: "planning_wbs_codes"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      planning_template_fields: {
+        Row: {
+          created_at: string
+          default_value: string | null
+          formula: string | null
+          helptext: string | null
+          id: string
+          key: string
+          label: string
+          role: string
+          template_id: string
+          type: string
+          visible: boolean
+        }
+        Insert: {
+          created_at?: string
+          default_value?: string | null
+          formula?: string | null
+          helptext?: string | null
+          id?: string
+          key: string
+          label: string
+          role: string
+          template_id: string
+          type: string
+          visible?: boolean
+        }
+        Update: {
+          created_at?: string
+          default_value?: string | null
+          formula?: string | null
+          helptext?: string | null
+          id?: string
+          key?: string
+          label?: string
+          role?: string
+          template_id?: string
+          type?: string
+          visible?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_template_fields_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "planning_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planning_templates: {
+        Row: {
+          created_at: string
+          id: string
+          meta: Json | null
+          name: string
+          updated_at: string
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meta?: Json | null
+          name: string
+          updated_at?: string
+          version?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meta?: Json | null
+          name?: string
+          updated_at?: string
+          version?: string
+        }
+        Relationships: []
+      }
+      planning_wbs_codes: {
+        Row: {
+          code: string
+          created_at: string
+          departamento: string | null
+          description: string | null
+          mayor: string | null
+          partida: string | null
+          subpartida: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          departamento?: string | null
+          description?: string | null
+          mayor?: string | null
+          partida?: string | null
+          subpartida?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          departamento?: string | null
+          description?: string | null
+          mayor?: string | null
+          partida?: string | null
+          subpartida?: string | null
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           created_at: string

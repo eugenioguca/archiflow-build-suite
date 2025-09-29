@@ -23,7 +23,9 @@ import {
   Pin,
   Menu,
   X,
+  Rocket,
 } from "lucide-react";
+import { PLANNING_V2_ENABLED } from "@/modules/planning_v2/config/featureFlag";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -45,13 +47,16 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 
-const allMenuItems = [
+const baseMenuItems = [
   { title: "Dashboard", url: "/dashboard", icon: BarChart3, color: "text-primary", module: "dashboard" },
   { title: "Calendario", url: "/calendar", icon: Calendar, color: "text-info", module: "calendar" },
   { title: "Clientes", url: "/clients", icon: Users, color: "text-primary", module: "clients" },
   { title: "Ventas", url: "/sales", icon: TrendingUp, color: "text-success", module: "sales" },
   { title: "Diseño", url: "/design", icon: Building, color: "text-purple", module: "design" },
   { title: "Presupuestos y Planeación", url: "/presupuestos-planeacion", icon: Calculator, color: "text-blue", module: "construction" },
+  ...(PLANNING_V2_ENABLED ? [
+    { title: "Planeación v2 (Beta)", url: "/planning-v2", icon: Rocket, color: "text-orange", module: "planning_v2", badge: "Beta" }
+  ] : []),
   { title: "Construcción", url: "/construction", icon: HardHat, color: "text-orange", module: "construction" },
   { title: "Proveedores", url: "/suppliers", icon: Truck, color: "text-orange", module: "suppliers" },
   { title: "Finanzas", url: "/finances", icon: DollarSign, color: "text-primary", module: "finances" },
@@ -60,6 +65,8 @@ const allMenuItems = [
   { title: "Preview Portal Cliente", url: "/client-portal-preview", icon: Eye, color: "text-info", module: "client_portal_preview" },
   { title: "Herramientas", url: "/user-management", icon: UserCheck, color: "text-primary", module: "tools" },
 ];
+
+const allMenuItems = baseMenuItems;
 
 const clientItems = [
   { title: "Mi Proyecto", url: "/my-project", icon: Building2, color: "text-info", module: "client_portal" },
@@ -325,9 +332,14 @@ export function AppSidebar() {
                         </div>
                       </span>
                       
-                       <span className="whitespace-nowrap overflow-hidden font-medium text-xs">
+                       <span className="whitespace-nowrap overflow-hidden font-medium text-xs flex-1">
                          {item.title}
                        </span>
+                       {(item as any).badge && (
+                         <span className="ml-auto text-[10px] bg-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium">
+                           {(item as any).badge}
+                         </span>
+                       )}
                     </NavLink>
                   ) : (
                     <Tooltip>

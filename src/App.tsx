@@ -31,6 +31,9 @@ import UnifiedTransactions from "./pages/UnifiedTransactions";
 import TestTransactionForm from "./pages/TestTransactionForm";
 import PresupuestosPlaneacion from "./pages/PresupuestosPlaneacion";
 import CronogramaGanttV2 from "./pages/planeacion/CronogramaGanttV2";
+import { PLANNING_V2_ENABLED } from "./modules/planning_v2/config/featureFlag";
+import PlanningV2Index from "./modules/planning_v2/pages/PlanningV2Index";
+import BudgetDetail from "./modules/planning_v2/pages/BudgetDetail";
 
 import PendingApproval from "./components/PendingApproval";
 import { UserOnboarding } from "./components/UserOnboarding";
@@ -265,6 +268,33 @@ const App = () => (
                  </ProtectedRoute>
                } 
              />
+             
+             {/* Planning v2 routes - conditionally rendered based on feature flag */}
+             {PLANNING_V2_ENABLED && (
+               <>
+                 <Route 
+                   path="/planning-v2" 
+                   element={
+                     <ProtectedRoute>
+                       <Layout>
+                         <PlanningV2Index />
+                       </Layout>
+                     </ProtectedRoute>
+                   } 
+                 />
+                 <Route 
+                   path="/planning-v2/budgets/:id" 
+                   element={
+                     <ProtectedRoute>
+                       <Layout>
+                         <BudgetDetail />
+                       </Layout>
+                     </ProtectedRoute>
+                   } 
+                 />
+               </>
+             )}
+             
              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
            </Routes>
