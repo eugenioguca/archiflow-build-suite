@@ -68,7 +68,7 @@ export const clientsAdapter = {
    * @returns Paginated search results
    */
   async search(params: SearchClientsParams = {}): Promise<SearchClientsResult> {
-    const { q = '', limit = 10, page = 1 } = params;
+    const { q = '', limit = 20, page = 1 } = params; // TU-style: 20 items/page
     
     // Sanitize search query
     const sanitizedQuery = q.trim().slice(0, 64);

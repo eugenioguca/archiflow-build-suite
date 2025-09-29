@@ -70,7 +70,7 @@ export const projectsAdapter = {
    * @returns Paginated search results
    */
   async search(params: SearchProjectsParams = {}): Promise<SearchProjectsResult> {
-    const { q = '', limit = 10, page = 1, clientId } = params;
+    const { q = '', limit = 20, page = 1, clientId } = params; // TU-style: 20 items/page
     
     // Sanitize search query
     const sanitizedQuery = q.trim().slice(0, 64);
