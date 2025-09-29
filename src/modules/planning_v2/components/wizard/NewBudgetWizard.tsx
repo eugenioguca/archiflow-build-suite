@@ -101,6 +101,10 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
     }
   };
 
+  const handleBack = () => {
+    setStep(step - 1);
+  };
+
   const togglePartida = (index: number) => {
     setPartidas(prev => prev.map((p, i) => i === index ? { ...p, enabled: !p.enabled } : p));
   };
@@ -167,29 +171,25 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
                 placeholder="Ej: Casa Moderna - Presupuesto Mayo 2024"
               />
               {form.formState.errors.name && (
-                <p className="text-sm text-destructive">
-                  {form.formState.errors.name.message}
-                </p>
+                <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
               )}
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="client_id">Cliente</Label>
                 <RemoteCombobox
                   value={form.watch('client_id')}
                   onChange={async (value) => {
                     form.setValue('client_id', value);
-                    // Load and cache client data for summary
                     if (value) {
                       const client = await clientsAdapter.getById(value);
                       setSelectedClient(client);
                     } else {
                       setSelectedClient(null);
                     }
-                    // Clear project if client changes
                     const currentProject = form.watch('project_id');
                     if (currentProject && value) {
-                      // Verify project belongs to new client
                       projectsAdapter.getById(currentProject).then(project => {
                         if (project && project.client_id !== value) {
                           form.setValue('project_id', undefined);
@@ -206,13 +206,9 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
                   className="w-full"
                 />
                 {form.formState.errors.client_id && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.client_id.message}
-                  </p>
+                  <p className="text-sm text-destructive">{form.formState.errors.client_id.message}</p>
                 )}
-                <p className="text-xs text-muted-foreground">
-                  Opcional. Selecciona un cliente o un proyecto.
-                </p>
+                <p className="text-xs text-muted-foreground">Opcional. Selecciona un cliente o un proyecto.</p>
               </div>
 
               <div className="space-y-2">
@@ -221,11 +217,9 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
                   value={form.watch('project_id')}
                   onChange={async (value) => {
                     form.setValue('project_id', value);
-                    // Load and cache project data for summary
                     if (value) {
                       const project = await projectsAdapter.getById(value);
                       setSelectedProject(project);
-                      // Auto-fill client from project
                       if (project) {
                         form.setValue('client_id', project.client_id);
                         const client = await clientsAdapter.getById(project.client_id);
@@ -240,30 +234,20 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
                   searchPlaceholder="Buscar por nombre..."
                   emptyText="Sin resultados"
                   errorText="Error al cargar. Reintenta."
-                  disabled={false}
                   className="w-full"
                 />
                 {form.formState.errors.project_id && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.project_id.message}
-                  </p>
+                  <p className="text-sm text-destructive">{form.formState.errors.project_id.message}</p>
                 )}
-                <p className="text-xs text-muted-foreground">
-                  Opcional. Si eliges un cliente, filtraremos los proyectos.
-                </p>
+                <p className="text-xs text-muted-foreground">Opcional. Si eliges un cliente, filtraremos los proyectos.</p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="currency">Moneda</Label>
-                <Select
-                  value={form.watch('currency')}
-                  onValueChange={(value) => form.setValue('currency', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                <Select value={form.watch('currency')} onValueChange={(value) => form.setValue('currency', value)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="MXN">MXN - Peso mexicano</SelectItem>
                     <SelectItem value="USD">USD - Dólar</SelectItem>
@@ -339,15 +323,9 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
             </p>
             <div className="space-y-2 max-h-[400px] overflow-y-auto">
               {partidas.map((partida, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30"
-                >
+                <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30">
                   <span className="font-medium">{partida.name}</span>
-                  <Switch
-                    checked={partida.enabled}
-                    onCheckedChange={() => togglePartida(index)}
-                  />
+                  <Switch checked={partida.enabled} onCheckedChange={() => togglePartida(index)} />
                 </div>
               ))}
             </div>
@@ -413,12 +391,9 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle>Nuevo presupuesto</DialogTitle>
-          </div>
+          <DialogTitle>Nuevo presupuesto</DialogTitle>
         </DialogHeader>
 
-        {/* Step indicator */}
         <div className="flex items-center justify-center gap-2 mb-6">
           {[1, 2, 3].map((s) => (
             <div key={s} className="flex items-center">
@@ -433,27 +408,15 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
               >
                 {s < step ? <Check className="h-4 w-4" /> : s}
               </div>
-              {s < 3 && (
-                <div
-                  className={`h-0.5 w-12 ${
-                    s < step ? 'bg-primary' : 'bg-muted'
-                  }`}
-                />
-              )}
+              {s < 3 && <div className={`h-0.5 w-12 ${s < step ? 'bg-primary' : 'bg-muted'}`} />}
             </div>
           ))}
         </div>
 
-        {/* Step content */}
         <div className="min-h-[300px]">{renderStep()}</div>
 
-        {/* Actions */}
         <div className="flex justify-between mt-6">
-          <Button
-            variant="outline"
-            onClick={step === 1 ? handleClose : handleBack}
-            disabled={loading}
-          >
+          <Button variant="outline" onClick={step === 1 ? handleClose : handleBack} disabled={loading}>
             {step === 1 ? 'Cancelar' : (
               <>
                 <ChevronLeft className="h-4 w-4 mr-2" />
