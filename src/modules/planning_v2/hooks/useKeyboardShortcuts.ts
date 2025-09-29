@@ -1,0 +1,67 @@
+/**
+ * Keyboard shortcuts for catalog grid
+ */
+import { useEffect } from 'react';
+
+export interface KeyboardShortcutsConfig {
+  onDuplicate?: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  onSearch?: () => void;
+  onSave?: () => void;
+  onDelete?: () => void;
+  onSelectAll?: () => void;
+}
+
+export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const cmdOrCtrl = isMac ? e.metaKey : e.ctrlKey;
+
+      // Ctrl/Cmd + D: Duplicate
+      if (cmdOrCtrl && e.key === 'd') {
+        e.preventDefault();
+        config.onDuplicate?.();
+      }
+
+      // Alt + Arrow Up: Move up
+      if (e.altKey && e.key === 'ArrowUp') {
+        e.preventDefault();
+        config.onMoveUp?.();
+      }
+
+      // Alt + Arrow Down: Move down
+      if (e.altKey && e.key === 'ArrowDown') {
+        e.preventDefault();
+        config.onMoveDown?.();
+      }
+
+      // Ctrl/Cmd + K: Search
+      if (cmdOrCtrl && e.key === 'k') {
+        e.preventDefault();
+        config.onSearch?.();
+      }
+
+      // Ctrl/Cmd + S: Save
+      if (cmdOrCtrl && e.key === 's') {
+        e.preventDefault();
+        config.onSave?.();
+      }
+
+      // Delete: Remove
+      if (e.key === 'Delete' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        config.onDelete?.();
+      }
+
+      // Ctrl/Cmd + A: Select all
+      if (cmdOrCtrl && e.key === 'a') {
+        e.preventDefault();
+        config.onSelectAll?.();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [config]);
+}

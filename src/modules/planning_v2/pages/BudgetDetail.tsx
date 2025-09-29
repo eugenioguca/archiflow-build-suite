@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
+import { CatalogGrid } from '../components/catalog/CatalogGrid';
 
 export default function BudgetDetail() {
   const { id } = useParams<{ id: string }>();
@@ -60,17 +61,9 @@ export default function BudgetDetail() {
         </TabsList>
 
         <TabsContent value="catalog" className="space-y-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center py-12">
-                <List className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold text-muted-foreground mb-2">
-                  Catálogo de conceptos
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Gestiona partidas y conceptos del presupuesto
-                </p>
-              </div>
+          <Card className="h-[calc(100vh-250px)]">
+            <CardContent className="p-0 h-full">
+              {id && <CatalogGrid budgetId={id} />}
             </CardContent>
           </Card>
         </TabsContent>
