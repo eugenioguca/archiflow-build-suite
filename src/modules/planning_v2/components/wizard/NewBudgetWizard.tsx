@@ -15,7 +15,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { SearchableCombobox, SearchableComboboxItem } from '@/components/ui/searchable-combobox';
+import SearchableComboboxV2 from '../../ui/SearchableComboboxV2';
+import { toItems } from '../../utils/combobox';
 import { useToast } from '@/hooks/use-toast';
 import { createBudget, createPartida } from '../../services/budgetService';
 import { projectsAdapter } from '../../adapters/projects';
@@ -71,12 +72,6 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
   const [selectedClient, setSelectedClient] = useState<ClientAdapter | null>(null);
   const [selectedProject, setSelectedProject] = useState<ProjectAdapter | null>(null);
   
-  // Datos para los comboboxes (estilo TU)
-  const [clientes, setClientes] = useState<SearchableComboboxItem[]>([]);
-  const [proyectos, setProyectos] = useState<SearchableComboboxItem[]>([]);
-  const [loadingClientes, setLoadingClientes] = useState(false);
-  const [loadingProyectos, setLoadingProyectos] = useState(false);
-  
   // Race-safety para handlers async (patrón TU)
   const clientReqIdRef = React.useRef(0);
   const projectReqIdRef = React.useRef(0);
@@ -94,71 +89,10 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
     },
   });
 
-  // Cargar datos cuando se abre el wizard (estilo TU)
-  useEffect(() => {
-    if (open) {
-      loadClientes();
-      loadProyectos();
-    }
-  }, [open]);
-
-  const loadClientes = async () => {
-    setLoadingClientes(true);
-    try {
-      const result = await clientsAdapter.getAll();
-      const clientesItems: SearchableComboboxItem[] = result.map(c => {
-        const codigo = c.id.slice(0, 8); // Código visual (primeros 8 chars del UUID)
-        return {
-          value: c.id,
-          label: c.full_name,
-          codigo,
-          searchText: `${codigo} ${c.full_name}`.toLowerCase()
-        };
-      });
-      setClientes(clientesItems);
-    } catch (error) {
-      console.error('Error cargando clientes:', error);
-      toast({ 
-        title: 'Error', 
-        description: 'No se pudieron cargar los clientes',
-        variant: 'destructive'
-      });
-      setClientes([]);
-    } finally {
-      setLoadingClientes(false);
-    }
-  };
-
-  const loadProyectos = async () => {
-    setLoadingProyectos(true);
-    try {
-      const result = await projectsAdapter.getAll();
-      const proyectosItems: SearchableComboboxItem[] = result.map(p => {
-        const codigo = p.id.slice(0, 8); // Código visual
-        return {
-          value: p.id,
-          label: p.project_name,
-          codigo,
-          searchText: `${codigo} ${p.project_name}`.toLowerCase()
-        };
-      });
-      setProyectos(proyectosItems);
-    } catch (error) {
-      console.error('Error cargando proyectos:', error);
-      toast({ 
-        title: 'Error', 
-        description: 'No se pudieron cargar los proyectos',
-        variant: 'destructive'
-      });
-      setProyectos([]);
-    } finally {
-      setLoadingProyectos(false);
-    }
-  };
 
   // Handlers race-safe (patrón TU)
   const handleClientChange = async (clientId?: string) => {
-    const reqId = ++clientReqIdRef.current;
+    const rid = ++clientReqIdRef.current;
     if (!clientId) {
       setSelectedClient(null);
       form.setValue('project_id', undefined);
@@ -166,14 +100,14 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
     }
     
     const client = await clientsAdapter.getById(clientId).catch(() => null);
-    if (reqId !== clientReqIdRef.current) return; // Respuesta vieja, ignorar
+    if (rid !== clientReqIdRef.current) return; // Respuesta vieja, ignorar
     setSelectedClient(client);
 
     // Validar proyecto actual
-    const currentProjectId = form.getValues('project_id');
-    if (currentProjectId) {
-      const project = await projectsAdapter.getById(currentProjectId).catch(() => null);
-      if (reqId !== clientReqIdRef.current) return;
+    const pid = form.getValues('project_id');
+    if (pid) {
+      const project = await projectsAdapter.getById(pid).catch(() => null);
+      if (rid !== clientReqIdRef.current) return;
       if (project && project.client_id !== clientId) {
         form.setValue('project_id', undefined);
         setSelectedProject(null);
@@ -182,20 +116,20 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
   };
 
   const handleProjectChange = async (projectId?: string) => {
-    const reqId = ++projectReqIdRef.current;
+    const rid = ++projectReqIdRef.current;
     if (!projectId) {
       setSelectedProject(null);
       return;
     }
     
     const project = await projectsAdapter.getById(projectId).catch(() => null);
-    if (reqId !== projectReqIdRef.current) return;
+    if (rid !== projectReqIdRef.current) return;
     setSelectedProject(project);
     
     if (project) {
       form.setValue('client_id', project.client_id);
       const client = await clientsAdapter.getById(project.client_id).catch(() => null);
-      if (reqId !== projectReqIdRef.current) return;
+      if (rid !== projectReqIdRef.current) return;
       setSelectedClient(client);
     }
   };
@@ -264,18 +198,6 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
     }
   };
 
-  // Filtrar proyectos por cliente seleccionado (síncrono)
-  const proyectosFiltrados = React.useMemo(() => {
-    const clientId = form.watch('client_id');
-    if (!clientId) return proyectos;
-    
-    // Filtrar usando los datos ya cargados
-    return proyectos.filter(p => {
-      // Aquí deberías tener un map de proyectos con su client_id
-      // Por ahora, si no hay filtro disponible, mostrar todos
-      return true;
-    });
-  }, [proyectos, form.watch('client_id')]);
 
   const renderStep = () => {
     switch (step) {
@@ -297,8 +219,7 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="client_id">Cliente</Label>
-                <SearchableCombobox
-                  items={clientes}
+                <SearchableComboboxV2
                   value={form.watch('client_id')}
                   onValueChange={(value) => {
                     form.setValue('client_id', value);
@@ -307,10 +228,18 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
                   placeholder="Seleccionar cliente..."
                   searchPlaceholder="Buscar por nombre o código..."
                   emptyText="Sin resultados"
-                  loading={loadingClientes}
                   disabled={loading}
                   showCodes={true}
-                  searchFields={['label', 'codigo', 'searchText']}
+                  fetchPage={async ({ q, page, limit }) => {
+                    const result = await clientsAdapter.search({ q, page, limit });
+                    return {
+                      items: toItems(result.items.map(c => ({ 
+                        id: c.id, 
+                        full_name: c.full_name 
+                      }))),
+                      nextPage: result.nextPage,
+                    };
+                  }}
                   className="w-full"
                 />
                 {form.formState.errors.client_id && (
@@ -321,8 +250,7 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
 
               <div className="space-y-2">
                 <Label htmlFor="project_id">Proyecto</Label>
-                <SearchableCombobox
-                  items={proyectosFiltrados}
+                <SearchableComboboxV2
                   value={form.watch('project_id')}
                   onValueChange={(value) => {
                     form.setValue('project_id', value);
@@ -331,16 +259,34 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
                   placeholder="Seleccionar proyecto..."
                   searchPlaceholder="Buscar por nombre o código..."
                   emptyText="Sin resultados"
-                  loading={loadingProyectos}
                   disabled={loading}
                   showCodes={true}
-                  searchFields={['label', 'codigo', 'searchText']}
+                  fetchPage={async ({ q, page, limit }) => {
+                    const clientId = form.getValues('client_id');
+                    const result = await projectsAdapter.search({ 
+                      q, 
+                      page, 
+                      limit,
+                      clientId 
+                    });
+                    return {
+                      items: toItems(result.items.map(p => ({ 
+                        id: p.id, 
+                        project_name: p.project_name 
+                      }))),
+                      nextPage: result.nextPage,
+                    };
+                  }}
                   className="w-full"
                 />
                 {form.formState.errors.project_id && (
                   <p className="text-sm text-destructive">{form.formState.errors.project_id.message}</p>
                 )}
-                <p className="text-xs text-muted-foreground">Opcional. Si eliges un cliente, filtraremos los proyectos.</p>
+                <p className="text-xs text-muted-foreground">
+                  {form.watch('client_id') 
+                    ? 'Filtrado por cliente seleccionado.' 
+                    : 'Opcional. Si eliges un cliente, filtraremos los proyectos.'}
+                </p>
               </div>
             </div>
 
