@@ -5,6 +5,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { getBudgetById } from './budgetService';
 import { priceIntelligenceService } from './priceIntelligenceService';
+import * as eventsService from './eventsService';
 import Decimal from 'decimal.js';
 
 export interface BudgetSnapshot {
@@ -146,6 +147,22 @@ export async function createSnapshot(
         observationDate
       );
     }
+  }
+
+  // Disparar evento de publicación
+  try {
+    await eventsService.triggerBudgetPublishedEvent(
+      budgetId,
+      data.id,
+      {
+        grand_total: totals.grand_total,
+        partidas_count: budgetData.partidas.length,
+        conceptos_count: budgetData.conceptos.length
+      }
+    );
+  } catch (eventError) {
+    console.error('Error disparando evento de publicación:', eventError);
+    // No falla la publicación si el evento falla
   }
 
   return data as unknown as BudgetSnapshot;

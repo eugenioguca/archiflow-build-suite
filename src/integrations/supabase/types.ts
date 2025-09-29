@@ -5862,6 +5862,221 @@ export type Database = {
         }
         Relationships: []
       }
+      planning_v2_audit_log: {
+        Row: {
+          action: string
+          budget_id: string | null
+          change_reason: string | null
+          changed_at: string
+          changed_by: string
+          field_name: string | null
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          new_value: string | null
+          old_value: string | null
+          record_id: string
+          table_name: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          budget_id?: string | null
+          change_reason?: string | null
+          changed_at?: string
+          changed_by: string
+          field_name?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          new_value?: string | null
+          old_value?: string | null
+          record_id: string
+          table_name: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          budget_id?: string | null
+          change_reason?: string | null
+          changed_at?: string
+          changed_by?: string
+          field_name?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          new_value?: string | null
+          old_value?: string | null
+          record_id?: string
+          table_name?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_v2_audit_log_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planning_v2_events: {
+        Row: {
+          budget_id: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          payload: Json
+          snapshot_id: string | null
+          triggered_at: string
+          triggered_by: string
+          webhooks_failed: number | null
+          webhooks_sent: number | null
+        }
+        Insert: {
+          budget_id?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          payload: Json
+          snapshot_id?: string | null
+          triggered_at?: string
+          triggered_by: string
+          webhooks_failed?: number | null
+          webhooks_sent?: number | null
+        }
+        Update: {
+          budget_id?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          payload?: Json
+          snapshot_id?: string | null
+          triggered_at?: string
+          triggered_by?: string
+          webhooks_failed?: number | null
+          webhooks_sent?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_v2_events_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "planning_budgets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_v2_events_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "planning_budget_snapshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_v2_events_triggered_by_fkey"
+            columns: ["triggered_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planning_v2_user_roles: {
+        Row: {
+          expires_at: string | null
+          granted_at: string
+          granted_by: string | null
+          id: string
+          notes: string | null
+          role: Database["public"]["Enums"]["planning_v2_role"]
+          user_id: string
+        }
+        Insert: {
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          notes?: string | null
+          role: Database["public"]["Enums"]["planning_v2_role"]
+          user_id: string
+        }
+        Update: {
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          notes?: string | null
+          role?: Database["public"]["Enums"]["planning_v2_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_v2_user_roles_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_v2_user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planning_v2_webhooks: {
+        Row: {
+          created_at: string
+          created_by: string
+          events: string[]
+          id: string
+          is_active: boolean | null
+          last_triggered_at: string | null
+          metadata: Json | null
+          name: string
+          secret: string | null
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          events: string[]
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          metadata?: Json | null
+          name: string
+          secret?: string | null
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          events?: string[]
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          metadata?: Json | null
+          name?: string
+          secret?: string | null
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_v2_webhooks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       planning_wbs_codes: {
         Row: {
           code: string
@@ -8757,6 +8972,13 @@ export type Database = {
           | { _module: string; _user_id: string }
         Returns: boolean
       }
+      has_planning_v2_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["planning_v2_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       insert_default_budget_items: {
         Args: { budget_id_param: string }
         Returns: undefined
@@ -8764,6 +8986,19 @@ export type Database = {
       is_admin: {
         Args: { user_uuid?: string }
         Returns: boolean
+      }
+      log_planning_v2_change: {
+        Args: {
+          p_action: string
+          p_budget_id?: string
+          p_change_reason?: string
+          p_field_name: string
+          p_new_value: string
+          p_old_value: string
+          p_record_id: string
+          p_table_name: string
+        }
+        Returns: string
       }
       log_security_event: {
         Args:
@@ -8807,6 +9042,15 @@ export type Database = {
           profile_id: string
           user_role: string
         }[]
+      }
+      trigger_planning_v2_event: {
+        Args: {
+          p_budget_id: string
+          p_event_type: string
+          p_payload: Json
+          p_snapshot_id: string
+        }
+        Returns: string
       }
       update_design_phase_days_elapsed: {
         Args: Record<PropertyKey, never>
@@ -8943,6 +9187,7 @@ export type Database = {
         | "otros"
       payable_status: "pending" | "partial" | "paid" | "overdue" | "cancelled"
       plan_type: "sales_to_design" | "design_to_construction"
+      planning_v2_role: "viewer" | "editor" | "publisher"
       position_hierarchy:
         | "director"
         | "gerente"
@@ -9215,6 +9460,7 @@ export const Constants = {
       ],
       payable_status: ["pending", "partial", "paid", "overdue", "cancelled"],
       plan_type: ["sales_to_design", "design_to_construction"],
+      planning_v2_role: ["viewer", "editor", "publisher"],
       position_hierarchy: [
         "director",
         "gerente",

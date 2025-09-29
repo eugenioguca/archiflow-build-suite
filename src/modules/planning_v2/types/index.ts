@@ -165,3 +165,60 @@ export interface TestRunResult {
   }>;
   error?: string;
 }
+
+// Phase 8: Permissions, Audit, Events
+export type PlanningV2Role = 'viewer' | 'editor' | 'publisher';
+
+export interface PlanningV2UserRole {
+  id: string;
+  user_id: string;
+  role: PlanningV2Role;
+  granted_by: string | null;
+  granted_at: string;
+  expires_at: string | null;
+  notes: string | null;
+}
+
+export interface PlanningV2AuditLog {
+  id: string;
+  table_name: string;
+  record_id: string;
+  action: 'INSERT' | 'UPDATE' | 'DELETE';
+  changed_by: string;
+  changed_at: string;
+  field_name: string | null;
+  old_value: string | null;
+  new_value: string | null;
+  budget_id: string | null;
+  change_reason: string | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  metadata: Record<string, any>;
+}
+
+export interface PlanningV2Webhook {
+  id: string;
+  name: string;
+  url: string;
+  events: string[];
+  secret: string | null;
+  is_active: boolean;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  last_triggered_at: string | null;
+  metadata: Record<string, any>;
+}
+
+export interface PlanningV2Event {
+  id: string;
+  event_type: string;
+  budget_id: string | null;
+  snapshot_id: string | null;
+  triggered_by: string;
+  triggered_at: string;
+  payload: Record<string, any>;
+  webhooks_sent: number;
+  webhooks_failed: number;
+  metadata: Record<string, any>;
+}

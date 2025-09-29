@@ -23,6 +23,9 @@ export * from './services/snapshotService';
 export * from './services/priceIntelligenceService';
 export * as templateService from './services/templateService';
 export * as templateTestService from './services/templateTestService';
+export * as permissionsService from './services/permissionsService';
+export * as auditService from './services/auditService';
+export * as eventsService from './services/eventsService';
 
 // Adapters
 export * from './adapters/projects';
@@ -34,3 +37,6 @@ export * from './adapters/tuActuals';
 export { usePriceIntelligence } from './hooks/usePriceIntelligence';
 export { useTemplate } from './hooks/useTemplate';
 export { useTemplateTests } from './hooks/useTemplateTests';
+export { usePermissions } from './hooks/usePermissions';
+export { useAudit, useRecordAudit, useBudgetAudit, useRecentChanges } from './hooks/useAudit';
+export { useWebhooks, useEvents, useBudgetEvents } from './hooks/useEvents';

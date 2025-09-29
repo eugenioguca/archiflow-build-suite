@@ -277,6 +277,204 @@ Editor de plantillas y sistema de pruebas para validación automática.
 
 ---
 
+## Phase 8: Permissions, Audit, Events ✅
+
+Sistema de roles específicos, auditoría granular y webhooks con mensajes en español.
+
+### Tablas DB
+
+**Roles**
+- `planning_v2_role` (ENUM) - viewer, editor, publisher
+- `planning_v2_user_roles` - Asignaciones de roles con expiración
+
+**Auditoría**
+- `planning_v2_audit_log` - Registro detallado de cambios
+  - Tracking por campo (cantidad_real, precio_real, wbs_code, fórmulas, descripción larga)
+  - Quién, qué, cuándo con metadata completa
+  - IP address, user agent, razón del cambio
+
+**Eventos y Webhooks**
+- `planning_v2_webhooks` - Configuración de webhooks
+- `planning_v2_events` - Eventos disparados con payload
+
+### Funciones DB
+
+- `has_planning_v2_role(user_id, role)` - Verificar rol (SECURITY DEFINER)
+- `log_planning_v2_change(...)` - Registrar cambio manualmente
+- `trigger_planning_v2_event(...)` - Disparar evento con payload
+- Triggers automáticos en `planning_conceptos` y `planning_template_fields`
+
+### Edge Function
+
+**planning-v2-webhooks**
+- Envía eventos a webhooks configurados
+- Soporte para HMAC signature (SHA-256)
+- Headers: `X-Planning-V2-Event`, `X-Planning-V2-Signature`
+- Logging detallado con contadores de éxito/fallo
+
+### Servicios
+
+**permissionsService**
+- `checkUserRole(role)` - Verificar rol específico
+- `getUserRoles(userId)` - Obtener roles de usuario
+- `grantRole(userId, role, expiresAt?, notes?)` - Asignar rol
+- `revokeRole(userId, role)` - Revocar rol
+- `getAllUserRoles()` - Listar todas las asignaciones
+
+**auditService**
+- `getAuditLogs(filters)` - Consultar logs con filtros
+- `getAuditLogsForRecord(table, id)` - Logs de un registro
+- `getAuditLogsForBudget(budgetId)` - Logs de presupuesto
+- `getRecentChanges(limit)` - Cambios recientes
+- `getAuditSummary(budgetId?, dates?)` - Estadísticas de auditoría
+- `logManualChange(...)` - Registrar cambio manual
+
+**eventsService**
+- `getWebhooks()` - Listar webhooks
+- `createWebhook(config)` - Crear webhook
+- `updateWebhook(id, updates)` - Actualizar webhook
+- `deleteWebhook(id)` - Eliminar webhook
+- `toggleWebhook(id, active)` - Activar/desactivar
+- `getEvents(filters)` - Consultar eventos
+- `triggerEvent(type, budgetId, payload)` - Disparar evento
+- `triggerBudgetPublishedEvent(budgetId, snapshotId, totals)` - Helper para publicación
+- `triggerBudgetExportedEvent(budgetId, format, data)` - Helper para exportación
+
+### Hooks
+
+**usePermissions()**
+```typescript
+const {
+  isViewer,           // Boolean: tiene rol viewer
+  isEditor,           // Boolean: tiene rol editor
+  isPublisher,        // Boolean: tiene rol publisher
+  allRoles,           // Lista de todas las asignaciones
+  isLoadingPermissions,
+  
+  checkRole,          // Función: verificar rol específico
+  grantRole,          // Asignar rol
+  revokeRole,         // Revocar rol
+  
+  isGranting,
+  isRevoking
+} = usePermissions();
+```
+
+**useAudit(filters)**
+```typescript
+const {
+  auditLogs,          // Array de logs
+  auditSummary,       // Estadísticas
+  isLoading,
+  refetch
+} = useAudit({
+  budgetId,
+  recordId,
+  tableName,
+  startDate,
+  endDate,
+  limit
+});
+```
+
+**useWebhooks()**
+```typescript
+const {
+  webhooks,           // Array de webhooks configurados
+  isLoading,
+  
+  createWebhook,      // Crear webhook
+  updateWebhook,      // Actualizar webhook
+  deleteWebhook,      // Eliminar webhook
+  toggleWebhook,      // Activar/desactivar
+  
+  isCreating,
+  isUpdating,
+  isDeleting
+} = useWebhooks();
+```
+
+**useEvents(filters)**
+```typescript
+const { data: events } = useEvents({
+  budgetId,
+  eventType,
+  startDate,
+  endDate,
+  limit
+});
+```
+
+### Tipos de Eventos
+
+- `planning_v2.budget.published` - Presupuesto publicado
+  - Payload: budget_id, snapshot_id, totals, published_at
+- `planning_v2.budget.exported` - Presupuesto exportado
+  - Payload: budget_id, format (pdf/excel), exported_at, data
+
+### Integración con Snapshots
+
+Al publicar presupuesto (`snapshotService.createSnapshot`):
+```typescript
+// Disparar evento automáticamente
+await eventsService.triggerBudgetPublishedEvent(
+  budgetId,
+  snapshot.id,
+  {
+    grand_total: computed.grand_total,
+    partidas_count: partidas.length,
+    conceptos_count: conceptos.length
+  }
+);
+```
+
+### Webhook Payload Example
+
+```json
+{
+  "event_id": "uuid",
+  "event_type": "planning_v2.budget.published",
+  "budget_id": "uuid",
+  "snapshot_id": "uuid",
+  "triggered_at": "2025-09-29T19:54:10Z",
+  "data": {
+    "budget_id": "uuid",
+    "snapshot_id": "uuid",
+    "totals": {
+      "grand_total": 1250000.50,
+      "partidas_count": 12,
+      "conceptos_count": 145
+    },
+    "published_at": "2025-09-29T19:54:10Z"
+  }
+}
+```
+
+### Acceptance Criteria
+
+✅ **Feature flag**: Solo funciona con `PLANNING_V2_ENABLED = true`  
+✅ **Sin mutación externa**: No modifica tablas fuera de Planning v2  
+✅ **Roles específicos**: viewer, editor, publisher con función SECURITY DEFINER  
+✅ **Auditoría granular**: Tracking automático en campos clave con triggers  
+✅ **Eventos con prefijo**: Todos los eventos usan `planning_v2.*`  
+✅ **Webhooks seguros**: HMAC signature opcional con SHA-256  
+✅ **Mensajes en español**: Todos los errores, logs y UI en español
+
+### Testing Checklist
+
+- [ ] Verificar roles con has_planning_v2_role()
+- [ ] Asignar/revocar roles con expiración
+- [ ] Auditoría automática en UPDATE de conceptos
+- [ ] Logs incluyen old_value y new_value
+- [ ] Eventos se registran en planning_v2_events
+- [ ] Webhooks se envían correctamente
+- [ ] HMAC signature valida payload
+- [ ] Edge function maneja errores gracefully
+- [ ] Mensajes de error en español
+- [ ] Feature flag desactiva funcionalidad
+
+---
+
 ## Phase 5: Price Intelligence & Alerts ✅
 
 ### Overview
