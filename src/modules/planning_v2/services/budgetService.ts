@@ -4,7 +4,7 @@
  */
 import { supabase } from '@/integrations/supabase/client';
 import type { PlanningBudget, PlanningPartida, PlanningConcepto } from '../types';
-import { computeFields } from '../engine/formulaEngine';
+import { computeFieldsIncremental, detectChangedFields } from '../engine/formulaEngineOptimized';
 import type { ConceptCore, FormulaContext } from '../domain/types';
 
 /**
@@ -56,7 +56,7 @@ export async function getBudgetById(id: string) {
 }
 
 /**
- * Create new budget
+ * Create new budget with default locale
  */
 export async function createBudget(
   budget: Omit<PlanningBudget, 'id' | 'created_at' | 'updated_at'>
@@ -64,10 +64,17 @@ export async function createBudget(
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) throw new Error('Usuario no autenticado');
 
+  // Ensure settings has default locale
+  const settings = {
+    locale: 'es-MX',
+    ...budget.settings,
+  };
+
   const { data, error } = await supabase
     .from('planning_budgets')
     .insert({
       ...budget,
+      settings,
       created_by: user.user.id,
     })
     .select()
@@ -167,7 +174,7 @@ export async function createConcepto(
 }
 
 /**
- * Update concepto with recomputation
+ * Update concepto with incremental recomputation
  */
 export async function updateConcepto(id: string, updates: Partial<PlanningConcepto>) {
   // Fetch current concepto
@@ -179,9 +186,13 @@ export async function updateConcepto(id: string, updates: Partial<PlanningConcep
 
   if (fetchError) throw fetchError;
 
-  // Merge updates and recompute
+  // Detect which input fields changed
+  const inputFields = ['cantidad_real', 'desperdicio_pct', 'precio_real', 'honorarios_pct'];
+  const changedFields = detectChangedFields(current, updates, inputFields);
+
+  // Merge updates and recompute only affected fields
   const merged = { ...current, ...updates } as any;
-  const computed = computeConceptoFields(merged);
+  const computed = computeConceptoFieldsIncremental(merged, changedFields);
 
   const { data, error } = await supabase
     .from('planning_conceptos')
@@ -207,9 +218,16 @@ export async function deleteConcepto(id: string) {
 }
 
 /**
- * Compute all fields for a concepto
+ * Compute all fields for a concepto (full recomputation)
  */
 function computeConceptoFields(concepto: any): any {
+  return computeConceptoFieldsIncremental(concepto);
+}
+
+/**
+ * Compute fields for a concepto with optional incremental optimization
+ */
+function computeConceptoFieldsIncremental(concepto: any, changedFields?: Set<string>): any {
   // Default template fields for conceptos
   const fields = [
     { key: 'cantidad_real', role: 'input' as const },
@@ -239,10 +257,10 @@ function computeConceptoFields(concepto: any): any {
     })),
   };
 
-  const result = computeFields(context);
+  const result = computeFieldsIncremental(context, changedFields);
 
   if (!result.success) {
-    console.error('Errores al computar campos:', result.errors);
+    console.warn('Errores al computar campos:', result.errors);
   }
 
   // Convert Decimal values back to numbers
