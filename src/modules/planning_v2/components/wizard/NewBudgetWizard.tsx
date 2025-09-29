@@ -1,8 +1,7 @@
 /**
- * Wizard de 3 pasos para crear presupuesto con Searchable Comboboxes
- * Usa los mismos comboboxes que el módulo de transacciones unificadas
+ * Wizard de 3 pasos para crear presupuesto con Remote Comboboxes
  */
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -15,14 +14,13 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import SearchableComboboxV2 from '../../ui/SearchableComboboxV2';
-import { toItems } from '../../utils/combobox';
 import { useToast } from '@/hooks/use-toast';
 import { createBudget, createPartida } from '../../services/budgetService';
 import { projectsAdapter } from '../../adapters/projects';
 import { clientsAdapter } from '../../adapters/clients';
 import type { ProjectAdapter } from '../../adapters/projects';
 import type { ClientAdapter } from '../../adapters/clients';
+import { RemoteCombobox } from './RemoteCombobox';
 
 const stepOneSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres'),
@@ -71,10 +69,6 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
   const [partidas, setPartidas] = useState<TemplatePartida[]>(DEFAULT_PARTIDAS);
   const [selectedClient, setSelectedClient] = useState<ClientAdapter | null>(null);
   const [selectedProject, setSelectedProject] = useState<ProjectAdapter | null>(null);
-  
-  // Race-safety para handlers async (patrón TU)
-  const clientReqIdRef = React.useRef(0);
-  const projectReqIdRef = React.useRef(0);
 
   const form = useForm<StepOneData>({
     resolver: zodResolver(stepOneSchema),
@@ -88,51 +82,6 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
       notes: '',
     },
   });
-
-
-  // Handlers race-safe (patrón TU)
-  const handleClientChange = async (clientId?: string) => {
-    const rid = ++clientReqIdRef.current;
-    if (!clientId) {
-      setSelectedClient(null);
-      form.setValue('project_id', undefined);
-      return;
-    }
-    
-    const client = await clientsAdapter.getById(clientId).catch(() => null);
-    if (rid !== clientReqIdRef.current) return; // Respuesta vieja, ignorar
-    setSelectedClient(client);
-
-    // Validar proyecto actual
-    const pid = form.getValues('project_id');
-    if (pid) {
-      const project = await projectsAdapter.getById(pid).catch(() => null);
-      if (rid !== clientReqIdRef.current) return;
-      if (project && project.client_id !== clientId) {
-        form.setValue('project_id', undefined);
-        setSelectedProject(null);
-      }
-    }
-  };
-
-  const handleProjectChange = async (projectId?: string) => {
-    const rid = ++projectReqIdRef.current;
-    if (!projectId) {
-      setSelectedProject(null);
-      return;
-    }
-    
-    const project = await projectsAdapter.getById(projectId).catch(() => null);
-    if (rid !== projectReqIdRef.current) return;
-    setSelectedProject(project);
-    
-    if (project) {
-      form.setValue('client_id', project.client_id);
-      const client = await clientsAdapter.getById(project.client_id).catch(() => null);
-      if (rid !== projectReqIdRef.current) return;
-      setSelectedClient(client);
-    }
-  };
 
   const handleClose = () => {
     form.reset();
@@ -198,6 +147,27 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
     }
   };
 
+  const fetchClients = async (query: string, page: number, limit: number) => {
+    const result = await clientsAdapter.search({ q: query, page, limit });
+    return { 
+      items: result.items.map(c => ({ id: c.id, label: c.full_name })), 
+      nextPage: result.nextPage 
+    };
+  };
+
+  const fetchProjects = async (query: string, page: number, limit: number) => {
+    const clientId = form.watch('client_id');
+    const result = await projectsAdapter.search({ 
+      q: query, 
+      page, 
+      limit, 
+      clientId: clientId || undefined 
+    });
+    return { 
+      items: result.items.map(p => ({ id: p.id, label: p.project_name })), 
+      nextPage: result.nextPage 
+    };
+  };
 
   const renderStep = () => {
     switch (step) {
@@ -217,77 +187,62 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="client_id">Cliente</Label>
-                <SearchableComboboxV2
-                  value={form.watch('client_id')}
-                  onValueChange={(value) => {
-                    form.setValue('client_id', value);
-                    handleClientChange(value);
-                  }}
-                  placeholder="Seleccionar cliente..."
-                  searchPlaceholder="Buscar por nombre o código..."
-                  emptyText="Sin resultados"
-                  disabled={loading}
-                  showCodes={true}
-                  fetchPage={async ({ q, page, limit }) => {
-                    const result = await clientsAdapter.search({ q, page, limit });
-                    return {
-                      items: toItems(result.items.map(c => ({ 
-                        id: c.id, 
-                        full_name: c.full_name 
-                      }))),
-                      nextPage: result.nextPage,
-                    };
-                  }}
-                  className="w-full"
-                />
-                {form.formState.errors.client_id && (
-                  <p className="text-sm text-destructive">{form.formState.errors.client_id.message}</p>
-                )}
-                <p className="text-xs text-muted-foreground">Opcional. Selecciona un cliente o un proyecto.</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="project_id">Proyecto</Label>
-                <SearchableComboboxV2
-                  value={form.watch('project_id')}
-                  onValueChange={(value) => {
-                    form.setValue('project_id', value);
-                    handleProjectChange(value);
-                  }}
-                  placeholder="Seleccionar proyecto..."
-                  searchPlaceholder="Buscar por nombre o código..."
-                  emptyText="Sin resultados"
-                  disabled={loading}
-                  showCodes={true}
-                  fetchPage={async ({ q, page, limit }) => {
-                    const clientId = form.getValues('client_id');
-                    const result = await projectsAdapter.search({ 
-                      q, 
-                      page, 
-                      limit,
-                      clientId 
+              <RemoteCombobox
+                label="Cliente"
+                value={form.watch('client_id')}
+                onChange={async (value) => {
+                  form.setValue('client_id', value);
+                  if (value) {
+                    const client = await clientsAdapter.getById(value);
+                    setSelectedClient(client);
+                  } else {
+                    setSelectedClient(null);
+                  }
+                  // Clear project if it doesn't belong to new client
+                  const currentProject = form.watch('project_id');
+                  if (currentProject && value) {
+                    projectsAdapter.getById(currentProject).then(project => {
+                      if (project && project.client_id !== value) {
+                        form.setValue('project_id', undefined);
+                        setSelectedProject(null);
+                      }
                     });
-                    return {
-                      items: toItems(result.items.map(p => ({ 
-                        id: p.id, 
-                        project_name: p.project_name 
-                      }))),
-                      nextPage: result.nextPage,
-                    };
-                  }}
-                  className="w-full"
-                />
-                {form.formState.errors.project_id && (
-                  <p className="text-sm text-destructive">{form.formState.errors.project_id.message}</p>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  {form.watch('client_id') 
-                    ? 'Filtrado por cliente seleccionado.' 
-                    : 'Opcional. Si eliges un cliente, filtraremos los proyectos.'}
-                </p>
-              </div>
+                  }
+                }}
+                fetchItems={fetchClients}
+                placeholder="Buscar clientes..."
+                searchPlaceholder="Buscar por nombre..."
+                emptyText="Sin resultados"
+                errorText="Error al cargar"
+                helperText="Opcional. Selecciona un cliente o un proyecto."
+                minChars={2}
+              />
+
+              <RemoteCombobox
+                label="Proyecto"
+                value={form.watch('project_id')}
+                onChange={async (value) => {
+                  form.setValue('project_id', value);
+                  if (value) {
+                    const project = await projectsAdapter.getById(value);
+                    setSelectedProject(project);
+                    if (project) {
+                      form.setValue('client_id', project.client_id);
+                      const client = await clientsAdapter.getById(project.client_id);
+                      setSelectedClient(client);
+                    }
+                  } else {
+                    setSelectedProject(null);
+                  }
+                }}
+                fetchItems={fetchProjects}
+                placeholder="Buscar proyectos..."
+                searchPlaceholder="Buscar por nombre..."
+                emptyText="Sin resultados"
+                errorText="Error al cargar"
+                helperText="Opcional. Si eliges un cliente, filtraremos los proyectos."
+                minChars={2}
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
