@@ -2,7 +2,7 @@
 
 Módulo de planeación de presupuestos completamente aislado del sistema principal.
 
-## Estado Actual: Phases 0-3 Completadas ✅
+## Estado Actual: Phases 0-4 Completadas ✅
 
 ### Phase 0: Scaffolding & Isolation ✅
 - Feature flag: `PLANNING_V2_ENABLED` en `config/featureFlag.ts`
@@ -38,16 +38,26 @@ Módulo de planeación de presupuestos completamente aislado del sistema princip
 - **Cálculo de Impuestos**: IVA (switch + tasa), Retenciones (opcional)
 - Todo en español (es-MX)
 
+### Phase 4: Read-Only TU Integration (Budget vs Actual) ✅
+- **Conector TU Read-Only**: Mapea WBS codes a dimensiones TU (Dept → Mayor → Partida → Sub)
+- **Budget vs Actual**: Vista comparativa con columnas "Ejercido (TU)" y "Variación"
+- **Drill-down a TU**: Links clicables a transacciones unificadas (nueva pestaña)
+- **Indicadores de Variación**: Verde (surplus), Rojo (déficit), con % y monto
+- **Graceful Degradation**: Si TU no responde, Planning v2 sigue funcionando
+- **Feature Flag**: `PLANNING_V2_TU_READONLY` para aislar integración
+- Mensajes en español, sin escritura a TU
+
 ## Estructura de Archivos
 
 ```
 src/modules/planning_v2/
 ├── config/
-│   └── featureFlag.ts          # PLANNING_V2_ENABLED
+│   └── featureFlag.ts          # PLANNING_V2_ENABLED, PLANNING_V2_TU_READONLY
 ├── adapters/                    # Read-only adapters
 │   ├── projects.ts
 │   ├── clients.ts
-│   └── tu.ts                    # TU dimensions (Dept, Mayor, Partida, Sub)
+│   ├── tu.ts                    # TU dimensions (Dept, Mayor, Partida, Sub)
+│   └── tuActuals.ts             # TU actuals integration (Phase 4)
 ├── domain/
 │   └── types.ts                 # Core domain types
 ├── types/
@@ -223,5 +233,17 @@ Todas las tablas Planning v2 tienen RLS habilitado:
 
 ---
 
-**Última actualización**: Phase 3 - 29 de septiembre de 2025  
-**Estado**: ✅ Beta (Phases 0-3 completadas)
+### Phase 4 Acceptance Criteria
+- ✅ Conector TU read-only sin escritura
+- ✅ Mapeo WBS → Dimensiones TU
+- ✅ Vista Budget vs Actual en Summary
+- ✅ Drill-down a transacciones TU
+- ✅ Variación con indicadores de color
+- ✅ Feature flag aislado
+- ✅ Degradación elegante si TU falla
+- ✅ Mensajes en español
+
+---
+
+**Última actualización**: Phase 4 - 29 de septiembre de 2025  
+**Estado**: ✅ Beta (Phases 0-4 completadas)

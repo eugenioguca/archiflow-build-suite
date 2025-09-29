@@ -9,6 +9,8 @@ import {
   Lock, 
   TrendingUp,
   Settings as SettingsIcon,
+  ExternalLink,
+  AlertCircle,
 } from 'lucide-react';
 import { getBudgetById } from '../../services/budgetService';
 import { 
@@ -33,6 +35,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import { tuActualsAdapter } from '../../adapters/tuActuals';
+import { PLANNING_V2_TU_READONLY } from '../../config/featureFlag';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface SummaryProps {
   budgetId: string;
@@ -46,6 +51,7 @@ export function Summary({ budgetId }: SummaryProps) {
   const [ivaRate, setIvaRate] = useState(0.16);
   const [includeRetenciones, setIncludeRetenciones] = useState(false);
   const [retencionesRate, setRetencionesRate] = useState(0);
+  const [showActuals, setShowActuals] = useState(PLANNING_V2_TU_READONLY);
 
   // Fetch budget data
   const { data: budgetData } = useQuery({
@@ -73,6 +79,30 @@ export function Summary({ budgetId }: SummaryProps) {
   const { data: snapshots = [] } = useQuery({
     queryKey: ['planning-snapshots', budgetId],
     queryFn: () => getSnapshots(budgetId),
+  });
+
+  // Fetch actuals from TU (read-only)
+  const { data: actualsData, isLoading: actualsLoading, error: actualsError } = useQuery({
+    queryKey: ['planning-tu-actuals', budgetId, showActuals],
+    queryFn: async () => {
+      if (!showActuals || !PLANNING_V2_TU_READONLY) return null;
+
+      const partidaIds = totals?.partidas.map(p => p.partida_id) || [];
+      const actualsMap = new Map<string, number>();
+
+      for (const partidaId of partidaIds) {
+        const actual = await tuActualsAdapter.getActualsForPartida(
+          partidaId,
+          budgetData?.budget.project_id
+        );
+        if (actual) {
+          actualsMap.set(partidaId, actual.total_amount);
+        }
+      }
+
+      return actualsMap;
+    },
+    enabled: showActuals && !!budgetData && !!totals,
   });
 
   // Publish mutation
@@ -155,34 +185,116 @@ export function Summary({ budgetId }: SummaryProps) {
                 Calculando...
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Partida</TableHead>
-                    <TableHead className="text-right">Conceptos</TableHead>
-                    <TableHead className="text-right">Subtotal</TableHead>
-                    <TableHead>Observaciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {totals?.partidas.map((partida) => (
-                    <TableRow key={partida.partida_id}>
-                      <TableCell className="font-medium">
-                        {partida.partida_name}
-                      </TableCell>
-                      <TableCell className="text-right text-muted-foreground">
-                        {partida.conceptos_count}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatAsCurrency(partida.subtotal)}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        —
-                      </TableCell>
+              <>
+                {PLANNING_V2_TU_READONLY && (
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="show-actuals" className="cursor-pointer">
+                        Mostrar Real vs Presupuesto
+                      </Label>
+                      <Switch
+                        id="show-actuals"
+                        checked={showActuals}
+                        onCheckedChange={setShowActuals}
+                      />
+                    </div>
+                    {actualsError && (
+                      <Alert variant="destructive" className="py-2 px-3">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription className="text-xs">
+                          Error al cargar datos reales
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+                )}
+
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Partida</TableHead>
+                      <TableHead className="text-right">Conceptos</TableHead>
+                      <TableHead className="text-right">Presupuesto</TableHead>
+                      {showActuals && PLANNING_V2_TU_READONLY && (
+                        <>
+                          <TableHead className="text-right">Ejercido (TU)</TableHead>
+                          <TableHead className="text-right">Variación</TableHead>
+                        </>
+                      )}
+                      <TableHead>Observaciones</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {totals?.partidas.map((partida) => {
+                      const actualAmount = actualsData?.get(partida.partida_id) || 0;
+                      const variance = partida.subtotal - actualAmount;
+                      const variancePercent = partida.subtotal > 0 
+                        ? (variance / partida.subtotal) * 100 
+                        : 0;
+
+                      return (
+                        <TableRow key={partida.partida_id}>
+                          <TableCell className="font-medium">
+                            {partida.partida_name}
+                          </TableCell>
+                          <TableCell className="text-right text-muted-foreground">
+                            {partida.conceptos_count}
+                          </TableCell>
+                          <TableCell className="text-right font-mono">
+                            {formatAsCurrency(partida.subtotal)}
+                          </TableCell>
+                          {showActuals && PLANNING_V2_TU_READONLY && (
+                            <>
+                              <TableCell className="text-right font-mono">
+                                {actualsLoading ? (
+                                  <span className="text-muted-foreground text-xs">
+                                    Cargando...
+                                  </span>
+                                ) : (
+                                  <a
+                                    href={`/unified-transactions?partida=${partida.partida_id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 hover:text-primary"
+                                  >
+                                    {formatAsCurrency(actualAmount)}
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right font-mono">
+                                {actualsLoading ? (
+                                  <span className="text-muted-foreground text-xs">—</span>
+                                ) : (
+                                  <span
+                                    className={
+                                      variance > 0
+                                        ? 'text-green-600 dark:text-green-400'
+                                        : variance < 0
+                                        ? 'text-red-600 dark:text-red-400'
+                                        : 'text-muted-foreground'
+                                    }
+                                  >
+                                    {formatAsCurrency(variance)}
+                                    {variance !== 0 && (
+                                      <span className="text-xs ml-1">
+                                        ({toDisplayPrecision(variancePercent, 1)}%)
+                                      </span>
+                                    )}
+                                  </span>
+                                )}
+                              </TableCell>
+                            </>
+                          )}
+                          <TableCell className="text-sm text-muted-foreground">
+                            —
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </>
             )}
           </CardContent>
         </Card>
