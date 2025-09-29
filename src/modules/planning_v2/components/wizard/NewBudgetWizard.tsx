@@ -1,5 +1,5 @@
 /**
- * Wizard de 3 pasos para crear presupuesto
+ * Wizard de 3 pasos para crear presupuesto con Remote Comboboxes
  */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -7,32 +7,21 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { X, ChevronRight, ChevronLeft, Check } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { createBudget, createPartida } from '../../services/budgetService';
 import { projectsAdapter } from '../../adapters/projects';
 import { clientsAdapter } from '../../adapters/clients';
 import type { ProjectAdapter } from '../../adapters/projects';
 import type { ClientAdapter } from '../../adapters/clients';
+import { RemoteCombobox } from './RemoteCombobox';
 
-// Schema de validación en español
 const stepOneSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres'),
   project_id: z.string().uuid('Selecciona un proyecto válido').optional(),
@@ -43,13 +32,10 @@ const stepOneSchema = z.object({
   honorarios_pct_default: z.number().min(0).max(1).default(0.17),
   desperdicio_pct_default: z.number().min(0).max(1).default(0.05),
   notes: z.string().optional(),
-}).refine(
-  (data) => data.project_id || data.client_id,
-  {
-    message: 'Debes seleccionar un proyecto o un cliente',
-    path: ['client_id'],
-  }
-);
+}).refine((data) => data.project_id || data.client_id, {
+  message: 'Debes seleccionar un proyecto o un cliente',
+  path: ['client_id'],
+});
 
 type StepOneData = z.infer<typeof stepOneSchema>;
 
@@ -80,10 +66,9 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
   const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [projects, setProjects] = useState<ProjectAdapter[]>([]);
-  const [clients, setClients] = useState<ClientAdapter[]>([]);
-  const [loadingData, setLoadingData] = useState(false);
   const [partidas, setPartidas] = useState<TemplatePartida[]>(DEFAULT_PARTIDAS);
+  const [selectedClient, setSelectedClient] = useState<ClientAdapter | null>(null);
+  const [selectedProject, setSelectedProject] = useState<ProjectAdapter | null>(null);
 
   const form = useForm<StepOneData>({
     resolver: zodResolver(stepOneSchema),
@@ -98,71 +83,32 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
     },
   });
 
-  // Cargar proyectos y clientes al abrir
-  const loadData = async () => {
-    setLoadingData(true);
-    try {
-      const [projectsData, clientsData] = await Promise.all([
-        projectsAdapter.getAll(),
-        clientsAdapter.getAll(),
-      ]);
-      setProjects(projectsData);
-      setClients(clientsData);
-    } catch (error) {
-      console.error('Error cargando datos:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar los proyectos y clientes',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoadingData(false);
-    }
-  };
-
-  // Cargar datos cuando se abre el wizard
-  const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen) {
-      loadData();
-    } else {
-      handleClose();
-    }
-  };
-
   const handleClose = () => {
     form.reset();
     setStep(1);
     setPartidas(DEFAULT_PARTIDAS);
+    setSelectedClient(null);
+    setSelectedProject(null);
     onClose();
   };
 
   const handleNext = async () => {
     if (step === 1) {
       const isValid = await form.trigger();
-      if (isValid) {
-        setStep(2);
-      }
+      if (isValid) setStep(2);
     } else if (step === 2) {
       setStep(3);
     }
   };
 
-  const handleBack = () => {
-    setStep(step - 1);
-  };
-
   const togglePartida = (index: number) => {
-    setPartidas(prev => prev.map((p, i) => 
-      i === index ? { ...p, enabled: !p.enabled } : p
-    ));
+    setPartidas(prev => prev.map((p, i) => i === index ? { ...p, enabled: !p.enabled } : p));
   };
 
   const handleCreate = async () => {
     setLoading(true);
     try {
       const values = form.getValues();
-      
-      // Crear presupuesto
       const budget = await createBudget({
         name: values.name,
         project_id: values.project_id || null,
@@ -178,37 +124,34 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
         },
       });
 
-      // Crear partidas habilitadas
       const enabledPartidas = partidas.filter(p => p.enabled);
-      await Promise.all(
-        enabledPartidas.map(p =>
-          createPartida({
-            budget_id: budget.id,
-            name: p.name,
-            order_index: p.order_index,
-            active: true,
-            notes: null,
-          })
-        )
-      );
+      await Promise.all(enabledPartidas.map(p => createPartida({
+        budget_id: budget.id,
+        name: p.name,
+        order_index: p.order_index,
+        active: true,
+        notes: null,
+      })));
 
-      toast({
-        title: 'Presupuesto creado',
-        description: `${budget.name} se creó correctamente`,
-      });
-
+      toast({ title: 'Presupuesto creado', description: `${budget.name} se creó correctamente` });
       handleClose();
       navigate(`/planning-v2/budgets/${budget.id}`);
     } catch (error: any) {
-      console.error('Error creando presupuesto:', error);
-      toast({
-        title: 'Error al crear presupuesto',
-        description: error.message || 'Ocurrió un error inesperado',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error al crear presupuesto', description: error.message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchClients = async (query: string, page: number) => {
+    const result = await clientsAdapter.search({ q: query, page, limit: 10 });
+    return { items: result.items.map(c => ({ id: c.id, label: c.full_name })), nextPage: result.nextPage };
+  };
+
+  const fetchProjects = async (query: string, page: number) => {
+    const clientId = form.watch('client_id');
+    const result = await projectsAdapter.search({ q: query, page, limit: 10, clientId: clientId || undefined });
+    return { items: result.items.map(p => ({ id: p.id, label: p.project_name })), nextPage: result.nextPage };
   };
 
   const renderStep = () => {
@@ -230,57 +173,84 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="project_id">Proyecto</Label>
-                <Select
-                  value={form.watch('project_id')}
-                  onValueChange={(value) => {
-                    form.setValue('project_id', value);
-                    // Auto-fill client from project
-                    const project = projects.find(p => p.id === value);
-                    if (project) {
-                      form.setValue('client_id', project.client_id);
-                    }
-                  }}
-                  disabled={loadingData}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un proyecto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projects.map(project => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.project_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="client_id">Cliente</Label>
-                <Select
+                <RemoteCombobox
                   value={form.watch('client_id')}
-                  onValueChange={(value) => form.setValue('client_id', value)}
-                  disabled={loadingData}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map(client => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.full_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  onChange={async (value) => {
+                    form.setValue('client_id', value);
+                    // Load and cache client data for summary
+                    if (value) {
+                      const client = await clientsAdapter.getById(value);
+                      setSelectedClient(client);
+                    } else {
+                      setSelectedClient(null);
+                    }
+                    // Clear project if client changes
+                    const currentProject = form.watch('project_id');
+                    if (currentProject && value) {
+                      // Verify project belongs to new client
+                      projectsAdapter.getById(currentProject).then(project => {
+                        if (project && project.client_id !== value) {
+                          form.setValue('project_id', undefined);
+                          setSelectedProject(null);
+                        }
+                      });
+                    }
+                  }}
+                  fetchItems={fetchClients}
+                  placeholder="Buscar clientes..."
+                  searchPlaceholder="Buscar por nombre..."
+                  emptyText="Sin resultados"
+                  errorText="Error al cargar. Reintenta."
+                  className="w-full"
+                />
                 {form.formState.errors.client_id && (
                   <p className="text-sm text-destructive">
                     {form.formState.errors.client_id.message}
                   </p>
                 )}
+                <p className="text-xs text-muted-foreground">
+                  Opcional. Selecciona un cliente o un proyecto.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="project_id">Proyecto</Label>
+                <RemoteCombobox
+                  value={form.watch('project_id')}
+                  onChange={async (value) => {
+                    form.setValue('project_id', value);
+                    // Load and cache project data for summary
+                    if (value) {
+                      const project = await projectsAdapter.getById(value);
+                      setSelectedProject(project);
+                      // Auto-fill client from project
+                      if (project) {
+                        form.setValue('client_id', project.client_id);
+                        const client = await clientsAdapter.getById(project.client_id);
+                        setSelectedClient(client);
+                      }
+                    } else {
+                      setSelectedProject(null);
+                    }
+                  }}
+                  fetchItems={fetchProjects}
+                  placeholder="Buscar proyectos..."
+                  searchPlaceholder="Buscar por nombre..."
+                  emptyText="Sin resultados"
+                  errorText="Error al cargar. Reintenta."
+                  disabled={false}
+                  className="w-full"
+                />
+                {form.formState.errors.project_id && (
+                  <p className="text-sm text-destructive">
+                    {form.formState.errors.project_id.message}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Opcional. Si eliges un cliente, filtraremos los proyectos.
+                </p>
               </div>
             </div>
 
@@ -396,20 +366,16 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
                 <span className="text-muted-foreground">Nombre:</span>
                 <span className="font-medium">{form.watch('name')}</span>
               </div>
-              {form.watch('project_id') && (
+              {form.watch('project_id') && selectedProject && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Proyecto:</span>
-                  <span className="font-medium">
-                    {projects.find(p => p.id === form.watch('project_id'))?.project_name}
-                  </span>
+                  <span className="font-medium">{selectedProject.project_name}</span>
                 </div>
               )}
-              {form.watch('client_id') && (
+              {form.watch('client_id') && selectedClient && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Cliente:</span>
-                  <span className="font-medium">
-                    {clients.find(c => c.id === form.watch('client_id'))?.full_name}
-                  </span>
+                  <span className="font-medium">{selectedClient.full_name}</span>
                 </div>
               )}
               <div className="flex justify-between">
@@ -444,19 +410,11 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle>Nuevo presupuesto</DialogTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleClose}
-              disabled={loading}
-            >
-              <X className="h-4 w-4" />
-            </Button>
           </div>
         </DialogHeader>
 
