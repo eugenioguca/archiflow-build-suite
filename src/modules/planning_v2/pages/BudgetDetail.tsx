@@ -9,6 +9,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import { CatalogGrid } from '../components/catalog/CatalogGrid';
+import { Summary } from '../components/summary/Summary';
+import { VersionsComparison } from '../components/versions/VersionsComparison';
 
 export default function BudgetDetail() {
   const { id } = useParams<{ id: string }>();
@@ -69,35 +71,11 @@ export default function BudgetDetail() {
         </TabsContent>
 
         <TabsContent value="summary" className="space-y-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center py-12">
-                <BarChart3 className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold text-muted-foreground mb-2">
-                  Resumen financiero
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Vista consolidada de totales y estadísticas
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          {id && <Summary budgetId={id} />}
         </TabsContent>
 
         <TabsContent value="versions" className="space-y-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center py-12">
-                <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold text-muted-foreground mb-2">
-                  Versiones del presupuesto
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Historial de cambios y comparativas
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          {id && <VersionsComparison budgetId={id} />}
         </TabsContent>
 
         <TabsContent value="attachments" className="space-y-4">

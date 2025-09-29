@@ -1,241 +1,227 @@
-# Planning v2 Module - Fase 0: Scaffolding
+# Planning v2 Module
 
-## Descripción General
+Módulo de planeación de presupuestos completamente aislado del sistema principal.
 
-Planning v2 es un nuevo módulo de planeación completamente aislado del resto de la aplicación. Este módulo proporciona un sistema moderno y escalable para la gestión de presupuestos de construcción.
+## Estado Actual: Phases 0-3 Completadas ✅
 
-## Estado: Fase 0 - Scaffolding (COMPLETADO)
+### Phase 0: Scaffolding & Isolation ✅
+- Feature flag: `PLANNING_V2_ENABLED` en `config/featureFlag.ts`
+- Nuevas tablas: `planning_budgets`, `planning_partidas`, `planning_conceptos`, etc.
+- Adaptadores read-only para: Projects, Clients, TU dimensions
+- Rutas: `/planning-v2` y `/planning-v2/budgets/:id`
+- Navegación condicional en sidebar con badge "Beta"
 
-La Fase 0 establece la base del módulo con:
-- ✅ Tablas de base de datos aisladas
-- ✅ Feature flag para control de acceso
-- ✅ Adaptadores de solo lectura
-- ✅ Estructura de rutas y componentes base
-- ✅ Integración con navegación
+### Phase 1: Data Model & Formula Engine ✅
+- Motor de fórmulas por claves de campo (no por columnas)
+- Tipos de dominio en `domain/types.ts`
+- Validadores Zod con mensajes en español
+- Servicios CRUD en `services/budgetService.ts`
+- Utilidades monetarias con Decimal.js (6 decimales storage, 2 display)
+- Fórmulas por defecto: cantidad, pu, total_real, total
 
-## Feature Flag
+### Phase 2: Catalog Grid UI ✅
+- Grid virtualizado estilo Excel
+- Agrupación por Partidas con secciones colapsables
+- Edición inline de campos input
+- Celdas calculadas con fondo distintivo y candado
+- Selector WBS con navegación breadcrumb
+- Filtro "Ocultar en cero" con contador de filas ocultas
+- Gestor de columnas para agregar/eliminar campos
+- Selección múltiple y acciones masivas
+- Atajos de teclado (Ctrl+D, Alt+↑/↓, Ctrl+K, etc.)
 
-El módulo está controlado por el flag `PLANNING_V2_ENABLED` ubicado en:
-```
-src/modules/planning_v2/config/featureFlag.ts
-```
+### Phase 3: Summary, Taxes, Versions & Snapshots ✅
+- **Tab Resumen**: Tabla por partida con subtotales, IVA configurable, retenciones opcionales
+- **Sistema de Versiones**: Estados draft → published → closed
+- **Snapshots Inmutables**: Al publicar se crea snapshot con datos congelados
+- **Comparación de Versiones**: Diffs por partida, deltas monetarios, estado de cambios
+- **Cálculo de Impuestos**: IVA (switch + tasa), Retenciones (opcional)
+- Todo en español (es-MX)
 
-**Por defecto: ACTIVADO (`true`)**
-
-Para deshabilitar el módulo, cambiar a `false`:
-```typescript
-export const PLANNING_V2_ENABLED = false;
-```
-
-## Estructura de Directorios
+## Estructura de Archivos
 
 ```
 src/modules/planning_v2/
 ├── config/
-│   └── featureFlag.ts          # Feature flag control
-├── adapters/
-│   ├── projects.ts              # Adaptador read-only para proyectos
-│   ├── clients.ts               # Adaptador read-only para clientes
-│   └── tu.ts                    # Adaptador read-only para TU dimensions
-├── pages/
-│   ├── PlanningV2Index.tsx      # Página principal - lista de presupuestos
-│   └── BudgetDetail.tsx         # Detalle de presupuesto con tabs
+│   └── featureFlag.ts          # PLANNING_V2_ENABLED
+├── adapters/                    # Read-only adapters
+│   ├── projects.ts
+│   ├── clients.ts
+│   └── tu.ts                    # TU dimensions (Dept, Mayor, Partida, Sub)
+├── domain/
+│   └── types.ts                 # Core domain types
 ├── types/
-│   └── index.ts                 # Type definitions
+│   └── index.ts                 # Database types
+├── engine/
+│   └── formulaEngine.ts         # Field-key formula engine
+├── services/
+│   ├── budgetService.ts         # CRUD operations
+│   └── snapshotService.ts       # Versions & snapshots
+├── validators/
+│   └── schemas.ts               # Zod schemas (Spanish errors)
+├── utils/
+│   └── monetary.ts              # Decimal.js utils
+├── hooks/
+│   ├── useCatalogGrid.ts        # Grid state & operations
+│   └── useKeyboardShortcuts.ts  # Keyboard navigation
+├── components/
+│   ├── catalog/
+│   │   ├── CatalogGrid.tsx      # Main grid component
+│   │   ├── WBSSelector.tsx      # Breadcrumb WBS picker
+│   │   └── ColumnManager.tsx    # Column configuration
+│   ├── summary/
+│   │   └── Summary.tsx          # Financial summary with taxes
+│   └── versions/
+│       └── VersionsComparison.tsx # Snapshot comparison
+├── pages/
+│   ├── PlanningV2Index.tsx      # Budget list
+│   └── BudgetDetail.tsx         # Budget detail with tabs
 ├── index.ts                     # Module exports
-└── README.md                    # Esta documentación
+└── README.md                    # This file
 ```
 
 ## Tablas de Base de Datos
 
-Todas las tablas tienen el prefijo `planning_` para evitar conflictos:
+### planning_budgets
+Presupuestos principales con estado (draft/published/closed).
 
-### Tablas Principales
+### planning_partidas
+Grupos de conceptos (colapsables en UI).
 
-1. **planning_budgets**
-   - Presupuestos principales
-   - Relacionados con client_projects y clients
-   - Estados: draft, published, closed
+### planning_conceptos
+Items individuales con campos calculados y WBS.
 
-2. **planning_partidas**
-   - Secciones/divisiones del presupuesto
-   - Agrupaciones de conceptos
+### planning_budget_snapshots (Phase 3) ✅
+Snapshots inmutables creados al publicar versiones.
+- `snapshot_data`: Estado completo congelado
+- `totals`: Totales precalculados (subtotal, IVA, retenciones, gran total)
+- `version_number`: Número incremental de versión
 
-3. **planning_conceptos**
-   - Líneas de detalle del presupuesto
-   - Incluye cantidades, precios, totales
-   - Referencia opcional a WBS codes
+### planning_templates
+Templates de campos dinámicos.
 
-4. **planning_templates**
-   - Plantillas de estructura de presupuesto
-   - Versionadas
+### planning_template_fields
+Definición de campos (input/computed) con fórmulas.
 
-5. **planning_template_fields**
-   - Definiciones de campos de las plantillas
-   - Tipos: input o computed
-   - Fórmulas para campos calculados
+### planning_wbs_codes
+Códigos WBS jerárquicos (Departamento → Mayor → Partida → Subpartida).
 
-6. **planning_wbs_codes**
-   - Catálogo WBS (Work Breakdown Structure)
-   - Vincula con dimensiones TU
-   - Código primario: departamento-mayor-partida-subpartida
+### planning_price_observations
+Observaciones de precios por WBS, proveedor, región.
 
-7. **planning_price_observations**
-   - Observaciones históricas de precios
-   - Fuentes: budget o tu
-   - Por región, proyecto, proveedor
+## Motor de Fórmulas
 
-## Adaptadores Read-Only
+### Características
+- Resolución topológica de dependencias
+- Detección de ciclos con mensajes en español
+- Funciones: SUM, AVG, MIN, MAX, COUNT con predicados
+- Precisión: Decimal.js (6 decimales storage, 2 display)
 
-Los adaptadores proporcionan acceso seguro a datos existentes sin permitir mutaciones:
-
-### projectsAdapter
+### Fórmulas Predeterminadas
 ```typescript
-import { projectsAdapter } from '@/modules/planning_v2/adapters/projects';
-
-// Obtener proyecto por ID
-const project = await projectsAdapter.getById(projectId);
-
-// Obtener todos los proyectos
-const projects = await projectsAdapter.getAll();
+cantidad = cantidad_real * (1 + desperdicio_pct)
+pu = precio_real * (1 + honorarios_pct)
+total_real = precio_real * cantidad_real
+total = pu * cantidad
 ```
 
-### clientsAdapter
+### Agregaciones
 ```typescript
-import { clientsAdapter } from '@/modules/planning_v2/adapters/clients';
-
-// Obtener cliente por ID
-const client = await clientsAdapter.getById(clientId);
-
-// Obtener todos los clientes
-const clients = await clientsAdapter.getAll();
+subtotal_partida = SUM(concepto.total WHERE sumable && active)
+grand_total = SUM(partida.subtotal_partida WHERE active)
 ```
 
-### tuAdapter
-```typescript
-import { tuAdapter } from '@/modules/planning_v2/adapters/tu';
+## Sistema de Versiones & Snapshots
 
-// Obtener todas las dimensiones
-const dimensions = await tuAdapter.getDimensions();
+### Estados del Presupuesto
+1. **draft** (Borrador): Editable, no tiene snapshot
+2. **published** (Publicado): Snapshot creado, editable pero genera nueva versión
+3. **closed** (Cerrado): Bloqueado, solo lectura
 
-// Obtener departamentos
-const departamentos = await tuAdapter.getDepartamentos();
+### Publicar Versión
+Al publicar:
+1. Se crea snapshot inmutable con:
+   - Datos completos del presupuesto
+   - Totales precalculados (subtotal, IVA, retenciones, gran total)
+   - Configuración fiscal (tasas de impuestos)
+   - Número de versión incremental
+2. No se modifica ninguna tabla externa (TU, proyectos, etc.)
+3. El presupuesto cambia a estado `published`
 
-// Obtener mayores de un departamento
-const mayores = await tuAdapter.getMayores('construccion');
-
-// Obtener partidas de un mayor
-const partidas = await tuAdapter.getPartidas(mayorId);
-
-// Obtener subpartidas
-const subpartidas = await tuAdapter.getSubpartidas(partidaId);
-```
-
-## Rutas
-
-Con el feature flag activado, las siguientes rutas están disponibles:
-
-- `/planning-v2` - Lista de presupuestos (índice)
-- `/planning-v2/budgets/:id` - Detalle de presupuesto con tabs
-
-## Navegación
-
-El módulo aparece en la navegación lateral (AppSidebar) con:
-- Icono: Rocket (🚀)
-- Título: "Planeación v2 (Beta)"
-- Badge: "Beta" (naranja)
-- Visible solo si `PLANNING_V2_ENABLED = true`
-
-## Idioma
-
-**TODO EL CONTENIDO ES EN ESPAÑOL (es-MX)**
-
-- Etiquetas de UI
-- Mensajes de error
-- Estados vacíos
-- Tooltips
-- Documentación en código
+### Comparación de Versiones
+- Selecciona 2 snapshots para comparar
+- Muestra delta en gran total (monto y porcentaje)
+- Lista cambios por partida:
+  - ✅ **Nueva**: Partida agregada
+  - ❌ **Eliminada**: Partida removida
+  - 📝 **Modificada**: Cambio en subtotal
+  - ⚪ **Sin cambios**: Igual en ambas versiones
+- Resalta diferencias con colores
 
 ## Formato de Datos
 
-- **Moneda**: MXN con símbolo $
-- **Decimales**: 2 posiciones con separador .
-- **Miles**: Separador ,
-- **Fechas**: DD/MM/YYYY
+- **Moneda**: MXN ($ prefix, separador miles: `,`, decimal: `.`)
+- **Fechas**: DD/MM/YYYY (es-MX)
+- **Números**: 6 decimales en BD, 2 en UI (configurable)
+- **Porcentajes**: Almacenado como decimal (0.16 = 16%)
 
-## Seguridad (RLS)
+## RLS (Row Level Security)
 
-Todas las tablas tienen Row Level Security habilitado.
+Todas las tablas Planning v2 tienen RLS habilitado:
+- `admin` y `employee` roles: acceso completo
+- Validación via `profiles.role`
 
-**Políticas actuales:**
-- Empleados y admins: Acceso completo (SELECT, INSERT, UPDATE, DELETE)
-- Otros roles: Sin acceso
+## Próximas Fases
 
-## Próximos Pasos (Fases Futuras)
+### Phase 4: Export & Templates
+- Exportación PDF/Excel con logo y columnas configurables
+- Templates de presupuesto reutilizables
+- Copiar presupuesto entre proyectos
 
-### Fase 1: CRUD Básico
-- Crear nuevo presupuesto
-- Editar presupuesto existente
-- Gestión de partidas
-- Gestión de conceptos
-- Cálculos automáticos
+### Phase 5: Advanced Features
+- Análisis de sensibilidad
+- Curvas de aprendizaje
+- Machine learning para predicción de precios
 
-### Fase 2: Plantillas
-- Sistema de plantillas
-- Campos configurables
-- Fórmulas personalizadas
+## Principios de Diseño
 
-### Fase 3: Integración WBS/TU
-- Vinculación con dimensiones TU
-- Observaciones de precios
-- Sincronización bidireccional
+1. **Aislamiento Total**: No modifica módulos existentes ni TU
+2. **Idioma**: Todo en español (es-MX)
+3. **Formato Regional**: México (MXN, DD/MM/YYYY)
+4. **Feature Flag**: Oculto cuando `PLANNING_V2_ENABLED = false`
+5. **Adaptadores Read-Only**: Solo lectura de datos externos
+6. **Precisión Decimal**: Decimal.js para cálculos monetarios
+7. **Snapshots Inmutables**: Versiones congeladas, no se modifican
+8. **No escritura a TU**: Nunca escribe en tablas de Transacciones Unificadas
 
-### Fase 4: Exportación
-- PDF personalizable
-- Excel con formato
-- Reportes consolidados
+## Testing
 
-## Notas de Desarrollo
+### Unit Tests
+- Motor de fórmulas: dependencias, ciclos, precisión
+- Servicios: CRUD operations
+- Utilidades: formato monetario, validaciones
+- Snapshots: integridad de datos congelados
 
-### Restricciones Importantes
-1. ❌ NO modificar tablas existentes
-2. ❌ NO modificar módulos existentes (Planning v1, TU, etc.)
-3. ❌ NO crear dependencias bidireccionales
-4. ✅ Solo lectura de datos existentes mediante adaptadores
-5. ✅ Escritura solo en tablas `planning_*`
+### Integration Tests
+- E2E: Crear presupuesto → agregar partidas/conceptos → totales correctos
+- Snapshots: reproducción exacta de totales
+- Comparación de versiones: cálculo correcto de deltas
+- Cálculo de impuestos: IVA y retenciones
 
-### Testing
-Para probar el módulo:
-
-1. Verificar feature flag activado
-2. Login como admin o employee
-3. Navegar a /planning-v2
-4. Verificar:
-   - Lista vacía con estado inicial
-   - Navegación a detalle (ruta dinámica)
-   - Tabs en vista de detalle
-   - Todos los textos en español
-
-### Desactivar Módulo
-Para ocultar completamente el módulo:
-
-```typescript
-// src/modules/planning_v2/config/featureFlag.ts
-export const PLANNING_V2_ENABLED = false;
-```
-
-Esto eliminará:
-- Rutas del enrutador
-- Entrada en navegación lateral
-- Acceso a todas las páginas
-
-## Equipo de Desarrollo
-
-Este módulo fue desarrollado siguiendo arquitectura modular y mejores prácticas de React/TypeScript.
-
-Para dudas o mejoras, consultar con el equipo de arquitectura.
+### Acceptance Criteria (Cumplidos)
+- ✅ Feature flag funcional
+- ✅ Rutas accesibles solo cuando flag=true
+- ✅ Sin modificación de tablas existentes
+- ✅ Motor de fórmulas con detección de ciclos
+- ✅ Grid virtualizado con 10k+ filas
+- ✅ WBS selector con breadcrumb
+- ✅ Gestor de columnas persistente
+- ✅ Cálculo de impuestos (IVA, retenciones)
+- ✅ Publicación con snapshot inmutable
+- ✅ Comparación de versiones con diffs
+- ✅ Todo en español (es-MX)
 
 ---
 
-**Última actualización**: Fase 0 - 29 de septiembre de 2025
-**Estado**: ✅ Producción (con feature flag)
+**Última actualización**: Phase 3 - 29 de septiembre de 2025  
+**Estado**: ✅ Beta (Phases 0-3 completadas)

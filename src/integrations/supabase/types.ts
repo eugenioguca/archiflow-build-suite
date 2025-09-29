@@ -5351,6 +5351,53 @@ export type Database = {
         }
         Relationships: []
       }
+      planning_budget_snapshots: {
+        Row: {
+          budget_id: string
+          created_at: string
+          created_by: string
+          id: string
+          notes: string | null
+          settings: Json | null
+          snapshot_data: Json
+          snapshot_date: string
+          totals: Json
+          version_number: number
+        }
+        Insert: {
+          budget_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          notes?: string | null
+          settings?: Json | null
+          snapshot_data: Json
+          snapshot_date?: string
+          totals: Json
+          version_number: number
+        }
+        Update: {
+          budget_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          notes?: string | null
+          settings?: Json | null
+          snapshot_data?: Json
+          snapshot_date?: string
+          totals?: Json
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_budget_snapshots_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "planning_budgets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       planning_budgets: {
         Row: {
           client_id: string | null
