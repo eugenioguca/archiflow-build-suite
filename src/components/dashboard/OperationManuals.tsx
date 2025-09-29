@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Book, Search, Download, ExternalLink, FileText, Filter, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 import { openDocumentInNewTab, downloadDocument } from '@/lib/documentUtils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
@@ -38,9 +39,7 @@ export function OperationManuals() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  
-  // Read-only mode for dashboard display
-  const isAdmin = false;
+  const { isAdmin } = useUserRole();
 
   useEffect(() => {
     fetchManuals();
