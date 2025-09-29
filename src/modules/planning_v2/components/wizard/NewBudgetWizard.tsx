@@ -1,7 +1,7 @@
 /**
  * Wizard de 3 pasos para crear presupuesto con Remote Comboboxes
  */
-import { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -69,6 +69,10 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
   const [partidas, setPartidas] = useState<TemplatePartida[]>(DEFAULT_PARTIDAS);
   const [selectedClient, setSelectedClient] = useState<ClientAdapter | null>(null);
   const [selectedProject, setSelectedProject] = useState<ProjectAdapter | null>(null);
+  
+  // Race-safety refs para handlers async
+  const clientReqIdRef = useRef(0);
+  const projectReqIdRef = useRef(0);
 
   const form = useForm<StepOneData>({
     resolver: zodResolver(stepOneSchema),
@@ -156,7 +160,7 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
   };
 
   const fetchProjects = async (query: string, page: number, limit: number) => {
-    const clientId = form.watch('client_id');
+    const clientId = form.getValues('client_id'); // Usar getValues en lugar de watch
     const result = await projectsAdapter.search({ 
       q: query, 
       page, 
@@ -167,6 +171,63 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
       items: result.items.map(p => ({ id: p.id, label: p.project_name })), 
       nextPage: result.nextPage 
     };
+  };
+
+  // Handler race-safe para cambio de cliente
+  const handleClientChange = async (clientId: string | undefined) => {
+    const reqId = ++clientReqIdRef.current;
+    
+    if (!clientId) {
+      setSelectedClient(null);
+      form.setValue('project_id', undefined);
+      return;
+    }
+
+    try {
+      const client = await clientsAdapter.getById(clientId);
+      if (reqId !== clientReqIdRef.current) return; // Respuesta vieja
+      setSelectedClient(client);
+
+      // Validar proyecto actual
+      const currentProjectId = form.getValues('project_id');
+      if (currentProjectId) {
+        const project = await projectsAdapter.getById(currentProjectId);
+        if (reqId !== clientReqIdRef.current) return;
+        if (project && project.client_id !== clientId) {
+          form.setValue('project_id', undefined);
+          setSelectedProject(null);
+        }
+      }
+    } catch (error) {
+      if (reqId !== clientReqIdRef.current) return;
+      console.error('Error loading client:', error);
+    }
+  };
+
+  // Handler race-safe para cambio de proyecto
+  const handleProjectChange = async (projectId: string | undefined) => {
+    const reqId = ++projectReqIdRef.current;
+    
+    if (!projectId) {
+      setSelectedProject(null);
+      return;
+    }
+
+    try {
+      const project = await projectsAdapter.getById(projectId);
+      if (reqId !== projectReqIdRef.current) return;
+      setSelectedProject(project);
+      
+      if (project) {
+        form.setValue('client_id', project.client_id);
+        const client = await clientsAdapter.getById(project.client_id);
+        if (reqId !== projectReqIdRef.current) return;
+        setSelectedClient(client);
+      }
+    } catch (error) {
+      if (reqId !== projectReqIdRef.current) return;
+      console.error('Error loading project:', error);
+    }
   };
 
   const renderStep = () => {
@@ -190,28 +251,13 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
               <RemoteCombobox
                 label="Cliente"
                 value={form.watch('client_id')}
-                onChange={async (value) => {
+                onChange={(value) => {
                   form.setValue('client_id', value);
-                  if (value) {
-                    const client = await clientsAdapter.getById(value);
-                    setSelectedClient(client);
-                  } else {
-                    setSelectedClient(null);
-                  }
-                  // Clear project if it doesn't belong to new client
-                  const currentProject = form.watch('project_id');
-                  if (currentProject && value) {
-                    projectsAdapter.getById(currentProject).then(project => {
-                      if (project && project.client_id !== value) {
-                        form.setValue('project_id', undefined);
-                        setSelectedProject(null);
-                      }
-                    });
-                  }
+                  handleClientChange(value);
                 }}
                 fetchItems={fetchClients}
                 placeholder="Buscar clientes..."
-                searchPlaceholder="Buscar por nombre..."
+                searchPlaceholder="Buscar por nombre o código..."
                 emptyText="Sin resultados"
                 errorText="Error al cargar"
                 helperText="Opcional. Selecciona un cliente o un proyecto."
@@ -221,26 +267,20 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
               <RemoteCombobox
                 label="Proyecto"
                 value={form.watch('project_id')}
-                onChange={async (value) => {
+                onChange={(value) => {
                   form.setValue('project_id', value);
-                  if (value) {
-                    const project = await projectsAdapter.getById(value);
-                    setSelectedProject(project);
-                    if (project) {
-                      form.setValue('client_id', project.client_id);
-                      const client = await clientsAdapter.getById(project.client_id);
-                      setSelectedClient(client);
-                    }
-                  } else {
-                    setSelectedProject(null);
-                  }
+                  handleProjectChange(value);
                 }}
                 fetchItems={fetchProjects}
                 placeholder="Buscar proyectos..."
-                searchPlaceholder="Buscar por nombre..."
+                searchPlaceholder="Buscar por nombre o código..."
                 emptyText="Sin resultados"
                 errorText="Error al cargar"
-                helperText="Opcional. Si eliges un cliente, filtraremos los proyectos."
+                helperText={
+                  form.watch('client_id') 
+                    ? 'Filtrado por cliente seleccionado.' 
+                    : 'Opcional. Si eliges un cliente, filtraremos los proyectos.'
+                }
                 minChars={2}
               />
             </div>

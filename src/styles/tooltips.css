@@ -1,0 +1,7 @@
+/**
+ * Guard global para deshabilitar tooltips cuando los comboboxes están abiertos
+ * Se activa con data-tooltips-disabled="true" en document.body
+ */
+[data-tooltips-disabled="true"] [data-radix-tooltip-content] {
+  display: none !important;
+}

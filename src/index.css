@@ -5,6 +5,9 @@
 /* Gantt v2 Styles */
 @import "./styles/gantt-v2.css";
 
+/* Tooltips guard for comboboxes */
+@import "./styles/tooltips.css";
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */

@@ -12,7 +12,7 @@
  * - Sanitized queries (trim, max 64 chars)
  * - Accessible: ARIA roles, focus management
  */
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Check, ChevronsUpDown, Loader2, X, RotateCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -24,11 +24,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import * as PopoverPrimitive from '@radix-ui/react-popover';
 import { useDebounce } from '@/hooks/use-debounce';
 import { Label } from '@/components/ui/label';
 
@@ -87,6 +83,8 @@ export function RemoteCombobox({
   const debouncedSearch = useDebounce(search, 250); // TU-style: 250ms debounce
   const listRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const interactingRef = useRef(false); // Guard anti-cierre por flicker
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Sanitize search query (TU-style: trim, max 64 chars)
   const sanitizeQuery = (q: string): string => q.trim().slice(0, 64);
@@ -179,7 +177,8 @@ export function RemoteCombobox({
   const handleSelect = (itemId: string) => {
     const newValue = itemId === value ? undefined : itemId;
     onChange(newValue);
-    setOpen(false);
+    // Pequeño delay para que el valor se setee antes de cerrar
+    setTimeout(() => setOpen(false), 0);
   };
 
   const handleClear = (e: React.MouseEvent) => {
@@ -194,6 +193,17 @@ export function RemoteCombobox({
     loadItems(debouncedSearch, 1, false);
   };
 
+  // Efecto para tooltips (deshabilitar cuando esté abierto)
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      if (open) {
+        document.body.dataset.tooltipsDisabled = 'true';
+      } else {
+        delete document.body.dataset.tooltipsDisabled;
+      }
+    }
+  }, [open]);
+
   return (
     <div className={cn('space-y-2', className)}>
       {label && (
@@ -202,9 +212,17 @@ export function RemoteCombobox({
           {required && <span className="text-destructive ml-1">*</span>}
         </Label>
       )}
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
+      <PopoverPrimitive.Root 
+        open={open} 
+        onOpenChange={(nextOpen) => {
+          // Ignorar cierres durante interacción interna
+          if (!nextOpen && interactingRef.current) return;
+          setOpen(nextOpen);
+        }}
+      >
+        <PopoverPrimitive.Trigger asChild>
           <Button
+            type="button"
             variant="outline"
             role="combobox"
             aria-expanded={open}
@@ -228,82 +246,140 @@ export function RemoteCombobox({
               <ChevronsUpDown className="h-4 w-4 opacity-50" />
             </div>
           </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-          <Command shouldFilter={false} className="[&_[cmdk-input]]:focus-visible:ring-1">
-            <CommandInput
-              placeholder={searchPlaceholder}
-              value={search}
-              onValueChange={setSearch}
-              autoFocus
-            />
-            <CommandList ref={listRef} onScroll={handleScroll}>
-              {error ? (
-                <div className="p-6 text-center space-y-3">
-                  <p className="text-sm text-muted-foreground">{errorText}</p>
-                  <p className="text-xs text-muted-foreground">
-                    No pudimos cargar resultados. Reintenta.
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleRetry}
-                    disabled={loading}
-                  >
-                    <RotateCw className={cn('h-4 w-4 mr-2', loading && 'animate-spin')} />
-                    Reintentar
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <CommandEmpty>
-                    {loading ? (
-                      <div className="flex items-center justify-center p-4">
+        </PopoverPrimitive.Trigger>
+        <PopoverPrimitive.Portal>
+          <PopoverPrimitive.Content
+            data-combobox-content
+            side="bottom"
+            align="start"
+            sideOffset={6}
+            className="z-[1000] w-[min(96vw,36rem)] p-0 border bg-popover shadow-xl rounded-md"
+            onOpenAutoFocus={(e) => {
+              e.preventDefault();
+              setTimeout(() => inputRef.current?.focus(), 0);
+            }}
+            onCloseAutoFocus={(e) => e.preventDefault()}
+            onPointerDownOutside={(e) => {
+              const target = e.target as HTMLElement;
+              if (target?.closest('[data-combobox-content]')) {
+                e.preventDefault();
+              }
+            }}
+            onInteractOutside={(e) => {
+              const target = e.target as HTMLElement;
+              if (target?.closest('[data-combobox-content]')) {
+                e.preventDefault();
+              }
+            }}
+            onFocusOutside={(e) => e.preventDefault()}
+            onPointerDownCapture={() => {
+              interactingRef.current = true;
+              setTimeout(() => (interactingRef.current = false), 120);
+            }}
+          >
+            <Command shouldFilter={false} className="[&_[cmdk-input]]:focus-visible:ring-1">
+              <CommandInput
+                ref={inputRef}
+                placeholder={searchPlaceholder}
+                value={search}
+                onValueChange={setSearch}
+                onKeyDown={(e) => {
+                  // Prevenir submit del form en Enter
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setOpen(false);
+                  }
+                  // Flechas solo navegan
+                  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                    e.stopPropagation();
+                  }
+                }}
+              />
+              <CommandList ref={listRef} onScroll={handleScroll}>
+                {error ? (
+                  <div className="p-6 text-center space-y-3">
+                    <p className="text-sm text-muted-foreground">{errorText}</p>
+                    <p className="text-xs text-muted-foreground">
+                      No pudimos cargar resultados. Reintenta.
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRetry}
+                      disabled={loading}
+                    >
+                      <RotateCw className={cn('h-4 w-4 mr-2', loading && 'animate-spin')} />
+                      Reintentar
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <CommandEmpty>
+                      {loading ? (
+                        <div className="flex items-center justify-center p-4">
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Cargando...
+                        </div>
+                      ) : search.length > 0 && search.length < minChars ? (
+                        <div className="p-4 text-center text-sm text-muted-foreground">
+                          Escribe al menos {minChars} caracteres para buscar
+                        </div>
+                      ) : (
+                        <div className="p-4 text-center text-sm text-muted-foreground">
+                          {emptyText}
+                        </div>
+                      )}
+                    </CommandEmpty>
+                    <CommandGroup>
+                      {items.map((item) => (
+                        <CommandItem
+                          key={item.id}
+                          value={item.id}
+                          onSelect={(currentValue) => {
+                            // La selección se maneja, pero evitamos cerrar inmediato
+                            handleSelect(currentValue);
+                          }}
+                          onMouseDown={(e) => {
+                            // Evitar blur del input que cierra el popover
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                          onTouchStart={(e) => {
+                            // Móvil: evitar blur
+                            e.preventDefault();
+                          }}
+                          className="cursor-pointer"
+                        >
+                          <Check
+                            className={cn(
+                              'mr-2 h-4 w-4 shrink-0',
+                              value === item.id ? 'opacity-100' : 'opacity-0'
+                            )}
+                          />
+                          <span className="truncate">
+                            {formatItem ? formatItem(item) : item.label}
+                          </span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                    {loading && items.length > 0 && (
+                      <div className="flex items-center justify-center p-2 border-t">
                         <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Cargando...
-                      </div>
-                    ) : search.length > 0 && search.length < minChars ? (
-                      <div className="p-4 text-center text-sm text-muted-foreground">
-                        Escribe al menos {minChars} caracteres para buscar
-                      </div>
-                    ) : (
-                      <div className="p-4 text-center text-sm text-muted-foreground">
-                        {emptyText}
+                        <span className="text-xs text-muted-foreground">Cargando más...</span>
                       </div>
                     )}
-                  </CommandEmpty>
-                  <CommandGroup>
-                    {items.map((item) => (
-                      <CommandItem
-                        key={item.id}
-                        value={item.id}
-                        onSelect={handleSelect}
-                        className="cursor-pointer"
-                      >
-                        <Check
-                          className={cn(
-                            'mr-2 h-4 w-4 shrink-0',
-                            value === item.id ? 'opacity-100' : 'opacity-0'
-                          )}
-                        />
-                        <span className="truncate">
-                          {formatItem ? formatItem(item) : item.label}
-                        </span>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                  {loading && items.length > 0 && (
-                    <div className="flex items-center justify-center p-2 border-t">
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      <span className="text-xs text-muted-foreground">Cargando más...</span>
-                    </div>
-                  )}
-                </>
-              )}
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
+                  </>
+                )}
+              </CommandList>
+            </Command>
+          </PopoverPrimitive.Content>
+        </PopoverPrimitive.Portal>
+      </PopoverPrimitive.Root>
       {helperText && (
         <p className="text-xs text-muted-foreground">{helperText}</p>
       )}
