@@ -1,7 +1,8 @@
 /**
- * Wizard de 3 pasos para crear presupuesto con Remote Comboboxes
+ * Wizard de 3 pasos para crear presupuesto
+ * Utiliza SearchableCombobox (estilo TU) para Cliente y Proyecto
  */
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -14,13 +15,14 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
+import { SearchableCombobox, type SearchableComboboxItem } from '@/components/ui/searchable-combobox';
 import { createBudget, createPartida } from '../../services/budgetService';
 import { projectsAdapter } from '../../adapters/projects';
 import { clientsAdapter } from '../../adapters/clients';
 import type { ProjectAdapter } from '../../adapters/projects';
 import type { ClientAdapter } from '../../adapters/clients';
-import { RemoteCombobox } from './RemoteCombobox';
 
 const stepOneSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres'),
@@ -69,6 +71,12 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
   const [partidas, setPartidas] = useState<TemplatePartida[]>(DEFAULT_PARTIDAS);
   const [selectedClient, setSelectedClient] = useState<ClientAdapter | null>(null);
   const [selectedProject, setSelectedProject] = useState<ProjectAdapter | null>(null);
+  
+  // Estados para comboboxes (estilo TU: cargar todo al abrir)
+  const [clientes, setClientes] = useState<SearchableComboboxItem[]>([]);
+  const [proyectos, setProyectos] = useState<SearchableComboboxItem[]>([]);
+  const [loadingClientes, setLoadingClientes] = useState(false);
+  const [loadingProyectos, setLoadingProyectos] = useState(false);
   
   // Race-safety refs para handlers async
   const clientReqIdRef = useRef(0);
@@ -151,27 +159,61 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
     }
   };
 
-  const fetchClients = async (query: string, page: number, limit: number) => {
-    const result = await clientsAdapter.search({ q: query, page, limit });
-    return { 
-      items: result.items.map(c => ({ id: c.id, label: c.full_name })), 
-      nextPage: result.nextPage 
-    };
+  // Cargar clientes y proyectos al abrir (estilo TU)
+  useEffect(() => {
+    if (open) {
+      loadClientes();
+      loadProyectos();
+    }
+  }, [open]);
+
+  const loadClientes = async () => {
+    setLoadingClientes(true);
+    try {
+      const result = await clientsAdapter.getAll();
+      const items: SearchableComboboxItem[] = result.map(c => ({
+        value: c.id,
+        label: c.full_name,
+        codigo: c.id.slice(0, 8), // Usar primeros 8 chars como código visual
+        searchText: `${c.id.slice(0, 8)} ${c.full_name}`.toLowerCase()
+      }));
+      setClientes(items);
+    } catch (error) {
+      console.error('Error al cargar clientes:', error);
+      toast({ title: 'Error al cargar clientes', description: 'No se pudieron cargar los clientes', variant: 'destructive' });
+    } finally {
+      setLoadingClientes(false);
+    }
   };
 
-  const fetchProjects = async (query: string, page: number, limit: number) => {
-    const clientId = form.getValues('client_id'); // Usar getValues en lugar de watch
-    const result = await projectsAdapter.search({ 
-      q: query, 
-      page, 
-      limit, 
-      clientId: clientId || undefined 
-    });
-    return { 
-      items: result.items.map(p => ({ id: p.id, label: p.project_name })), 
-      nextPage: result.nextPage 
-    };
+  const loadProyectos = async () => {
+    setLoadingProyectos(true);
+    try {
+      const result = await projectsAdapter.getAll();
+      const items: SearchableComboboxItem[] = result.map(p => ({
+        value: p.id,
+        label: p.project_name,
+        codigo: p.id.slice(0, 8),
+        searchText: `${p.id.slice(0, 8)} ${p.project_name}`.toLowerCase(),
+        // Guardamos el client_id en searchText de forma no visible para el filtrado
+        group: p.client_id // Usamos group para guardar el client_id
+      }));
+      setProyectos(items);
+    } catch (error) {
+      console.error('Error al cargar proyectos:', error);
+      toast({ title: 'Error al cargar proyectos', description: 'No se pudieron cargar los proyectos', variant: 'destructive' });
+    } finally {
+      setLoadingProyectos(false);
+    }
   };
+
+  // Filtrar proyectos por cliente seleccionado
+  const proyectosFiltrados = useMemo(() => {
+    const clientId = form.watch('client_id');
+    if (!clientId) return proyectos;
+    
+    return proyectos.filter(p => p.group === clientId);
+  }, [proyectos, form.watch('client_id')]);
 
   // Handler race-safe para cambio de cliente
   const handleClientChange = async (clientId: string | undefined) => {
@@ -248,40 +290,70 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <RemoteCombobox
-                label="Cliente"
-                value={form.watch('client_id')}
-                onChange={(value) => {
-                  form.setValue('client_id', value);
-                  handleClientChange(value);
-                }}
-                fetchItems={fetchClients}
-                placeholder="Buscar clientes..."
-                searchPlaceholder="Buscar por nombre o código..."
-                emptyText="Sin resultados"
-                errorText="Error al cargar"
-                helperText="Opcional. Selecciona un cliente o un proyecto."
-                minChars={2}
+              <FormField
+                control={form.control}
+                name="client_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cliente</FormLabel>
+                    <FormControl>
+                      <SearchableCombobox
+                        items={clientes}
+                        value={field.value}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          handleClientChange(value);
+                        }}
+                        placeholder="Seleccionar cliente..."
+                        searchPlaceholder="Buscar por nombre o código..."
+                        emptyText="Sin resultados"
+                        loading={loadingClientes}
+                        disabled={loading}
+                        showCodes={true}
+                        searchFields={['label', 'codigo', 'searchText']}
+                        className="w-full"
+                      />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Opcional. Selecciona un cliente o un proyecto.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
 
-              <RemoteCombobox
-                label="Proyecto"
-                value={form.watch('project_id')}
-                onChange={(value) => {
-                  form.setValue('project_id', value);
-                  handleProjectChange(value);
-                }}
-                fetchItems={fetchProjects}
-                placeholder="Buscar proyectos..."
-                searchPlaceholder="Buscar por nombre o código..."
-                emptyText="Sin resultados"
-                errorText="Error al cargar"
-                helperText={
-                  form.watch('client_id') 
-                    ? 'Filtrado por cliente seleccionado.' 
-                    : 'Opcional. Si eliges un cliente, filtraremos los proyectos.'
-                }
-                minChars={2}
+              <FormField
+                control={form.control}
+                name="project_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Proyecto</FormLabel>
+                    <FormControl>
+                      <SearchableCombobox
+                        items={proyectosFiltrados}
+                        value={field.value}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          handleProjectChange(value);
+                        }}
+                        placeholder="Seleccionar proyecto..."
+                        searchPlaceholder="Buscar por nombre o código..."
+                        emptyText="Sin resultados"
+                        loading={loadingProyectos}
+                        disabled={loading}
+                        showCodes={true}
+                        searchFields={['label', 'codigo', 'searchText']}
+                        className="w-full"
+                      />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      {form.watch('client_id') 
+                        ? 'Filtrado por cliente seleccionado.' 
+                        : 'Opcional. Si eliges un cliente, filtraremos los proyectos.'}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
 
