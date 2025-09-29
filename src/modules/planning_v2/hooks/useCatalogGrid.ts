@@ -1,7 +1,7 @@
 /**
- * Hook for catalog grid state and operations with debounced autosave
+ * Hook for catalog grid state and operations
  */
-import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { PlanningPartida, PlanningConcepto } from '../types';
 import {
@@ -15,9 +15,6 @@ import {
   computePartidaAggregations,
 } from '../services/budgetService';
 import { useToast } from '@/hooks/use-toast';
-
-// Autosave debounce delay (ms)
-const AUTOSAVE_DELAY = 1000;
 
 export interface CatalogRow {
   id: string;
@@ -37,10 +34,6 @@ export function useCatalogGrid(budgetId: string) {
   const [hideZeros, setHideZeros] = useState(false);
   const [collapsedPartidas, setCollapsedPartidas] = useState<Set<string>>(new Set());
   const [editingCell, setEditingCell] = useState<{ rowId: string; columnId: string } | null>(null);
-  
-  // Debounced autosave queue
-  const pendingUpdatesRef = useRef<Map<string, Partial<PlanningConcepto>>>(new Map());
-  const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch budget data
   const { data, isLoading, error } = useQuery({
@@ -155,51 +148,6 @@ export function useCatalogGrid(budgetId: string) {
     },
   });
 
-  // Flush pending updates on unmount
-  useEffect(() => {
-    return () => {
-      if (autosaveTimerRef.current) {
-        clearTimeout(autosaveTimerRef.current);
-      }
-      // Process any pending updates
-      if (pendingUpdatesRef.current.size > 0) {
-        const updates = Array.from(pendingUpdatesRef.current.entries());
-        Promise.all(
-          updates.map(([id, data]) => updateConcepto(id, data))
-        ).then(() => {
-          queryClient.invalidateQueries({ queryKey: ['planning-budget', budgetId] });
-        });
-      }
-    };
-  }, [budgetId, queryClient]);
-
-  // Debounced update function
-  const debouncedUpdateConcepto = useCallback((id: string, updates: Partial<PlanningConcepto>) => {
-    // Merge with existing pending updates for this concepto
-    const existing = pendingUpdatesRef.current.get(id) || {};
-    pendingUpdatesRef.current.set(id, { ...existing, ...updates });
-
-    // Clear existing timer
-    if (autosaveTimerRef.current) {
-      clearTimeout(autosaveTimerRef.current);
-    }
-
-    // Set new timer
-    autosaveTimerRef.current = setTimeout(() => {
-      const allUpdates = Array.from(pendingUpdatesRef.current.entries());
-      pendingUpdatesRef.current.clear();
-
-      // Execute all pending updates
-      Promise.all(
-        allUpdates.map(([conceptoId, data]) => updateConcepto(conceptoId, data))
-      ).then(() => {
-        queryClient.invalidateQueries({ queryKey: ['planning-budget', budgetId] });
-      }).catch(() => {
-        toast({ title: 'Error en autosave', variant: 'destructive' });
-      });
-    }, AUTOSAVE_DELAY);
-  }, [budgetId, queryClient, toast]);
-
   const deleteConceptoMutation = useMutation({
     mutationFn: deleteConcepto,
     onSuccess: () => {
@@ -299,7 +247,7 @@ export function useCatalogGrid(budgetId: string) {
     createPartida: createPartidaMutation.mutate,
     updatePartida: updatePartidaMutation.mutate,
     createConcepto: createConceptoMutation.mutate,
-    updateConcepto: debouncedUpdateConcepto, // Use debounced version
+    updateConcepto: updateConceptoMutation.mutate,
     deleteConcepto: deleteConceptoMutation.mutate,
     bulkUpdateConceptos,
     bulkDelete,

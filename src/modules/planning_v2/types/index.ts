@@ -4,13 +4,6 @@
 
 export type BudgetStatus = 'draft' | 'published' | 'closed';
 
-export interface BudgetSettings {
-  locale?: string; // Default: 'es-MX'
-  timezone?: string;
-  custom_fields?: Record<string, any>;
-  [key: string]: any;
-}
-
 export interface PlanningBudget {
   id: string;
   project_id: string | null;
@@ -18,7 +11,7 @@ export interface PlanningBudget {
   name: string;
   currency: string;
   status: BudgetStatus;
-  settings: BudgetSettings;
+  settings: Record<string, any>;
   created_by: string;
   created_at: string;
   updated_at: string;

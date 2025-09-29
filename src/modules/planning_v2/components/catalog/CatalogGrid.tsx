@@ -1,8 +1,7 @@
 /**
- * Main Catalog Grid Component with Virtualization
+ * Main Catalog Grid Component
  */
-import { useState, useRef } from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
+import { useState } from 'react';
 import { Plus, Settings, Eye, EyeOff } from 'lucide-react';
 import { useCatalogGrid } from '../../hooks/useCatalogGrid';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
@@ -39,7 +38,6 @@ const DEFAULT_COLUMNS = [
 export function CatalogGrid({ budgetId }: CatalogGridProps) {
   const [columns, setColumns] = useState(DEFAULT_COLUMNS);
   const [columnManagerOpen, setColumnManagerOpen] = useState(false);
-  const parentRef = useRef<HTMLDivElement>(null);
 
   const {
     budget,
@@ -57,14 +55,6 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
     createConcepto,
     updateConcepto,
   } = useCatalogGrid(budgetId);
-
-  // Virtualization for large datasets
-  const rowVirtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 40,
-    overscan: 10,
-  });
 
   useKeyboardShortcuts({
     onDuplicate: () => console.log('Duplicate'),
@@ -140,8 +130,8 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
         </div>
       </div>
 
-      {/* Grid with Virtualization */}
-      <div ref={parentRef} className="flex-1 overflow-auto">
+      {/* Grid */}
+      <ScrollArea className="flex-1">
         <div className="min-w-max">
           {/* Header */}
           <div className="sticky top-0 z-10 bg-background border-b">
@@ -172,28 +162,13 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
             </div>
           </div>
 
-          {/* Virtualized Rows */}
-          <div
-            style={{
-              height: `${rowVirtualizer.getTotalSize()}px`,
-              width: '100%',
-              position: 'relative',
-            }}
-          >
-            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-              const row = rows[virtualRow.index];
+          {/* Rows */}
+          <div>
+            {rows.map((row) => {
               if (row.type === 'partida') {
                 return (
                   <div
                     key={row.id}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: `${virtualRow.size}px`,
-                      transform: `translateY(${virtualRow.start}px)`,
-                    }}
                     className="flex items-center bg-muted/50 border-b hover:bg-muted"
                   >
                     <div className="w-12 border-r flex items-center justify-center">
@@ -220,14 +195,6 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                 return (
                   <div
                     key={row.id}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: `${virtualRow.size}px`,
-                      transform: `translateY(${virtualRow.start}px)`,
-                    }}
                     className="flex items-center bg-primary/5 border-b font-medium"
                   >
                     <div className="w-12 border-r"></div>
@@ -250,14 +217,6 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
               return (
                 <div
                   key={row.id}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: `${virtualRow.size}px`,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
                   className={`flex items-center border-b hover:bg-muted/30 ${
                     isSelected ? 'bg-primary/10' : ''
                   }`}
@@ -285,7 +244,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
             })}
           </div>
         </div>
-      </div>
+      </ScrollArea>
 
       {/* Column Manager */}
       <ColumnManager
