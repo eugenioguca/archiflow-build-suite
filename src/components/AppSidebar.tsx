@@ -130,14 +130,7 @@ export function AppSidebar() {
     setIsPinnedOpen(prev => !prev);
   };
 
-  const isActive = (path: string) => {
-    // Special handling for Planning v2 routes
-    if (path === '/planning-v2') {
-      return currentPath.startsWith('/planning-v2');
-    }
-    return currentPath === path;
-  };
-  
+  const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
     isActive 
       ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md" 
@@ -343,10 +336,7 @@ export function AppSidebar() {
                          {item.title}
                        </span>
                        {(item as any).badge && (
-                         <span 
-                           className="ml-auto text-[10px] bg-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium"
-                           aria-label={(item as any).badge}
-                         >
+                         <span className="ml-auto text-[10px] bg-orange-500 text-white px-1.5 py-0.5 rounded-full font-medium">
                            {(item as any).badge}
                          </span>
                        )}

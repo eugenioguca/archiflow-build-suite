@@ -49,37 +49,15 @@ export const usePermissions = (): UserPermissions => {
           }
 
           // Get module permissions
-          const modules = [
-            'dashboard', 
-            'calendar', 
-            'clients', 
-            'sales', 
-            'design', 
-            'construction', 
-            'suppliers', 
-            'finances', 
-            'accounting', 
-            'client_portal_preview', 
-            'tools',
-            'planning_v2' // Planning v2 module
-          ];
+          const modules = ['dashboard', 'calendar', 'clients', 'sales', 'design', 'construction', 'suppliers', 'finances', 'accounting', 'client_portal_preview', 'tools'];
           const permissions: Record<string, boolean> = {};
 
           for (const module of modules) {
-            if (module === 'planning_v2') {
-              // Check Planning v2 specific role
-              const { data: hasAccess } = await supabase.rpc('has_planning_v2_role', {
-                _user_id: user.id,
-                _role: 'viewer'
-              });
-              permissions[module] = hasAccess || false;
-            } else {
-              const { data: hasAccess } = await supabase.rpc('has_module_permission', {
-                _user_id: user.id,
-                _module: module
-              });
-              permissions[module] = hasAccess || false;
-            }
+            const { data: hasAccess } = await supabase.rpc('has_module_permission', {
+              _user_id: user.id,
+              _module: module
+            });
+            permissions[module] = hasAccess || false;
           }
 
           setModulePermissions(permissions);
@@ -100,10 +78,6 @@ export const usePermissions = (): UserPermissions => {
     // Development tools should be accessible to admins
     if (module === 'development') {
       return modulePermissions['tools'] || false;
-    }
-    // Planning v2 requires specific role check
-    if (module === 'planning_v2') {
-      return modulePermissions['planning_v2'] || false;
     }
     return modulePermissions[module] || false;
   };

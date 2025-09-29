@@ -2,27 +2,14 @@
 
 Módulo de planeación de presupuestos completamente aislado del sistema principal.
 
-## Navegación
-
-El módulo es accesible desde el sidebar principal cuando está habilitado:
-
-- **Etiqueta:** "Planeación v2 (Beta)" (Español)
-- **Ícono:** Rocket (lucide-react)
-- **Ruta:** `/planning-v2`
-- **Badge:** "Beta" (naranja)
-- **Visibilidad:** 
-  - Requiere `PLANNING_V2_ENABLED = true`
-  - Requiere rol `planning_v2.viewer` o superior
-  - Estado activo se aplica a todas las rutas que inician con `/planning-v2`
-
-## Estado Actual: Phases 0-8 Completadas ✅
+## Estado Actual: Phases 0-4 Completadas ✅
 
 ### Phase 0: Scaffolding & Isolation ✅
 - Feature flag: `PLANNING_V2_ENABLED` en `config/featureFlag.ts`
 - Nuevas tablas: `planning_budgets`, `planning_partidas`, `planning_conceptos`, etc.
 - Adaptadores read-only para: Projects, Clients, TU dimensions
 - Rutas: `/planning-v2` y `/planning-v2/budgets/:id`
-- Navegación condicional en sidebar con badge "Beta" y verificación de roles
+- Navegación condicional en sidebar con badge "Beta"
 
 ### Phase 1: Data Model & Formula Engine ✅
 - Motor de fórmulas por claves de campo (no por columnas)
