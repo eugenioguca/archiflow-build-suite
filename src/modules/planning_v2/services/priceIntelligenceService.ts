@@ -30,6 +30,11 @@ export interface PriceStatistics {
   last_seen_date: string;
   sample_size: number;
   recommended_pu: number;
+  // Unit normalization info
+  base_unit: string;
+  original_unit: string;
+  normalization_factor: number;
+  is_normalized: boolean;
 }
 
 export interface PriceAlert {
@@ -112,6 +117,7 @@ export const priceIntelligenceService = {
 
   /**
    * Obtener estadísticas de precios para un WBS code y unidad
+   * Aplica normalización de unidades si está disponible
    */
   async getPriceStatistics(
     wbsCode: string,
@@ -119,15 +125,20 @@ export const priceIntelligenceService = {
     windowDays: number = 90
   ): Promise<PriceStatistics | null> {
     try {
-      // Calcular manualmente las estadísticas
+      // Intentar normalizar la unidad
+      const normalization = await this.normalizeUnit(unit);
+      const searchUnit = normalization ? normalization.unit : unit;
+      const isNormalized = !!normalization;
+
+      // Calcular fecha de inicio de la ventana
       const fromDate = new Date();
       fromDate.setDate(fromDate.getDate() - windowDays);
 
       const { data: observations, error } = await supabase
         .from('planning_price_observations' as any)
-        .select('pu_mxn, observation_date')
+        .select('pu_mxn, observation_date, unit')
         .eq('wbs_code', wbsCode)
-        .eq('unit', unit)
+        .eq('unit', searchUnit)
         .gte('observation_date', fromDate.toISOString().split('T')[0])
         .order('observation_date', { ascending: false });
 
@@ -137,11 +148,48 @@ export const priceIntelligenceService = {
       }
 
       if (!observations || observations.length === 0) {
+        // Si no hay datos con la unidad base, buscar con variantes
+        if (isNormalized && normalization) {
+          // Buscar con la unidad original
+          const { data: variantObs, error: variantError } = await supabase
+            .from('planning_price_observations' as any)
+            .select('pu_mxn, observation_date, unit')
+            .eq('wbs_code', wbsCode)
+            .eq('unit', unit)
+            .gte('observation_date', fromDate.toISOString().split('T')[0])
+            .order('observation_date', { ascending: false });
+
+          if (variantError || !variantObs || variantObs.length === 0) {
+            return null;
+          }
+
+          // Normalizar precios de variantes
+          const obs = variantObs as unknown as Array<{ pu_mxn: number; observation_date: string; unit: string }>;
+          const normalizedPrices = obs.map(o => o.pu_mxn * normalization.factor).sort((a, b) => a - b);
+          const median = normalizedPrices[Math.floor(normalizedPrices.length / 2)];
+          const p25 = normalizedPrices[Math.floor(normalizedPrices.length * 0.25)];
+          const p75 = normalizedPrices[Math.floor(normalizedPrices.length * 0.75)];
+          const lastObservation = obs[0];
+
+          return {
+            median_price: median,
+            p25_price: p25,
+            p75_price: p75,
+            last_seen_price: lastObservation.pu_mxn * normalization.factor,
+            last_seen_date: lastObservation.observation_date,
+            sample_size: obs.length,
+            recommended_pu: median,
+            base_unit: normalization.unit,
+            original_unit: unit,
+            normalization_factor: normalization.factor,
+            is_normalized: true,
+          };
+        }
         return null;
       }
 
-      // Calcular estadísticas
-      const obs = observations as unknown as Array<{ pu_mxn: number; observation_date: string }>;
+      // Calcular estadísticas con precios normalizados
+      const obs = observations as unknown as Array<{ pu_mxn: number; observation_date: string; unit: string }>;
       const prices = obs.map(o => o.pu_mxn).sort((a, b) => a - b);
       const median = prices[Math.floor(prices.length / 2)];
       const p25 = prices[Math.floor(prices.length * 0.25)];
@@ -156,6 +204,10 @@ export const priceIntelligenceService = {
         last_seen_date: lastObservation.observation_date,
         sample_size: obs.length,
         recommended_pu: median,
+        base_unit: isNormalized ? normalization!.unit : unit,
+        original_unit: unit,
+        normalization_factor: isNormalized ? normalization!.factor : 1.0,
+        is_normalized: isNormalized,
       };
     } catch (error) {
       console.error('Error en getPriceStatistics:', error);
@@ -211,10 +263,31 @@ export const priceIntelligenceService = {
    */
   async normalizeUnit(fromUnit: string): Promise<{ unit: string; factor: number } | null> {
     try {
-      // Tabla no está en tipos aún, por ahora retornar null
-      // En producción se consultaría planning_unit_normalizations
-      return null;
+      const { data, error } = await supabase
+        .from('planning_unit_normalizations' as any)
+        .select('base_unit, normalization_factor')
+        .eq('variant_unit', fromUnit.toLowerCase().trim())
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error consultando normalización de unidades:', error);
+        return null;
+      }
+
+      if (!data) {
+        // No hay normalización configurada para esta unidad
+        return null;
+      }
+
+      // Cast explícito para evitar error de tipos
+      const result = data as any;
+
+      return {
+        unit: result.base_unit as string,
+        factor: result.normalization_factor as number,
+      };
     } catch (error) {
+      console.error('Error en normalizeUnit:', error);
       return null;
     }
   },

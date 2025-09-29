@@ -90,6 +90,16 @@ export function PriceReferenceChip({
         <TooltipContent className="max-w-sm">
           <div className="space-y-2">
             <div className="font-semibold">Estadísticas de precio ({windowDays} días)</div>
+            
+            {stats.is_normalized && (
+              <div className="text-xs text-muted-foreground border-l-2 border-primary pl-2 mb-2">
+                Base: {stats.base_unit} · Original: {stats.original_unit}
+                {stats.normalization_factor !== 1 && (
+                  <span className="ml-1">(factor: {stats.normalization_factor}×)</span>
+                )}
+              </div>
+            )}
+            
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
               <span className="text-muted-foreground">Mediana:</span>
               <span className="font-medium">{formatAsCurrency(stats.median_price)}</span>
