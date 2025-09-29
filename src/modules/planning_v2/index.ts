@@ -21,6 +21,8 @@ export * from './types';
 export * from './services/budgetService';
 export * from './services/snapshotService';
 export * from './services/priceIntelligenceService';
+export * as templateService from './services/templateService';
+export * as templateTestService from './services/templateTestService';
 
 // Adapters
 export * from './adapters/projects';
@@ -30,3 +32,5 @@ export * from './adapters/tuActuals';
 
 // Hooks
 export { usePriceIntelligence } from './hooks/usePriceIntelligence';
+export { useTemplate } from './hooks/useTemplate';
+export { useTemplateTests } from './hooks/useTemplateTests';

@@ -71,3 +71,97 @@ export interface BudgetListItem {
   created_at: string;
   updated_at: string;
 }
+
+// Template types
+export interface PlanningTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  department: string | null;
+  is_active: boolean;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  settings: Record<string, any>;
+}
+
+export interface PlanningTemplateField {
+  id: string;
+  template_id: string;
+  field_key: string;
+  field_label: string;
+  field_type: string;
+  field_role: 'input' | 'computed';
+  default_value: string | null;
+  formula: string | null;
+  visible: boolean;
+  order_index: number;
+  helptext: string | null;
+  created_at: string;
+}
+
+export interface PlanningTemplatePartida {
+  id: string;
+  template_id: string;
+  name: string;
+  order_index: number;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface PlanningTemplateConcepto {
+  id: string;
+  template_partida_id: string;
+  code: string | null;
+  short_description: string;
+  long_description: string | null;
+  unit: string;
+  provider: string | null;
+  order_index: number;
+  sumable: boolean;
+  default_values: Record<string, any>;
+  created_at: string;
+}
+
+export interface PlanningTemplateTest {
+  id: string;
+  template_id: string;
+  test_name: string;
+  test_inputs: any[];
+  expected_grand_total: number;
+  expected_outputs: Record<string, any> | null;
+  last_run_status: 'passed' | 'failed' | 'not_run' | null;
+  last_run_at: string | null;
+  last_run_error: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TemplateDelta {
+  partidas_to_add: PlanningTemplatePartida[];
+  conceptos_to_add: Array<{
+    partida_name: string;
+    concepto: PlanningTemplateConcepto;
+  }>;
+  fields_to_add: PlanningTemplateField[];
+  existing_conceptos_to_update: Array<{
+    concepto_id: string;
+    updates: Partial<PlanningConcepto>;
+  }>;
+}
+
+export interface TestRunResult {
+  test_id: string;
+  test_name: string;
+  passed: boolean;
+  actual_grand_total: number;
+  expected_grand_total: number;
+  difference: number;
+  field_results?: Array<{
+    field_key: string;
+    expected: any;
+    actual: any;
+    passed: boolean;
+  }>;
+  error?: string;
+}

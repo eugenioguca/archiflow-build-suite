@@ -5650,6 +5650,56 @@ export type Database = {
           },
         ]
       }
+      planning_template_conceptos: {
+        Row: {
+          code: string | null
+          created_at: string
+          default_values: Json | null
+          id: string
+          long_description: string | null
+          order_index: number
+          provider: string | null
+          short_description: string
+          sumable: boolean | null
+          template_partida_id: string
+          unit: string
+        }
+        Insert: {
+          code?: string | null
+          created_at?: string
+          default_values?: Json | null
+          id?: string
+          long_description?: string | null
+          order_index: number
+          provider?: string | null
+          short_description: string
+          sumable?: boolean | null
+          template_partida_id: string
+          unit: string
+        }
+        Update: {
+          code?: string | null
+          created_at?: string
+          default_values?: Json | null
+          id?: string
+          long_description?: string | null
+          order_index?: number
+          provider?: string | null
+          short_description?: string
+          sumable?: boolean | null
+          template_partida_id?: string
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_template_conceptos_template_partida_id_fkey"
+            columns: ["template_partida_id"]
+            isOneToOne: false
+            referencedRelation: "planning_template_partidas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       planning_template_fields: {
         Row: {
           created_at: string
@@ -5693,6 +5743,91 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "planning_template_fields_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "planning_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planning_template_partidas: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          order_index: number
+          template_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          order_index: number
+          template_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          order_index?: number
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_template_partidas_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "planning_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planning_template_tests: {
+        Row: {
+          created_at: string
+          expected_grand_total: number
+          expected_outputs: Json | null
+          id: string
+          last_run_at: string | null
+          last_run_error: string | null
+          last_run_status: string | null
+          template_id: string
+          test_inputs: Json
+          test_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expected_grand_total: number
+          expected_outputs?: Json | null
+          id?: string
+          last_run_at?: string | null
+          last_run_error?: string | null
+          last_run_status?: string | null
+          template_id: string
+          test_inputs: Json
+          test_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expected_grand_total?: number
+          expected_outputs?: Json | null
+          id?: string
+          last_run_at?: string | null
+          last_run_error?: string | null
+          last_run_status?: string | null
+          template_id?: string
+          test_inputs?: Json
+          test_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_template_tests_template_id_fkey"
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "planning_templates"

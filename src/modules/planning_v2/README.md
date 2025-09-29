@@ -245,6 +245,38 @@ Todas las tablas Planning v2 tienen RLS habilitado:
 
 ---
 
+## Phase 7: Templates & Tests
+
+Editor de plantillas y sistema de pruebas para validación automática.
+
+### Tablas DB
+- `planning_templates` - Plantillas base
+- `planning_template_fields` - Campos dinámicos por plantilla
+- `planning_template_partidas` - Partidas base
+- `planning_template_conceptos` - Conceptos base con valores default
+- `planning_template_tests` - Tests con inputs/outputs esperados
+
+### Servicios
+- `templateService` - CRUD plantillas, calcular deltas, aplicar
+- `templateTestService` - Ejecutar tests, validar resultados
+
+### Hooks
+- `useTemplate` - Gestión de plantillas
+- `useTemplateTests` - Ejecución y validación de tests
+
+### Componentes UI
+- `TemplateList` - Lista de plantillas
+- `TemplateApplyDialog` - Diálogo confirmación con deltas
+- `TemplateTestRunner` - Ejecutor de pruebas con resultados
+
+### Acceptance Criteria
+✅ No mutación externa (TU/módulos existentes)
+✅ Delta explícito antes de aplicar
+✅ Tests requeridos en verde antes de publicar
+✅ UI completa en español
+
+---
+
 ## Phase 5: Price Intelligence & Alerts ✅
 
 ### Overview
