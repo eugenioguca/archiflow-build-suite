@@ -297,6 +297,18 @@ export async function publishBudget(
   budgetId: string,
   taxSettings?: { ivaRate?: number; retencionesRate?: number }
 ): Promise<BudgetSnapshot> {
+  // VALIDACIÓN CRÍTICA: Verificar WBS en conceptos sumables
+  const { conceptos } = await getBudgetById(budgetId);
+  const conceptosSinWBS = conceptos.filter(
+    c => c.active && c.sumable && !c.wbs_code
+  );
+
+  if (conceptosSinWBS.length > 0) {
+    throw new Error(
+      `Hay ${conceptosSinWBS.length} conceptos sumables sin WBS. Asigna un WBS a todos antes de publicar.`
+    );
+  }
+
   // Create snapshot
   const snapshot = await createSnapshot(
     budgetId,

@@ -120,9 +120,10 @@ export function Summary({ budgetId }: SummaryProps) {
         description: 'Se ha creado una nueva versión inmutable',
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: 'Error al publicar',
+        description: error?.message || 'Ocurrió un error inesperado',
         variant: 'destructive',
       });
     },

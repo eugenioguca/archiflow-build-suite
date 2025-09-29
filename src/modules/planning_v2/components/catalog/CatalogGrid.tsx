@@ -213,13 +213,14 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
               // Concepto row
               const concepto = row.concepto!;
               const isSelected = selectedRows.has(row.id);
+              const needsWBS = concepto.active && concepto.sumable && !concepto.wbs_code;
 
               return (
                 <div
                   key={row.id}
                   className={`flex items-center border-b hover:bg-muted/30 ${
                     isSelected ? 'bg-primary/10' : ''
-                  }`}
+                  } ${needsWBS ? 'bg-destructive/5' : ''}`}
                 >
                   <div className="w-12 border-r flex items-center justify-center">
                     <input
@@ -229,13 +230,18 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                       className="rounded"
                     />
                   </div>
-                  {visibleColumns.map((col) => (
+                  {visibleColumns.map((col, idx) => (
                     <div
                       key={col.key}
                       className={`px-3 py-2 text-sm border-r min-w-[120px] ${
                         col.type === 'computed' ? 'bg-muted/10' : ''
                       }`}
                     >
+                      {idx === 0 && needsWBS && (
+                        <Badge variant="destructive" className="mr-2 text-xs">
+                          Falta WBS
+                        </Badge>
+                      )}
                       {renderCell(concepto, col)}
                     </div>
                   ))}
