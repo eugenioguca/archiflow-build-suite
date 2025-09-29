@@ -4,6 +4,7 @@
  */
 import { supabase } from '@/integrations/supabase/client';
 import { getBudgetById } from './budgetService';
+import { priceIntelligenceService } from './priceIntelligenceService';
 import Decimal from 'decimal.js';
 
 export interface BudgetSnapshot {
@@ -80,6 +81,7 @@ export async function calculateBudgetTotals(
 
 /**
  * Create a snapshot of current budget state
+ * También crea observaciones de precios para cada concepto sumable
  */
 export async function createSnapshot(
   budgetId: string,
@@ -127,6 +129,25 @@ export async function createSnapshot(
     .single();
 
   if (error) throw error;
+
+  // Crear observaciones de precios para conceptos sumables
+  const observationDate = new Date().toISOString().split('T')[0];
+  
+  for (const concepto of budgetData.conceptos) {
+    if (concepto.sumable && concepto.wbs_code && concepto.active) {
+      await priceIntelligenceService.createObservationFromBudget(
+        budgetId,
+        budgetData.budget.project_id,
+        concepto.wbs_code,
+        concepto.unit,
+        concepto.pu,
+        concepto.provider,
+        'MXN',
+        observationDate
+      );
+    }
+  }
+
   return data as unknown as BudgetSnapshot;
 }
 

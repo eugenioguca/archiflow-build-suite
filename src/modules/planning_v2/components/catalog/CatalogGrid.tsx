@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { formatAsCurrency, toDisplayPrecision, formatAsPercentage } from '../../utils/monetary';
 import { ChevronDown, ChevronRight, Lock } from 'lucide-react';
+import { PriceReferenceChip } from './PriceReferenceChip';
 
 interface CatalogGridProps {
   budgetId: string;
