@@ -2,8 +2,9 @@
  * Planning v2 - Budget Detail page
  * Vista detallada de un presupuesto con tabs
  */
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ArrowLeft, FileText, History, Paperclip, BarChart3, Download, List } from 'lucide-react';
+import { ArrowLeft, FileText, History, Paperclip, BarChart3, Download, Upload, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,10 +12,34 @@ import { useNavigate } from 'react-router-dom';
 import { CatalogGrid } from '../components/catalog/CatalogGrid';
 import { Summary } from '../components/summary/Summary';
 import { VersionsComparison } from '../components/versions/VersionsComparison';
+import { ImportDialog } from '../components/import/ImportDialog';
+import { ExportDialog } from '../components/export/ExportDialog';
+import { getBudgetById } from '../services/budgetService';
+
 
 export default function BudgetDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  
+  const [importOpen, setImportOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [selectedPartidaId, setSelectedPartidaId] = useState<string | null>(null);
+
+  // Mock data - en producción vendría de useQuery
+  const budgetName = 'Presupuesto Ejemplo';
+  const clientName = 'Cliente Demo';
+  const projectName = 'Proyecto Demo';
+  const partidas = []; // De la query
+  const conceptos = []; // De la query
+
+  const handleImport = () => {
+    // Necesitamos una partida seleccionada
+    if (!selectedPartidaId) {
+      // Por ahora usar la primera partida o crear una nueva
+      setSelectedPartidaId('temp-id'); // TODO: obtener partida real
+    }
+    setImportOpen(true);
+  };
 
   return (
     <div className="space-y-6 p-6">
@@ -31,6 +56,18 @@ export default function BudgetDetail() {
           <p className="text-muted-foreground mt-1">
             ID: {id}
           </p>
+        </div>
+        
+        {/* Import/Export buttons */}
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleImport}>
+            <Upload className="h-4 w-4 mr-2" />
+            Importar
+          </Button>
+          <Button variant="outline" onClick={() => setExportOpen(true)}>
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
+          </Button>
         </div>
       </div>
 
@@ -126,6 +163,26 @@ export default function BudgetDetail() {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      {/* Import Dialog */}
+      <ImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        budgetId={id || ''}
+        partidaId={selectedPartidaId || ''}
+      />
+      
+      {/* Export Dialog */}
+      <ExportDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        budgetId={id || ''}
+        budgetName={budgetName}
+        clientName={clientName}
+        projectName={projectName}
+        partidas={partidas}
+        conceptos={conceptos}
+      />
     </div>
   );
 }
