@@ -1,9 +1,19 @@
 /**
  * Servicio de exportación para Planning v2
- * Soporta PDF y Excel con columnas configurables
+ * Soporta PDF y Excel con columnas configurables y branding corporativo
  */
 import * as XLSX from 'xlsx';
+import { supabase } from '@/integrations/supabase/client';
 import { formatAsCurrency, toDisplayPrecision, formatAsPercentage } from '../utils/monetary';
+
+interface CompanyBranding {
+  company_name: string;
+  logo_url: string | null;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+}
 
 export interface ExportColumn {
   key: string;
@@ -39,6 +49,42 @@ const DEFAULT_EXPORT_COLUMNS: ExportColumn[] = [
 
 export const exportService = {
   /**
+   * Cargar branding corporativo
+   */
+  async loadCompanyBranding(): Promise<CompanyBranding> {
+    try {
+      const { data, error } = await supabase
+        .from('company_branding')
+        .select('company_name, logo_url, address, phone, email, website')
+        .maybeSingle();
+
+      if (error) {
+        console.warn('Error loading company branding:', error);
+      }
+
+      // Fallback neutral si no hay branding configurado
+      return {
+        company_name: data?.company_name || 'Empresa',
+        logo_url: data?.logo_url || null,
+        address: data?.address || null,
+        phone: data?.phone || null,
+        email: data?.email || null,
+        website: data?.website || null,
+      };
+    } catch (error) {
+      console.error('Error loading branding:', error);
+      return {
+        company_name: 'Empresa',
+        logo_url: null,
+        address: null,
+        phone: null,
+        email: null,
+        website: null,
+      };
+    }
+  },
+
+  /**
    * Obtener columnas por defecto para exportación
    */
   getDefaultColumns(): ExportColumn[] {
@@ -46,13 +92,16 @@ export const exportService = {
   },
 
   /**
-   * Exportar a Excel
+   * Exportar a Excel con branding
    */
   async exportToExcel(
     partidas: any[],
     conceptos: any[],
     options: ExportOptions
   ): Promise<void> {
+    // Cargar branding
+    const branding = await this.loadCompanyBranding();
+    
     const visibleColumns = options.columns.filter(col => col.visible);
     
     // Crear workbook
@@ -61,7 +110,14 @@ export const exportService = {
     // Datos para la hoja
     const rows: any[][] = [];
     
-    // Encabezado del presupuesto
+    // Encabezado con branding
+    rows.push([branding.company_name]);
+    if (branding.address) rows.push(['Dirección:', branding.address]);
+    if (branding.phone) rows.push(['Teléfono:', branding.phone]);
+    if (branding.email) rows.push(['Email:', branding.email]);
+    rows.push([]); // Línea vacía
+    
+    // Información del presupuesto
     rows.push([options.budgetName]);
     if (options.clientName) rows.push(['Cliente:', options.clientName]);
     if (options.projectName) rows.push(['Proyecto:', options.projectName]);
@@ -146,7 +202,7 @@ export const exportService = {
         if (!cell) continue;
 
         // Aplicar formato según tipo de columna
-        if (R > 5) { // Después de los encabezados
+        if (R > 9) { // Después de los encabezados con branding
           const colConfig = visibleColumns[C];
           if (!colConfig) continue;
 
@@ -184,15 +240,145 @@ export const exportService = {
   },
 
   /**
-   * Exportar a PDF (simplificado - usa window.print por ahora)
+   * Test de round-trip: exportar e importar debe mantener totales
+   */
+  async testRoundTrip(
+    partidas: any[],
+    conceptos: any[],
+    options: ExportOptions
+  ): Promise<{ success: boolean; message: string; originalTotal: number; importedTotal: number }> {
+    try {
+      // Calcular total original
+      const originalTotal = conceptos
+        .filter(c => c.active && c.sumable)
+        .reduce((sum, c) => sum + (c.total || 0), 0);
+
+      // Exportar a Excel
+      const visibleColumns = options.columns.filter(col => col.visible);
+      const branding = await this.loadCompanyBranding();
+      
+      const rows: any[][] = [];
+      
+      // Encabezados (similar al export real)
+      rows.push([branding.company_name]);
+      if (branding.address) rows.push(['Dirección:', branding.address]);
+      if (branding.phone) rows.push(['Teléfono:', branding.phone]);
+      if (branding.email) rows.push(['Email:', branding.email]);
+      rows.push([]);
+      rows.push([options.budgetName]);
+      if (options.clientName) rows.push(['Cliente:', options.clientName]);
+      if (options.projectName) rows.push(['Proyecto:', options.projectName]);
+      rows.push(['Fecha de exportación:', new Date().toLocaleDateString('es-MX')]);
+      rows.push([]);
+      rows.push(visibleColumns.map(col => col.label));
+
+      // Datos
+      partidas.forEach(partida => {
+        rows.push([partida.name, ...Array(visibleColumns.length - 1).fill('')]);
+        
+        const partidaConceptos = conceptos.filter(c => c.partida_id === partida.id && c.active);
+        
+        partidaConceptos.forEach(concepto => {
+          const row = visibleColumns.map(col => {
+            const value = concepto[col.key];
+            if (value === null || value === undefined) return '';
+            
+            switch (col.type) {
+              case 'currency':
+              case 'number':
+                return Number(value);
+              case 'percentage':
+                return Number(value) / 100;
+              default:
+                return String(value);
+            }
+          });
+          rows.push(row);
+        });
+      });
+
+      // Simular import: recrear conceptos desde rows
+      const importedConceptos: any[] = [];
+      let currentPartidaName = '';
+      const headerRowIndex = 10; // Después del branding
+
+      for (let i = headerRowIndex + 1; i < rows.length; i++) {
+        const row = rows[i];
+        
+        // Detectar partida (primera columna llena, resto vacío)
+        if (row[0] && row.slice(1).every((c: any) => !c)) {
+          currentPartidaName = row[0];
+          continue;
+        }
+
+        // Detectar concepto (tiene datos en columnas relevantes)
+        if (row[0] && row[0] !== 'Subtotal' && row[0] !== 'TOTAL GENERAL') {
+          const concepto: any = {};
+          visibleColumns.forEach((col, idx) => {
+            const value = row[idx];
+            if (value !== null && value !== undefined && value !== '') {
+              if (col.type === 'percentage') {
+                concepto[col.key] = Number(value) * 100;
+              } else {
+                concepto[col.key] = value;
+              }
+            }
+          });
+          
+          // Recalcular total basado en campos importados
+          const cantidadReal = concepto.cantidad_real || 0;
+          const desperdicoPct = concepto.desperdicio_pct || 0;
+          const precioReal = concepto.precio_real || 0;
+          const honorariosPct = concepto.honorarios_pct || 0;
+          
+          const cantidad = cantidadReal * (1 + desperdicoPct / 100);
+          const pu = precioReal * (1 + honorariosPct / 100);
+          concepto.total = cantidad * pu;
+          concepto.active = true;
+          concepto.sumable = true;
+          
+          importedConceptos.push(concepto);
+        }
+      }
+
+      // Calcular total importado
+      const importedTotal = importedConceptos
+        .filter(c => c.active && c.sumable)
+        .reduce((sum, c) => sum + (c.total || 0), 0);
+
+      // Comparar con tolerancia de 0.01 por errores de redondeo
+      const difference = Math.abs(originalTotal - importedTotal);
+      const success = difference < 0.01;
+
+      return {
+        success,
+        message: success
+          ? `Test exitoso: Totales coinciden ($${originalTotal.toFixed(2)} ≈ $${importedTotal.toFixed(2)})`
+          : `Test fallido: Diferencia de $${difference.toFixed(2)} (original: $${originalTotal.toFixed(2)}, importado: $${importedTotal.toFixed(2)})`,
+        originalTotal,
+        importedTotal,
+      };
+    } catch (error) {
+      console.error('Error in round-trip test:', error);
+      return {
+        success: false,
+        message: `Error en test: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+        originalTotal: 0,
+        importedTotal: 0,
+      };
+    }
+  },
+
+  /**
+   * Exportar a PDF con branding
    */
   async exportToPDF(
     partidas: any[],
     conceptos: any[],
     options: ExportOptions
   ): Promise<void> {
-    // Por ahora, generamos HTML y usamos window.print
-    // En producción se podría usar jsPDF o similar
+    // Cargar branding
+    const branding = await this.loadCompanyBranding();
     
     const visibleColumns = options.columns.filter(col => col.visible);
     
@@ -207,6 +393,27 @@ export const exportService = {
             font-family: Arial, sans-serif;
             margin: 20px;
             font-size: 12px;
+          }
+          .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #333;
+          }
+          .logo {
+            max-width: 150px;
+            max-height: 80px;
+          }
+          .company-info {
+            text-align: right;
+            font-size: 11px;
+          }
+          .company-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
           }
           h1 {
             font-size: 18px;
@@ -257,6 +464,19 @@ export const exportService = {
         </style>
       </head>
       <body>
+        <div class="header">
+          <div>
+            ${branding.logo_url ? `<img src="${branding.logo_url}" alt="Logo" class="logo" />` : ''}
+          </div>
+          <div class="company-info">
+            <div class="company-name">${branding.company_name}</div>
+            ${branding.address ? `<div>${branding.address}</div>` : ''}
+            ${branding.phone ? `<div>Tel: ${branding.phone}</div>` : ''}
+            ${branding.email ? `<div>${branding.email}</div>` : ''}
+            ${branding.website ? `<div>${branding.website}</div>` : ''}
+          </div>
+        </div>
+        
         <h1>${options.budgetName}</h1>
         <div class="info">
           ${options.clientName ? `<div>Cliente: ${options.clientName}</div>` : ''}

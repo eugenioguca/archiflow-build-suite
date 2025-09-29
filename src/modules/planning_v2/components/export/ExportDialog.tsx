@@ -2,7 +2,7 @@
  * Diálogo de exportación con selección de columnas
  */
 import { useState } from 'react';
-import { FileDown, FileSpreadsheet } from 'lucide-react';
+import { FileDown, FileSpreadsheet, TestTube2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -15,8 +15,11 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useImportExport } from '../../hooks/useImportExport';
+import { exportService } from '../../services/exportService';
 import type { ExportColumn } from '../../services/exportService';
+import { toast } from 'sonner';
 
 interface ExportDialogProps {
   open: boolean;
@@ -44,6 +47,8 @@ export function ExportDialog({
   const [columns, setColumns] = useState<ExportColumn[]>(() => getDefaultExportColumns());
   const [includeSubtotals, setIncludeSubtotals] = useState(true);
   const [includeGrandTotal, setIncludeGrandTotal] = useState(true);
+  const [testResult, setTestResult] = useState<any>(null);
+  const [isTesting, setIsTesting] = useState(false);
 
   const handleToggleColumn = (key: string) => {
     setColumns((prev) =>
@@ -72,6 +77,40 @@ export function ExportDialog({
         },
       }
     );
+  };
+
+  const handleRunTest = async () => {
+    setIsTesting(true);
+    setTestResult(null);
+    
+    try {
+      const result = await exportService.testRoundTrip(
+        partidas,
+        conceptos,
+        {
+          format: 'excel',
+          columns,
+          includeSubtotals,
+          includeGrandTotal,
+          budgetName,
+          clientName,
+          projectName,
+        }
+      );
+      
+      setTestResult(result);
+      
+      if (result.success) {
+        toast.success(result.message);
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error('Error running test:', error);
+      toast.error('Error al ejecutar test de round-trip');
+    } finally {
+      setIsTesting(false);
+    }
   };
 
   const visibleCount = columns.filter(col => col.visible).length;
@@ -162,6 +201,39 @@ export function ExportDialog({
                 ))}
               </div>
             </ScrollArea>
+          </div>
+
+          {/* Round-trip test */}
+          <div className="space-y-3">
+            <Label>Test de integridad (Round-trip)</Label>
+            <p className="text-sm text-muted-foreground">
+              Verifica que el total se mantenga idéntico al exportar e importar
+            </p>
+            <Button
+              variant="outline"
+              onClick={handleRunTest}
+              disabled={isTesting || visibleCount === 0}
+              className="w-full"
+            >
+              <TestTube2 className="h-4 w-4 mr-2" />
+              {isTesting ? 'Ejecutando test...' : 'Ejecutar test de round-trip'}
+            </Button>
+            
+            {testResult && (
+              <Alert variant={testResult.success ? 'default' : 'destructive'}>
+                <AlertDescription>
+                  <div className="space-y-1">
+                    <p className="font-medium">{testResult.message}</p>
+                    <p className="text-xs">
+                      Total original: ${testResult.originalTotal.toFixed(2)}
+                    </p>
+                    <p className="text-xs">
+                      Total importado: ${testResult.importedTotal.toFixed(2)}
+                    </p>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
 
           {/* Export buttons */}
