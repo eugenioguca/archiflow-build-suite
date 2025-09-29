@@ -5585,48 +5585,86 @@ export type Database = {
       }
       planning_price_observations: {
         Row: {
+          budget_id: string | null
+          concepto_id: string | null
           created_at: string
+          created_by: string | null
           currency: string
           date: string
+          exchange_rate: number | null
           id: string
+          metadata: Json | null
+          observation_date: string | null
           project_id: string | null
           props: Json | null
           provider: string | null
           pu: number
+          pu_mxn: number
           region: string | null
           source: string
           unit: string
+          version_number: number | null
           wbs_code: string | null
         }
         Insert: {
+          budget_id?: string | null
+          concepto_id?: string | null
           created_at?: string
+          created_by?: string | null
           currency?: string
           date?: string
+          exchange_rate?: number | null
           id?: string
+          metadata?: Json | null
+          observation_date?: string | null
           project_id?: string | null
           props?: Json | null
           provider?: string | null
           pu: number
+          pu_mxn: number
           region?: string | null
           source: string
           unit: string
+          version_number?: number | null
           wbs_code?: string | null
         }
         Update: {
+          budget_id?: string | null
+          concepto_id?: string | null
           created_at?: string
+          created_by?: string | null
           currency?: string
           date?: string
+          exchange_rate?: number | null
           id?: string
+          metadata?: Json | null
+          observation_date?: string | null
           project_id?: string | null
           props?: Json | null
           provider?: string | null
           pu?: number
+          pu_mxn?: number
           region?: string | null
           source?: string
           unit?: string
+          version_number?: number | null
           wbs_code?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "planning_price_observations_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "planning_budgets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_price_observations_concepto_id_fkey"
+            columns: ["concepto_id"]
+            isOneToOne: false
+            referencedRelation: "planning_conceptos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "planning_price_observations_project_id_fkey"
             columns: ["project_id"]

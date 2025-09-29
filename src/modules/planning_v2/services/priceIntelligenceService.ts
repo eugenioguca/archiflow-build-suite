@@ -60,25 +60,33 @@ export const priceIntelligenceService = {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error('Usuario no autenticado');
 
+      // Usar upsert para evitar duplicados (ON CONFLICT DO NOTHING)
       const { error } = await supabase
         .from('planning_price_observations' as any)
-        .insert({
-          wbs_code: wbsCode,
-          unit,
-          pu,
-          currency,
-          observation_date: observationDate,
-          provider,
-          project_id: projectId,
-          budget_id: budgetId,
-          source: 'budget',
-          exchange_rate: 1.0, // Por ahora, asumimos MXN
-          created_by: userData.user.id,
-        });
+        .upsert(
+          {
+            wbs_code: wbsCode,
+            unit,
+            pu,
+            currency,
+            observation_date: observationDate,
+            provider,
+            project_id: projectId,
+            budget_id: budgetId,
+            source: 'budget',
+            exchange_rate: 1.0,
+            pu_mxn: pu * 1.0, // Por ahora, asumimos MXN
+            created_by: userData.user.id,
+          },
+          {
+            onConflict: 'budget_id,wbs_code,unit,version_number',
+            ignoreDuplicates: true,
+          }
+        );
 
       if (error) {
         console.error('Error creando observación de precio:', error);
-        throw error;
+        // No lanzamos el error para que el proceso de publicación continúe
       }
     } catch (error) {
       console.error('Error en createObservationFromBudget:', error);
