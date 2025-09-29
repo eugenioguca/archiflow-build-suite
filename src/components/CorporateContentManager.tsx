@@ -86,7 +86,7 @@ export const CorporateContentManager = () => {
           </Card>
 
           <div key={refreshKey}>
-            <OperationManuals />
+            <OperationManuals showDeleteButton={true} />
           </div>
         </TabsContent>
 

@@ -32,7 +32,11 @@ const CATEGORIES = [
   'General'
 ];
 
-export function OperationManuals() {
+interface OperationManualsProps {
+  showDeleteButton?: boolean;
+}
+
+export function OperationManuals({ showDeleteButton = false }: OperationManualsProps) {
   const [manuals, setManuals] = useState<Manual[]>([]);
   const [filteredManuals, setFilteredManuals] = useState<Manual[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -359,7 +363,7 @@ export function OperationManuals() {
                           >
                             <Download className="h-3 w-3" />
                           </Button>
-                          {isAdmin && (
+                          {isAdmin && showDeleteButton && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button
