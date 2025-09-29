@@ -22,15 +22,18 @@ import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { useColumnSettings } from '../../hooks/useColumnSettings';
 import { ColumnManager } from './ColumnManager';
 import { DraggableConceptoRow } from './DraggableConceptoRow';
+import { DevMonitor } from '../dev/DevMonitor';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { formatAsCurrency, toDisplayPrecision, formatAsPercentage } from '../../utils/monetary';
-import { ChevronDown, ChevronRight, Lock } from 'lucide-react';
+import { ChevronDown, ChevronRight, Lock, Loader2 } from 'lucide-react';
 import { PriceReferenceChip } from './PriceReferenceChip';
 import { toast } from 'sonner';
+import { seedDemoData } from '../../services/seedService';
+import { useAuth } from '@/hooks/useAuth';
 
 interface CatalogGridProps {
   budgetId: string;
@@ -52,8 +55,10 @@ const DEFAULT_COLUMNS = [
 ];
 
 export function CatalogGrid({ budgetId }: CatalogGridProps) {
+  const { user } = useAuth();
   const [columns, setColumns] = useState(DEFAULT_COLUMNS);
   const [columnManagerOpen, setColumnManagerOpen] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
   const { settings, saveSettings, isLoading: isLoadingSettings } = useColumnSettings(budgetId);
 
   // Load saved settings when available
@@ -85,6 +90,8 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
     createConcepto,
     updateConcepto,
     reorderConcepto,
+    recomputeTime,
+    dbLatency,
   } = useCatalogGrid(budgetId);
 
   // DnD sensors
@@ -201,6 +208,22 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
     });
   };
 
+  const handleSeedDemo = async () => {
+    if (!user?.id) return;
+    
+    setIsSeeding(true);
+    try {
+      const result = await seedDemoData(user.id);
+      toast.success(`Demo creado: ${result.conceptosCount} conceptos en ${result.partidasCount} partidas (${(result.timeMs / 1000).toFixed(2)}s)`);
+      // Note: The demo budget is separate, not affecting the current budget
+    } catch (error) {
+      console.error('Error seeding demo data:', error);
+      toast.error('Error al crear datos de demo');
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
@@ -247,6 +270,27 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
             <Settings className="h-4 w-4 mr-2" />
             Columnas
           </Button>
+
+          {import.meta.env.DEV && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSeedDemo}
+              disabled={isSeeding}
+            >
+              {isSeeding ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Generando...
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Seed 10K
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -372,6 +416,9 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
         columns={columns}
         onColumnsChange={handleColumnsChange}
       />
+
+      {/* Dev Monitor - Performance tracking (DEV-ONLY) */}
+      <DevMonitor recomputeTime={recomputeTime} dbLatency={dbLatency} />
     </div>
   );
 }

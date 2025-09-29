@@ -34,15 +34,28 @@ export function useCatalogGrid(budgetId: string) {
   const [hideZeros, setHideZeros] = useState(false);
   const [collapsedPartidas, setCollapsedPartidas] = useState<Set<string>>(new Set());
   const [editingCell, setEditingCell] = useState<{ rowId: string; columnId: string } | null>(null);
+  
+  // Performance tracking (DEV-ONLY)
+  const [recomputeTime, setRecomputeTime] = useState(0);
+  const [dbLatency, setDbLatency] = useState(0);
 
   // Fetch budget data
   const { data, isLoading, error } = useQuery({
     queryKey: ['planning-budget', budgetId],
-    queryFn: () => getBudgetById(budgetId),
+    queryFn: async () => {
+      const start = performance.now();
+      const result = await getBudgetById(budgetId);
+      const end = performance.now();
+      if (import.meta.env.DEV) {
+        setDbLatency(end - start);
+      }
+      return result;
+    },
   });
 
   // Build flat rows for virtualization
   const rows = useMemo((): { rows: CatalogRow[]; hiddenCount: number } => {
+    const start = performance.now();
     if (!data) return { rows: [], hiddenCount: 0 };
 
     const result: CatalogRow[] = [];
@@ -100,6 +113,11 @@ export function useCatalogGrid(budgetId: string) {
       }
     }
 
+    const end = performance.now();
+    if (import.meta.env.DEV) {
+      setRecomputeTime(end - start);
+    }
+    
     return { rows: result, hiddenCount };
   }, [data, collapsedPartidas, hideZeros]);
 
@@ -253,6 +271,8 @@ export function useCatalogGrid(budgetId: string) {
     hiddenColumns,
     hideZeros,
     collapsedPartidas,
+    recomputeTime,
+    dbLatency,
     editingCell,
     setHiddenColumns,
     setHideZeros,
