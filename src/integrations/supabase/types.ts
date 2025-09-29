@@ -9052,6 +9052,10 @@ export type Database = {
         Args: { p_project_id: string }
         Returns: Json
       }
+      planning_v2_bulk_import: {
+        Args: { _budget_id: string; _conceptos: Json; _partida_name: string }
+        Returns: Json
+      }
       recalc_pep_total: {
         Args: { pep_id: string }
         Returns: undefined

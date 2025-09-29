@@ -256,6 +256,76 @@ export const importService = {
   },
 
   /**
+   * Persistir importación de forma atómica
+   * Si alguna fila falla, toda la importación se revierte
+   */
+  async persistImport(
+    budgetId: string,
+    partidaName: string,
+    validRows: ImportRow[]
+  ): Promise<{ success: boolean; message: string; importedCount?: number; errors?: string[] }> {
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      
+      // Preparar conceptos para bulk import
+      const conceptos = validRows.map(row => ({
+        code: row.data.code || null,
+        short_description: row.data.short_description,
+        long_description: row.data.long_description || null,
+        unit: row.data.unit,
+        provider: row.data.provider || null,
+        cantidad_real: row.data.cantidad_real || 0,
+        desperdicio_pct: row.data.desperdicio_pct || 0,
+        precio_real: row.data.precio_real || 0,
+        honorarios_pct: row.data.honorarios_pct || 0,
+        wbs_code: row.data.wbs_code || null,
+        active: true,
+        sumable: true,
+        order_index: row.rowIndex,
+      }));
+
+      // Llamar a la función de importación atómica
+      const { data, error } = await supabase.rpc('planning_v2_bulk_import', {
+        _budget_id: budgetId,
+        _partida_name: partidaName,
+        _conceptos: conceptos,
+      });
+
+      if (error) {
+        console.error('Error en importación atómica:', error);
+        
+        // Mensaje de error en español
+        const errorMsg = error.message || 'Error desconocido';
+        
+        return {
+          success: false,
+          message: `Importación revertida. ${errorMsg}`,
+          errors: [errorMsg],
+        };
+      }
+
+      // Parse resultado de la función
+      const result = data as any;
+      
+      // Éxito
+      return {
+        success: true,
+        message: result?.message || `Se importaron ${validRows.length} conceptos correctamente`,
+        importedCount: result?.imported_count || validRows.length,
+      };
+      
+    } catch (error) {
+      console.error('Error crítico en persistImport:', error);
+      
+      return {
+        success: false,
+        message: 'Importación revertida. Error crítico en el proceso de importación.',
+        errors: [error instanceof Error ? error.message : 'Error desconocido'],
+      };
+    }
+  },
+
+  /**
    * Generar sugerencias automáticas de mapeo
    */
   suggestMapping(columns: ImportColumn[]): Map<string, string> {
