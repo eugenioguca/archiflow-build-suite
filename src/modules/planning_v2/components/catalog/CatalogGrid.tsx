@@ -31,6 +31,7 @@ import { ApplyTemplateDialog } from '../templates/ApplyTemplateDialog';
 import { ImportTUDialog } from './ImportTUDialog';
 import { ApplyDefaultsDialog } from './ApplyDefaultsDialog';
 import { BulkEditDialog } from './BulkEditDialog';
+import { NewPartidaDialog } from './NewPartidaDialog';
 import { EditableCell } from './EditableCell';
 import { CatalogRowActions } from './CatalogRowActions';
 import { DevMonitor } from '../dev/DevMonitor';
@@ -78,6 +79,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
   const [applyTemplateOpen, setApplyTemplateOpen] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const [newPartidaOpen, setNewPartidaOpen] = useState(false);
   const { settings, saveSettings, isLoading: isLoadingSettings } = useColumnSettings(budgetId);
 
   // Load saved settings when available
@@ -276,16 +278,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
   const visibleColumns = columns.filter(col => col.visible);
 
   const handleAddPartida = () => {
-    const orderIndex = rows.filter(r => r.type === 'partida').length;
-    createPartida({
-      budget_id: budgetId,
-      name: 'Nueva Partida',
-      order_index: orderIndex,
-      active: true,
-      notes: null,
-      honorarios_pct_override: null,
-      desperdicio_pct_override: null,
-    });
+    setNewPartidaOpen(true);
   };
 
   const handleAddSubpartida = (partidaId: string) => {
@@ -774,6 +767,18 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
           .filter(r => r.type === 'concepto' && selectedRows.has(r.id))
           .map(r => r.concepto)}
         budgetId={budgetId}
+      />
+
+      {/* New Partida Dialog */}
+      <NewPartidaDialog
+        open={newPartidaOpen}
+        onOpenChange={setNewPartidaOpen}
+        budgetId={budgetId}
+        orderIndex={rows.filter(r => r.type === 'partida').length}
+        budgetDefaults={{
+          honorarios_pct_default: budget?.settings?.honorarios_pct_default ?? 0.17,
+          desperdicio_pct_default: budget?.settings?.desperdicio_pct_default ?? 0.05,
+        }}
       />
 
       {/* Dev Monitor - Performance tracking (DEV-ONLY) */}
