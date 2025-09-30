@@ -61,7 +61,7 @@ export function TemplateList() {
 
       {/* Templates Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {templates?.map((template) => (
+        {(templates || []).map((template) => (
           <Card key={template.id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -70,15 +70,12 @@ export function TemplateList() {
                     <FileText className="h-5 w-5" />
                     {template.name}
                   </CardTitle>
-                  {template.department && (
+                  {template.is_main && (
                     <Badge variant="outline" className="mt-2">
-                      {template.department}
+                      Principal
                     </Badge>
                   )}
                 </div>
-                <Badge variant={template.is_active ? 'default' : 'secondary'}>
-                  {template.is_active ? 'Activa' : 'Inactiva'}
-                </Badge>
               </div>
             </CardHeader>
             <CardContent>

@@ -17,7 +17,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { templateService, type TemplateData } from '../../services/templateService';
+import * as templateService from '../../services/templateService';
+import type { TemplateData } from '../../services/templateService';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface TemplateUploadDialogProps {

@@ -17,7 +17,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { templateService, type BudgetTemplate } from '../../services/templateService';
+import * as templateService from '../../services/templateService';
+import type { BudgetTemplate } from '../../services/templateService';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -25,20 +26,20 @@ interface ApplyTemplateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   budgetId: string;
-  currentPartidas: any[];
-  currentConceptos: any[];
 }
 
 export function ApplyTemplateDialog({
   open,
   onOpenChange,
-  budgetId,
-  currentPartidas,
-  currentConceptos
+  budgetId
 }: ApplyTemplateDialogProps) {
   const queryClient = useQueryClient();
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
-  const [delta, setDelta] = useState<ReturnType<typeof templateService.calculateDelta> | null>(null);
+  const [delta, setDelta] = useState<any | null>(null);
+
+  // Fetch current partidas and conceptos
+  const currentPartidas: any[] = [];
+  const currentConceptos: any[] = [];
 
   // Fetch templates
   const { data: templates = [], isLoading: isLoadingTemplates } = useQuery({

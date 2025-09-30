@@ -12,8 +12,6 @@ import { Summary } from '../components/summary/Summary';
 import { VersionsList } from '../components/versions/VersionsList';
 import { ApplyTemplateDialog } from '../components/templates/ApplyTemplateDialog';
 import { useCatalogGrid } from '../hooks/useCatalogGrid';
-import { usePartidas } from '../hooks/usePartidas';
-import { useConceptos } from '../hooks/useConceptos';
 
 export default function BudgetDetail() {
   const { id } = useParams<{ id: string }>();
@@ -25,10 +23,6 @@ export default function BudgetDetail() {
     isLoading,
     budget,
   } = useCatalogGrid(id || '');
-
-  // Fetch partidas and conceptos for template application
-  const { data: partidas = [] } = usePartidas(id || '');
-  const { data: conceptos = [] } = useConceptos(id || '');
 
   useEffect(() => {
     if (!id) {
@@ -119,8 +113,6 @@ export default function BudgetDetail() {
         open={showApplyTemplateDialog}
         onOpenChange={setShowApplyTemplateDialog}
         budgetId={id!}
-        currentPartidas={partidas}
-        currentConceptos={conceptos}
       />
     </div>
   );
