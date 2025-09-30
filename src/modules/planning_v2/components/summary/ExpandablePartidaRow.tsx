@@ -24,7 +24,7 @@ interface ExpandablePartidaRowProps {
   ejercido?: number;
   showActuals: boolean;
   actualsLoading: boolean;
-  onDrillDown?: (partidaId: string) => void;
+  onDrillDown?: (partidaId: string, wbsCode?: string) => void;
   subpartidas?: Subpartida[];
 }
 
@@ -157,7 +157,19 @@ export function ExpandablePartidaRow({
             {showActuals && (
               <>
                 <TableCell className="text-right font-mono text-sm">
-                  {formatAsCurrency(subpartida.actual_amount || 0)}
+                  {actualsLoading ? (
+                    <span className="text-muted-foreground text-xs">Cargando...</span>
+                  ) : (
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 font-mono text-sm"
+                      onClick={() => onDrillDown?.(partidaId, subpartida.wbs_code)}
+                    >
+                      {formatAsCurrency(subpartida.actual_amount || 0)}
+                      <ExternalLink className="h-3 w-3 ml-1" />
+                    </Button>
+                  )}
                 </TableCell>
                 
                 <TableCell className="text-right font-mono text-sm">

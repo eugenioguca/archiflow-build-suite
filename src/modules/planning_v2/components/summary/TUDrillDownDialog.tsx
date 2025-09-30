@@ -30,6 +30,7 @@ interface TUDrillDownDialogProps {
   onOpenChange: (open: boolean) => void;
   partidaId: string;
   partidaName: string;
+  wbsCode?: string;
 }
 
 export function TUDrillDownDialog({
@@ -37,12 +38,13 @@ export function TUDrillDownDialog({
   onOpenChange,
   partidaId,
   partidaName,
+  wbsCode,
 }: TUDrillDownDialogProps) {
-  // Fetch transactions from TU for this partida
+  // Fetch transactions from TU for this partida (and optionally WBS)
   const { data: transactions, isLoading } = useQuery({
-    queryKey: ['tu-transactions', partidaId],
+    queryKey: ['tu-transactions', partidaId, wbsCode],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('unified_financial_transactions')
         .select(`
           id,
@@ -53,7 +55,23 @@ export function TUDrillDownDialog({
           referencia_unica,
           departamento
         `)
-        .eq('partida_id', partidaId)
+        .eq('partida_id', partidaId);
+
+      // If wbsCode is provided, filter by subpartida that matches the WBS
+      if (wbsCode) {
+        // Get the subpartida_id that corresponds to this WBS code
+        const { data: wbsData } = await supabase
+          .from('chart_of_accounts_subpartidas')
+          .select('id')
+          .eq('codigo', wbsCode)
+          .single();
+        
+        if (wbsData?.id) {
+          query = query.eq('subpartida_id', wbsData.id);
+        }
+      }
+
+      const { data, error } = await query
         .order('fecha', { ascending: false })
         .limit(100);
 

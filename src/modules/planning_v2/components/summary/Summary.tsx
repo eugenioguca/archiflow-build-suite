@@ -58,6 +58,7 @@ export function Summary({ budgetId }: SummaryProps) {
   const [drillDownPartida, setDrillDownPartida] = useState<{
     id: string;
     name: string;
+    wbsCode?: string;
   } | null>(null);
 
   // Fetch budget data
@@ -406,9 +407,12 @@ export function Summary({ budgetId }: SummaryProps) {
                           ejercido={actualAmount}
                           showActuals={showActuals && PLANNING_V2_TU_READONLY && !actualsError}
                           actualsLoading={actualsLoading}
-                          onDrillDown={(id) => setDrillDownPartida({ 
+                          onDrillDown={(id, wbsCode) => setDrillDownPartida({ 
                             id, 
-                            name: partida.partida_name 
+                            name: wbsCode 
+                              ? `${partida.partida_name} - ${wbsCode}` 
+                              : partida.partida_name,
+                            wbsCode,
                           })}
                           subpartidas={subpartidasArray as any}
                         />
@@ -574,6 +578,7 @@ export function Summary({ budgetId }: SummaryProps) {
           onOpenChange={(open) => !open && setDrillDownPartida(null)}
           partidaId={drillDownPartida.id}
           partidaName={drillDownPartida.name}
+          wbsCode={drillDownPartida.wbsCode}
         />
       )}
     </div>
