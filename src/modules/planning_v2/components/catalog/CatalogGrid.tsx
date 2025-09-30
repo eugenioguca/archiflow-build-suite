@@ -55,6 +55,7 @@ import { PriceReferenceChip } from './PriceReferenceChip';
 import { toast } from 'sonner';
 import { seedDemoData } from '../../services/seedService';
 import { useAuth } from '@/hooks/useAuth';
+import { isTemplatesEnabled } from '../../config/featureFlag';
 
 interface CatalogGridProps {
   budgetId: string;
@@ -583,23 +584,25 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
             </>
           )}
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setTemplateGalleryOpen(true)}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Plantillas
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Agregar partidas desde plantillas (T)</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          {isTemplatesEnabled() && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTemplateGalleryOpen(true)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Plantillas
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Agregar partidas desde plantillas (T)</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
 
           <TooltipProvider>
             <Tooltip>
