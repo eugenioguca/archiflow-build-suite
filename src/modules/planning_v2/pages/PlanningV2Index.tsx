@@ -176,7 +176,7 @@ export default function PlanningV2Index() {
           project_id,
           client_id
         `)
-        .order('created_at', { ascending: false });
+        .order('updated_at', { ascending: false });
 
       // Filter by trash status
       if (showTrash) {
