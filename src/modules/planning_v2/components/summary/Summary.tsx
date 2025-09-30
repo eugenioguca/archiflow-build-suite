@@ -129,8 +129,122 @@ export function Summary({ budgetId }: SummaryProps) {
     retry: false, // No retry on timeout
   });
 
-  // TODO: Fetch subpartidas grouped by WBS - simplified for now
-  const subpartidasMap = new Map<string, Map<string, any>>();
+  // Fetch and group conceptos by WBS under each partida
+  const subpartidasMap = useMemo(() => {
+    if (!budgetData?.conceptos || !totals?.partidas) {
+      return new Map();
+    }
+
+    const map = new Map();
+
+    // Group conceptos by partida_id and wbs_code
+    budgetData.conceptos.forEach((concepto: any) => {
+      if (!concepto.wbs_code || !concepto.active) return;
+
+      if (!map.has(concepto.partida_id)) {
+        map.set(concepto.partida_id, new Map());
+      }
+
+      const partidaSubpartidas = map.get(concepto.partida_id);
+      
+      if (!partidaSubpartidas.has(concepto.wbs_code)) {
+        partidaSubpartidas.set(concepto.wbs_code, {
+          wbs_code: concepto.wbs_code,
+          conceptos_count: 0,
+          subtotal: 0,
+          actual_amount: 0,
+        });
+      }
+
+      const subpartida = partidaSubpartidas.get(concepto.wbs_code);
+      subpartida.conceptos_count++;
+      subpartida.subtotal += concepto.total || 0;
+    });
+
+    return map;
+  }, [budgetData, totals]);
+
+  // Fetch actuals for subpartidas when TU is enabled
+  const { data: subpartidasActualsData } = useQuery({
+    queryKey: ['planning-tu-subpartidas-actuals', budgetId, showActuals],
+    queryFn: async () => {
+      if (!showActuals || !PLANNING_V2_TU_READONLY || !budgetData) return null;
+
+      const actualsMap = new Map();
+
+      // Timeout promise
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('TU_TIMEOUT')), 5000);
+      });
+
+      try {
+        const fetchPromise = (async () => {
+          // Fetch all transactions that have wbs_code
+          const { data: transactions, error } = await supabase
+            .from('unified_financial_transactions' as any)
+            .select('partida_id, subpartida_id, monto_total')
+            .eq('project_id', budgetData.budget.project_id)
+            .not('subpartida_id', 'is', null);
+
+          if (error) throw error;
+
+          // Group by partida_id and subpartida wbs_code
+          (transactions || []).forEach((tx: any) => {
+            if (!tx.partida_id) return;
+
+            // Find the subpartida WBS code from our conceptos
+            const concepto = budgetData.conceptos.find(
+              (c: any) => c.wbs_code && c.partida_id === tx.partida_id
+            );
+
+            if (!concepto?.wbs_code) return;
+
+            if (!actualsMap.has(tx.partida_id)) {
+              actualsMap.set(tx.partida_id, new Map());
+            }
+
+            const partidaActuals = actualsMap.get(tx.partida_id);
+            const currentAmount = partidaActuals.get(concepto.wbs_code) || 0;
+            partidaActuals.set(concepto.wbs_code, currentAmount + (tx.monto_total || 0));
+          });
+
+          return actualsMap;
+        })();
+
+        return await Promise.race([fetchPromise, timeoutPromise]);
+      } catch (error: any) {
+        if (error?.message === 'TU_TIMEOUT') {
+          throw new Error('Tiempo de espera agotado al consultar TU');
+        }
+        throw error;
+      }
+    },
+    enabled: showActuals && !!budgetData && !!totals,
+    retry: false,
+  });
+
+  // Merge subpartidas actuals into subpartidasMap
+  const enrichedSubpartidasMap = useMemo(() => {
+    if (!subpartidasActualsData) return subpartidasMap;
+
+    const enriched = new Map();
+
+    subpartidasMap.forEach((subpartidas: any, partidaId: string) => {
+      const enrichedSubpartidas = new Map();
+      const actualsForPartida = (subpartidasActualsData as any)?.get?.(partidaId);
+
+      subpartidas.forEach((subpartida: any, wbsCode: string) => {
+        enrichedSubpartidas.set(wbsCode, {
+          ...subpartida,
+          actual_amount: actualsForPartida?.get?.(wbsCode) || 0,
+        });
+      });
+
+      enriched.set(partidaId, enrichedSubpartidas);
+    });
+
+    return enriched;
+  }, [subpartidasMap, subpartidasActualsData]);
 
   // Calculate variance data for Top 5
   const varianceData = useMemo(() => {
@@ -277,9 +391,9 @@ export function Summary({ budgetId }: SummaryProps) {
                   <TableBody>
                     {totals?.partidas.map((partida) => {
                       const actualAmount = actualsData?.get(partida.partida_id) || 0;
-                      const subpartidas = subpartidasMap?.get(partida.partida_id);
+                      const subpartidas = enrichedSubpartidasMap?.get(partida.partida_id);
                       const subpartidasArray = subpartidas 
-                        ? Array.from(subpartidas.values())
+                        ? Array.from(subpartidas.values()) as any[]
                         : [];
 
                       return (
@@ -296,7 +410,7 @@ export function Summary({ budgetId }: SummaryProps) {
                             id, 
                             name: partida.partida_name 
                           })}
-                          subpartidas={subpartidasArray}
+                          subpartidas={subpartidasArray as any}
                         />
                       );
                     })}
