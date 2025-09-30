@@ -40,6 +40,12 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { formatAsCurrency, toDisplayPrecision, formatAsPercentage } from '../../utils/monetary';
 import { ChevronDown, ChevronRight, Lock, Loader2 } from 'lucide-react';
 import { PriceReferenceChip } from './PriceReferenceChip';
@@ -496,14 +502,23 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
             </>
           )}
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setTemplateGalleryOpen(true)}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Agregar desde Plantilla
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setTemplateGalleryOpen(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Plantillas
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Agregar partidas desde plantillas (T)</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
           <Button
             variant="outline"
@@ -523,14 +538,23 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
             Aplicar Defaults
           </Button>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setColumnManagerOpen(true)}
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            Columnas
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setColumnManagerOpen(true)}
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Columnas
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Gestionar columnas visibles (C)</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
           {import.meta.env.DEV && (
             <Button

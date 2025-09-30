@@ -222,20 +222,34 @@ export function ApplyTemplateDialog({
               disabled={isLoadingTemplates || applyMutation.isPending}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Seleccionar plantilla..." />
+                <SelectValue placeholder={
+                  isLoadingTemplates 
+                    ? "Cargando plantillas..." 
+                    : templates.length === 0 
+                      ? "No hay plantillas disponibles"
+                      : "Seleccionar plantilla..."
+                } />
               </SelectTrigger>
               <SelectContent>
-                {templates.map(template => (
-                  <SelectItem key={template.id} value={template.id}>
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      {template.name}
-                      {template.is_main && (
-                        <span className="text-xs text-primary">(Principal)</span>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
+                {templates.length === 0 ? (
+                  <div className="p-4 text-sm text-muted-foreground text-center">
+                    No hay plantillas disponibles.
+                    <br />
+                    Crea una plantilla primero.
+                  </div>
+                ) : (
+                  templates.map(template => (
+                    <SelectItem key={template.id} value={template.id}>
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        {template.name}
+                        {template.is_main && (
+                          <span className="text-xs text-primary">(Principal)</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>

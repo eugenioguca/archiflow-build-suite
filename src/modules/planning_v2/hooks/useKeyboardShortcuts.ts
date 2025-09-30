@@ -11,6 +11,8 @@ export interface KeyboardShortcutsConfig {
   onSave?: () => void;
   onDelete?: () => void;
   onSelectAll?: () => void;
+  onOpenColumns?: () => void;
+  onOpenTemplates?: () => void;
 }
 
 export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
@@ -59,6 +61,25 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
         e.preventDefault();
         config.onSelectAll?.();
       }
+
+      // C: Open columns (when no input focused)
+      if (e.key === 'c' && !cmdOrCtrl && !e.altKey && !isInputFocused()) {
+        e.preventDefault();
+        config.onOpenColumns?.();
+      }
+
+      // T: Open templates (when no input focused)
+      if (e.key === 't' && !cmdOrCtrl && !e.altKey && !isInputFocused()) {
+        e.preventDefault();
+        config.onOpenTemplates?.();
+      }
+    };
+
+    const isInputFocused = () => {
+      const activeElement = document.activeElement;
+      return activeElement?.tagName === 'INPUT' || 
+             activeElement?.tagName === 'TEXTAREA' ||
+             activeElement?.hasAttribute('contenteditable');
     };
 
     window.addEventListener('keydown', handleKeyDown);
