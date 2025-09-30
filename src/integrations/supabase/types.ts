@@ -5656,6 +5656,7 @@ export type Database = {
           created_at: string
           created_by: string
           currency: string
+          deleted_at: string | null
           id: string
           name: string
           project_id: string | null
@@ -5668,6 +5669,7 @@ export type Database = {
           created_at?: string
           created_by: string
           currency?: string
+          deleted_at?: string | null
           id?: string
           name: string
           project_id?: string | null
@@ -5680,6 +5682,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           currency?: string
+          deleted_at?: string | null
           id?: string
           name?: string
           project_id?: string | null

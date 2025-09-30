@@ -72,6 +72,10 @@ export interface BudgetListItem {
   status: BudgetStatus;
   created_at: string;
   updated_at: string;
+  deleted_at: string | null;
+  project_id: string | null;
+  client_id: string | null;
+  total_amount?: number;
 }
 
 // Template types

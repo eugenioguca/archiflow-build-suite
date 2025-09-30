@@ -93,7 +93,7 @@ export async function updateBudget(id: string, updates: Partial<PlanningBudget>)
 }
 
 /**
- * Delete budget
+ * Delete budget (deprecated - use moveToTrash instead)
  */
 export async function deleteBudget(id: string) {
   const { error } = await supabase
@@ -102,6 +102,67 @@ export async function deleteBudget(id: string) {
     .eq('id', id);
 
   if (error) throw error;
+}
+
+/**
+ * Soft delete a budget (move to trash)
+ */
+export async function moveToTrash(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('planning_budgets')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+/**
+ * Restore a budget from trash
+ */
+export async function restoreBudget(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('planning_budgets')
+    .update({ deleted_at: null })
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+/**
+ * Permanently delete a budget (hard delete)
+ * Should only be allowed for drafts without snapshots
+ */
+export async function deleteBudgetPermanently(id: string): Promise<void> {
+  // Check if budget is draft
+  const { data: budget, error: budgetError } = await supabase
+    .from('planning_budgets')
+    .select('status')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (budgetError) throw budgetError;
+  
+  if (!budget) {
+    throw new Error('Presupuesto no encontrado');
+  }
+  
+  if (budget.status !== 'draft') {
+    throw new Error('Solo se pueden eliminar permanentemente presupuestos en borrador');
+  }
+
+  // Perform hard delete
+  // Note: Database constraints will prevent deletion if snapshots exist
+  const { error } = await supabase
+    .from('planning_budgets')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    if (error.code === '23503') {
+      throw new Error('No se puede eliminar permanentemente un presupuesto con snapshots publicados');
+    }
+    throw error;
+  }
 }
 
 /**
