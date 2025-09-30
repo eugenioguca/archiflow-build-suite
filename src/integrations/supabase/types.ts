@@ -5659,6 +5659,7 @@ export type Database = {
           snapshot_date: string
           totals: Json
           version_number: number
+          version_type: string
         }
         Insert: {
           budget_id: string
@@ -5671,6 +5672,7 @@ export type Database = {
           snapshot_date?: string
           totals: Json
           version_number: number
+          version_type?: string
         }
         Update: {
           budget_id?: string
@@ -5683,6 +5685,7 @@ export type Database = {
           snapshot_date?: string
           totals?: Json
           version_number?: number
+          version_type?: string
         }
         Relationships: [
           {
@@ -5870,11 +5873,13 @@ export type Database = {
           active: boolean
           cantidad: number | null
           cantidad_real: number | null
+          change_reason: string | null
           code: string | null
           created_at: string
           desperdicio_pct: number | null
           honorarios_pct: number | null
           id: string
+          is_postventa: boolean
           long_description: string | null
           order_index: number
           partida_id: string
@@ -5894,11 +5899,13 @@ export type Database = {
           active?: boolean
           cantidad?: number | null
           cantidad_real?: number | null
+          change_reason?: string | null
           code?: string | null
           created_at?: string
           desperdicio_pct?: number | null
           honorarios_pct?: number | null
           id?: string
+          is_postventa?: boolean
           long_description?: string | null
           order_index?: number
           partida_id: string
@@ -5918,11 +5925,13 @@ export type Database = {
           active?: boolean
           cantidad?: number | null
           cantidad_real?: number | null
+          change_reason?: string | null
           code?: string | null
           created_at?: string
           desperdicio_pct?: number | null
           honorarios_pct?: number | null
           id?: string
+          is_postventa?: boolean
           long_description?: string | null
           order_index?: number
           partida_id?: string

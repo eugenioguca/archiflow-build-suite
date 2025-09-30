@@ -193,6 +193,8 @@ export function TemplatePickerDialog({
           total_real: 0,
           total: 0,
           wbs_code: null,
+          is_postventa: false,
+          change_reason: null,
           props: item.props || {},
         });
       }

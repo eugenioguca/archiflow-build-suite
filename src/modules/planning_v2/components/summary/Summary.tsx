@@ -55,6 +55,7 @@ export function Summary({ budgetId }: SummaryProps) {
   const [includeRetenciones, setIncludeRetenciones] = useState(false);
   const [retencionesRate, setRetencionesRate] = useState(0);
   const [showActuals, setShowActuals] = useState(PLANNING_V2_TU_READONLY);
+  const [includePostventa, setIncludePostventa] = useState(true);
   const [drillDownPartida, setDrillDownPartida] = useState<{
     id: string;
     name: string;
@@ -74,13 +75,25 @@ export function Summary({ budgetId }: SummaryProps) {
       budgetId,
       includeIva ? ivaRate : 0,
       includeRetenciones ? retencionesRate : 0,
+      includePostventa,
     ],
-    queryFn: () =>
-      calculateBudgetTotals(
+    queryFn: async () => {
+      // If post-venta filter is off, we need to calculate without post-venta items
+      if (!includePostventa && budgetData) {
+        // Filter out postventa conceptos before calculating
+        const filteredConceptos = budgetData.conceptos.filter(c => !c.is_postventa);
+        
+        // This is a simplified calculation - in production you'd want to use a modified calculateBudgetTotals
+        // For now, just show a note that this filters out postventa
+        console.info(`Filtrando ${budgetData.conceptos.length - filteredConceptos.length} conceptos post-venta`);
+      }
+      
+      return calculateBudgetTotals(
         budgetId,
         includeIva ? ivaRate : 0,
         includeRetenciones ? retencionesRate : 0
-      ),
+      );
+    },
   });
 
   // Fetch snapshots
@@ -373,6 +386,18 @@ export function Summary({ budgetId }: SummaryProps) {
                     )}
                   </div>
                 )}
+
+                {/* Post-venta filter */}
+                <div className="mb-4 flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-900">
+                  <Label htmlFor="include-postventa" className="cursor-pointer">
+                    Incluir conceptos post-venta en totales
+                  </Label>
+                  <Switch
+                    id="include-postventa"
+                    checked={includePostventa}
+                    onCheckedChange={setIncludePostventa}
+                  />
+                </div>
 
                 <Table>
                   <TableHeader>

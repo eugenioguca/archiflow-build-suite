@@ -444,6 +444,8 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
           total_real: concepto.total_real,
           total: concepto.total,
           wbs_code: null,
+          is_postventa: false,
+          change_reason: null,
           props: concepto.props,
         });
       }

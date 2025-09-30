@@ -60,6 +60,10 @@ export interface PlanningConcepto {
   // WBS reference
   wbs_code: string | null;
   
+  // Post-venta fields
+  is_postventa: boolean;
+  change_reason: string | null;
+  
   created_at: string;
   updated_at: string;
 }

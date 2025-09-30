@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
 import { updateConcepto } from '../../services/budgetService';
 import { formatAsCurrency, toDisplayPrecision, formatAsPercentage } from '../../utils/monetary';
 import { supabase } from '@/integrations/supabase/client';
@@ -58,6 +59,8 @@ export function ConceptoEditPanel({
       precio_real: 0,
       honorarios_pct: 0,
       notes: '',
+      is_postventa: false,
+      change_reason: '',
     },
   });
 
@@ -75,6 +78,8 @@ export function ConceptoEditPanel({
         precio_real: concepto.precio_real,
         honorarios_pct: concepto.honorarios_pct,
         notes: concepto.props?.notes || '',
+        is_postventa: concepto.is_postventa || false,
+        change_reason: concepto.change_reason || '',
       });
     }
   }, [concepto, reset]);
@@ -463,6 +468,43 @@ export function ConceptoEditPanel({
                     rows={3}
                     placeholder="Notas adicionales para el concepto..."
                   />
+                </div>
+
+                <Separator />
+
+                {/* Post-venta Section */}
+                <div className="space-y-4 bg-amber-50 dark:bg-amber-950/20 p-4 rounded-lg border border-amber-200 dark:border-amber-900">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="is_postventa" className="text-base font-medium">
+                        Post-venta
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        Marcar si este concepto es un cambio post-venta
+                      </p>
+                    </div>
+                    <Switch
+                      id="is_postventa"
+                      checked={watch('is_postventa')}
+                      onCheckedChange={(checked) => setValue('is_postventa', checked)}
+                    />
+                  </div>
+
+                  {watch('is_postventa') && (
+                    <div className="space-y-2 pt-2">
+                      <Label htmlFor="change_reason">Motivo del Cambio *</Label>
+                      <Textarea
+                        id="change_reason"
+                        {...register('change_reason')}
+                        rows={3}
+                        placeholder="Describe el motivo del cambio post-venta..."
+                        className="bg-background"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Este motivo se incluirá en los reportes de post-venta
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex justify-end gap-2 pt-4">

@@ -128,6 +128,8 @@ export async function importTUStructure(options: TUImportOptions): Promise<TUImp
           total_real: 0,
           total: 0,
           wbs_code: conceptoCode,
+          is_postventa: false,
+          change_reason: null,
           props: {
             tu_import: {
               departamento,

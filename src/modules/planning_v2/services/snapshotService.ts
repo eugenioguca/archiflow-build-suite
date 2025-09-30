@@ -87,13 +87,21 @@ export async function calculateBudgetTotals(
 export async function createSnapshot(
   budgetId: string,
   notes?: string,
-  taxSettings?: { ivaRate?: number; retencionesRate?: number }
+  taxSettings?: { ivaRate?: number; retencionesRate?: number },
+  versionType?: 'base' | 'postventa'
 ): Promise<BudgetSnapshot> {
   const { data: user } = await supabase.auth.getUser();
   if (!user.user) throw new Error('Usuario no autenticado');
 
   // Get complete budget data
   const budgetData = await getBudgetById(budgetId);
+
+  // Auto-detect version type if not provided
+  let finalVersionType = versionType;
+  if (!finalVersionType) {
+    const hasPostventa = budgetData.conceptos.some(c => c.is_postventa && c.active);
+    finalVersionType = hasPostventa ? 'postventa' : 'base';
+  }
 
   // Calculate totals
   const totals = await calculateBudgetTotals(
@@ -123,6 +131,7 @@ export async function createSnapshot(
       snapshot_data: budgetData as any,
       totals: totals as any,
       settings: taxSettings || {},
+      version_type: finalVersionType,
       notes,
       created_by: user.user.id,
     })
