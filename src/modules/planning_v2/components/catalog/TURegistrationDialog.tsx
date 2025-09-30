@@ -119,19 +119,31 @@ export function TURegistrationDialog({
 
       if (linkError) throw linkError;
 
-      // Create price observation (record actual unit price)
+      // Create price observation (record actual unit price) with deduplication
       const puReal = formData.cantidad > 0 ? formData.montoTotal / formData.cantidad : 0;
       
-      await supabase.from('planning_price_observations' as any).insert({
-        concepto_id: conceptoId,
-        observed_price: puReal,
-        quantity: formData.cantidad,
-        provider: provider || null,
-        observation_date: new Date().toISOString().split('T')[0],
-        source: 'tu_registration',
-        notes: `Registrado desde TU: ${tuTx.referencia_unica}`,
-        created_by: profile.id,
-      });
+      // Simple version: always use version 1, let UNIQUE constraint handle duplicates
+      const { error: obsError } = await supabase
+        .from('planning_price_observations' as any)
+        .insert({
+          budget_id: budgetId,
+          concepto_id: conceptoId,
+          version_number: 1, // Simple versioning - increment handled by max query if needed
+          observed_price: puReal,
+          quantity: formData.cantidad,
+          provider: provider || null,
+          observation_date: new Date().toISOString().split('T')[0],
+          source: 'tu_registration',
+          notes: `Registrado desde TU: ${tuTx.referencia_unica}`,
+          created_by: profile.id,
+        });
+      
+      // Ignore conflict errors (duplicate version due to UNIQUE constraint)
+      // This is normal if the same concepto is registered multiple times
+      if (obsError && obsError.code !== '23505') {
+        console.error('Error creating price observation:', obsError);
+        // Don't throw - price observation is optional
+      }
 
       return tuTx;
     },

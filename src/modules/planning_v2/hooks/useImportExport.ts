@@ -83,9 +83,9 @@ export function useImportExport(budgetId: string) {
 
   // Importar datos validados usando transacción atómica
   const importDataMutation = useMutation({
-    mutationFn: async ({ partidaId, rows }: { partidaId: string; rows: any[] }) => {
+    mutationFn: async ({ partidaId, rows, referenceTotal }: { partidaId: string; rows: any[]; referenceTotal?: number }) => {
       // Usar servicio de importación atómica
-      const result = await importService.persistImport(budgetId, partidaId, rows);
+      const result = await importService.persistImport(budgetId, partidaId, rows, referenceTotal);
       
       if (!result.success) {
         throw new Error(result.message);

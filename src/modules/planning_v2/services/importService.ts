@@ -262,7 +262,8 @@ export const importService = {
   async persistImport(
     budgetId: string,
     partidaId: string,
-    validRows: ImportRow[]
+    validRows: ImportRow[],
+    referenceTotal?: number
   ): Promise<{ success: boolean; message: string; importedCount?: number; errors?: string[] }> {
     try {
       const { supabase } = await import('@/integrations/supabase/client');
@@ -286,6 +287,7 @@ export const importService = {
           budgetId,
           partidaId,
           rows,
+          referenceTotal,
         },
       });
 

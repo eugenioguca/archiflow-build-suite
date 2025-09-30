@@ -9,6 +9,7 @@ const corsHeaders = {
 interface ImportRequest {
   budgetId: string;
   partidaId: string;
+  referenceTotal?: number; // Optional reference total for validation
   rows: Array<{
     code: string;
     description: string;
@@ -48,7 +49,7 @@ serve(async (req) => {
       throw new Error('No autorizado')
     }
 
-    const { budgetId, partidaId, rows } = await req.json() as ImportRequest
+    const { budgetId, partidaId, rows, referenceTotal } = await req.json() as ImportRequest
 
     // Get current user's profile
     const { data: profile } = await supabaseClient
@@ -59,6 +60,29 @@ serve(async (req) => {
 
     if (!profile) {
       throw new Error('Perfil no encontrado')
+    }
+
+    // Validate reference total if provided
+    if (referenceTotal !== undefined && referenceTotal !== null) {
+      const calculatedTotal = rows.reduce((sum, row) => {
+        const cantidad = row.cantidad_real || 0
+        const precio = row.precio_real || 0
+        const desperdicio = row.desperdicio_pct || 0
+        const honorarios = row.honorarios_pct || 0
+        
+        const cantidadConDesperdicio = cantidad * (1 + desperdicio)
+        const precioConHonorarios = precio * (1 + honorarios)
+        const total = cantidadConDesperdicio * precioConHonorarios
+        
+        return sum + total
+      }, 0)
+
+      const difference = Math.abs(calculatedTotal - referenceTotal)
+      if (difference > 0.01) {
+        throw new Error(
+          `El total calculado ($${calculatedTotal.toFixed(2)} MXN) no coincide con el total de referencia ($${referenceTotal.toFixed(2)} MXN). Diferencia: $${difference.toFixed(2)}`
+        )
+      }
     }
 
     // Get max order_index for this partida
@@ -75,7 +99,28 @@ serve(async (req) => {
       maxOrder = existingConceptos[0].order_index
     }
 
-    // Start transaction - insert all concepts
+    // Validate all rows first (before inserting anything)
+    const validationErrors: string[] = []
+    rows.forEach((row, index) => {
+      if (!row.description || row.description.trim() === '') {
+        validationErrors.push(`Fila ${index + 1}: Descripción requerida`)
+      }
+      if (!row.unit || row.unit.trim() === '') {
+        validationErrors.push(`Fila ${index + 1}: Unidad requerida`)
+      }
+      if (row.cantidad_real < 0) {
+        validationErrors.push(`Fila ${index + 1}: Cantidad no puede ser negativa`)
+      }
+      if (row.precio_real < 0) {
+        validationErrors.push(`Fila ${index + 1}: Precio no puede ser negativo`)
+      }
+    })
+
+    if (validationErrors.length > 0) {
+      throw new Error(`Errores de validación:\n${validationErrors.join('\n')}`)
+    }
+
+    // Start transaction - insert all concepts atomically
     const conceptsToInsert = rows.map((row, index) => ({
       budget_id: budgetId,
       partida_id: partidaId,
@@ -91,9 +136,11 @@ serve(async (req) => {
       wbs_code: row.wbs,
       order_index: maxOrder + index + 1,
       sumable: true,
+      active: true,
       created_by: profile.id,
     }))
 
+    // Single insert operation - if any row fails, entire transaction rolls back
     const { data: insertedConceptos, error: insertError } = await supabaseClient
       .from('planning_conceptos')
       .insert(conceptsToInsert)
@@ -101,7 +148,16 @@ serve(async (req) => {
 
     if (insertError) {
       console.error('Error inserting concepts:', insertError)
-      throw new Error(`Error al insertar conceptos: ${insertError.message}`)
+      // Provide detailed Spanish error message
+      let errorMsg = 'Error al importar conceptos. '
+      if (insertError.code === '23505') {
+        errorMsg += 'Hay códigos duplicados en el archivo.'
+      } else if (insertError.code === '23503') {
+        errorMsg += 'Referencias inválidas (partida o presupuesto no encontrado).'
+      } else {
+        errorMsg += `Detalles: ${insertError.message}`
+      }
+      throw new Error(errorMsg)
     }
 
     return new Response(

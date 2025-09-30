@@ -75,9 +75,14 @@ export function ImportDialog({
     if (!importData) return;
     
     const validRows = importData.rows.filter(r => r.isValid);
+    const parsedReferenceTotal = referenceTotal ? parseFloat(referenceTotal) : undefined;
     
     importRows(
-      { partidaId, rows: validRows },
+      { 
+        partidaId, 
+        rows: validRows,
+        referenceTotal: parsedReferenceTotal
+      },
       {
         onSuccess: () => {
           onOpenChange(false);
