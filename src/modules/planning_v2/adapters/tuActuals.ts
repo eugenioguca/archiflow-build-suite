@@ -245,45 +245,102 @@ export const tuActualsAdapter = {
     }
 
     try {
-      // Get all conceptos for this partida with their WBS codes
+      // Get all conceptos for this partida
       const { data: conceptos, error: conceptosError } = await supabase
         .from('planning_conceptos')
-        .select('wbs_code')
-        .eq('partida_id', partidaId)
-        .not('wbs_code', 'is', null);
+        .select('id, wbs_code')
+        .eq('partida_id', partidaId);
 
       if (conceptosError) {
         console.error('Error fetching conceptos:', conceptosError);
         return null;
       }
 
+      const conceptoIds = conceptos?.map((c) => c.id) || [];
       const wbsCodes = conceptos?.map((c) => c.wbs_code).filter(Boolean) || [];
 
-      if (wbsCodes.length === 0) {
-        return {
-          wbs_code: 'N/A',
-          total_amount: 0,
-          transaction_count: 0,
-          transactions: [],
-        };
+      // PART 1: Get linked transactions via planning_concepto_tu_links
+      let linkedTotal = 0;
+      const linkedTransactions: TUActual[] = [];
+
+      if (conceptoIds.length > 0) {
+        const { data: links, error: linksError } = await supabase
+          .from('planning_concepto_tu_links' as any)
+          .select(`
+            total,
+            quantity,
+            unified_financial_transactions (
+              id,
+              monto_total,
+              cantidad_requerida,
+              moneda,
+              fecha_requerida,
+              proveedor_sugerido,
+              descripcion,
+              wbs_subpartida,
+              departamento
+            )
+          `)
+          .in('concepto_id', conceptoIds);
+
+        if (!linksError && links) {
+          links.forEach((link: any) => {
+            const tx = link.unified_financial_transactions;
+            if (tx) {
+              linkedTotal += link.total || tx.monto_total || 0;
+              linkedTransactions.push({
+                id: tx.id,
+                wbs_code: tx.wbs_subpartida || 'Vinculado',
+                monto_total: tx.monto_total,
+                cantidad_requerida: tx.cantidad_requerida,
+                moneda: tx.moneda || 'MXN',
+                fecha_requerida: tx.fecha_requerida,
+                proveedor_sugerido: tx.proveedor_sugerido,
+                descripcion_concepto: tx.descripcion,
+                descripcion_larga: null,
+                tiene_factura: false,
+                transaction_link: `/unified-transactions?tx=${tx.id}`,
+                departamento: tx.departamento,
+                mayor: null,
+                partida: null,
+                subpartida: tx.wbs_subpartida,
+              });
+            }
+          });
+        }
       }
 
-      // Get actuals for all WBS codes
-      const summaries = await this.getActualsSummary(
-        wbsCodes,
-        projectId,
-        fromDate,
-        toDate
-      );
+      // PART 2: Get WBS-matched transactions (original logic)
+      let wbsTotal = 0;
+      const wbsTransactions: TUActual[] = [];
 
-      // Aggregate all transactions
-      const allTransactions: TUActual[] = [];
-      let totalAmount = 0;
+      if (wbsCodes.length > 0) {
+        const summaries = await this.getActualsSummary(
+          wbsCodes,
+          projectId,
+          fromDate,
+          toDate
+        );
 
-      summaries.forEach((summary) => {
-        allTransactions.push(...summary.transactions);
-        totalAmount += summary.total_amount;
+        summaries.forEach((summary) => {
+          wbsTransactions.push(...summary.transactions);
+          wbsTotal += summary.total_amount;
+        });
+      }
+
+      // Combine both sources (deduplicate by id)
+      const allTransactionsMap = new Map<string, TUActual>();
+      [...linkedTransactions, ...wbsTransactions].forEach((tx) => {
+        if (!allTransactionsMap.has(tx.id)) {
+          allTransactionsMap.set(tx.id, tx);
+        }
       });
+
+      const allTransactions = Array.from(allTransactionsMap.values());
+      const totalAmount = allTransactions.reduce(
+        (sum, tx) => sum + (tx.monto_total || 0),
+        0
+      );
 
       return {
         wbs_code: 'Partida',

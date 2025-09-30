@@ -108,7 +108,7 @@ export function TURegistrationDialog({
 
       // Create link between concepto and TU transaction
       const { error: linkError } = await supabase
-        .from('planning_concepto_tu_links')
+        .from('planning_concepto_tu_links' as any)
         .insert({
           concepto_id: conceptoId,
           tu_tx_id: tuTx.id,
@@ -119,14 +119,29 @@ export function TURegistrationDialog({
 
       if (linkError) throw linkError;
 
+      // Create price observation (record actual unit price)
+      const puReal = formData.cantidad > 0 ? formData.montoTotal / formData.cantidad : 0;
+      
+      await supabase.from('planning_price_observations' as any).insert({
+        concepto_id: conceptoId,
+        observed_price: puReal,
+        quantity: formData.cantidad,
+        provider: provider || null,
+        observation_date: new Date().toISOString().split('T')[0],
+        source: 'tu_registration',
+        notes: `Registrado desde TU: ${tuTx.referencia_unica}`,
+        created_by: profile.id,
+      });
+
       return tuTx;
     },
     onSuccess: (tuTx) => {
-      queryClient.invalidateQueries({ queryKey: ['planning-tu-actuals', budgetId] });
-      queryClient.invalidateQueries({ queryKey: ['planning-conceptos', budgetId] });
+      queryClient.invalidateQueries({ queryKey: ['planning-tu-actuals'] });
+      queryClient.invalidateQueries({ queryKey: ['planning-budget'] });
+      queryClient.invalidateQueries({ queryKey: ['planning-totals'] });
       toast({
-        title: '✓ Transacción registrada',
-        description: `Referencia: ${tuTx.referencia_unica}`,
+        title: '✓ Transacción registrada en TU',
+        description: `Referencia: ${tuTx.referencia_unica}. Se actualizará el Resumen.`,
       });
       onOpenChange(false);
     },
