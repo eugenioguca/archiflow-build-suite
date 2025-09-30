@@ -1,7 +1,7 @@
 /**
  * Budget Summary Tab Component
  */
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   FileCheck, 
@@ -9,7 +9,6 @@ import {
   Lock, 
   TrendingUp,
   Settings as SettingsIcon,
-  ExternalLink,
   AlertCircle,
 } from 'lucide-react';
 import { getBudgetById } from '../../services/budgetService';
@@ -27,7 +26,6 @@ import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -38,6 +36,10 @@ import { useToast } from '@/hooks/use-toast';
 import { tuActualsAdapter } from '../../adapters/tuActuals';
 import { PLANNING_V2_TU_READONLY } from '../../config/featureFlag';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ExpandablePartidaRow } from './ExpandablePartidaRow';
+import { TUDrillDownDialog } from './TUDrillDownDialog';
+import { Top5VariancesPanel } from './Top5VariancesPanel';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SummaryProps {
   budgetId: string;
@@ -52,6 +54,10 @@ export function Summary({ budgetId }: SummaryProps) {
   const [includeRetenciones, setIncludeRetenciones] = useState(false);
   const [retencionesRate, setRetencionesRate] = useState(0);
   const [showActuals, setShowActuals] = useState(PLANNING_V2_TU_READONLY);
+  const [drillDownPartida, setDrillDownPartida] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   // Fetch budget data
   const { data: budgetData } = useQuery({
@@ -122,6 +128,29 @@ export function Summary({ budgetId }: SummaryProps) {
     retry: false, // No retry on timeout
   });
 
+  // TODO: Fetch subpartidas grouped by WBS - simplified for now
+  const subpartidasMap = new Map<string, Map<string, any>>();
+
+  // Calculate variance data for Top 5
+  const varianceData = useMemo(() => {
+    if (!totals?.partidas || !actualsData) return [];
+    
+    return totals.partidas.map(partida => {
+      const ejercido = actualsData.get(partida.partida_id) || 0;
+      const variacion = partida.subtotal - ejercido;
+      const variacionPct = partida.subtotal > 0 ? (variacion / partida.subtotal) * 100 : 0;
+      
+      return {
+        partidaId: partida.partida_id,
+        partidaName: partida.partida_name,
+        presupuesto: partida.subtotal,
+        ejercido,
+        variacion,
+        variacionPct,
+      };
+    });
+  }, [totals, actualsData]);
+
   // Publish mutation
   const publishMutation = useMutation({
     mutationFn: () =>
@@ -188,8 +217,8 @@ export function Summary({ budgetId }: SummaryProps) {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Partidas Summary */}
+      <div className="grid gap-6 md:grid-cols-3">
+        {/* Partidas Summary - Span 2 cols */}
         <Card className="col-span-2">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
@@ -248,70 +277,27 @@ export function Summary({ budgetId }: SummaryProps) {
                   <TableBody>
                     {totals?.partidas.map((partida) => {
                       const actualAmount = actualsData?.get(partida.partida_id) || 0;
-                      const variance = partida.subtotal - actualAmount;
-                      const variancePercent = partida.subtotal > 0 
-                        ? (variance / partida.subtotal) * 100 
-                        : 0;
+                      const subpartidas = subpartidasMap?.get(partida.partida_id);
+                      const subpartidasArray = subpartidas 
+                        ? Array.from(subpartidas.values())
+                        : [];
 
                       return (
-                        <TableRow key={partida.partida_id}>
-                          <TableCell className="font-medium">
-                            {partida.partida_name}
-                          </TableCell>
-                          <TableCell className="text-right text-muted-foreground">
-                            {partida.conceptos_count}
-                          </TableCell>
-                          <TableCell className="text-right font-mono">
-                            {formatAsCurrency(partida.subtotal)}
-                          </TableCell>
-                          {showActuals && PLANNING_V2_TU_READONLY && !actualsError && (
-                            <>
-                              <TableCell className="text-right font-mono">
-                                {actualsLoading ? (
-                                  <span className="text-muted-foreground text-xs">
-                                    Cargando...
-                                  </span>
-                                ) : (
-                                  <a
-                                    href={`/unified-transactions?partida=${partida.partida_id}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 hover:text-primary hover:underline"
-                                    title="Ver en TU (Transacciones Unificadas)"
-                                  >
-                                    {formatAsCurrency(actualAmount)}
-                                    <ExternalLink className="h-3 w-3" />
-                                  </a>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-right font-mono">
-                                {actualsLoading ? (
-                                  <span className="text-muted-foreground text-xs">—</span>
-                                ) : (
-                                  <span
-                                    className={
-                                      variance > 0
-                                        ? 'text-green-600 dark:text-green-400'
-                                        : variance < 0
-                                        ? 'text-red-600 dark:text-red-400'
-                                        : 'text-muted-foreground'
-                                    }
-                                  >
-                                    {formatAsCurrency(variance)}
-                                    {variance !== 0 && (
-                                      <span className="text-xs ml-1">
-                                        ({toDisplayPrecision(variancePercent, 1)}%)
-                                      </span>
-                                    )}
-                                  </span>
-                                )}
-                              </TableCell>
-                            </>
-                          )}
-                          <TableCell className="text-sm text-muted-foreground">
-                            —
-                          </TableCell>
-                        </TableRow>
+                        <ExpandablePartidaRow
+                          key={partida.partida_id}
+                          partidaId={partida.partida_id}
+                          partidaName={partida.partida_name}
+                          conceptosCount={partida.conceptos_count}
+                          presupuesto={partida.subtotal}
+                          ejercido={actualAmount}
+                          showActuals={showActuals && PLANNING_V2_TU_READONLY && !actualsError}
+                          actualsLoading={actualsLoading}
+                          onDrillDown={(id) => setDrillDownPartida({ 
+                            id, 
+                            name: partida.partida_name 
+                          })}
+                          subpartidas={subpartidasArray}
+                        />
                       );
                     })}
                   </TableBody>
@@ -320,6 +306,14 @@ export function Summary({ budgetId }: SummaryProps) {
             )}
           </CardContent>
         </Card>
+
+        {/* Top 5 Variaciones - New panel */}
+        {showActuals && PLANNING_V2_TU_READONLY && !actualsError && (
+          <Top5VariancesPanel
+            partidas={varianceData}
+            loading={actualsLoading}
+          />
+        )}
 
         {/* Tax Settings */}
         <Card>
@@ -458,6 +452,16 @@ export function Summary({ budgetId }: SummaryProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Drill-down dialog */}
+      {drillDownPartida && (
+        <TUDrillDownDialog
+          open={!!drillDownPartida}
+          onOpenChange={(open) => !open && setDrillDownPartida(null)}
+          partidaId={drillDownPartida.id}
+          partidaName={drillDownPartida.name}
+        />
+      )}
     </div>
   );
 }
