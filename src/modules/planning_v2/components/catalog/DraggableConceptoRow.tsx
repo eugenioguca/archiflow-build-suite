@@ -12,6 +12,7 @@ interface DraggableConceptoRowProps {
   isZeroQuantity: boolean;
   visibleColumns: any[];
   onToggleSelection: () => void;
+  onRowClick: () => void;
   renderCell: (concepto: any, column: any) => React.ReactNode;
 }
 
@@ -23,6 +24,7 @@ export function DraggableConceptoRow({
   isZeroQuantity,
   visibleColumns,
   onToggleSelection,
+  onRowClick,
   renderCell,
 }: DraggableConceptoRowProps) {
   const {
@@ -44,9 +46,10 @@ export function DraggableConceptoRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center border-b hover:bg-muted/30 ${
+      className={`flex items-center border-b hover:bg-muted/30 cursor-pointer ${
         isSelected ? 'bg-primary/10' : ''
       } ${needsWBS ? 'bg-destructive/5' : ''} ${isDragging ? 'z-50' : ''}`}
+      onClick={onRowClick}
     >
       <div className="w-12 border-r flex items-center justify-center gap-1">
         <button

@@ -24,6 +24,7 @@ import { ColumnManager } from './ColumnManager';
 import { DraggableConceptoRow } from './DraggableConceptoRow';
 import { EditablePartidaRow } from './EditablePartidaRow';
 import { SubpartidaHeader } from './SubpartidaHeader';
+import { ConceptoEditPanel } from './ConceptoEditPanel';
 import { DevMonitor } from '../dev/DevMonitor';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -61,6 +62,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
   const [columns, setColumns] = useState(DEFAULT_COLUMNS);
   const [columnManagerOpen, setColumnManagerOpen] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
+  const [editingConcepto, setEditingConcepto] = useState<any>(null);
   const { settings, saveSettings, isLoading: isLoadingSettings } = useColumnSettings(budgetId);
 
   // Load saved settings when available
@@ -539,6 +541,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                       isZeroQuantity={isZeroQuantity}
                       visibleColumns={visibleColumns}
                       onToggleSelection={() => toggleRowSelection(row.id)}
+                      onRowClick={() => setEditingConcepto(concepto)}
                       renderCell={renderCell}
                     />
                   );
@@ -548,6 +551,16 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
           </div>
         </DndContext>
       </ScrollArea>
+
+      {/* Concepto Edit Panel */}
+      <ConceptoEditPanel
+        concepto={editingConcepto}
+        open={!!editingConcepto}
+        onOpenChange={(open) => !open && setEditingConcepto(null)}
+        onSave={() => {
+          setEditingConcepto(null);
+        }}
+      />
 
       {/* Column Manager */}
       <ColumnManager
