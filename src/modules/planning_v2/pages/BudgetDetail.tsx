@@ -3,7 +3,7 @@
  */
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Copy } from 'lucide-react';
+import { ArrowLeft, FileText, Copy, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,6 +12,7 @@ import { Summary } from '../components/summary/Summary';
 import { VersionsList } from '../components/versions/VersionsList';
 import { ApplyTemplateDialog } from '../components/templates/ApplyTemplateDialog';
 import { DuplicateBudgetDialog } from '../components/budget/DuplicateBudgetDialog';
+import { PlanningExportDialog } from '../components/export/PlanningExportDialog';
 import { useCatalogGrid } from '../hooks/useCatalogGrid';
 import { PlanningV2Shell } from '../components/common/PlanningV2Shell';
 import { UnfreezeButton } from '../components/dev/UnfreezeButton';
@@ -27,6 +28,7 @@ export default function BudgetDetail() {
   const navigate = useNavigate();
   const [showApplyTemplateDialog, setShowApplyTemplateDialog] = useState(false);
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
   
   const {
     rows,
@@ -108,6 +110,24 @@ export default function BudgetDetail() {
             </Tooltip>
           </TooltipProvider>
 
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setExportDialogOpen(true)}
+                >
+                  <FileDown className="h-4 w-4 mr-2" />
+                  Exportar
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Exportar a PDF o Excel con branding</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
           <Button
             variant="outline"
             size="sm"
@@ -150,6 +170,14 @@ export default function BudgetDetail() {
       <DuplicateBudgetDialog
         open={duplicateDialogOpen}
         onOpenChange={setDuplicateDialogOpen}
+        budgetId={id!}
+        budgetName={budget.name}
+      />
+
+      {/* Export Dialog */}
+      <PlanningExportDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
         budgetId={id!}
         budgetName={budget.name}
       />
