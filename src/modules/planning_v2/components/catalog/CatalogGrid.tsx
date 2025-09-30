@@ -713,8 +713,27 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                     );
                   }
 
+                  if (row.type === 'subpartida') {
+                    return (
+                      <div
+                        key={row.id}
+                        className="flex items-center bg-muted/50 border-b font-medium"
+                      >
+                        <div className="w-12 border-r"></div>
+                        <div className="px-3 py-2 text-sm font-medium">
+                          Subpartida {row.subpartidaWbs} ({row.subpartidaCount} conceptos)
+                        </div>
+                        <div className="ml-auto px-3 py-2 text-sm font-medium">
+                          {formatAsCurrency(row.subtotal || 0)}
+                        </div>
+                      </div>
+                    );
+                  }
+
                   // Concepto rows with drag & drop
-                  const concepto = row.concepto!;
+                  if (row.type !== 'concepto' || !row.concepto) return null;
+                  
+                  const concepto = row.concepto;
                   const isSelected = selectedRows.has(row.id);
                   const isZeroQuantity = concepto.cantidad_real === 0 || concepto.cantidad_real == null;
 
