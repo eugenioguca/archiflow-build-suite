@@ -155,9 +155,42 @@ export function TemplateGalleryDialog({
                       Cargando plantillas...
                     </p>
                   ) : filteredTemplates.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">
-                      No se encontraron plantillas
-                    </p>
+                    <div className="flex flex-col items-center justify-center py-12 px-4 text-center space-y-4">
+                      <FileText className="h-16 w-16 text-muted-foreground/50" />
+                      <div className="space-y-2">
+                        <h3 className="font-semibold text-lg">
+                          {templates.length === 0 ? 'No hay plantillas disponibles' : 'No se encontraron plantillas'}
+                        </h3>
+                        <p className="text-sm text-muted-foreground max-w-sm">
+                          {templates.length === 0 
+                            ? 'Comienza subiendo una plantilla en formato Excel o creando una desde tu presupuesto actual.'
+                            : 'Intenta con otro término de búsqueda.'}
+                        </p>
+                      </div>
+                      {templates.length === 0 && (
+                        <div className="flex gap-2">
+                          <Button
+                            variant="default"
+                            onClick={() => setShowUploadDialog(true)}
+                          >
+                            <Upload className="h-4 w-4 mr-2" />
+                            Subir Plantilla (Excel)
+                          </Button>
+                          {budgetId && onCreateFromBudget && (
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                onCreateFromBudget();
+                                onOpenChange(false);
+                              }}
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Desde Presupuesto
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   ) : (
                     filteredTemplates.map((template) => (
                       <Card
