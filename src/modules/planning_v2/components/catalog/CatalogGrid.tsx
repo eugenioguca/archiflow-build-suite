@@ -26,6 +26,7 @@ import { EditablePartidaRow } from './EditablePartidaRow';
 import { SubpartidaHeader } from './SubpartidaHeader';
 import { ConceptoEditPanel } from './ConceptoEditPanel';
 import { TemplatePickerDialog } from './TemplatePickerDialog';
+import { CatalogRowActions } from './CatalogRowActions';
 import { DevMonitor } from '../dev/DevMonitor';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -555,6 +556,14 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                       onToggleSelection={() => toggleRowSelection(row.id)}
                       onRowClick={() => setEditingConcepto(concepto)}
                       renderCell={renderCell}
+                      actionsContent={
+                        <CatalogRowActions
+                          row={row}
+                          budgetId={budgetId}
+                          projectId={budget?.project_id || ''}
+                          clientId={budget?.client_id || ''}
+                        />
+                      }
                     />
                   );
                 })}

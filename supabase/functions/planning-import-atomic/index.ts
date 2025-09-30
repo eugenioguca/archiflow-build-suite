@@ -117,10 +117,11 @@ serve(async (req) => {
     )
   } catch (error) {
     console.error('Error in planning-import-atomic:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido al importar';
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message || 'Error desconocido al importar',
+        error: errorMessage,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

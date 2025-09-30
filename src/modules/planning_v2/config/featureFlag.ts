@@ -4,6 +4,7 @@
  */
 export const PLANNING_V2_ENABLED = true;
 export const PLANNING_V2_TU_READONLY = true;
+export const PLANNING_V2_TU_CAPTURE = true;
 
 export const isPlanningV2Enabled = (): boolean => {
   return PLANNING_V2_ENABLED;

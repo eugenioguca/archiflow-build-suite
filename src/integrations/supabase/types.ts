@@ -5725,6 +5725,51 @@ export type Database = {
           },
         ]
       }
+      planning_concepto_tu_links: {
+        Row: {
+          concepto_id: string
+          created_at: string
+          created_by: string
+          id: string
+          quantity: number
+          total: number
+          tu_tx_id: string
+        }
+        Insert: {
+          concepto_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          quantity?: number
+          total?: number
+          tu_tx_id: string
+        }
+        Update: {
+          concepto_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          quantity?: number
+          total?: number
+          tu_tx_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_concepto_tu_links_concepto_id_fkey"
+            columns: ["concepto_id"]
+            isOneToOne: false
+            referencedRelation: "planning_conceptos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_concepto_tu_links_tu_tx_id_fkey"
+            columns: ["tu_tx_id"]
+            isOneToOne: false
+            referencedRelation: "unified_financial_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       planning_conceptos: {
         Row: {
           active: boolean

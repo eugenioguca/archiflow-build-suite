@@ -14,6 +14,7 @@ interface DraggableConceptoRowProps {
   onToggleSelection: () => void;
   onRowClick: () => void;
   renderCell: (concepto: any, column: any) => React.ReactNode;
+  actionsContent?: React.ReactNode;
 }
 
 export function DraggableConceptoRow({
@@ -26,6 +27,7 @@ export function DraggableConceptoRow({
   onToggleSelection,
   onRowClick,
   renderCell,
+  actionsContent,
 }: DraggableConceptoRowProps) {
   const {
     attributes,
@@ -82,6 +84,11 @@ export function DraggableConceptoRow({
           {renderCell(concepto, col)}
         </div>
       ))}
+      {actionsContent && (
+        <div className="px-2 py-2 flex items-center justify-center border-r w-[60px]" onClick={(e) => e.stopPropagation()}>
+          {actionsContent}
+        </div>
+      )}
     </div>
   );
 
