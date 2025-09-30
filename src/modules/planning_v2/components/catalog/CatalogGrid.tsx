@@ -25,6 +25,7 @@ import { DraggableConceptoRow } from './DraggableConceptoRow';
 import { EditablePartidaRow } from './EditablePartidaRow';
 import { SubpartidaHeader } from './SubpartidaHeader';
 import { ConceptoEditPanel } from './ConceptoEditPanel';
+import { TemplatePickerDialog } from './TemplatePickerDialog';
 import { DevMonitor } from '../dev/DevMonitor';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -63,6 +64,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
   const [columnManagerOpen, setColumnManagerOpen] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
   const [editingConcepto, setEditingConcepto] = useState<any>(null);
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const { settings, saveSettings, isLoading: isLoadingSettings } = useColumnSettings(budgetId);
 
   // Load saved settings when available
@@ -80,6 +82,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
 
   const {
     budget,
+    partidas,
     rows,
     hiddenCount,
     isLoading,
@@ -391,6 +394,15 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
           <Button
             variant="outline"
             size="sm"
+            onClick={() => setTemplatePickerOpen(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Agregar desde Plantilla
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setColumnManagerOpen(true)}
           >
             <Settings className="h-4 w-4 mr-2" />
@@ -559,6 +571,17 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
         onOpenChange={(open) => !open && setEditingConcepto(null)}
         onSave={() => {
           setEditingConcepto(null);
+        }}
+      />
+
+      {/* Template Picker Dialog */}
+      <TemplatePickerDialog
+        open={templatePickerOpen}
+        onOpenChange={setTemplatePickerOpen}
+        partidas={partidas}
+        budgetId={budgetId}
+        onSuccess={() => {
+          // Refresh handled by mutation
         }}
       />
 
