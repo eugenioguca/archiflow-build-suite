@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FormulaAutocomplete } from './FormulaAutocomplete';
+import { FormulaBuilder } from './FormulaBuilder';
 
 interface Column {
   key: string;
@@ -56,6 +56,7 @@ const DEFAULT_COLUMNS: Column[] = [
 ];
 
 export function ColumnManager({ open, onOpenChange, columns, onColumnsChange }: ColumnManagerProps) {
+  const [formulaBuilderOpen, setFormulaBuilderOpen] = useState(false);
   const [editingColumn, setEditingColumn] = useState<Column | null>(null);
   const [newColumn, setNewColumn] = useState<Partial<Column>>({
     type: 'input',
@@ -92,6 +93,17 @@ export function ColumnManager({ open, onOpenChange, columns, onColumnsChange }: 
     onColumnsChange(DEFAULT_COLUMNS);
   };
 
+  const handleSaveFormula = (columnDef: { key: string; label: string; formula: string }) => {
+    const newCol: Column = {
+      key: columnDef.key,
+      label: columnDef.label,
+      type: 'computed',
+      visible: true,
+      formula: columnDef.formula,
+    };
+    onColumnsChange([...columns, newCol]);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
@@ -107,9 +119,15 @@ export function ColumnManager({ open, onOpenChange, columns, onColumnsChange }: 
           <div>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-medium">Columnas Actuales</h3>
-              <Button variant="outline" size="sm" onClick={handleResetColumns}>
-                Restaurar predeterminadas
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setFormulaBuilderOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Nueva Fórmula
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleResetColumns}>
+                  Restaurar predeterminadas
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -157,65 +175,13 @@ export function ColumnManager({ open, onOpenChange, columns, onColumnsChange }: 
             </div>
           </div>
 
-          {/* Add new column */}
-          <div className="border-t pt-6">
-            <h3 className="text-sm font-medium mb-3">Agregar Columna</h3>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Clave</Label>
-                  <Input
-                    placeholder="mi_campo"
-                    value={newColumn.key || ''}
-                    onChange={(e) => setNewColumn({ ...newColumn, key: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Etiqueta</Label>
-                  <Input
-                    placeholder="Mi Campo"
-                    value={newColumn.label || ''}
-                    onChange={(e) => setNewColumn({ ...newColumn, label: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Tipo</Label>
-                <Select
-                  value={newColumn.type}
-                  onValueChange={(value) => setNewColumn({ ...newColumn, type: value as any })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="input">Entrada</SelectItem>
-                    <SelectItem value="computed">Calculado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {newColumn.type === 'computed' && (
-                <div className="space-y-2">
-                  <Label>Fórmula</Label>
-                  <FormulaAutocomplete
-                    value={newColumn.formula || ''}
-                    onChange={(value) => setNewColumn({ ...newColumn, formula: value })}
-                    placeholder="cantidad_real * precio_real"
-                  />
-                </div>
-              )}
-
-              <Button onClick={handleAddColumn} disabled={!newColumn.key || !newColumn.label}>
-                <Plus className="h-4 w-4 mr-2" />
-                Agregar Columna
-              </Button>
-            </div>
-          </div>
         </div>
+
+        <FormulaBuilder
+          open={formulaBuilderOpen}
+          onOpenChange={setFormulaBuilderOpen}
+          onSave={handleSaveFormula}
+        />
       </DialogContent>
     </Dialog>
   );

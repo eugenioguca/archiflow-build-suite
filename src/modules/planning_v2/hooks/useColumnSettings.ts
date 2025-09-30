@@ -8,7 +8,9 @@ interface ColumnSetting {
   label: string;
   type: 'input' | 'computed';
   visible: boolean;
+  width?: number;
   formula?: string;
+  dependencies?: string[];
 }
 
 export function useColumnSettings(budgetId: string) {
@@ -21,10 +23,11 @@ export function useColumnSettings(budgetId: string) {
       if (!user?.id) return null;
 
       const { data, error } = await supabase
-        .from('planning_v2_user_settings')
-        .select('visible_columns')
+        .from('planning_v2_user_settings' as any)
+        .select('*')
         .eq('user_id', user.id)
         .eq('budget_id', budgetId)
+        .eq('settings_type', 'column_layout')
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
@@ -32,7 +35,11 @@ export function useColumnSettings(budgetId: string) {
         return null;
       }
 
-      return (data?.visible_columns as unknown as ColumnSetting[]) || null;
+      if (!data) return null;
+
+      // Try both possible column names for backwards compatibility
+      const settingsData = (data as any).settings_data || (data as any).visible_columns;
+      return (settingsData as ColumnSetting[]) || null;
     },
     enabled: !!user?.id && !!budgetId,
   });
@@ -46,7 +53,8 @@ export function useColumnSettings(budgetId: string) {
         .upsert({
           user_id: user.id,
           budget_id: budgetId,
-          visible_columns: columns as any,
+          settings_type: 'column_layout',
+          settings_data: columns,
           updated_at: new Date().toISOString(),
         });
 
