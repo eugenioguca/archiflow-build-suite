@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CatalogGrid } from '../components/catalog/CatalogGrid';
 import { Summary } from '../components/summary/Summary';
+import { VersionsList } from '../components/versions/VersionsList';
 import { useCatalogGrid } from '../hooks/useCatalogGrid';
 
 export default function BudgetDetail() {
@@ -81,6 +82,7 @@ export default function BudgetDetail() {
         <TabsList>
           <TabsTrigger value="catalog">Catálogo</TabsTrigger>
           <TabsTrigger value="summary">Resumen y Publicar</TabsTrigger>
+          <TabsTrigger value="versions">Versiones</TabsTrigger>
         </TabsList>
 
         <TabsContent value="catalog" className="mt-6">
@@ -89,6 +91,10 @@ export default function BudgetDetail() {
 
         <TabsContent value="summary" className="mt-6">
           <Summary budgetId={id!} />
+        </TabsContent>
+
+        <TabsContent value="versions" className="mt-6">
+          <VersionsList budgetId={id!} />
         </TabsContent>
       </Tabs>
     </div>

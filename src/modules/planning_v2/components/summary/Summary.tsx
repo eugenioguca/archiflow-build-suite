@@ -11,6 +11,7 @@ import {
   Settings as SettingsIcon,
   AlertCircle,
 } from 'lucide-react';
+import { PublishButton } from './PublishButton';
 import { getBudgetById } from '../../services/budgetService';
 import { 
   calculateBudgetTotals, 
@@ -206,13 +207,12 @@ export function Summary({ budgetId }: SummaryProps) {
           )}
 
           {!isClosed && (
-            <Button
-              onClick={() => publishMutation.mutate()}
+            <PublishButton
+              budgetId={budgetId}
+              ivaRate={includeIva ? ivaRate : 0}
+              retencionesRate={includeRetenciones ? retencionesRate : 0}
               disabled={publishMutation.isPending || isPublished}
-            >
-              <FileCheck className="h-4 w-4 mr-2" />
-              {isPublished ? 'Publicado' : 'Publicar Versión'}
-            </Button>
+            />
           )}
         </div>
       </div>
