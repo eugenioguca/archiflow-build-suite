@@ -27,9 +27,11 @@ export interface ExportOptions {
   columns: ExportColumn[];
   includeSubtotals: boolean;
   includeGrandTotal: boolean;
+  hideZeroRows?: boolean;
   budgetName: string;
   clientName?: string;
   projectName?: string;
+  folio?: string;
 }
 
 const DEFAULT_EXPORT_COLUMNS: ExportColumn[] = [
@@ -122,6 +124,7 @@ export const exportService = {
     if (options.clientName) rows.push(['Cliente:', options.clientName]);
     if (options.projectName) rows.push(['Proyecto:', options.projectName]);
     rows.push(['Fecha de exportación:', new Date().toLocaleDateString('es-MX')]);
+    if (options.folio) rows.push(['Folio:', options.folio]);
     rows.push([]); // Línea vacía
 
     // Encabezados de columnas
@@ -133,7 +136,12 @@ export const exportService = {
       rows.push([partida.name, ...Array(visibleColumns.length - 1).fill('')]);
 
       // Conceptos de la partida
-      const partidaConceptos = conceptos.filter(c => c.partida_id === partida.id && c.active);
+      let partidaConceptos = conceptos.filter(c => c.partida_id === partida.id && c.active);
+      
+      // Filtrar conceptos con total en cero si la opción está habilitada
+      if (options.hideZeroRows) {
+        partidaConceptos = partidaConceptos.filter(c => (c.total || 0) !== 0);
+      }
       
       partidaConceptos.forEach(concepto => {
         const row = visibleColumns.map(col => {
@@ -269,6 +277,7 @@ export const exportService = {
       if (options.clientName) rows.push(['Cliente:', options.clientName]);
       if (options.projectName) rows.push(['Proyecto:', options.projectName]);
       rows.push(['Fecha de exportación:', new Date().toLocaleDateString('es-MX')]);
+      if (options.folio) rows.push(['Folio:', options.folio]);
       rows.push([]);
       rows.push(visibleColumns.map(col => col.label));
 
@@ -482,6 +491,7 @@ export const exportService = {
           ${options.clientName ? `<div>Cliente: ${options.clientName}</div>` : ''}
           ${options.projectName ? `<div>Proyecto: ${options.projectName}</div>` : ''}
           <div>Fecha: ${new Date().toLocaleDateString('es-MX')}</div>
+          ${options.folio ? `<div>Folio: ${options.folio}</div>` : ''}
         </div>
         
         <table>
@@ -501,7 +511,12 @@ export const exportService = {
       </tr>`;
 
       // Conceptos
-      const partidaConceptos = conceptos.filter(c => c.partida_id === partida.id && c.active);
+      let partidaConceptos = conceptos.filter(c => c.partida_id === partida.id && c.active);
+      
+      // Filtrar conceptos con total en cero si la opción está habilitada
+      if (options.hideZeroRows) {
+        partidaConceptos = partidaConceptos.filter(c => (c.total || 0) !== 0);
+      }
       
       partidaConceptos.forEach(concepto => {
         html += '<tr>';

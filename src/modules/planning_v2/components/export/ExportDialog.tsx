@@ -16,6 +16,7 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
 import { useImportExport } from '../../hooks/useImportExport';
 import { exportService } from '../../services/exportService';
 import type { ExportColumn } from '../../services/exportService';
@@ -47,6 +48,13 @@ export function ExportDialog({
   const [columns, setColumns] = useState<ExportColumn[]>(() => getDefaultExportColumns());
   const [includeSubtotals, setIncludeSubtotals] = useState(true);
   const [includeGrandTotal, setIncludeGrandTotal] = useState(true);
+  const [hideZeroRows, setHideZeroRows] = useState(false);
+  const [folio, setFolio] = useState(() => {
+    // Auto-generar folio: PRE-YYYYMMDD-###
+    const today = new Date().toISOString().split('T')[0].replace(/-/g, '');
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `PRE-${today}-${random}`;
+  });
   const [testResult, setTestResult] = useState<any>(null);
   const [isTesting, setIsTesting] = useState(false);
 
@@ -66,9 +74,11 @@ export function ExportDialog({
           columns,
           includeSubtotals,
           includeGrandTotal,
+          hideZeroRows,
           budgetName,
           clientName,
           projectName,
+          folio,
         },
       },
       {
@@ -92,9 +102,11 @@ export function ExportDialog({
           columns,
           includeSubtotals,
           includeGrandTotal,
+          hideZeroRows,
           budgetName,
           clientName,
           projectName,
+          folio,
         }
       );
       
@@ -126,6 +138,17 @@ export function ExportDialog({
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Folio */}
+          <div className="space-y-2">
+            <Label htmlFor="folio">Folio del documento</Label>
+            <Input
+              id="folio"
+              value={folio}
+              onChange={(e) => setFolio(e.target.value)}
+              placeholder="PRE-20250930-001"
+            />
+          </div>
+
           {/* Options */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -143,6 +166,15 @@ export function ExportDialog({
                 id="grandtotal"
                 checked={includeGrandTotal}
                 onCheckedChange={setIncludeGrandTotal}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="hidezero">Ocultar conceptos en cero</Label>
+              <Switch
+                id="hidezero"
+                checked={hideZeroRows}
+                onCheckedChange={setHideZeroRows}
               />
             </div>
           </div>
