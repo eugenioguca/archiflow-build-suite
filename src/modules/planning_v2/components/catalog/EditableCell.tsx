@@ -43,6 +43,8 @@ export function EditableCell({
 
   // Editable fields only for specific columns
   const editableColumns = [
+    'code',
+    'short_description',
     'cantidad_real',
     'desperdicio_pct',
     'precio_real',

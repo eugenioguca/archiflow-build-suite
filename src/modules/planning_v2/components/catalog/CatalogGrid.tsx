@@ -2,7 +2,7 @@
  * Main Catalog Grid Component
  */
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Settings } from 'lucide-react';
+import { Plus, Settings, Trash2, Copy } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -123,6 +123,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
     createConcepto,
     updateConcepto,
     reorderConcepto,
+    bulkDelete,
     recomputeTime,
     dbLatency,
   } = useCatalogGrid(budgetId);
@@ -458,6 +459,77 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
     }
   };
 
+  const handleDuplicateSelected = async () => {
+    const selectedConceptos = rows
+      .filter(r => r.type === 'concepto' && selectedRows.has(r.id))
+      .map(r => r.concepto);
+    
+    if (selectedConceptos.length === 0) {
+      toast.error('No hay conceptos seleccionados');
+      return;
+    }
+
+    if (!confirm(`¿Duplicar ${selectedConceptos.length} concepto(s) seleccionado(s)?`)) {
+      return;
+    }
+
+    try {
+      for (const concepto of selectedConceptos) {
+        // Create a copy with a new ID
+        await createConcepto({
+          partida_id: concepto.partida_id,
+          code: concepto.code,
+          short_description: `${concepto.short_description} (Copia)`,
+          long_description: concepto.long_description,
+          unit: concepto.unit,
+          provider: concepto.provider,
+          order_index: concepto.order_index + 1,
+          active: concepto.active,
+          sumable: concepto.sumable,
+          cantidad_real: concepto.cantidad_real,
+          desperdicio_pct: concepto.desperdicio_pct,
+          cantidad: concepto.cantidad,
+          precio_real: concepto.precio_real,
+          honorarios_pct: concepto.honorarios_pct,
+          pu: concepto.pu,
+          total_real: concepto.total_real,
+          total: concepto.total,
+          wbs_code: concepto.wbs_code,
+          props: concepto.props,
+        });
+      }
+      
+      toast.success(`${selectedConceptos.length} concepto(s) duplicado(s)`);
+      clearSelection();
+    } catch (error) {
+      console.error('Error duplicating conceptos:', error);
+      toast.error('Error al duplicar conceptos');
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    const selectedConceptos = rows
+      .filter(r => r.type === 'concepto' && selectedRows.has(r.id))
+      .map(r => r.concepto);
+    
+    if (selectedConceptos.length === 0) {
+      toast.error('No hay conceptos seleccionados');
+      return;
+    }
+
+    if (!confirm(`¿Eliminar ${selectedConceptos.length} concepto(s) seleccionado(s)? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+
+    try {
+      await bulkDelete();
+      toast.success(`${selectedConceptos.length} concepto(s) eliminado(s)`);
+    } catch (error) {
+      console.error('Error deleting conceptos:', error);
+      toast.error('Error al eliminar conceptos');
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
@@ -490,16 +562,36 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
           {selectedRows.size > 0 && (
             <>
               <Badge>{selectedRows.size} seleccionadas</Badge>
+              
               <Button 
                 variant="default" 
                 size="sm" 
                 onClick={() => setBulkEditOpen(true)}
               >
                 <Settings className="h-4 w-4 mr-2" />
-                Editar Seleccionadas
+                Editar en Lote
               </Button>
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleDuplicateSelected}
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Duplicar
+              </Button>
+              
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={handleDeleteSelected}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Eliminar
+              </Button>
+              
               <Button variant="ghost" size="sm" onClick={clearSelection}>
-                Limpiar
+                Limpiar Selección
               </Button>
             </>
           )}
