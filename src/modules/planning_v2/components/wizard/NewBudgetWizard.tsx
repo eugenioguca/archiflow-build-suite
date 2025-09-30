@@ -72,6 +72,9 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
   const [selectedClient, setSelectedClient] = useState<ClientAdapter | null>(null);
   const [selectedProject, setSelectedProject] = useState<ProjectAdapter | null>(null);
   
+  // Ref para el contenedor del Dialog - necesario para que el Popover se renderice dentro del Dialog
+  const dialogContentRef = React.useRef<HTMLDivElement>(null);
+  
   // Estados para comboboxes (estilo TU: cargar todo al abrir)
   const [clientes, setClientes] = useState<SearchableComboboxItem[]>([]);
   const [proyectos, setProyectos] = useState<SearchableComboboxItem[]>([]);
@@ -292,6 +295,54 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
     return () => subscription.unsubscribe();
   }, [form.watch]);
 
+  // Enhanced keyboard and scroll event handling for SearchableCombobox inside Dialog
+  const handleDialogKeyDownCapture = (e: React.KeyboardEvent) => {
+    const target = e.target as HTMLElement
+    
+    // CRITICAL: Bypass ALL Dialog handling if within combobox
+    if (target.closest('[data-combobox-root]')) {
+      console.log('[Dialog] KeyDownCapture within combobox - bypassing Dialog handling:', e.key)
+      console.log('[Dialog] activeElement:', document.activeElement?.tagName, document.activeElement?.className)
+      return; // Let combobox handle this event naturally
+    }
+    
+    // Normal Dialog handling for non-combobox events
+    if (e.key === "Escape") {
+      console.log('[Dialog] Escape pressed outside combobox - closing dialog')
+    }
+  }
+
+  const handleDialogFocusCapture = (e: React.FocusEvent) => {
+    const target = e.target as HTMLElement
+    
+    // CRITICAL: Bypass focus trap if within combobox
+    if (target.closest('[data-combobox-root]')) {
+      console.log('[Dialog] FocusCapture within combobox - bypassing focus trap')
+      console.log('[Dialog] activeElement:', document.activeElement?.tagName, document.activeElement?.className)
+      return; // Let combobox manage its own focus
+    }
+  }
+
+  const handleDialogKeyDown = (e: React.KeyboardEvent) => {
+    const target = e.target as HTMLElement
+    
+    if (target.closest('[data-combobox-root]')) {
+      console.log('[Dialog] KeyDown within combobox - bypassing all Dialog handling:', e.key)
+      return; // Prevent Dialog from interfering
+    }
+    
+    console.log('[Dialog] Handling dialog-specific event:', e.key)
+  }
+
+  const handleDialogWheel = (e: React.WheelEvent) => {
+    const target = e.target as HTMLElement
+    
+    if (target.closest('[data-combobox-root]')) {
+      console.log('[Dialog] Wheel within combobox - bypassing Dialog handling')
+      return; // Let combobox handle scroll naturally
+    }
+  }
+
   const renderStep = () => {
     switch (step) {
       case 1:
@@ -318,19 +369,22 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
                   <FormItem>
                     <FormLabel>Cliente</FormLabel>
                     <FormControl>
-                      <SearchableCombobox
-                        items={clientes}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder="Seleccionar cliente..."
-                        searchPlaceholder="Buscar por nombre o código..."
-                        emptyText="Sin resultados"
-                        loading={loadingClientes}
-                        disabled={loading}
-                        showCodes={true}
-                        searchFields={['label', 'codigo', 'searchText']}
-                        className="w-full"
-                      />
+                      <div data-combobox-root>
+                        <SearchableCombobox
+                          items={clientes}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Seleccionar cliente..."
+                          searchPlaceholder="Buscar por nombre o código..."
+                          emptyText="Sin resultados"
+                          loading={loadingClientes}
+                          disabled={loading}
+                          showCodes={true}
+                          searchFields={['label', 'codigo', 'searchText']}
+                          className="w-full"
+                          portalContainer={dialogContentRef.current}
+                        />
+                      </div>
                     </FormControl>
                     <FormDescription className="text-xs">
                       Opcional. Selecciona un cliente o un proyecto.
@@ -347,19 +401,22 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
                   <FormItem>
                     <FormLabel>Proyecto</FormLabel>
                     <FormControl>
-                      <SearchableCombobox
-                        items={proyectosFiltrados}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder="Seleccionar proyecto..."
-                        searchPlaceholder="Buscar por nombre o código..."
-                        emptyText="Sin resultados"
-                        loading={loadingProyectos}
-                        disabled={loading}
-                        showCodes={true}
-                        searchFields={['label', 'codigo', 'searchText']}
-                        className="w-full"
-                      />
+                      <div data-combobox-root>
+                        <SearchableCombobox
+                          items={proyectosFiltrados}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Seleccionar proyecto..."
+                          searchPlaceholder="Buscar por nombre o código..."
+                          emptyText="Sin resultados"
+                          loading={loadingProyectos}
+                          disabled={loading}
+                          showCodes={true}
+                          searchFields={['label', 'codigo', 'searchText']}
+                          className="w-full"
+                          portalContainer={dialogContentRef.current}
+                        />
+                      </div>
                     </FormControl>
                     <FormDescription className="text-xs">
                       {form.watch('client_id') 
@@ -519,7 +576,28 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent 
+        ref={dialogContentRef}
+        className="max-w-2xl"
+        onKeyDownCapture={handleDialogKeyDownCapture}
+        onFocusCapture={handleDialogFocusCapture}
+        onKeyDown={handleDialogKeyDown}
+        onWheel={handleDialogWheel}
+        onInteractOutside={(e) => {
+          const target = e.target as Element
+          if (target.closest('[data-combobox-root]')) {
+            console.log('[Dialog] Preventing close on combobox interaction')
+            e.preventDefault()
+          }
+        }}
+        onFocusOutside={(e) => {
+          const target = e.target as Element  
+          if (target.closest('[data-combobox-root]')) {
+            console.log('[Dialog] Preventing close on combobox focus')
+            e.preventDefault()
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Nuevo presupuesto</DialogTitle>
         </DialogHeader>
