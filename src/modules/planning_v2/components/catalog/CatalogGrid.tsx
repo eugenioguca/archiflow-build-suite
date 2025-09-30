@@ -30,6 +30,8 @@ import { TemplateGalleryDialog } from '../templates/TemplateGalleryDialog';
 import { ApplyTemplateDialog } from '../templates/ApplyTemplateDialog';
 import { ImportTUDialog } from './ImportTUDialog';
 import { ApplyDefaultsDialog } from './ApplyDefaultsDialog';
+import { BulkEditDialog } from './BulkEditDialog';
+import { EditableCell } from './EditableCell';
 import { CatalogRowActions } from './CatalogRowActions';
 import { DevMonitor } from '../dev/DevMonitor';
 import { Button } from '@/components/ui/button';
@@ -75,6 +77,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
   const [templateGalleryOpen, setTemplateGalleryOpen] = useState(false);
   const [applyTemplateOpen, setApplyTemplateOpen] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const { settings, saveSettings, isLoading: isLoadingSettings } = useColumnSettings(budgetId);
 
   // Load saved settings when available
@@ -349,6 +352,95 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
     }
   };
 
+  // Create renderCell closure with updateConcepto wrapper
+  const handleCellSave = useCallback(
+    async (conceptoId: string, field: string, value: any) => {
+      await updateConcepto({ id: conceptoId, updates: { [field]: value } });
+    },
+    [updateConcepto]
+  );
+
+  const renderCell = useCallback(
+    (concepto: any, column: any) => {
+      const value = concepto[column.key];
+
+      // Use EditableCell for input columns
+      if (column.type === 'input') {
+        const formatFn =
+          column.key === 'desperdicio_pct' || column.key === 'honorarios_pct'
+            ? formatAsPercentage
+            : column.key === 'precio_real'
+            ? formatAsCurrency
+            : column.key === 'cantidad_real'
+            ? toDisplayPrecision
+            : undefined;
+
+        return (
+          <EditableCell
+            value={value}
+            concepto={concepto}
+            columnKey={column.key}
+            columnType={column.type}
+            onSave={handleCellSave}
+            formatFn={formatFn}
+          />
+        );
+      }
+
+      // Computed fields with lock icon and price intelligence
+      if (column.type === 'computed') {
+        if (column.key === 'cantidad' || column.key === 'pu' || column.key === 'total') {
+          return (
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Lock className="h-3 w-3" />
+                <span>
+                  {column.key === 'total' || column.key === 'pu'
+                    ? formatAsCurrency(value || 0)
+                    : toDisplayPrecision(value || 0)}
+                </span>
+              </div>
+              {/* Show price intelligence for PU field */}
+              {column.key === 'pu' && concepto.wbs_code && concepto.unit && (
+                <PriceReferenceChip
+                  wbsCode={concepto.wbs_code}
+                  unit={concepto.unit}
+                  currentPrice={value}
+                  windowDays={90}
+                />
+              )}
+            </div>
+          );
+        }
+      }
+
+      // Fallback formatting
+      if (column.key === 'cantidad_real' || column.key === 'cantidad') {
+        return toDisplayPrecision(value || 0);
+      }
+
+      if (column.key === 'desperdicio_pct' || column.key === 'honorarios_pct') {
+        return formatAsPercentage(value || 0);
+      }
+
+      if (
+        column.key === 'precio_real' ||
+        column.key === 'pu' ||
+        column.key === 'total' ||
+        column.key === 'total_real'
+      ) {
+        return formatAsCurrency(value || 0);
+      }
+
+      if (column.key === 'wbs_code') {
+        return <div className="text-xs text-muted-foreground truncate">{value || '—'}</div>;
+      }
+
+      return value || '—';
+    },
+    [handleCellSave]
+  );
+
   const handleSeedDemo = async () => {
     if (!user?.id) return;
     
@@ -397,6 +489,14 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
           {selectedRows.size > 0 && (
             <>
               <Badge>{selectedRows.size} seleccionadas</Badge>
+              <Button 
+                variant="default" 
+                size="sm" 
+                onClick={() => setBulkEditOpen(true)}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Editar Seleccionadas
+              </Button>
               <Button variant="ghost" size="sm" onClick={clearSelection}>
                 Limpiar
               </Button>
@@ -666,62 +766,18 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
         onColumnsChange={handleColumnsChange}
       />
 
+      {/* Bulk Edit Dialog */}
+      <BulkEditDialog
+        open={bulkEditOpen}
+        onOpenChange={setBulkEditOpen}
+        selectedConceptos={rows
+          .filter(r => r.type === 'concepto' && selectedRows.has(r.id))
+          .map(r => r.concepto)}
+        budgetId={budgetId}
+      />
+
       {/* Dev Monitor - Performance tracking (DEV-ONLY) */}
       <DevMonitor recomputeTime={recomputeTime} dbLatency={dbLatency} />
     </div>
   );
-}
-
-function renderCell(concepto: any, column: any) {
-  const value = concepto[column.key];
-
-  // Computed fields with lock icon and price intelligence
-  if (column.type === 'computed') {
-    if (column.key === 'cantidad' || column.key === 'pu' || column.key === 'total') {
-      return (
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Lock className="h-3 w-3" />
-            <span>
-              {column.key === 'total' || column.key === 'pu'
-                ? formatAsCurrency(value || 0)
-                : toDisplayPrecision(value || 0)}
-            </span>
-          </div>
-          {/* Show price intelligence for PU field */}
-          {column.key === 'pu' && concepto.wbs_code && concepto.unit && (
-            <PriceReferenceChip
-              wbsCode={concepto.wbs_code}
-              unit={concepto.unit}
-              currentPrice={value}
-              windowDays={90}
-            />
-          )}
-        </div>
-      );
-    }
-  }
-
-  // Format based on field type
-  if (column.key === 'cantidad_real' || column.key === 'cantidad') {
-    return toDisplayPrecision(value || 0);
-  }
-
-  if (column.key === 'desperdicio_pct' || column.key === 'honorarios_pct') {
-    return formatAsPercentage(value || 0);
-  }
-
-  if (column.key === 'precio_real' || column.key === 'pu' || column.key === 'total' || column.key === 'total_real') {
-    return formatAsCurrency(value || 0);
-  }
-
-  if (column.key === 'wbs_code') {
-    return (
-      <div className="text-xs text-muted-foreground truncate">
-        {value || '—'}
-      </div>
-    );
-  }
-
-  return value || '—';
 }

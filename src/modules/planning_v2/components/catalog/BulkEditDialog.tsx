@@ -1,0 +1,345 @@
+/**
+ * Bulk Edit Dialog - Edit multiple selected rows at once
+ */
+import { useState } from 'react';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader2, Edit } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { toast } from 'sonner';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { updateConcepto } from '../../services/budgetService';
+
+const formSchema = z.object({
+  updateHonorarios: z.boolean(),
+  honorarios_pct: z.coerce.number().min(0).max(100).optional(),
+  updateDesperdicio: z.boolean(),
+  desperdicio_pct: z.coerce.number().min(0).max(100).optional(),
+  updateProvider: z.boolean(),
+  provider: z.string().optional(),
+  updateWbs: z.boolean(),
+  wbs_code: z.string().optional(),
+}).refine(
+  data => data.updateHonorarios || data.updateDesperdicio || data.updateProvider || data.updateWbs,
+  { message: 'Debes seleccionar al menos un campo para actualizar' }
+);
+
+type FormValues = z.infer<typeof formSchema>;
+
+interface BulkEditDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  selectedConceptos: any[];
+  budgetId: string;
+}
+
+export function BulkEditDialog({
+  open,
+  onOpenChange,
+  selectedConceptos,
+  budgetId,
+}: BulkEditDialogProps) {
+  const queryClient = useQueryClient();
+  const [isApplying, setIsApplying] = useState(false);
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      updateHonorarios: false,
+      updateDesperdicio: false,
+      updateProvider: false,
+      updateWbs: false,
+    },
+  });
+
+  const handleApply = async (values: FormValues) => {
+    if (selectedConceptos.length === 0) {
+      toast.error('No hay conceptos seleccionados');
+      return;
+    }
+
+    setIsApplying(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    try {
+      for (const concepto of selectedConceptos) {
+        try {
+          const updates: any = {};
+
+          if (values.updateHonorarios && values.honorarios_pct !== undefined) {
+            updates.honorarios_pct = values.honorarios_pct / 100; // Convert to decimal
+          }
+
+          if (values.updateDesperdicio && values.desperdicio_pct !== undefined) {
+            updates.desperdicio_pct = values.desperdicio_pct / 100; // Convert to decimal
+          }
+
+          if (values.updateProvider && values.provider !== undefined) {
+            updates.provider = values.provider || null;
+          }
+
+          if (values.updateWbs && values.wbs_code !== undefined) {
+            updates.wbs_code = values.wbs_code || null;
+          }
+
+          if (Object.keys(updates).length > 0) {
+            await updateConcepto(concepto.id, updates);
+            successCount++;
+          }
+        } catch (error) {
+          console.error(`Error updating concepto ${concepto.id}:`, error);
+          errorCount++;
+        }
+      }
+
+      // Invalidate queries
+      queryClient.invalidateQueries({ queryKey: ['planning-budget', budgetId] });
+      queryClient.invalidateQueries({ queryKey: ['planning-conceptos', budgetId] });
+
+      if (successCount > 0) {
+        toast.success(`${successCount} concepto(s) actualizados exitosamente`);
+      }
+
+      if (errorCount > 0) {
+        toast.error(`Error al actualizar ${errorCount} concepto(s)`);
+      }
+
+      form.reset();
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error in bulk edit:', error);
+      toast.error('Error al aplicar cambios masivos');
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edición Masiva</DialogTitle>
+          <DialogDescription>
+            Aplicar cambios a {selectedConceptos.length} concepto(s) seleccionado(s)
+          </DialogDescription>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleApply)} className="space-y-4">
+            {/* Honorarios */}
+            <div className="space-y-2 p-3 border rounded-lg">
+              <FormField
+                control={form.control}
+                name="updateHonorarios"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel className="cursor-pointer font-medium">
+                      % Honorarios
+                    </FormLabel>
+                  </FormItem>
+                )}
+              />
+              {form.watch('updateHonorarios') && (
+                <FormField
+                  control={form.control}
+                  name="honorarios_pct"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          placeholder="Ej: 17"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription className="text-xs">
+                        Valor en porcentaje (0-100)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+
+            {/* Desperdicio */}
+            <div className="space-y-2 p-3 border rounded-lg">
+              <FormField
+                control={form.control}
+                name="updateDesperdicio"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel className="cursor-pointer font-medium">
+                      % Desperdicio
+                    </FormLabel>
+                  </FormItem>
+                )}
+              />
+              {form.watch('updateDesperdicio') && (
+                <FormField
+                  control={form.control}
+                  name="desperdicio_pct"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          placeholder="Ej: 5"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription className="text-xs">
+                        Valor en porcentaje (0-100)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+
+            {/* Provider */}
+            <div className="space-y-2 p-3 border rounded-lg">
+              <FormField
+                control={form.control}
+                name="updateProvider"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel className="cursor-pointer font-medium">
+                      Proveedor
+                    </FormLabel>
+                  </FormItem>
+                )}
+              />
+              {form.watch('updateProvider') && (
+                <FormField
+                  control={form.control}
+                  name="provider"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          placeholder="Nombre del proveedor"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+
+            {/* WBS */}
+            <div className="space-y-2 p-3 border rounded-lg">
+              <FormField
+                control={form.control}
+                name="updateWbs"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2 space-y-0">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel className="cursor-pointer font-medium">
+                      Subpartida WBS
+                    </FormLabel>
+                  </FormItem>
+                )}
+              />
+              {form.watch('updateWbs') && (
+                <FormField
+                  control={form.control}
+                  name="wbs_code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          placeholder="Ej: 1.1, 2.3"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isApplying}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isApplying}>
+                {isApplying ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Aplicando...
+                  </>
+                ) : (
+                  <>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Aplicar Cambios
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
