@@ -26,6 +26,8 @@ import { EditablePartidaRow } from './EditablePartidaRow';
 import { SubpartidaHeader } from './SubpartidaHeader';
 import { ConceptoEditPanel } from './ConceptoEditPanel';
 import { TemplatePickerDialog } from './TemplatePickerDialog';
+import { TemplateGalleryDialog } from '../templates/TemplateGalleryDialog';
+import { ApplyTemplateDialog } from '../templates/ApplyTemplateDialog';
 import { ImportTUDialog } from './ImportTUDialog';
 import { ApplyDefaultsDialog } from './ApplyDefaultsDialog';
 import { CatalogRowActions } from './CatalogRowActions';
@@ -70,6 +72,9 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [importTUOpen, setImportTUOpen] = useState(false);
   const [applyDefaultsOpen, setApplyDefaultsOpen] = useState(false);
+  const [templateGalleryOpen, setTemplateGalleryOpen] = useState(false);
+  const [applyTemplateOpen, setApplyTemplateOpen] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const { settings, saveSettings, isLoading: isLoadingSettings } = useColumnSettings(budgetId);
 
   // Load saved settings when available
@@ -401,7 +406,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setTemplatePickerOpen(true)}
+            onClick={() => setTemplateGalleryOpen(true)}
           >
             <Plus className="h-4 w-4 mr-2" />
             Agregar desde Plantilla
@@ -632,6 +637,25 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
         onClose={() => setApplyDefaultsOpen(false)}
         budgetId={budgetId}
         budgetSettings={budget?.settings || {}}
+      />
+
+      {/* Template Gallery Dialog */}
+      <TemplateGalleryDialog
+        open={templateGalleryOpen}
+        onOpenChange={setTemplateGalleryOpen}
+        onSelectTemplate={(templateId) => {
+          setSelectedTemplateId(templateId);
+          setTemplateGalleryOpen(false);
+          setApplyTemplateOpen(true);
+        }}
+      />
+
+      {/* Apply Template Dialog */}
+      <ApplyTemplateDialog
+        open={applyTemplateOpen}
+        onOpenChange={setApplyTemplateOpen}
+        budgetId={budgetId}
+        preselectedTemplateId={selectedTemplateId}
       />
 
       {/* Column Manager */}

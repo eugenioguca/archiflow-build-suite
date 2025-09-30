@@ -28,16 +28,31 @@ interface ApplyTemplateDialogProps {
   budgetId: string;
 }
 
+interface ApplyTemplateDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  budgetId: string;
+  preselectedTemplateId?: string;
+}
+
 export function ApplyTemplateDialog({
   open,
   onOpenChange,
-  budgetId
+  budgetId,
+  preselectedTemplateId
 }: ApplyTemplateDialogProps) {
   const queryClient = useQueryClient();
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(preselectedTemplateId || '');
   const [delta, setDelta] = useState<any | null>(null);
   const [currentPartidas, setCurrentPartidas] = useState<any[]>([]);
   const [currentConceptos, setCurrentConceptos] = useState<any[]>([]);
+
+  // Update selectedTemplateId when preselectedTemplateId changes
+  useEffect(() => {
+    if (preselectedTemplateId) {
+      setSelectedTemplateId(preselectedTemplateId);
+    }
+  }, [preselectedTemplateId]);
 
   // Fetch current partidas and conceptos when dialog opens
   useEffect(() => {
@@ -133,7 +148,9 @@ export function ApplyTemplateDialog({
       if (delta.newConceptos.length > 0) {
         const conceptsToInsert = delta.newConceptos
           .map(c => {
-            const partidaId = partidaNameToId.get(c.partida_code);
+            // Buscar la partida por código primero
+            const partida = delta.newPartidas.find(p => p.code === c.partida_code);
+            const partidaId = partida ? partidaNameToId.get(partida.name) : null;
             if (!partidaId) return null;
 
             return {

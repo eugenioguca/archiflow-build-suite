@@ -97,10 +97,10 @@ export async function parseCAMMExcel(file: File): Promise<TemplateData> {
                 code: conceptCode,
                 short_description: secondCol || '',
                 unit: String(row[2] || '').trim(),
-                cantidad_real: this.parseNumber(row[3]),
-                desperdicio_pct: this.parsePercentage(row[4]),
-                precio_real: this.parseNumber(row[6]),
-                honorarios_pct: this.parsePercentage(row[7]),
+                cantidad_real: parseNumber(row[3]),
+                desperdicio_pct: parsePercentage(row[4]),
+                precio_real: parseNumber(row[6]),
+                honorarios_pct: parsePercentage(row[7]),
                 notes: ''
               });
             }
@@ -328,7 +328,7 @@ export async function getTemplateConceptosByTemplate(templateId: string): Promis
  */
 export async function calculateTemplateDelta(templateId: string, budgetId: string): Promise<any> {
   // Get template data
-  const template = await this.getTemplate(templateId);
+  const template = await getTemplate(templateId);
   if (!template) throw new Error('Plantilla no encontrada');
   
   // Get current budget partidas and conceptos
