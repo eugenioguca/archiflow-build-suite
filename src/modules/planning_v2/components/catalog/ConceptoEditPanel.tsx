@@ -25,7 +25,7 @@ import { formatAsCurrency, toDisplayPrecision, formatAsPercentage } from '../../
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { PlanningConcepto } from '../../types';
-import { WBSSelector } from './WBSSelector';
+import { TUBreadcrumb } from './TUBreadcrumb';
 import ReactMarkdown from 'react-markdown';
 
 interface ConceptoEditPanelProps {
@@ -126,7 +126,7 @@ export function ConceptoEditPanel({
       if (!concepto?.id) return [];
       
       const { data, error } = await supabase
-        .from('planning_concepto_attachments' as any)
+        .from('planning_concepto_attachments')
         .select('*')
         .eq('concepto_id', concepto.id)
         .order('created_at', { ascending: false });
@@ -144,7 +144,7 @@ export function ConceptoEditPanel({
       if (!concepto?.id) return [];
       
       const { data, error } = await supabase
-        .from('planning_audit_log' as any)
+        .from('planning_audit_log')
         .select('*, profiles(full_name)')
         .eq('entity_type', 'concepto')
         .eq('entity_id', concepto.id)
@@ -173,10 +173,23 @@ export function ConceptoEditPanel({
     },
   });
 
-  // File upload handler
+  // File upload handler (only PDF, JPG, PNG)
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !concepto?.id) return;
+
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Solo se permiten archivos PDF, JPG o PNG');
+      return;
+    }
+
+    // Validate file size (10 MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('El archivo no debe exceder 10 MB');
+      return;
+    }
 
     setUploading(true);
     try {
@@ -192,14 +205,14 @@ export function ConceptoEditPanel({
 
       // Create attachment record
       const { error: insertError } = await supabase
-        .from('planning_concepto_attachments' as any)
+        .from('planning_concepto_attachments')
         .insert({
           concepto_id: concepto.id,
           file_name: file.name,
           file_path: filePath,
           file_size: file.size,
           file_type: file.type,
-        } as any);
+        });
 
       if (insertError) throw insertError;
 
@@ -210,6 +223,32 @@ export function ConceptoEditPanel({
       toast.error('Error al subir archivo');
     } finally {
       setUploading(false);
+    }
+  };
+
+  // Delete attachment
+  const handleDeleteAttachment = async (attachmentId: string, filePath: string) => {
+    try {
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from('planning_attachments')
+        .remove([filePath]);
+
+      if (storageError) throw storageError;
+
+      // Delete record
+      const { error: deleteError } = await supabase
+        .from('planning_concepto_attachments')
+        .delete()
+        .eq('id', attachmentId);
+
+      if (deleteError) throw deleteError;
+
+      queryClient.invalidateQueries({ queryKey: ['concepto-attachments', concepto?.id] });
+      toast.success('Archivo eliminado');
+    } catch (error) {
+      console.error('Error deleting attachment:', error);
+      toast.error('Error al eliminar archivo');
     }
   };
 
@@ -280,13 +319,12 @@ export function ConceptoEditPanel({
           <TabsContent value="general" className="mt-6">
             <ScrollArea className="h-[calc(100vh-250px)]">
               <form onSubmit={onSubmit} className="space-y-6 pr-4">
-                {/* WBS Selector */}
+                {/* TU Breadcrumb (Read-only) */}
                 <div className="space-y-2">
-                  <Label>WBS (Dept → Mayor → Partida → Subpartida)</Label>
-                  <WBSSelector
-                    value={watch('wbs_code')}
-                    onChange={(value) => setValue('wbs_code', value || '')}
-                  />
+                  <Label>Ruta TU (Solo lectura)</Label>
+                  <div className="p-3 bg-muted/30 rounded-lg">
+                    <TUBreadcrumb conceptoId={concepto.id} />
+                  </div>
                 </div>
 
                 <Separator />
@@ -450,13 +488,17 @@ export function ConceptoEditPanel({
                     <div className="border-2 border-dashed rounded-lg p-6 hover:bg-muted/50 transition-colors text-center">
                       <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                       <p className="text-sm text-muted-foreground">
-                        {uploading ? 'Subiendo archivo...' : 'Click para adjuntar cotización'}
+                        {uploading ? 'Subiendo archivo...' : 'Click para adjuntar cotización (PDF, JPG, PNG)'}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Máximo 10 MB
                       </p>
                     </div>
                   </Label>
                   <input
                     id="file-upload"
                     type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
                     className="hidden"
                     onChange={handleFileUpload}
                     disabled={uploading}
@@ -488,13 +530,27 @@ export function ConceptoEditPanel({
                             </p>
                           </div>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleDownload(attachment.file_path, attachment.file_name)}
-                        >
-                          Descargar
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDownload(attachment.file_path, attachment.file_name)}
+                          >
+                            Descargar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => {
+                              if (confirm('¿Eliminar este archivo?')) {
+                                handleDeleteAttachment(attachment.id, attachment.file_path);
+                              }
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     ))
                   )}
@@ -526,16 +582,24 @@ export function ConceptoEditPanel({
                             {new Date(entry.created_at).toLocaleString('es-MX')}
                           </span>
                         </div>
-                        <p className="text-sm">
+                        <p className="text-sm font-medium mb-1">
                           {entry.profiles?.full_name || 'Usuario'}
                         </p>
-                        {entry.changes && (
-                          <div className="text-xs text-muted-foreground mt-2 space-y-1">
-                            {Object.entries(entry.changes).map(([key, value]) => (
-                              <div key={key}>
-                                <span className="font-medium">{key}:</span> {String(value)}
-                              </div>
-                            ))}
+                        {entry.field_name && (
+                          <div className="text-sm space-y-1 mt-2">
+                            <p className="text-muted-foreground">
+                              Campo: <span className="font-medium text-foreground">{entry.field_name}</span>
+                            </p>
+                            {entry.old_value && (
+                              <p className="text-muted-foreground">
+                                Antes: <span className="text-foreground">{entry.old_value}</span>
+                              </p>
+                            )}
+                            {entry.new_value && (
+                              <p className="text-muted-foreground">
+                                Después: <span className="text-foreground">{entry.new_value}</span>
+                              </p>
+                            )}
                           </div>
                         )}
                       </div>
