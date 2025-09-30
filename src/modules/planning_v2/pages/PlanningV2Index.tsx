@@ -239,10 +239,17 @@ export default function PlanningV2Index() {
     setWizardOpen(true);
   };
 
-  // Mutations with proper cleanup
+  // Mutations with proper cleanup - close dialog FIRST, then refresh
   const moveToTrashMutation = useMutation({
     mutationFn: (budgetId: string) => moveToTrash(budgetId),
-    onSuccess: () => {
+    onSuccess: async () => {
+      // 1. Close dialog immediately
+      setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
+      
+      // 2. Yield a frame to let dialog unmount
+      await new Promise(r => setTimeout(r, 0));
+      
+      // 3. Show toast and refresh
       toast({
         title: 'Presupuesto movido a papelera',
         description: 'El presupuesto se movió a la papelera exitosamente'
@@ -258,14 +265,21 @@ export default function PlanningV2Index() {
       });
     },
     onSettled: () => {
-      // Always close dialog and reset state
+      // Always ensure dialog is closed
       setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
     }
   });
 
   const restoreMutation = useMutation({
     mutationFn: (budgetId: string) => restoreBudget(budgetId),
-    onSuccess: () => {
+    onSuccess: async () => {
+      // 1. Close dialog immediately
+      setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
+      
+      // 2. Yield a frame to let dialog unmount
+      await new Promise(r => setTimeout(r, 0));
+      
+      // 3. Show toast and refresh
       toast({
         title: 'Presupuesto restaurado',
         description: 'El presupuesto se restauró exitosamente'
@@ -281,14 +295,21 @@ export default function PlanningV2Index() {
       });
     },
     onSettled: () => {
-      // Always close dialog and reset state
+      // Always ensure dialog is closed
       setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
     }
   });
 
   const deletePermanentlyMutation = useMutation({
     mutationFn: (budgetId: string) => deleteBudgetPermanently(budgetId),
-    onSuccess: () => {
+    onSuccess: async () => {
+      // 1. Close dialog immediately
+      setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
+      
+      // 2. Yield a frame to let dialog unmount
+      await new Promise(r => setTimeout(r, 0));
+      
+      // 3. Show toast and refresh
       toast({
         title: 'Presupuesto eliminado',
         description: 'El presupuesto se eliminó permanentemente'
@@ -304,7 +325,7 @@ export default function PlanningV2Index() {
       });
     },
     onSettled: () => {
-      // Always close dialog and reset state
+      // Always ensure dialog is closed
       setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
     }
   });
@@ -685,9 +706,24 @@ export default function PlanningV2Index() {
 
       <NewBudgetWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
 
-      {/* Confirmation Dialog */}
-      <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}>
-        <AlertDialogContent>
+      {/* Confirmation Dialog - Controlled and Portaled */}
+      <AlertDialog 
+        open={deleteDialog.open} 
+        onOpenChange={(open) => {
+          if (!isDeleting) {
+            setDeleteDialog({ ...deleteDialog, open });
+          }
+        }}
+      >
+        <AlertDialogContent
+          onEscapeKeyDown={(e) => {
+            if (!isDeleting) {
+              setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
+            } else {
+              e.preventDefault();
+            }
+          }}
+        >
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-destructive" />

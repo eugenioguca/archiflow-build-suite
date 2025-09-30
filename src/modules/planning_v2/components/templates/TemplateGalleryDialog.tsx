@@ -60,13 +60,24 @@ export function TemplateGalleryDialog({
     queryFn: getTemplates,
   });
   
-  // Delete mutation with guaranteed cleanup
+  // Delete mutation with guaranteed cleanup - close dialog FIRST
   const deleteMutation = useMutation({
     mutationFn: deleteTemplate,
-    onSuccess: () => {
+    onSuccess: async () => {
+      // 1. Close dialog immediately
+      setDeleteDialogOpen(false);
+      const deletedId = templateToDelete?.id;
+      setTemplateToDelete(null);
+      
+      // 2. Yield a frame to let dialog unmount
+      await new Promise(r => setTimeout(r, 0));
+      
+      // 3. Show toast and refresh
       toast.success('Plantilla eliminada');
       queryClient.invalidateQueries({ queryKey: ['planning-templates'] });
-      if (previewTemplate?.id === templateToDelete?.id) {
+      
+      // 4. Clear preview if it was the deleted template
+      if (previewTemplate?.id === deletedId) {
         setPreviewTemplate(null);
       }
     },
@@ -246,10 +257,12 @@ export function TemplateGalleryDialog({
                             <Button
                               variant="ghost"
                               size="sm"
+                              type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDelete(template);
                               }}
+                              disabled={deleteMutation.isPending}
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
@@ -397,9 +410,23 @@ export function TemplateGalleryDialog({
       onOpenChange={setShowUploadDialog}
     />
     
-    {/* Delete Confirmation */}
-    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-      <AlertDialogContent>
+    {/* Delete Confirmation - Controlled */}
+    <AlertDialog 
+      open={deleteDialogOpen} 
+      onOpenChange={(open) => {
+        if (!deleteMutation.isPending) {
+          setDeleteDialogOpen(open);
+          if (!open) setTemplateToDelete(null);
+        }
+      }}
+    >
+      <AlertDialogContent
+        onEscapeKeyDown={(e) => {
+          if (deleteMutation.isPending) {
+            e.preventDefault();
+          }
+        }}
+      >
         <AlertDialogHeader>
           <AlertDialogTitle>¿Eliminar plantilla?</AlertDialogTitle>
           <AlertDialogDescription>

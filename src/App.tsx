@@ -1,12 +1,11 @@
-
-import React from "react";
+import React, { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { AlertNotification } from "@/components/calendar/AlertNotification";
 import { ClientProjectAlertNotification } from "@/components/calendar/ClientProjectAlertNotification";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Layout from "@/components/Layout";
 import Index from "./pages/Index";
@@ -102,6 +101,52 @@ function ClientProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/**
+ * Safety net component to cleanup stuck overlays and states
+ */
+function SafetyNetCleanup() {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Cleanup function to remove any stuck overlays and restore interactivity
+    const cleanup = () => {
+      // Remove any stuck dialog/alert overlays
+      document
+        .querySelectorAll('[data-radix-alert-dialog-overlay], [data-radix-dialog-overlay]')
+        .forEach(el => el.remove());
+      
+      // Remove aria-hidden from any elements that might be blocking interaction
+      document
+        .querySelectorAll('[aria-hidden="true"]')
+        .forEach(el => {
+          // Only remove aria-hidden from body and root-level elements
+          if (el === document.body || el.id === 'root' || el.parentElement === document.body) {
+            el.removeAttribute('aria-hidden');
+          }
+        });
+      
+      // Ensure pointer events are enabled
+      document.body.style.pointerEvents = '';
+      document.documentElement.style.pointerEvents = '';
+      const root = document.getElementById('root');
+      if (root) {
+        root.style.pointerEvents = '';
+      }
+    };
+
+    // Run cleanup on route change (after a small delay to let dialogs close naturally)
+    const timeoutId = setTimeout(cleanup, 100);
+    
+    // Cleanup on unmount
+    return () => {
+      clearTimeout(timeoutId);
+      cleanup();
+    };
+  }, [location.pathname]);
+
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -109,6 +154,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <SafetyNetCleanup />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />

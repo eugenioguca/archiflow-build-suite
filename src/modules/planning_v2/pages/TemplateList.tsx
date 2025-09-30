@@ -111,6 +111,7 @@ export function TemplateList() {
                 <Button
                   variant="outline"
                   size="sm"
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     setSelectedTemplateId(template.id);
@@ -143,9 +144,23 @@ export function TemplateList() {
         </Card>
       ) : null}
 
-      {/* Delete Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
+      {/* Delete Dialog - Controlled */}
+      <AlertDialog 
+        open={deleteDialogOpen} 
+        onOpenChange={(open) => {
+          if (!isDeleting) {
+            setDeleteDialogOpen(open);
+            if (!open) setSelectedTemplateId(null);
+          }
+        }}
+      >
+        <AlertDialogContent
+          onEscapeKeyDown={(e) => {
+            if (isDeleting) {
+              e.preventDefault();
+            }
+          }}
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar plantilla?</AlertDialogTitle>
             <AlertDialogDescription>
