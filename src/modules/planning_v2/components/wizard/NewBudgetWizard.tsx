@@ -375,12 +375,12 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
                           value={field.value}
                           onValueChange={field.onChange}
                           placeholder="Seleccionar cliente..."
-                          searchPlaceholder="Buscar por nombre o código..."
+                          searchPlaceholder="Buscar por nombre..."
                           emptyText="Sin resultados"
                           loading={loadingClientes}
                           disabled={loading}
-                          showCodes={true}
-                          searchFields={['label', 'codigo', 'searchText']}
+                          showCodes={false}
+                          searchFields={['label', 'searchText']}
                           className="w-full"
                           portalContainer={dialogContentRef.current}
                         />
@@ -407,12 +407,12 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
                           value={field.value}
                           onValueChange={field.onChange}
                           placeholder="Seleccionar proyecto..."
-                          searchPlaceholder="Buscar por nombre o código..."
+                          searchPlaceholder="Buscar por nombre..."
                           emptyText="Sin resultados"
                           loading={loadingProyectos}
                           disabled={loading}
-                          showCodes={true}
-                          searchFields={['label', 'codigo', 'searchText']}
+                          showCodes={false}
+                          searchFields={['label', 'searchText']}
                           className="w-full"
                           portalContainer={dialogContentRef.current}
                         />
