@@ -1,8 +1,8 @@
 /**
- * Diálogo para aplicar plantilla a presupuesto con preview de cambios
+ * Diálogo para aplicar plantilla a presupuesto con preview y TU mapping
  */
 import { useState, useEffect } from 'react';
-import { FileText, Plus, AlertCircle } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -13,11 +13,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import * as templateService from '../../services/templateService';
+import { mapTemplateToTU } from '../../services/tuMappingService';
+import { TemplatePreviewDialog } from './TemplatePreviewDialog';
 import type { BudgetTemplate } from '../../services/templateService';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -43,9 +42,9 @@ export function ApplyTemplateDialog({
 }: ApplyTemplateDialogProps) {
   const queryClient = useQueryClient();
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(preselectedTemplateId || '');
-  const [delta, setDelta] = useState<any | null>(null);
-  const [currentPartidas, setCurrentPartidas] = useState<any[]>([]);
-  const [currentConceptos, setCurrentConceptos] = useState<any[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
+  const [mappingResults, setMappingResults] = useState<any>(null);
+  const [isMapping, setIsMapping] = useState(false);
 
   // Update selectedTemplateId when preselectedTemplateId changes
   useEffect(() => {
@@ -54,28 +53,6 @@ export function ApplyTemplateDialog({
     }
   }, [preselectedTemplateId]);
 
-  // Fetch current partidas and conceptos when dialog opens
-  useEffect(() => {
-    if (!open) return;
-
-    const fetchData = async () => {
-      const partidasResult = await (supabase as any)
-        .from('planning_partidas')
-        .select('*')
-        .eq('budget_id', budgetId);
-      
-      const conceptosResult = await (supabase as any)
-        .from('planning_conceptos')
-        .select('*')
-        .eq('budget_id', budgetId);
-      
-      setCurrentPartidas(partidasResult.data || []);
-      setCurrentConceptos(conceptosResult.data || []);
-    };
-
-    fetchData();
-  }, [open, budgetId]);
-
   // Fetch templates
   const { data: templates = [], isLoading: isLoadingTemplates } = useQuery({
     queryKey: ['planning-templates'],
@@ -83,30 +60,49 @@ export function ApplyTemplateDialog({
   });
 
   // Fetch selected template
-  const { data: selectedTemplate } = useQuery({
+  const { data: selectedTemplate, isLoading: isLoadingTemplate } = useQuery({
     queryKey: ['planning-template', selectedTemplateId],
     queryFn: () => templateService.getTemplate(selectedTemplateId),
     enabled: !!selectedTemplateId
   });
-
-  // Calculate delta when template changes
-  useEffect(() => {
-    if (selectedTemplate?.template_data) {
-      const calculatedDelta = templateService.calculateDelta(
-        currentPartidas,
-        currentConceptos,
-        selectedTemplate.template_data
-      );
-      setDelta(calculatedDelta);
-    } else {
-      setDelta(null);
+  
+  // Get budget defaults
+  const { data: budget } = useQuery({
+    queryKey: ['planning-budget-settings', budgetId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('planning_budgets')
+        .select('settings')
+        .eq('id', budgetId)
+        .single();
+      if (error) throw error;
+      return data;
     }
-  }, [selectedTemplate, currentPartidas, currentConceptos]);
+  });
 
-  // Apply template mutation
+  const handlePreview = async () => {
+    if (!selectedTemplate) return;
+    
+    setIsMapping(true);
+    try {
+      const mapping = await mapTemplateToTU(
+        selectedTemplate.template_data.partidas,
+        selectedTemplate.template_data.conceptos
+      );
+      setMappingResults(mapping);
+      setShowPreview(true);
+    } catch (error: any) {
+      console.error('Error mapping to TU:', error);
+      toast.error('Error al mapear con TU');
+    } finally {
+      setIsMapping(false);
+    }
+  };
+
+  // Apply template mutation with budget defaults
   const applyMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedTemplate || !delta) return;
+      if (!selectedTemplate) throw new Error('No template selected');
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -115,254 +111,193 @@ export function ApplyTemplateDialog({
         .single();
 
       if (!profile) throw new Error('Usuario no autenticado');
+      
+      const budgetSettings = (budget?.settings || {}) as any;
+      const defaultHonorarios = budgetSettings.honorarios_pct_default ?? 0.17;
+      const defaultDesperdicio = budgetSettings.desperdicio_pct_default ?? 0.05;
 
-      // 1. Crear nuevas partidas
-      if (delta.newPartidas.length > 0) {
-        const { error: partidasError } = await supabase
-          .from('planning_partidas')
-          .insert(
-            delta.newPartidas.map(p => ({
-              budget_id: budgetId,
-              name: p.name,
-              orden: p.order,
-              created_by: profile.id
-            }))
-          );
-
-        if (partidasError) throw partidasError;
-      }
-
-      // 2. Obtener mapping de nombres de partida a IDs
-      const { data: allPartidas, error: partidasError } = await supabase
+      // 1. Create partidas
+      const partidasToInsert = selectedTemplate.template_data.partidas.map((p, idx) => ({
+        budget_id: budgetId,
+        name: p.name,
+        order_index: idx,
+        active: true,
+        notes: null,
+        honorarios_pct_override: null,
+        desperdicio_pct_override: null,
+      }));
+      
+      const { data: createdPartidas, error: partidasError } = await supabase
         .from('planning_partidas')
-        .select('id, name')
-        .eq('budget_id', budgetId);
+        .insert(partidasToInsert)
+        .select();
 
-      if (partidasError) throw partidasError;
+      if (partidasError) throw new Error(`Error al crear partidas: ${partidasError.message}`);
 
-      const partidaNameToId = new Map(
-        allPartidas.map(p => [p.name, p.id])
+      // 2. Build partida code to ID map
+      const partidaCodeToId = new Map(
+        selectedTemplate.template_data.partidas.map((p, idx) => [
+          p.code,
+          createdPartidas?.[idx]?.id
+        ])
       );
 
-      // 3. Crear nuevos conceptos (con cantidad en 0)
-      if (delta.newConceptos.length > 0) {
-        const conceptsToInsert = delta.newConceptos
-          .map(c => {
-            // Buscar la partida por código primero
-            const partida = delta.newPartidas.find(p => p.code === c.partida_code);
-            const partidaId = partida ? partidaNameToId.get(partida.name) : null;
-            if (!partidaId) return null;
+      // 3. Create conceptos with defaults from budget
+      const conceptosToInsert = selectedTemplate.template_data.conceptos
+        .map((c, idx) => {
+          const partidaId = partidaCodeToId.get(c.partida_code);
+          if (!partidaId) return null;
 
-            return {
-              budget_id: budgetId,
-              partida_id: partidaId,
-              code: c.code,
-              short_description: c.short_description,
-              unit: c.unit,
-              cantidad_real: 0, // Iniciar en 0
-              desperdicio_pct: c.desperdicio_pct,
-              precio_real: c.precio_real,
-              honorarios_pct: c.honorarios_pct,
-              notes: c.notes,
-              sumable: true,
-              active: true,
-              created_by: profile.id
-            };
-          })
-          .filter(Boolean);
+          return {
+            partida_id: partidaId,
+            code: c.code,
+            short_description: c.short_description,
+            long_description: null,
+            unit: c.unit,
+            provider: null,
+            order_index: idx,
+            active: true,
+            sumable: true,
+            cantidad_real: 0, // Start at 0 as specified
+            desperdicio_pct: c.desperdicio_pct > 0 ? c.desperdicio_pct : defaultDesperdicio,
+            cantidad: 0,
+            precio_real: c.precio_real,
+            honorarios_pct: c.honorarios_pct > 0 ? c.honorarios_pct : defaultHonorarios,
+            pu: 0,
+            total_real: 0,
+            total: 0,
+            wbs_code: c.code,
+            props: {
+              template_import: {
+                template_id: selectedTemplateId,
+                template_name: selectedTemplate.name,
+              }
+            },
+          };
+        })
+        .filter(Boolean);
 
-        if (conceptsToInsert.length > 0) {
-          const { error: conceptosError } = await supabase
-            .from('planning_conceptos')
-            .insert(conceptsToInsert);
+      if (conceptosToInsert.length > 0) {
+        const { error: conceptosError } = await supabase
+          .from('planning_conceptos')
+          .insert(conceptosToInsert);
 
-          if (conceptosError) throw conceptosError;
-        }
+        if (conceptosError) throw new Error(`Error al crear conceptos: ${conceptosError.message}`);
       }
 
       return {
-        newPartidas: delta.newPartidas.length,
-        newConceptos: delta.newConceptos.length
+        partidasCreated: createdPartidas?.length || 0,
+        conceptosCreated: conceptosToInsert.length
       };
     },
     onSuccess: (result) => {
       toast.success(
-        `Plantilla aplicada: ${result?.newPartidas || 0} partidas y ${result?.newConceptos || 0} conceptos agregados`
+        `Plantilla aplicada: ${result.partidasCreated} partidas y ${result.conceptosCreated} conceptos creados`
       );
 
-      // Invalidar queries
-      queryClient.invalidateQueries({ queryKey: ['planning-partidas', budgetId] });
-      queryClient.invalidateQueries({ queryKey: ['planning-conceptos', budgetId] });
-
+      queryClient.invalidateQueries({ queryKey: ['planning-budget', budgetId] });
+      setShowPreview(false);
       onOpenChange(false);
     },
     onError: (error: any) => {
       console.error('Error applying template:', error);
-      toast.error(`Error al aplicar plantilla: ${error.message}`);
+      toast.error(error.message || 'Error al aplicar plantilla');
     }
   });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>Aplicar Plantilla</DialogTitle>
-          <DialogDescription>
-            Seleccione una plantilla para prellenar el presupuesto. Los conceptos no utilizados se agregarán con cantidad en 0.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open && !showPreview} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Aplicar Plantilla</DialogTitle>
+            <DialogDescription>
+              Selecciona una plantilla para prellenar el presupuesto. Los conceptos se crearán con cantidad en 0.
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Template Selection */}
-          <div className="space-y-2">
-            <Label>Plantilla</Label>
-            <Select
-              value={selectedTemplateId}
-              onValueChange={setSelectedTemplateId}
-              disabled={isLoadingTemplates || applyMutation.isPending}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={
-                  isLoadingTemplates 
-                    ? "Cargando plantillas..." 
-                    : templates.length === 0 
-                      ? "No hay plantillas disponibles"
-                      : "Seleccionar plantilla..."
-                } />
-              </SelectTrigger>
-              <SelectContent>
-                {templates.length === 0 ? (
-                  <div className="p-4 text-sm text-muted-foreground text-center">
-                    No hay plantillas disponibles.
-                    <br />
-                    Crea una plantilla primero.
-                  </div>
-                ) : (
-                  templates.map(template => (
-                    <SelectItem key={template.id} value={template.id}>
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4" />
-                        {template.name}
-                        {template.is_main && (
-                          <span className="text-xs text-primary">(Principal)</span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Preview */}
-          {delta && (
-            <div className="space-y-4">
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Vista previa de cambios antes de aplicar la plantilla
-                </AlertDescription>
-              </Alert>
-
-              <Tabs defaultValue="new" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="new">
-                    Elementos Nuevos ({delta.newPartidas.length + delta.newConceptos.length})
-                  </TabsTrigger>
-                  <TabsTrigger value="existing">
-                    Ya Existentes ({delta.existingConceptos.length})
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="new" className="space-y-4">
-                  <ScrollArea className="h-[400px] rounded-md border p-4">
-                    <div className="space-y-4">
-                      {delta.newPartidas.length > 0 && (
-                        <div>
-                          <h4 className="text-sm font-medium mb-2">
-                            Nuevas Partidas ({delta.newPartidas.length})
-                          </h4>
-                          <div className="space-y-1">
-                            {delta.newPartidas.map(p => (
-                              <div key={p.code} className="text-sm flex items-center gap-2">
-                                <Plus className="h-3 w-3 text-green-600" />
-                                <span className="font-mono text-xs">{p.code}</span>
-                                <span>{p.name}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {delta.newConceptos.length > 0 && (
-                        <div>
-                          <h4 className="text-sm font-medium mb-2">
-                            Nuevos Conceptos ({delta.newConceptos.length})
-                          </h4>
-                          <div className="space-y-1">
-                            {delta.newConceptos.map(c => (
-                              <div key={c.code} className="text-sm flex items-center gap-2">
-                                <Plus className="h-3 w-3 text-green-600" />
-                                <span className="font-mono text-xs">{c.code}</span>
-                                <span className="flex-1 truncate">{c.short_description}</span>
-                                <span className="text-xs text-muted-foreground">{c.unit}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {delta.newPartidas.length === 0 && delta.newConceptos.length === 0 && (
-                        <p className="text-sm text-muted-foreground text-center py-8">
-                          No hay elementos nuevos para agregar
-                        </p>
-                      )}
+          <div className="space-y-6">
+            {/* Template Selection */}
+            <div className="space-y-2">
+              <Label>Plantilla</Label>
+              <Select
+                value={selectedTemplateId}
+                onValueChange={setSelectedTemplateId}
+                disabled={isLoadingTemplates || applyMutation.isPending}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={
+                    isLoadingTemplates 
+                      ? "Cargando plantillas..." 
+                      : templates.length === 0 
+                        ? "No hay plantillas disponibles"
+                        : "Seleccionar plantilla..."
+                  } />
+                </SelectTrigger>
+                <SelectContent>
+                  {templates.length === 0 ? (
+                    <div className="p-4 text-sm text-muted-foreground text-center">
+                      No hay plantillas disponibles.
+                      <br />
+                      Sube una plantilla primero.
                     </div>
-                  </ScrollArea>
-                </TabsContent>
-
-                <TabsContent value="existing">
-                  <ScrollArea className="h-[400px] rounded-md border p-4">
-                    <div className="space-y-1">
-                      {delta.existingConceptos.length > 0 ? (
-                        delta.existingConceptos.map(c => (
-                          <div key={c.code} className="text-sm flex items-center gap-2 text-muted-foreground">
-                            <span className="font-mono text-xs">{c.code}</span>
-                            <span className="flex-1 truncate">{c.short_description}</span>
-                            <span className="text-xs">(ya existe)</span>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-sm text-muted-foreground text-center py-8">
-                          No hay elementos duplicados
-                        </p>
-                      )}
-                    </div>
-                  </ScrollArea>
-                </TabsContent>
-              </Tabs>
+                  ) : (
+                    templates.map(template => (
+                      <SelectItem key={template.id} value={template.id}>
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          {template.name}
+                          {template.is_main && (
+                            <span className="text-xs text-primary">(Principal)</span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              {selectedTemplate && (
+                <p className="text-sm text-muted-foreground">
+                  {selectedTemplate.metadata.total_partidas} partidas, {selectedTemplate.metadata.total_conceptos} conceptos
+                </p>
+              )}
             </div>
-          )}
 
-          {/* Actions */}
-          <div className="flex items-center justify-between pt-4 border-t">
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={applyMutation.isPending}
-            >
-              Cancelar
-            </Button>
+            {/* Actions */}
+            <div className="flex items-center justify-between pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isMapping || applyMutation.isPending}
+              >
+                Cancelar
+              </Button>
 
-            <Button
-              onClick={() => applyMutation.mutate()}
-              disabled={!selectedTemplateId || !delta || applyMutation.isPending}
-            >
-              {applyMutation.isPending ? 'Aplicando...' : 'Aplicar Plantilla'}
-            </Button>
+              <Button
+                onClick={handlePreview}
+                disabled={!selectedTemplateId || isLoadingTemplate || isMapping || applyMutation.isPending}
+              >
+                {isMapping ? 'Analizando...' : 'Vista Previa'}
+              </Button>
+            </div>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Preview Dialog */}
+      {selectedTemplate && mappingResults && (
+        <TemplatePreviewDialog
+          open={showPreview}
+          onOpenChange={setShowPreview}
+          onConfirm={() => applyMutation.mutate()}
+          templateName={selectedTemplate.name}
+          partidas={selectedTemplate.template_data.partidas}
+          conceptos={selectedTemplate.template_data.conceptos}
+          unmappedPartidas={mappingResults.unmappedPartidas}
+          unmappedConceptos={mappingResults.unmappedConceptos}
+          isApplying={applyMutation.isPending}
+        />
+      )}
+    </>
   );
 }

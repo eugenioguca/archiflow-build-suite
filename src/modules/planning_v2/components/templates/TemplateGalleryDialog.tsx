@@ -1,44 +1,80 @@
 /**
- * Template Gallery Dialog - Browse and select templates with preview
+ * Template Gallery Dialog - Browse, upload, delete templates
  */
 import { useState, useMemo } from 'react';
-import { Search, FileText, Package, List, Eye } from 'lucide-react';
+import { Search, FileText, Package, List, Eye, Upload, Trash2, Plus } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useQuery } from '@tanstack/react-query';
-import { getTemplates } from '../../services/templateService';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getTemplates, deleteTemplate } from '../../services/templateService';
+import { TemplateUploadDialog } from './TemplateUploadDialog';
 import type { BudgetTemplate } from '../../services/templateService';
+import { toast } from 'sonner';
 
 interface TemplateGalleryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSelectTemplate: (templateId: string) => void;
+  budgetId?: string;
+  onCreateFromBudget?: () => void;
 }
 
 export function TemplateGalleryDialog({
   open,
   onOpenChange,
   onSelectTemplate,
+  budgetId,
+  onCreateFromBudget
 }: TemplateGalleryDialogProps) {
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [previewTemplate, setPreviewTemplate] = useState<BudgetTemplate | null>(null);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState<BudgetTemplate | null>(null);
 
   // Fetch templates
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ['planning-templates'],
     queryFn: getTemplates,
+  });
+  
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: deleteTemplate,
+    onSuccess: () => {
+      toast.success('Plantilla eliminada');
+      queryClient.invalidateQueries({ queryKey: ['planning-templates'] });
+      setDeleteDialogOpen(false);
+      setTemplateToDelete(null);
+      if (previewTemplate?.id === templateToDelete?.id) {
+        setPreviewTemplate(null);
+      }
+    },
+    onError: (error: any) => {
+      toast.error(`Error al eliminar: ${error.message}`);
+    }
   });
 
   // Filter templates
@@ -57,28 +93,57 @@ export function TemplateGalleryDialog({
     onSelectTemplate(template.id);
     onOpenChange(false);
   };
+  
+  const handleDelete = (template: BudgetTemplate) => {
+    setTemplateToDelete(template);
+    setDeleteDialogOpen(true);
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh]">
-        <DialogHeader>
-          <DialogTitle>Galería de Plantillas</DialogTitle>
-          <DialogDescription>
-            Explora y selecciona una plantilla para aplicar a tu presupuesto
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open && !showUploadDialog} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-6xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Galería de Plantillas</DialogTitle>
+            <DialogDescription>
+              Explora, sube o crea plantillas para reutilizar estructuras de presupuesto
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar plantillas por nombre o descripción..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
-            />
-          </div>
+          <div className="space-y-4">
+            {/* Toolbar */}
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar plantillas por nombre o descripción..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowUploadDialog(true)}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Subir Excel
+              </Button>
+              {budgetId && onCreateFromBudget && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    onCreateFromBudget();
+                    onOpenChange(false);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Desde Presupuesto
+                </Button>
+              )}
+            </div>
 
           <div className="grid grid-cols-12 gap-4">
             {/* Templates List */}
@@ -123,15 +188,27 @@ export function TemplateGalleryDialog({
                           </div>
                         </CardHeader>
                         <CardContent className="p-4 pt-2">
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Package className="h-3 w-3" />
-                              <span>{template.metadata.total_partidas} partidas</span>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Package className="h-3 w-3" />
+                                <span>{template.metadata.total_partidas} partidas</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <List className="h-3 w-3" />
+                                <span>{template.metadata.total_conceptos} conceptos</span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <List className="h-3 w-3" />
-                              <span>{template.metadata.total_conceptos} conceptos</span>
-                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(template);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
                           </div>
                         </CardContent>
                       </Card>
@@ -267,13 +344,36 @@ export function TemplateGalleryDialog({
             </div>
           </div>
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
+    
+    {/* Upload Dialog */}
+    <TemplateUploadDialog
+      open={showUploadDialog}
+      onOpenChange={setShowUploadDialog}
+    />
+    
+    {/* Delete Confirmation */}
+    <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>¿Eliminar plantilla?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Esta acción no se puede deshacer. La plantilla "{templateToDelete?.name}" será eliminada permanentemente.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => templateToDelete && deleteMutation.mutate(templateToDelete.id)}
+            disabled={deleteMutation.isPending}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {deleteMutation.isPending ? 'Eliminando...' : 'Eliminar'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>
   );
 }

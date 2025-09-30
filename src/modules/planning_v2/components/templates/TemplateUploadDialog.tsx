@@ -1,8 +1,8 @@
 /**
- * Diálogo para cargar plantilla desde Excel CAMM
+ * Diálogo para cargar plantilla desde Excel
  */
 import { useState } from 'react';
-import { Upload, FileSpreadsheet, Check } from 'lucide-react';
+import { Upload, FileSpreadsheet, Check, AlertCircle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -16,8 +16,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import * as templateService from '../../services/templateService';
+import { mapTemplateToTU } from '../../services/tuMappingService';
 import type { TemplateData } from '../../services/templateService';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -32,10 +34,11 @@ export function TemplateUploadDialog({
 }: TemplateUploadDialogProps) {
   const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
-  const [templateName, setTemplateName] = useState('Plantilla CAMM - Julio 2022');
-  const [description, setDescription] = useState('Plantilla base de presupuesto CAMM con todas las partidas y conceptos estándar');
-  const [isMain, setIsMain] = useState(true);
+  const [templateName, setTemplateName] = useState('');
+  const [description, setDescription] = useState('');
+  const [isMain, setIsMain] = useState(false);
   const [parsedData, setParsedData] = useState<TemplateData | null>(null);
+  const [mappingResults, setMappingResults] = useState<any>(null);
   const [isParsing, setIsParsing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -45,7 +48,11 @@ export function TemplateUploadDialog({
     if (selectedFile) {
       setFile(selectedFile);
       setParsedData(null);
+      setMappingResults(null);
       setProgress(0);
+      // Auto-set template name from filename
+      const fileName = selectedFile.name.replace(/\.[^/.]+$/, '');
+      setTemplateName(fileName);
     }
   };
 
@@ -56,17 +63,32 @@ export function TemplateUploadDialog({
     setProgress(0);
     
     try {
-      setProgress(30);
+      setProgress(20);
       const data = await templateService.parseCAMMExcel(file);
-      setProgress(70);
+      setProgress(50);
       
       setParsedData(data);
+      
+      // Map to TU
+      setProgress(70);
+      const mapping = await mapTemplateToTU(data.partidas, data.conceptos);
+      setMappingResults(mapping);
       setProgress(100);
       
-      toast.success(`Archivo parseado: ${data.partidas.length} partidas, ${data.conceptos.length} conceptos`);
+      const { stats, unmappedPartidas, unmappedConceptos } = mapping;
+      
+      if (unmappedPartidas.length > 0 || unmappedConceptos.length > 0) {
+        toast.warning(
+          `Archivo parseado con advertencias: ${stats.mappedPartidas}/${stats.totalPartidas} partidas mapeadas, ${stats.mappedConceptos}/${stats.totalConceptos} conceptos mapeados`
+        );
+      } else {
+        toast.success(
+          `Archivo parseado exitosamente: ${data.partidas.length} partidas, ${data.conceptos.length} conceptos (todo mapeado a TU)`
+        );
+      }
     } catch (error: any) {
       console.error('Error parsing file:', error);
-      toast.error(`Error al parsear archivo: ${error.message}`);
+      toast.error(error.message || 'Error al parsear archivo');
     } finally {
       setIsParsing(false);
     }
@@ -154,23 +176,47 @@ export function TemplateUploadDialog({
             </div>
           )}
 
-          {/* Parsed Data Preview */}
-          {parsedData && (
-            <div className="rounded-lg border p-4 space-y-2 bg-muted/30">
-              <div className="flex items-center gap-2 text-sm font-medium text-green-600 dark:text-green-400">
-                <Check className="h-4 w-4" />
-                Archivo parseado exitosamente
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Partidas:</span>
-                  <span className="ml-2 font-medium">{parsedData.partidas.length}</span>
+          {/* Parsed Data Preview with Mapping Stats */}
+          {parsedData && mappingResults && (
+            <div className="space-y-4">
+              <div className="rounded-lg border p-4 space-y-2 bg-muted/30">
+                <div className="flex items-center gap-2 text-sm font-medium text-green-600 dark:text-green-400">
+                  <Check className="h-4 w-4" />
+                  Archivo parseado exitosamente
                 </div>
-                <div>
-                  <span className="text-muted-foreground">Conceptos:</span>
-                  <span className="ml-2 font-medium">{parsedData.conceptos.length}</span>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Partidas:</span>
+                    <span className="ml-2 font-medium">{parsedData.partidas.length}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Conceptos:</span>
+                    <span className="ml-2 font-medium">{parsedData.conceptos.length}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Partidas mapeadas:</span>
+                    <span className="ml-2 font-medium text-green-600">
+                      {mappingResults.stats.mappedPartidas}/{mappingResults.stats.totalPartidas}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Conceptos mapeados:</span>
+                    <span className="ml-2 font-medium text-green-600">
+                      {mappingResults.stats.mappedConceptos}/{mappingResults.stats.totalConceptos}
+                    </span>
+                  </div>
                 </div>
               </div>
+              
+              {(mappingResults.unmappedPartidas.length > 0 || mappingResults.unmappedConceptos.length > 0) && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    {mappingResults.unmappedPartidas.length} partidas y {mappingResults.unmappedConceptos.length} conceptos
+                    no pudieron mapearse al catálogo TU. Se guardarán sin vinculación.
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
           )}
 
@@ -183,7 +229,7 @@ export function TemplateUploadDialog({
                   id="template-name"
                   value={templateName}
                   onChange={(e) => setTemplateName(e.target.value)}
-                  placeholder="Ej: Plantilla CAMM - Julio 2022"
+                  placeholder="Ej: Construcción - Plantilla Base 2024"
                   disabled={isSaving}
                 />
               </div>

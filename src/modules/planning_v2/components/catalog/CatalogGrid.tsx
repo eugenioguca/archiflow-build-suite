@@ -28,6 +28,7 @@ import { ConceptoEditPanel } from './ConceptoEditPanel';
 import { TemplatePickerDialog } from './TemplatePickerDialog';
 import { TemplateGalleryDialog } from '../templates/TemplateGalleryDialog';
 import { ApplyTemplateDialog } from '../templates/ApplyTemplateDialog';
+import { CreateTemplateFromBudgetDialog } from '../templates/CreateTemplateFromBudgetDialog';
 import { ImportTUDialog } from './ImportTUDialog';
 import { ApplyDefaultsDialog } from './ApplyDefaultsDialog';
 import { BulkEditDialog } from './BulkEditDialog';
@@ -83,6 +84,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
   const [applyDefaultsOpen, setApplyDefaultsOpen] = useState(false);
   const [templateGalleryOpen, setTemplateGalleryOpen] = useState(false);
   const [applyTemplateOpen, setApplyTemplateOpen] = useState(false);
+  const [createTemplateOpen, setCreateTemplateOpen] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [newPartidaOpen, setNewPartidaOpen] = useState(false);
@@ -765,6 +767,16 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
           setTemplateGalleryOpen(false);
           setApplyTemplateOpen(true);
         }}
+        budgetId={budgetId}
+        onCreateFromBudget={() => setCreateTemplateOpen(true)}
+      />
+      
+      {/* Create Template from Budget */}
+      <CreateTemplateFromBudgetDialog
+        open={createTemplateOpen}
+        onOpenChange={setCreateTemplateOpen}
+        budgetId={budgetId}
+        budgetName={budget?.name || 'Presupuesto'}
       />
 
       {/* Apply Template Dialog */}
