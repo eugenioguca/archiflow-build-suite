@@ -12,6 +12,8 @@ import { Summary } from '../components/summary/Summary';
 import { VersionsList } from '../components/versions/VersionsList';
 import { ApplyTemplateDialog } from '../components/templates/ApplyTemplateDialog';
 import { useCatalogGrid } from '../hooks/useCatalogGrid';
+import { PlanningV2Shell } from '../components/common/PlanningV2Shell';
+import { UnfreezeButton } from '../components/dev/UnfreezeButton';
 
 export default function BudgetDetail() {
   const { id } = useParams<{ id: string }>();
@@ -56,7 +58,8 @@ export default function BudgetDetail() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <PlanningV2Shell>
+      <div className="space-y-6 p-6">
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
@@ -114,6 +117,10 @@ export default function BudgetDetail() {
         onOpenChange={setShowApplyTemplateDialog}
         budgetId={id!}
       />
+
+      {/* Dev-only unfreeze button */}
+      <UnfreezeButton />
     </div>
+    </PlanningV2Shell>
   );
 }

@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useTemplate } from '../hooks/useTemplate';
 import { useNavigate } from 'react-router-dom';
+import { unfreezeUI } from '../utils/unfreeze';
 
 export function TemplateList() {
   const navigate = useNavigate();
@@ -38,15 +39,26 @@ export function TemplateList() {
   const handleDelete = async () => {
     if (selectedTemplateId) {
       try {
-        await deleteTemplate(selectedTemplateId);
+        // 1. Close dialog first
         setDeleteDialogOpen(false);
         setSelectedTemplateId(null);
+        
+        // 2. Unfreeze UI
+        unfreezeUI('before-delete-template');
+        
+        // 3. Yield frame
+        await new Promise(r => setTimeout(r, 0));
+        
+        // 4. Execute delete
+        await deleteTemplate(selectedTemplateId);
       } catch (error) {
         // Error is handled by the hook
         console.error('Delete error:', error);
-        // Ensure dialog closes even on error
+      } finally {
+        // Ensure dialog closes and UI unfreezes even on error
         setDeleteDialogOpen(false);
         setSelectedTemplateId(null);
+        unfreezeUI('after-delete-template');
       }
     }
   };
