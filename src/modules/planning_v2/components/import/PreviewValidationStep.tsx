@@ -1,19 +1,18 @@
 /**
  * Vista previa y validación de datos importados
  */
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { AlertCircle, CheckCircle2, AlertTriangle, DollarSign } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -74,8 +73,58 @@ export function PreviewValidationStep({ data, referenceTotal }: PreviewValidatio
     return null;
   }, [grandTotal, referenceTotal]);
 
+  // Mostrar diálogo automáticamente si hay mismatch
+  useEffect(() => {
+    if (totalMismatch) {
+      setShowTotalMismatchDialog(true);
+    }
+  }, [totalMismatch]);
+
   return (
     <>
+      {/* Diálogo de mismatch */}
+      <Dialog open={showTotalMismatchDialog} onOpenChange={setShowTotalMismatchDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Diferencia en Total Detectada</DialogTitle>
+            <DialogDescription>
+              El total calculado no coincide con el total de referencia proporcionado.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Total de Referencia:</p>
+                <p className="text-lg font-bold">{formatAsCurrency(totalMismatch?.reference || 0)}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Total Calculado:</p>
+                <p className="text-lg font-bold">{formatAsCurrency(totalMismatch?.imported || 0)}</p>
+              </div>
+            </div>
+            <div className="bg-destructive/10 rounded-lg p-4 space-y-1">
+              <p className="text-sm font-medium text-destructive">Diferencia:</p>
+              <p className="text-2xl font-bold text-destructive">
+                {totalMismatch && totalMismatch.difference > 0 ? '+' : ''}
+                {formatAsCurrency(Math.abs(totalMismatch?.difference || 0))}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                ({totalMismatch && totalMismatch.percentDiff > 0 ? '+' : ''}
+                {totalMismatch?.percentDiff.toFixed(2)}%)
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTotalMismatchDialog(false)}>
+              Revisar Datos
+            </Button>
+            <Button onClick={() => setShowTotalMismatchDialog(false)}>
+              Continuar de Todos Modos
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="space-y-4 py-4">
         {/* Summary */}
         <div className="grid grid-cols-4 gap-4">

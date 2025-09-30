@@ -81,51 +81,24 @@ export function useImportExport(budgetId: string) {
     });
   };
 
-  // Importar datos validados
+  // Importar datos validados usando transacción atómica
   const importDataMutation = useMutation({
     mutationFn: async ({ partidaId, rows }: { partidaId: string; rows: any[] }) => {
-      // Crear conceptos uno por uno
-      const results = [];
-      for (const row of rows) {
-        if (!row.isValid) continue;
-        
-        try {
-          await createConcepto({
-            partida_id: partidaId,
-            code: row.data.code || null,
-            short_description: row.data.short_description,
-            long_description: row.data.long_description || null,
-            unit: row.data.unit,
-            provider: row.data.provider || null,
-            active: true,
-            sumable: true,
-            order_index: 0,
-            props: {},
-            cantidad_real: row.data.cantidad_real || 0,
-            desperdicio_pct: row.data.desperdicio_pct || 0,
-            cantidad: 0, // Se calculará
-            precio_real: row.data.precio_real || 0,
-            honorarios_pct: row.data.honorarios_pct || 0,
-            pu: 0, // Se calculará
-            total_real: 0, // Se calculará
-            total: 0, // Se calculará
-            wbs_code: row.data.wbs_code || null,
-          });
-          results.push({ success: true, row: row.rowIndex });
-        } catch (error) {
-          results.push({ success: false, row: row.rowIndex, error });
-        }
+      // Usar servicio de importación atómica
+      const result = await importService.persistImport(budgetId, partidaId, rows);
+      
+      if (!result.success) {
+        throw new Error(result.message);
       }
       
-      return results;
+      return result;
     },
-    onSuccess: (results) => {
-      const successCount = results.filter(r => r.success).length;
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['budget', budgetId] });
       
       toast({
         title: 'Importación completada',
-        description: `${successCount} conceptos importados correctamente`,
+        description: result.message,
       });
       
       // Limpiar estado

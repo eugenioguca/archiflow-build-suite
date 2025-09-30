@@ -256,67 +256,64 @@ export const importService = {
   },
 
   /**
-   * Persistir importación de forma atómica
+   * Persistir importación de forma atómica usando Edge Function
    * Si alguna fila falla, toda la importación se revierte
    */
   async persistImport(
     budgetId: string,
-    partidaName: string,
+    partidaId: string,
     validRows: ImportRow[]
   ): Promise<{ success: boolean; message: string; importedCount?: number; errors?: string[] }> {
     try {
       const { supabase } = await import('@/integrations/supabase/client');
       
-      // Preparar conceptos para bulk import
-      const conceptos = validRows.map(row => ({
+      // Preparar filas para importación atómica
+      const rows = validRows.map(row => ({
         code: row.data.code || null,
-        short_description: row.data.short_description,
-        long_description: row.data.long_description || null,
+        description: row.data.short_description,
         unit: row.data.unit,
-        provider: row.data.provider || null,
         cantidad_real: row.data.cantidad_real || 0,
         desperdicio_pct: row.data.desperdicio_pct || 0,
         precio_real: row.data.precio_real || 0,
         honorarios_pct: row.data.honorarios_pct || 0,
-        wbs_code: row.data.wbs_code || null,
-        active: true,
-        sumable: true,
-        order_index: row.rowIndex,
+        proveedor: row.data.provider || null,
+        wbs: row.data.wbs_code || null,
       }));
 
-      // Llamar a la función de importación atómica
-      const { data, error } = await supabase.rpc('planning_v2_bulk_import', {
-        _budget_id: budgetId,
-        _partida_name: partidaName,
-        _conceptos: conceptos,
+      // Llamar a Edge Function de importación atómica
+      const { data, error } = await supabase.functions.invoke('planning-import-atomic', {
+        body: {
+          budgetId,
+          partidaId,
+          rows,
+        },
       });
 
       if (error) {
-        console.error('Error en importación atómica:', error);
-        
-        // Mensaje de error en español
-        const errorMsg = error.message || 'Error desconocido';
-        
+        console.error('Error en Edge Function:', error);
         return {
           success: false,
-          message: `Importación revertida. ${errorMsg}`,
-          errors: [errorMsg],
+          message: `Importación revertida. ${error.message}`,
+          errors: [error.message],
         };
       }
 
-      // Parse resultado de la función
-      const result = data as any;
-      
-      // Éxito
+      if (!data || !data.success) {
+        return {
+          success: false,
+          message: data?.error || 'Importación revertida. Error desconocido',
+          errors: [data?.error || 'Error desconocido'],
+        };
+      }
+
       return {
         success: true,
-        message: result?.message || `Se importaron ${validRows.length} conceptos correctamente`,
-        importedCount: result?.imported_count || validRows.length,
+        message: data.message,
+        importedCount: data.importedCount,
       };
       
     } catch (error) {
       console.error('Error crítico en persistImport:', error);
-      
       return {
         success: false,
         message: 'Importación revertida. Error crítico en el proceso de importación.',
