@@ -42,6 +42,7 @@ import { SearchableCombobox } from '@/components/ui/searchable-combobox';
 import { clientsAdapter } from '../adapters/clients';
 import { projectsAdapter } from '../adapters/projects';
 import { moveToTrash, restoreBudget, deleteBudgetPermanently } from '../services/budgetService';
+import { DuplicateBudgetDialog } from '../components/budget/DuplicateBudgetDialog';
 import { useToast } from '@/hooks/use-toast';
 import { unfreezeUI } from '../utils/unfreeze';
 import { UnfreezeButton } from '../components/dev/UnfreezeButton';
@@ -59,6 +60,8 @@ export default function PlanningV2Index() {
   const [loading, setLoading] = useState(true);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [showTrash, setShowTrash] = useState(false);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [duplicatingBudget, setDuplicatingBudget] = useState<BudgetListItem | null>(null);
   
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -413,12 +416,8 @@ export default function PlanningV2Index() {
   };
 
   const handleDuplicate = async (budget: BudgetListItem) => {
-    // TODO: Implement duplicate functionality
-    toast({
-      title: 'Funcionalidad no disponible',
-      description: 'La duplicación de presupuestos estará disponible próximamente',
-      variant: 'default'
-    });
+    setDuplicatingBudget(budget);
+    setDuplicateDialogOpen(true);
   };
 
   return (
@@ -721,6 +720,16 @@ export default function PlanningV2Index() {
       </Card>
 
       <NewBudgetWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
+
+      {/* Duplicate Budget Dialog */}
+      {duplicatingBudget && (
+        <DuplicateBudgetDialog
+          open={duplicateDialogOpen}
+          onOpenChange={setDuplicateDialogOpen}
+          budgetId={duplicatingBudget.id}
+          budgetName={duplicatingBudget.name}
+        />
+      )}
 
       {/* Confirmation Dialog - Controlled and Portaled */}
       <AlertDialog 

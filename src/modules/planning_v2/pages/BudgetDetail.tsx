@@ -3,7 +3,7 @@
  */
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText } from 'lucide-react';
+import { ArrowLeft, FileText, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,14 +11,22 @@ import { CatalogGrid } from '../components/catalog/CatalogGrid';
 import { Summary } from '../components/summary/Summary';
 import { VersionsList } from '../components/versions/VersionsList';
 import { ApplyTemplateDialog } from '../components/templates/ApplyTemplateDialog';
+import { DuplicateBudgetDialog } from '../components/budget/DuplicateBudgetDialog';
 import { useCatalogGrid } from '../hooks/useCatalogGrid';
 import { PlanningV2Shell } from '../components/common/PlanningV2Shell';
 import { UnfreezeButton } from '../components/dev/UnfreezeButton';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export default function BudgetDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [showApplyTemplateDialog, setShowApplyTemplateDialog] = useState(false);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   
   const {
     rows,
@@ -81,14 +89,34 @@ export default function BudgetDetail() {
             Presupuesto #{budget.id.slice(0, 8)}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowApplyTemplateDialog(true)}
-        >
-          <FileText className="h-4 w-4 mr-2" />
-          Aplicar Plantilla
-        </Button>
+        <div className="flex items-center gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDuplicateDialogOpen(true)}
+                >
+                  <Copy className="h-4 w-4 mr-2" />
+                  Duplicar
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Crear una copia de este presupuesto</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowApplyTemplateDialog(true)}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Aplicar Plantilla
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="catalog" className="w-full">
@@ -116,6 +144,14 @@ export default function BudgetDetail() {
         open={showApplyTemplateDialog}
         onOpenChange={setShowApplyTemplateDialog}
         budgetId={id!}
+      />
+
+      {/* Duplicate Budget Dialog */}
+      <DuplicateBudgetDialog
+        open={duplicateDialogOpen}
+        onOpenChange={setDuplicateDialogOpen}
+        budgetId={id!}
+        budgetName={budget.name}
       />
 
       {/* Dev-only unfreeze button */}
