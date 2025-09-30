@@ -3,6 +3,7 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Settings, Trash2, Copy } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import {
   DndContext,
   closestCenter,
@@ -32,7 +33,8 @@ import { CreateTemplateFromBudgetDialog } from '../templates/CreateTemplateFromB
 import { ImportTUDialog } from './ImportTUDialog';
 import { ApplyDefaultsDialog } from './ApplyDefaultsDialog';
 import { BulkEditDialog } from './BulkEditDialog';
-import { NewPartidaDialog } from './NewPartidaDialog';
+import { NewPartidaFromTUDialog } from './NewPartidaFromTUDialog';
+import { NewSubpartidaFromTUDialog } from './NewSubpartidaFromTUDialog';
 import { EditableCell } from './EditableCell';
 import { CatalogRowActions } from './CatalogRowActions';
 import { DevMonitor } from '../dev/DevMonitor';
@@ -70,7 +72,6 @@ const DEFAULT_COLUMNS = [
   { key: 'pu', label: 'PU', type: 'computed' as const, visible: true },
   { key: 'total', label: 'Total', type: 'computed' as const, visible: true },
   { key: 'provider', label: 'Proveedor', type: 'input' as const, visible: true },
-  { key: 'wbs_code', label: 'WBS', type: 'input' as const, visible: true },
 ];
 
 export function CatalogGrid({ budgetId }: CatalogGridProps) {
@@ -88,6 +89,11 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [newPartidaOpen, setNewPartidaOpen] = useState(false);
+  const [newSubpartidaDialog, setNewSubpartidaDialog] = useState<{ 
+    open: boolean; 
+    partidaId?: string; 
+    tuPartidaId?: string;
+  }>({ open: false });
   const { settings, saveSettings, isLoading: isLoadingSettings } = useColumnSettings(budgetId);
 
   // Load saved settings when available
@@ -290,68 +296,33 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
     setNewPartidaOpen(true);
   };
 
-  const handleAddSubpartida = (partidaId: string) => {
-    // Create a new concepto as a subpartida placeholder
-    const wbsCode = prompt('Ingrese el código WBS para la subpartida (ej: 1.1, 2.3):');
-    if (!wbsCode) return;
+  const handleAddSubpartida = async (partidaId: string) => {
+    // Buscar el tu_partida_id de la partida desde planning_tu_mapping
+    try {
+      const { data: mapping } = await supabase
+        .from('planning_tu_mapping')
+        .select('tu_partida_id')
+        .eq('partida_id', partidaId)
+        .maybeSingle();
 
-    // Find max order_index in this partida
-    const partidaConceptos = rows
-      .filter(r => r.type === 'concepto' && r.concepto?.partida_id === partidaId)
-      .map(r => r.concepto!);
-    
-    const maxOrder = partidaConceptos.length > 0
-      ? Math.max(...partidaConceptos.map(c => c.order_index))
-      : 0;
-
-    // Create a header concepto for this subpartida
-    createConcepto({
-      partida_id: partidaId,
-      code: wbsCode,
-      short_description: `Subpartida ${wbsCode}`,
-      long_description: null,
-      unit: 'PZA',
-      provider: null,
-      order_index: maxOrder + 1,
-      active: true,
-      sumable: false, // Not sumable as it's a header
-      cantidad_real: 0,
-      desperdicio_pct: 0,
-      cantidad: 0,
-      precio_real: 0,
-      honorarios_pct: 0,
-      pu: 0,
-      total_real: 0,
-      total: 0,
-      wbs_code: wbsCode,
-      props: {},
-    });
-    
-    toast.success(`Subpartida ${wbsCode} creada`);
+      setNewSubpartidaDialog({
+        open: true,
+        partidaId,
+        tuPartidaId: mapping?.tu_partida_id || undefined,
+      });
+    } catch (error) {
+      console.error('Error fetching TU mapping:', error);
+      setNewSubpartidaDialog({
+        open: true,
+        partidaId,
+        tuPartidaId: undefined,
+      });
+    }
   };
 
-  const handleDeleteSubpartida = async (partidaId: string, wbsCode: string) => {
-    if (!confirm(`¿Eliminar subpartida ${wbsCode} y todos sus conceptos?`)) return;
-    
-    try {
-      // Find all conceptos with this WBS code in this partida
-      const conceptosToDelete = rows
-        .filter(r => r.type === 'concepto' && 
-                r.concepto?.partida_id === partidaId && 
-                r.concepto?.wbs_code === wbsCode)
-        .map(r => r.concepto!);
-      
-      // Import deleteConcepto from service
-      const { deleteConcepto: deleteConceptoService } = await import('../../services/budgetService');
-      
-      // Delete all conceptos in this subpartida
-      await Promise.all(conceptosToDelete.map(c => deleteConceptoService(c.id)));
-      
-      toast.success(`Subpartida ${wbsCode} eliminada`);
-    } catch (error) {
-      console.error('Error deleting subpartida:', error);
-      toast.error('Error al eliminar subpartida');
-    }
+  const handleDeleteSubpartida = async (partidaId: string) => {
+    // Esta función ya no se usa con la nueva arquitectura TU
+    toast.info('Usa el menú de acciones de cada concepto para eliminarlo');
   };
 
   // Create renderCell closure with updateConcepto wrapper
@@ -753,7 +724,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                         }}
                         onDelete={() => {
                           const partidaId = row.id.split('-')[1];
-                          handleDeleteSubpartida(partidaId, row.subpartidaWbs!);
+                          handleDeleteSubpartida(partidaId);
                         }}
                       />
                     );
@@ -897,12 +868,27 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
         budgetId={budgetId}
       />
 
-      {/* New Partida Dialog */}
-      <NewPartidaDialog
+      {/* New Partida Dialog (from TU) */}
+      <NewPartidaFromTUDialog
         open={newPartidaOpen}
         onOpenChange={setNewPartidaOpen}
         budgetId={budgetId}
         orderIndex={rows.filter(r => r.type === 'partida').length}
+        tuMayoresWhitelist={budget?.settings?.tu_mayores || []}
+      />
+
+      {/* New Subpartida Dialog (from TU) */}
+      <NewSubpartidaFromTUDialog
+        open={newSubpartidaDialog.open}
+        onOpenChange={(open) => setNewSubpartidaDialog({ open })}
+        budgetId={budgetId}
+        partidaId={newSubpartidaDialog.partidaId || ''}
+        tuPartidaId={newSubpartidaDialog.tuPartidaId}
+        orderIndex={
+          newSubpartidaDialog.partidaId
+            ? rows.filter(r => r.type === 'concepto' && r.concepto?.partida_id === newSubpartidaDialog.partidaId).length
+            : 0
+        }
         budgetDefaults={{
           honorarios_pct_default: budget?.settings?.honorarios_pct_default ?? 0.17,
           desperdicio_pct_default: budget?.settings?.desperdicio_pct_default ?? 0.05,
