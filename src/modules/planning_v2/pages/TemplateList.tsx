@@ -3,7 +3,7 @@
  * Lista de plantillas disponibles
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, FileText, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,11 +27,27 @@ export function TemplateList() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
-  const handleDelete = async () => {
-    if (selectedTemplateId) {
-      await deleteTemplate(selectedTemplateId);
+  // Cleanup on unmount to prevent stuck overlays
+  useEffect(() => {
+    return () => {
       setDeleteDialogOpen(false);
       setSelectedTemplateId(null);
+    };
+  }, []);
+
+  const handleDelete = async () => {
+    if (selectedTemplateId) {
+      try {
+        await deleteTemplate(selectedTemplateId);
+        setDeleteDialogOpen(false);
+        setSelectedTemplateId(null);
+      } catch (error) {
+        // Error is handled by the hook
+        console.error('Delete error:', error);
+        // Ensure dialog closes even on error
+        setDeleteDialogOpen(false);
+        setSelectedTemplateId(null);
+      }
     }
   };
 
@@ -95,10 +111,12 @@ export function TemplateList() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setSelectedTemplateId(template.id);
                     setDeleteDialogOpen(true);
                   }}
+                  disabled={isDeleting}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -136,7 +154,7 @@ export function TemplateList() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={isDeleting}

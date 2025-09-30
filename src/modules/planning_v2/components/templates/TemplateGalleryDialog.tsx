@@ -1,7 +1,7 @@
 /**
  * Template Gallery Dialog - Browse, upload, delete templates
  */
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Search, FileText, Package, List, Eye, Upload, Trash2, Plus } from 'lucide-react';
 import {
   Dialog,
@@ -60,22 +60,33 @@ export function TemplateGalleryDialog({
     queryFn: getTemplates,
   });
   
-  // Delete mutation
+  // Delete mutation with guaranteed cleanup
   const deleteMutation = useMutation({
     mutationFn: deleteTemplate,
     onSuccess: () => {
       toast.success('Plantilla eliminada');
       queryClient.invalidateQueries({ queryKey: ['planning-templates'] });
-      setDeleteDialogOpen(false);
-      setTemplateToDelete(null);
       if (previewTemplate?.id === templateToDelete?.id) {
         setPreviewTemplate(null);
       }
     },
     onError: (error: any) => {
       toast.error(`Error al eliminar: ${error.message}`);
+    },
+    onSettled: () => {
+      // Always cleanup dialog state
+      setDeleteDialogOpen(false);
+      setTemplateToDelete(null);
     }
   });
+
+  // Cleanup on unmount to prevent stuck overlays
+  useEffect(() => {
+    return () => {
+      setDeleteDialogOpen(false);
+      setTemplateToDelete(null);
+    };
+  }, []);
 
   // Filter templates
   const filteredTemplates = useMemo(() => {
@@ -395,16 +406,16 @@ export function TemplateGalleryDialog({
             Esta acción no se puede deshacer. La plantilla "{templateToDelete?.name}" será eliminada permanentemente.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={() => templateToDelete && deleteMutation.mutate(templateToDelete.id)}
-            disabled={deleteMutation.isPending}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-          >
-            {deleteMutation.isPending ? 'Eliminando...' : 'Eliminar'}
-          </AlertDialogAction>
-        </AlertDialogFooter>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => templateToDelete && deleteMutation.mutate(templateToDelete.id)}
+              disabled={deleteMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending ? 'Eliminando...' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   </>

@@ -5,6 +5,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, FileText, Search, Trash2, MoreVertical, ArchiveRestore, AlertCircle } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +49,7 @@ const ITEMS_PER_PAGE = 20;
 export default function PlanningV2Index() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // State
   const [budgets, setBudgets] = useState<BudgetListItem[]>([]);
@@ -81,6 +83,13 @@ export default function PlanningV2Index() {
     budgetName: '',
     action: 'trash'
   });
+
+  // Cleanup dialog on unmount to prevent stuck overlays
+  useEffect(() => {
+    return () => {
+      setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
+    };
+  }, []);
 
   // Load clients for filter
   useEffect(() => {
@@ -230,77 +239,95 @@ export default function PlanningV2Index() {
     setWizardOpen(true);
   };
 
-  const handleMoveToTrash = async (budgetId: string) => {
-    try {
-      await moveToTrash(budgetId);
+  // Mutations with proper cleanup
+  const moveToTrashMutation = useMutation({
+    mutationFn: (budgetId: string) => moveToTrash(budgetId),
+    onSuccess: () => {
       toast({
         title: 'Presupuesto movido a papelera',
         description: 'El presupuesto se movió a la papelera exitosamente'
       });
       loadBudgets();
-    } catch (error: any) {
+    },
+    onError: (error: any) => {
       console.error('Error moving to trash:', error);
       toast({
         title: 'Error',
         description: error.message || 'No se pudo mover el presupuesto a la papelera',
         variant: 'destructive'
       });
+    },
+    onSettled: () => {
+      // Always close dialog and reset state
+      setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
     }
-  };
+  });
 
-  const handleRestore = async (budgetId: string) => {
-    try {
-      await restoreBudget(budgetId);
+  const restoreMutation = useMutation({
+    mutationFn: (budgetId: string) => restoreBudget(budgetId),
+    onSuccess: () => {
       toast({
         title: 'Presupuesto restaurado',
         description: 'El presupuesto se restauró exitosamente'
       });
       loadBudgets();
-    } catch (error: any) {
+    },
+    onError: (error: any) => {
       console.error('Error restoring budget:', error);
       toast({
         title: 'Error',
         description: error.message || 'No se pudo restaurar el presupuesto',
         variant: 'destructive'
       });
+    },
+    onSettled: () => {
+      // Always close dialog and reset state
+      setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
     }
-  };
+  });
 
-  const handleDeletePermanently = async (budgetId: string) => {
-    try {
-      await deleteBudgetPermanently(budgetId);
+  const deletePermanentlyMutation = useMutation({
+    mutationFn: (budgetId: string) => deleteBudgetPermanently(budgetId),
+    onSuccess: () => {
       toast({
         title: 'Presupuesto eliminado',
         description: 'El presupuesto se eliminó permanentemente'
       });
       loadBudgets();
-    } catch (error: any) {
+    },
+    onError: (error: any) => {
       console.error('Error deleting budget:', error);
       toast({
         title: 'Error',
         description: error.message || 'No se pudo eliminar el presupuesto',
         variant: 'destructive'
       });
+    },
+    onSettled: () => {
+      // Always close dialog and reset state
+      setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
     }
-  };
+  });
 
   const confirmAction = () => {
     if (!deleteDialog.budgetId) return;
 
-    setDeleteDialog({ ...deleteDialog, open: false });
-
+    // Execute the appropriate mutation
     switch (deleteDialog.action) {
       case 'trash':
-        handleMoveToTrash(deleteDialog.budgetId);
+        moveToTrashMutation.mutate(deleteDialog.budgetId);
         break;
       case 'restore':
-        handleRestore(deleteDialog.budgetId);
+        restoreMutation.mutate(deleteDialog.budgetId);
         break;
       case 'permanent':
-        handleDeletePermanently(deleteDialog.budgetId);
+        deletePermanentlyMutation.mutate(deleteDialog.budgetId);
         break;
     }
   };
+
+  // Check if any mutation is pending
+  const isDeleting = moveToTrashMutation.isPending || restoreMutation.isPending || deletePermanentlyMutation.isPending;
 
   // Filter budgets
   const filteredBudgets = useMemo(() => {
@@ -514,15 +541,17 @@ export default function PlanningV2Index() {
                           <DropdownMenuContent align="end">
                             {showTrash ? (
                               <>
-                                <DropdownMenuItem
-                                  onClick={() =>
+                                 <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     setDeleteDialog({
                                       open: true,
                                       budgetId: budget.id,
                                       budgetName: budget.name,
                                       action: 'restore'
-                                    })
-                                  }
+                                    });
+                                  }}
+                                  disabled={isDeleting}
                                 >
                                   <ArchiveRestore className="h-4 w-4 mr-2" />
                                   Restaurar
@@ -531,15 +560,17 @@ export default function PlanningV2Index() {
                                   <>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
-                                      onClick={() =>
+                                      onClick={(e) => {
+                                        e.stopPropagation();
                                         setDeleteDialog({
                                           open: true,
                                           budgetId: budget.id,
                                           budgetName: budget.name,
                                           action: 'permanent'
-                                        })
-                                      }
+                                        });
+                                      }}
                                       className="text-destructive"
+                                      disabled={isDeleting}
                                     >
                                       <Trash2 className="h-4 w-4 mr-2" />
                                       Eliminar definitivamente
@@ -557,15 +588,17 @@ export default function PlanningV2Index() {
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
-                                  onClick={() =>
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     setDeleteDialog({
                                       open: true,
                                       budgetId: budget.id,
                                       budgetName: budget.name,
                                       action: 'trash'
-                                    })
-                                  }
+                                    });
+                                  }}
                                   className="text-destructive"
+                                  disabled={isDeleting}
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
                                   Mover a papelera
@@ -684,14 +717,24 @@ export default function PlanningV2Index() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmAction}
+              disabled={isDeleting}
               className={deleteDialog.action === 'permanent' ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''}
             >
-              {deleteDialog.action === 'trash' && 'Mover a papelera'}
-              {deleteDialog.action === 'restore' && 'Restaurar'}
-              {deleteDialog.action === 'permanent' && 'Eliminar definitivamente'}
+              {isDeleting ? (
+                <>
+                  <span className="inline-block animate-spin mr-2">⏳</span>
+                  Procesando...
+                </>
+              ) : (
+                <>
+                  {deleteDialog.action === 'trash' && 'Mover a papelera'}
+                  {deleteDialog.action === 'restore' && 'Restaurar'}
+                  {deleteDialog.action === 'permanent' && 'Eliminar definitivamente'}
+                </>
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
