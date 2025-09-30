@@ -38,10 +38,8 @@ const formSchema = z.object({
   desperdicio_pct: z.coerce.number().min(0).max(100).optional(),
   updateProvider: z.boolean(),
   provider: z.string().optional(),
-  updateWbs: z.boolean(),
-  wbs_code: z.string().optional(),
 }).refine(
-  data => data.updateHonorarios || data.updateDesperdicio || data.updateProvider || data.updateWbs,
+  data => data.updateHonorarios || data.updateDesperdicio || data.updateProvider,
   { message: 'Debes seleccionar al menos un campo para actualizar' }
 );
 
@@ -69,7 +67,6 @@ export function BulkEditDialog({
       updateHonorarios: false,
       updateDesperdicio: false,
       updateProvider: false,
-      updateWbs: false,
     },
   });
 
@@ -98,10 +95,6 @@ export function BulkEditDialog({
 
           if (values.updateProvider && values.provider !== undefined) {
             updates.provider = values.provider || null;
-          }
-
-          if (values.updateWbs && values.wbs_code !== undefined) {
-            updates.wbs_code = values.wbs_code || null;
           }
 
           if (Object.keys(updates).length > 0) {
@@ -266,44 +259,6 @@ export function BulkEditDialog({
                       <FormControl>
                         <Input
                           placeholder="Nombre del proveedor"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-            </div>
-
-            {/* WBS */}
-            <div className="space-y-2 p-3 border rounded-lg">
-              <FormField
-                control={form.control}
-                name="updateWbs"
-                render={({ field }) => (
-                  <FormItem className="flex items-center gap-2 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormLabel className="cursor-pointer font-medium">
-                      Subpartida WBS
-                    </FormLabel>
-                  </FormItem>
-                )}
-              />
-              {form.watch('updateWbs') && (
-                <FormField
-                  control={form.control}
-                  name="wbs_code"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Input
-                          placeholder="Ej: 1.1, 2.3"
                           {...field}
                         />
                       </FormControl>

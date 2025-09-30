@@ -24,7 +24,6 @@ import { useColumnSettings } from '../../hooks/useColumnSettings';
 import { ColumnManager } from './ColumnManager';
 import { DraggableConceptoRow } from './DraggableConceptoRow';
 import { EditablePartidaRow } from './EditablePartidaRow';
-import { SubpartidaHeader } from './SubpartidaHeader';
 import { ConceptoEditPanel } from './ConceptoEditPanel';
 import { TemplatePickerDialog } from './TemplatePickerDialog';
 import { TemplateGalleryDialog } from '../templates/TemplateGalleryDialog';
@@ -360,28 +359,17 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
         );
       }
 
-      // Computed fields with lock icon and price intelligence
+      // Computed fields with lock icon
       if (column.type === 'computed') {
         if (column.key === 'cantidad' || column.key === 'pu' || column.key === 'total') {
           return (
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Lock className="h-3 w-3" />
-                <span>
-                  {column.key === 'total' || column.key === 'pu'
-                    ? formatAsCurrency(value || 0)
-                    : toDisplayPrecision(value || 0)}
-                </span>
-              </div>
-              {/* Show price intelligence for PU field */}
-              {column.key === 'pu' && concepto.wbs_code && concepto.unit && (
-                <PriceReferenceChip
-                  wbsCode={concepto.wbs_code}
-                  unit={concepto.unit}
-                  currentPrice={value}
-                  windowDays={90}
-                />
-              )}
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Lock className="h-3 w-3" />
+              <span>
+                {column.key === 'total' || column.key === 'pu'
+                  ? formatAsCurrency(value || 0)
+                  : toDisplayPrecision(value || 0)}
+              </span>
             </div>
           );
         }
@@ -403,10 +391,6 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
         column.key === 'total_real'
       ) {
         return formatAsCurrency(value || 0);
-      }
-
-      if (column.key === 'wbs_code') {
-        return <div className="text-xs text-muted-foreground truncate">{value || '—'}</div>;
       }
 
       return value || '—';
@@ -465,7 +449,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
           pu: concepto.pu,
           total_real: concepto.total_real,
           total: concepto.total,
-          wbs_code: concepto.wbs_code,
+          wbs_code: null,
           props: concepto.props,
         });
       }
@@ -710,26 +694,6 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                     );
                   }
 
-                  if (row.type === 'subpartida') {
-                    return (
-                      <SubpartidaHeader
-                        key={row.id}
-                        wbsCode={row.subpartidaWbs!}
-                        count={row.subpartidaCount!}
-                        subtotal={row.subtotal!}
-                        isCollapsed={row.isCollapsed || false}
-                        onToggle={() => {
-                          const partidaId = row.id.split('-')[1];
-                          toggleSubpartida(`${partidaId}-${row.subpartidaWbs}`);
-                        }}
-                        onDelete={() => {
-                          const partidaId = row.id.split('-')[1];
-                          handleDeleteSubpartida(partidaId);
-                        }}
-                      />
-                    );
-                  }
-
                   if (row.type === 'subtotal') {
                     return (
                       <div
@@ -752,7 +716,6 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                   // Concepto rows with drag & drop
                   const concepto = row.concepto!;
                   const isSelected = selectedRows.has(row.id);
-                  const needsWBS = concepto.active && concepto.sumable && !concepto.wbs_code;
                   const isZeroQuantity = concepto.cantidad_real === 0 || concepto.cantidad_real == null;
 
                   return (
@@ -761,7 +724,6 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                       id={row.id}
                       concepto={concepto}
                       isSelected={isSelected}
-                      needsWBS={needsWBS}
                       isZeroQuantity={isZeroQuantity}
                       visibleColumns={visibleColumns}
                       onToggleSelection={() => toggleRowSelection(row.id)}

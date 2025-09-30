@@ -50,7 +50,6 @@ export function TemplatePickerDialog({
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [expandedTemplates, setExpandedTemplates] = useState<Set<string>>(new Set());
   const [targetPartidaId, setTargetPartidaId] = useState<string>('');
-  const [targetWbs, setTargetWbs] = useState<string>('');
 
   // Fetch templates
   const { data: templates = [], isLoading } = useQuery({
@@ -193,7 +192,7 @@ export function TemplatePickerDialog({
           pu: 0,
           total_real: 0,
           total: 0,
-          wbs_code: targetWbs || item.wbs_code || null,
+          wbs_code: null,
           props: item.props || {},
         });
       }
@@ -205,7 +204,6 @@ export function TemplatePickerDialog({
       toast.success(`${count} conceptos agregados desde plantilla`);
       setSelectedItems(new Set());
       setTargetPartidaId('');
-      setTargetWbs('');
       onSuccess();
       onOpenChange(false);
     },
@@ -336,12 +334,6 @@ export function TemplatePickerDialog({
                                   <span>{item.unit}</span>
                                   <span>•</span>
                                   <span>${item.precio_real?.toFixed(2) || '0.00'}</span>
-                                  {item.wbs_code && (
-                                    <>
-                                      <span>•</span>
-                                      <span>WBS: {item.wbs_code}</span>
-                                    </>
-                                  )}
                                 </div>
                               </div>
                             </div>
@@ -356,7 +348,7 @@ export function TemplatePickerDialog({
           </ScrollArea>
 
           {/* Target Selection */}
-          <div className="grid grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/30">
+          <div className="p-4 border rounded-lg bg-muted/30">
             <div className="space-y-2">
               <Label>Partida Destino *</Label>
               <Select value={targetPartidaId} onValueChange={setTargetPartidaId}>
@@ -371,15 +363,6 @@ export function TemplatePickerDialog({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Subpartida WBS (opcional)</Label>
-              <Input
-                placeholder="ej: 1.1, 2.3"
-                value={targetWbs}
-                onChange={(e) => setTargetWbs(e.target.value)}
-              />
             </div>
           </div>
         </div>

@@ -91,7 +91,7 @@ export function EditableCell({
         // Convert percentage display to decimal (17 -> 0.17)
         parsedValue = (parseFloat(editValue) || 0) / 100;
       } else {
-        // String fields (unit, provider, wbs_code)
+        // String fields (unit, provider)
         parsedValue = editValue.trim() || null;
       }
 

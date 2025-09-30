@@ -52,7 +52,6 @@ const DEFAULT_COLUMNS: Column[] = [
   { key: 'total_real', label: 'Total Real', type: 'computed', visible: false, formula: 'precio_real * cantidad_real' },
   { key: 'total', label: 'Total', type: 'computed', visible: true, formula: 'pu * cantidad' },
   { key: 'provider', label: 'Proveedor', type: 'input', visible: true },
-  { key: 'wbs_code', label: 'WBS', type: 'input', visible: true },
 ];
 
 export function ColumnManager({ open, onOpenChange, columns, onColumnsChange }: ColumnManagerProps) {

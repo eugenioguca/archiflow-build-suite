@@ -8,7 +8,6 @@ interface DraggableConceptoRowProps {
   id: string;
   concepto: any;
   isSelected: boolean;
-  needsWBS: boolean;
   isZeroQuantity: boolean;
   visibleColumns: any[];
   onToggleSelection: () => void;
@@ -21,7 +20,6 @@ export function DraggableConceptoRow({
   id,
   concepto,
   isSelected,
-  needsWBS,
   isZeroQuantity,
   visibleColumns,
   onToggleSelection,
@@ -50,7 +48,7 @@ export function DraggableConceptoRow({
       style={style}
       className={`flex items-center border-b hover:bg-muted/30 cursor-pointer ${
         isSelected ? 'bg-primary/10' : ''
-      } ${needsWBS ? 'bg-destructive/5' : ''} ${isDragging ? 'z-50' : ''}`}
+      } ${isDragging ? 'z-50' : ''}`}
       onClick={onRowClick}
     >
       <div className="w-12 border-r flex items-center justify-center gap-1">
@@ -69,18 +67,13 @@ export function DraggableConceptoRow({
           className="rounded"
         />
       </div>
-      {visibleColumns.map((col, idx) => (
+      {visibleColumns.map((col) => (
         <div
           key={col.key}
           className={`px-3 py-2 text-sm border-r min-w-[120px] ${
             col.type === 'computed' ? 'bg-muted/10' : ''
           }`}
         >
-          {idx === 0 && needsWBS && (
-            <Badge variant="destructive" className="mr-2 text-xs">
-              Falta WBS
-            </Badge>
-          )}
           {renderCell(concepto, col)}
         </div>
       ))}

@@ -73,7 +73,6 @@ export function CatalogRowActions({
           budgetId={budgetId}
           projectId={projectId}
           clientId={clientId}
-          wbsCode={row.concepto.wbs_code}
           provider={row.concepto.provider}
           conceptName={row.concepto.short_description || row.concepto.code}
           unit={row.concepto.unit || ''}

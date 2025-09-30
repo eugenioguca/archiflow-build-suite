@@ -57,7 +57,6 @@ export function ConceptoEditPanel({
       desperdicio_pct: 0,
       precio_real: 0,
       honorarios_pct: 0,
-      wbs_code: '',
       notes: '',
     },
   });
@@ -75,7 +74,6 @@ export function ConceptoEditPanel({
         desperdicio_pct: concepto.desperdicio_pct,
         precio_real: concepto.precio_real,
         honorarios_pct: concepto.honorarios_pct,
-        wbs_code: concepto.wbs_code || '',
         notes: concepto.props?.notes || '',
       });
     }

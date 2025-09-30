@@ -34,7 +34,6 @@ interface TURegistrationDialogProps {
   budgetId: string;
   projectId: string;
   clientId: string;
-  wbsCode?: string;
   provider?: string;
   conceptName: string;
   unit: string;
@@ -49,7 +48,6 @@ export function TURegistrationDialog({
   budgetId,
   projectId,
   clientId,
-  wbsCode,
   provider,
   conceptName,
   unit,
@@ -96,7 +94,7 @@ export function TURegistrationDialog({
           monto_total: formData.montoTotal,
           referencia_unica: referencia,
           fecha_transaccion: new Date().toISOString().split('T')[0],
-          wbs_subpartida: wbsCode || null,
+          wbs_subpartida: null,
           proveedor: provider || null,
           notas: formData.notas || null,
           created_by: profile.id,
@@ -186,14 +184,9 @@ export function TURegistrationDialog({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
+            <div className="space-y-2 md:col-span-2">
               <Label>Concepto</Label>
               <Input value={conceptName} disabled />
-            </div>
-
-            <div className="space-y-2">
-              <Label>WBS</Label>
-              <Input value={wbsCode || 'Sin WBS'} disabled />
             </div>
 
             <div className="space-y-2">
