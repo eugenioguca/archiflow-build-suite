@@ -36,10 +36,30 @@ export function ApplyTemplateDialog({
   const queryClient = useQueryClient();
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [delta, setDelta] = useState<any | null>(null);
+  const [currentPartidas, setCurrentPartidas] = useState<any[]>([]);
+  const [currentConceptos, setCurrentConceptos] = useState<any[]>([]);
 
-  // Fetch current partidas and conceptos
-  const currentPartidas: any[] = [];
-  const currentConceptos: any[] = [];
+  // Fetch current partidas and conceptos when dialog opens
+  useEffect(() => {
+    if (!open) return;
+
+    const fetchData = async () => {
+      const partidasResult = await (supabase as any)
+        .from('planning_partidas')
+        .select('*')
+        .eq('budget_id', budgetId);
+      
+      const conceptosResult = await (supabase as any)
+        .from('planning_conceptos')
+        .select('*')
+        .eq('budget_id', budgetId);
+      
+      setCurrentPartidas(partidasResult.data || []);
+      setCurrentConceptos(conceptosResult.data || []);
+    };
+
+    fetchData();
+  }, [open, budgetId]);
 
   // Fetch templates
   const { data: templates = [], isLoading: isLoadingTemplates } = useQuery({
