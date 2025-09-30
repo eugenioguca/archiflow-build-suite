@@ -23,6 +23,8 @@ import { projectsAdapter } from '../../adapters/projects';
 import { clientsAdapter } from '../../adapters/clients';
 import type { ProjectAdapter } from '../../adapters/projects';
 import type { ClientAdapter } from '../../adapters/clients';
+import { TUTreeSelector, type TUSelection } from '../catalog/TUTreeSelector';
+import { importTUStructure } from '../../services/tuImportService';
 
 const stepOneSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres'),
@@ -69,6 +71,8 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [partidas, setPartidas] = useState<TemplatePartida[]>(DEFAULT_PARTIDAS);
+  const [useTUStructure, setUseTUStructure] = useState(false);
+  const [tuSelections, setTUSelections] = useState<TUSelection[]>([]);
   const [selectedClient, setSelectedClient] = useState<ClientAdapter | null>(null);
   const [selectedProject, setSelectedProject] = useState<ProjectAdapter | null>(null);
   
@@ -102,6 +106,8 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
     form.reset();
     setStep(1);
     setPartidas(DEFAULT_PARTIDAS);
+    setUseTUStructure(false);
+    setTUSelections([]);
     setSelectedClient(null);
     setSelectedProject(null);
     onClose();
@@ -143,14 +149,25 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
         },
       });
 
-      const enabledPartidas = partidas.filter(p => p.enabled);
-      await Promise.all(enabledPartidas.map(p => createPartida({
-        budget_id: budget.id,
-        name: p.name,
-        order_index: p.order_index,
-        active: true,
-        notes: null,
-      })));
+      // Import structure based on user choice
+      if (useTUStructure && tuSelections.length > 0) {
+        // Import TU structure
+        await importTUStructure({
+          budgetId: budget.id,
+          selections: tuSelections,
+          departamento: 'CONSTRUCCIÓN',
+        });
+      } else {
+        // Create default partidas
+        const enabledPartidas = partidas.filter(p => p.enabled);
+        await Promise.all(enabledPartidas.map(p => createPartida({
+          budget_id: budget.id,
+          name: p.name,
+          order_index: p.order_index,
+          active: true,
+          notes: null,
+        })));
+      }
 
       toast({ title: 'Presupuesto creado', description: `${budget.name} se creó correctamente` });
       handleClose();
@@ -505,20 +522,51 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
       case 2:
         return (
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Selecciona las partidas iniciales para tu presupuesto. Puedes agregar o quitar partidas más tarde.
-            </p>
-            <div className="space-y-2 max-h-[400px] overflow-y-auto">
-              {partidas.map((partida, index) => (
-                <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30">
-                  <span className="font-medium">{partida.name}</span>
-                  <Switch checked={partida.enabled} onCheckedChange={() => togglePartida(index)} />
-                </div>
-              ))}
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-sm font-medium">Estructura inicial</p>
+                <p className="text-xs text-muted-foreground">
+                  {useTUStructure 
+                    ? 'Selecciona estructura desde Transacciones Unificadas (Construcción)'
+                    : 'Partidas predeterminadas para construcción'}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="use-tu" className="text-sm cursor-pointer">
+                  {useTUStructure ? 'Usar TU' : 'Usar Default'}
+                </Label>
+                <Switch 
+                  id="use-tu"
+                  checked={useTUStructure} 
+                  onCheckedChange={setUseTUStructure}
+                />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {partidas.filter(p => p.enabled).length} de {partidas.length} partidas seleccionadas
-            </p>
+
+            {useTUStructure ? (
+              <TUTreeSelector
+                departamento="CONSTRUCCIÓN"
+                onSelectionChange={setTUSelections}
+                initialSelection={tuSelections}
+              />
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Selecciona las partidas iniciales para tu presupuesto. Puedes agregar o quitar partidas más tarde.
+                </p>
+                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                  {partidas.map((partida, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30">
+                      <span className="font-medium">{partida.name}</span>
+                      <Switch checked={partida.enabled} onCheckedChange={() => togglePartida(index)} />
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {partidas.filter(p => p.enabled).length} de {partidas.length} partidas seleccionadas
+                </p>
+              </>
+            )}
           </div>
         );
 
@@ -563,7 +611,11 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Partidas iniciales:</span>
-                <span className="font-medium">{partidas.filter(p => p.enabled).length}</span>
+                <span className="font-medium">
+                  {useTUStructure 
+                    ? `${tuSelections.length} Mayores desde TU`
+                    : `${partidas.filter(p => p.enabled).length} partidas default`}
+                </span>
               </div>
             </div>
           </div>

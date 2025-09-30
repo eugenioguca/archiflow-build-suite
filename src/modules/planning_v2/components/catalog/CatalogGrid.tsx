@@ -26,6 +26,7 @@ import { EditablePartidaRow } from './EditablePartidaRow';
 import { SubpartidaHeader } from './SubpartidaHeader';
 import { ConceptoEditPanel } from './ConceptoEditPanel';
 import { TemplatePickerDialog } from './TemplatePickerDialog';
+import { ImportTUDialog } from './ImportTUDialog';
 import { CatalogRowActions } from './CatalogRowActions';
 import { DevMonitor } from '../dev/DevMonitor';
 import { Button } from '@/components/ui/button';
@@ -66,6 +67,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
   const [isSeeding, setIsSeeding] = useState(false);
   const [editingConcepto, setEditingConcepto] = useState<any>(null);
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
+  const [importTUOpen, setImportTUOpen] = useState(false);
   const { settings, saveSettings, isLoading: isLoadingSettings } = useColumnSettings(budgetId);
 
   // Load saved settings when available
@@ -404,6 +406,15 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
           <Button
             variant="outline"
             size="sm"
+            onClick={() => setImportTUOpen(true)}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Agregar desde TU
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setColumnManagerOpen(true)}
           >
             <Settings className="h-4 w-4 mr-2" />
@@ -592,6 +603,14 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
         onSuccess={() => {
           // Refresh handled by mutation
         }}
+      />
+
+      {/* Import TU Dialog */}
+      <ImportTUDialog
+        open={importTUOpen}
+        onClose={() => setImportTUOpen(false)}
+        budgetId={budgetId}
+        departamento="CONSTRUCCIÓN"
       />
 
       {/* Column Manager */}

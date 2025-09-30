@@ -6218,6 +6218,81 @@ export type Database = {
         }
         Relationships: []
       }
+      planning_tu_mapping: {
+        Row: {
+          budget_id: string
+          created_at: string
+          created_by: string
+          id: string
+          notes: string | null
+          partida_id: string
+          tu_departamento: string | null
+          tu_mayor_id: string | null
+          tu_partida_id: string | null
+          tu_subpartida_id: string | null
+        }
+        Insert: {
+          budget_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          notes?: string | null
+          partida_id: string
+          tu_departamento?: string | null
+          tu_mayor_id?: string | null
+          tu_partida_id?: string | null
+          tu_subpartida_id?: string | null
+        }
+        Update: {
+          budget_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          notes?: string | null
+          partida_id?: string
+          tu_departamento?: string | null
+          tu_mayor_id?: string | null
+          tu_partida_id?: string | null
+          tu_subpartida_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_tu_mapping_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "planning_budgets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_tu_mapping_partida_id_fkey"
+            columns: ["partida_id"]
+            isOneToOne: false
+            referencedRelation: "planning_partidas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_tu_mapping_tu_mayor_id_fkey"
+            columns: ["tu_mayor_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts_mayor"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_tu_mapping_tu_partida_id_fkey"
+            columns: ["tu_partida_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts_partidas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_tu_mapping_tu_subpartida_id_fkey"
+            columns: ["tu_subpartida_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts_subpartidas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       planning_v2_audit_log: {
         Row: {
           action: string
