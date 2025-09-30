@@ -1,358 +1,251 @@
 /**
- * Template Service - Planning v2
- * 
- * CRUD operations for templates and applying templates to budgets
+ * Servicio para gestión de plantillas de presupuesto
  */
-
 import { supabase } from '@/integrations/supabase/client';
-import type {
-  PlanningTemplate,
-  PlanningTemplateField,
-  PlanningTemplatePartida,
-  PlanningTemplateConcepto,
-  TemplateDelta,
-  PlanningBudget,
-  PlanningPartida,
-  PlanningConcepto
-} from '../types';
+import * as XLSX from 'xlsx';
 
-// ==================== CRUD Operations ====================
-
-export async function getTemplates() {
-  const { data, error } = await supabase
-    .from('planning_templates')
-    .select('*')
-    .order('name');
-  
-  if (error) throw error;
-  return (data || []) as unknown as PlanningTemplate[];
-}
-
-export async function getTemplateById(templateId: string) {
-  const { data, error } = await supabase
-    .from('planning_templates')
-    .select('*')
-    .eq('id', templateId)
-    .single();
-  
-  if (error) throw error;
-  return data as unknown as PlanningTemplate;
-}
-
-export async function createTemplate(template: {
+export interface TemplatePartida {
+  code: string;
   name: string;
-  description?: string;
-  department?: string;
-  settings?: Record<string, any>;
-}) {
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-    .single();
-
-  const { data, error } = await supabase
-    .from('planning_templates')
-    .insert({
-      ...template,
-      created_by: profile?.id,
-    })
-    .select()
-    .single();
-  
-  if (error) throw error;
-  return data as unknown as PlanningTemplate;
+  order: number;
 }
 
-export async function updateTemplate(
-  templateId: string,
-  updates: Partial<PlanningTemplate>
-) {
-  const { data, error } = await supabase
-    .from('planning_templates')
-    .update(updates)
-    .eq('id', templateId)
-    .select()
-    .single();
-  
-  if (error) throw error;
-  return data as unknown as PlanningTemplate;
+export interface TemplateConcepto {
+  partida_code: string;
+  code: string;
+  short_description: string;
+  unit: string;
+  cantidad_real: number;
+  desperdicio_pct: number;
+  precio_real: number;
+  honorarios_pct: number;
+  notes?: string;
 }
 
-export async function deleteTemplate(templateId: string) {
-  const { error } = await supabase
-    .from('planning_templates')
-    .delete()
-    .eq('id', templateId);
-  
-  if (error) throw error;
+export interface TemplateData {
+  partidas: TemplatePartida[];
+  conceptos: TemplateConcepto[];
 }
 
-// ==================== Template Fields ====================
-
-export async function getTemplateFields(templateId: string) {
-  const { data, error } = await supabase
-    .from('planning_template_fields')
-    .select('*')
-    .eq('template_id', templateId)
-    .order('order_index');
-  
-  if (error) throw error;
-  return (data || []) as unknown as PlanningTemplateField[];
-}
-
-export async function upsertTemplateField(field: Omit<PlanningTemplateField, 'id' | 'created_at'> & { id?: string }) {
-  const { data, error } = await supabase
-    .from('planning_template_fields')
-    .upsert(field as any)
-    .select()
-    .single();
-  
-  if (error) throw error;
-  return data as unknown as PlanningTemplateField;
-}
-
-export async function deleteTemplateField(fieldId: string) {
-  const { error } = await supabase
-    .from('planning_template_fields')
-    .delete()
-    .eq('id', fieldId);
-  
-  if (error) throw error;
-}
-
-// ==================== Template Partidas ====================
-
-export async function getTemplatePartidas(templateId: string) {
-  const { data, error } = await supabase
-    .from('planning_template_partidas')
-    .select('*')
-    .eq('template_id', templateId)
-    .order('order_index');
-  
-  if (error) throw error;
-  return data as PlanningTemplatePartida[];
-}
-
-export async function upsertTemplatePartida(
-  partida: Omit<PlanningTemplatePartida, 'id' | 'created_at'> & { id?: string }
-) {
-  const { data, error } = await supabase
-    .from('planning_template_partidas')
-    .upsert(partida)
-    .select()
-    .single();
-  
-  if (error) throw error;
-  return data as PlanningTemplatePartida;
-}
-
-export async function deleteTemplatePartida(partidaId: string) {
-  const { error } = await supabase
-    .from('planning_template_partidas')
-    .delete()
-    .eq('id', partidaId);
-  
-  if (error) throw error;
-}
-
-// ==================== Template Conceptos ====================
-
-export async function getTemplateConceptos(templatePartidaId: string) {
-  const { data, error } = await supabase
-    .from('planning_template_conceptos')
-    .select('*')
-    .eq('template_partida_id', templatePartidaId)
-    .order('order_index');
-  
-  if (error) throw error;
-  return data as PlanningTemplateConcepto[];
-}
-
-export async function getTemplateConceptosByTemplate(templateId: string) {
-  const { data: partidas } = await supabase
-    .from('planning_template_partidas')
-    .select('id')
-    .eq('template_id', templateId);
-
-  if (!partidas || partidas.length === 0) return [];
-
-  const { data, error } = await supabase
-    .from('planning_template_conceptos')
-    .select('*')
-    .in('template_partida_id', partidas.map(p => p.id))
-    .order('order_index');
-  
-  if (error) throw error;
-  return data as PlanningTemplateConcepto[];
-}
-
-export async function upsertTemplateConcepto(
-  concepto: Omit<PlanningTemplateConcepto, 'id' | 'created_at'> & { id?: string }
-) {
-  const { data, error } = await supabase
-    .from('planning_template_conceptos')
-    .upsert(concepto)
-    .select()
-    .single();
-  
-  if (error) throw error;
-  return data as PlanningTemplateConcepto;
-}
-
-export async function deleteTemplateConcepto(conceptoId: string) {
-  const { error } = await supabase
-    .from('planning_template_conceptos')
-    .delete()
-    .eq('id', conceptoId);
-  
-  if (error) throw error;
-}
-
-// ==================== Apply Template ====================
-
-export async function calculateTemplateDelta(
-  templateId: string,
-  budgetId: string
-): Promise<TemplateDelta> {
-  // Get template data
-  const [templatePartidas, templateConceptos, templateFields] = await Promise.all([
-    getTemplatePartidas(templateId),
-    getTemplateConceptosByTemplate(templateId),
-    getTemplateFields(templateId)
-  ]);
-
-  // Get existing budget data
-  const { data: existingPartidas } = await supabase
-    .from('planning_partidas')
-    .select('*, planning_conceptos(*)')
-    .eq('budget_id', budgetId);
-
-  const delta: TemplateDelta = {
-    partidas_to_add: [],
-    conceptos_to_add: [],
-    fields_to_add: [],
-    existing_conceptos_to_update: []
+export interface BudgetTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  is_main: boolean;
+  template_data: TemplateData;
+  metadata: {
+    total_partidas: number;
+    total_conceptos: number;
+    source_file?: string;
   };
-
-  // Identify partidas to add
-  const existingPartidaNames = new Set(
-    existingPartidas?.map(p => p.name.toLowerCase()) || []
-  );
-
-  templatePartidas.forEach(tp => {
-    if (!existingPartidaNames.has(tp.name.toLowerCase())) {
-      delta.partidas_to_add.push(tp);
-    }
-  });
-
-  // Identify conceptos to add (matching by short_description)
-  const existingConceptoDescs = new Set(
-    existingPartidas?.flatMap(p => 
-      (p.planning_conceptos as any[] || []).map(c => c.short_description.toLowerCase())
-    ) || []
-  );
-
-  templateConceptos.forEach(tc => {
-    const templatePartida = templatePartidas.find(p => p.id === tc.template_partida_id);
-    if (templatePartida && !existingConceptoDescs.has(tc.short_description.toLowerCase())) {
-      delta.conceptos_to_add.push({
-        partida_name: templatePartida.name,
-        concepto: tc
-      });
-    }
-  });
-
-  // Fields to add (all template fields are considered new for now)
-  delta.fields_to_add = templateFields;
-
-  return delta;
+  created_at: string;
 }
 
-export async function applyTemplate(
-  templateId: string,
-  budgetId: string,
-  delta: TemplateDelta
-) {
-  // Create new partidas
-  const newPartidas: Record<string, string> = {};
+export const templateService = {
+  /**
+   * Parsear archivo Excel CAMM a estructura de plantilla
+   */
+  async parseCAMMExcel(file: File): Promise<TemplateData> {
+    const reader = new FileReader();
+    
+    return new Promise((resolve, reject) => {
+      reader.onload = (e) => {
+        try {
+          const data = e.target?.result;
+          const workbook = XLSX.read(data, { type: 'binary' });
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as any[][];
+          
+          const partidas: TemplatePartida[] = [];
+          const conceptos: TemplateConcepto[] = [];
+          
+          let currentPartida: string | null = null;
+          let partidaOrder = 0;
+          
+          // Saltar encabezados (primeras 11 filas según el documento)
+          for (let i = 12; i < rows.length; i++) {
+            const row = rows[i];
+            
+            if (!row || row.length === 0) continue;
+            
+            const firstCol = String(row[0] || '').trim();
+            const secondCol = String(row[1] || '').trim();
+            
+            // Detectar partida (formato: "1. Preliminares")
+            if (firstCol.match(/^\d+\.\s+/)) {
+              const partidaName = firstCol;
+              const partidaCode = `P${firstCol.match(/^\d+/)?.[0]?.padStart(2, '0')}`;
+              
+              partidas.push({
+                code: partidaCode,
+                name: partidaName,
+                order: partidaOrder++
+              });
+              
+              currentPartida = partidaCode;
+              continue;
+            }
+            
+            // Detectar concepto (formato: "pr.01", "al.03", etc.)
+            if (firstCol.match(/^[a-z]{2,4}\.\d+$/i)) {
+              const conceptCode = firstCol.toLowerCase();
+              
+              if (!currentPartida) continue;
+              
+              conceptos.push({
+                partida_code: currentPartida,
+                code: conceptCode,
+                short_description: secondCol || '',
+                unit: String(row[2] || '').trim(),
+                cantidad_real: this.parseNumber(row[3]),
+                desperdicio_pct: this.parsePercentage(row[4]),
+                precio_real: this.parseNumber(row[6]),
+                honorarios_pct: this.parsePercentage(row[7]),
+                notes: ''
+              });
+            }
+          }
+          
+          resolve({ partidas, conceptos });
+        } catch (error) {
+          console.error('Error parsing Excel:', error);
+          reject(error);
+        }
+      };
+      
+      reader.onerror = () => reject(new Error('Error al leer el archivo'));
+      reader.readAsBinaryString(file);
+    });
+  },
   
-  for (const tp of delta.partidas_to_add) {
-    const { data: existingPartida } = await supabase
-      .from('planning_partidas')
+  /**
+   * Parsear número desde Excel
+   */
+  parseNumber(value: any): number {
+    if (typeof value === 'number') return value;
+    if (!value) return 0;
+    
+    const cleaned = String(value).replace(/[$\s,]/g, '');
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? 0 : parsed;
+  },
+  
+  /**
+   * Parsear porcentaje desde Excel (ej: "17%" o 0.17)
+   */
+  parsePercentage(value: any): number {
+    if (typeof value === 'number') {
+      // Si es decimal (0.17), convertir a porcentaje
+      return value < 1 ? value * 100 : value;
+    }
+    
+    if (!value) return 0;
+    
+    const str = String(value).replace('%', '').trim();
+    const parsed = parseFloat(str);
+    return isNaN(parsed) ? 0 : parsed;
+  },
+  
+  /**
+   * Guardar plantilla en Supabase
+   */
+  async saveTemplate(
+    name: string,
+    templateData: TemplateData,
+    options: {
+      description?: string;
+      isMain?: boolean;
+      sourceFile?: string;
+    } = {}
+  ): Promise<string> {
+    const { data: profile } = await supabase
+      .from('profiles')
       .select('id')
-      .eq('budget_id', budgetId)
-      .eq('name', tp.name)
+      .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
       .single();
-
-    if (existingPartida) {
-      newPartidas[tp.name] = existingPartida.id;
-    } else {
-      const { data: newPartida } = await supabase
-        .from('planning_partidas')
-        .insert({
-          budget_id: budgetId,
-          name: tp.name,
-          order_index: tp.order_index,
-          notes: tp.notes
-        })
-        .select('id')
-        .single();
-      
-      if (newPartida) {
-        newPartidas[tp.name] = newPartida.id;
-      }
-    }
-  }
-
-  // Create new conceptos
-  for (const conceptoToAdd of delta.conceptos_to_add) {
-    const partidaId = newPartidas[conceptoToAdd.partida_name];
-    if (!partidaId) {
-      // Find existing partida
-      const { data: existingPartida } = await supabase
-        .from('planning_partidas')
-        .select('id')
-        .eq('budget_id', budgetId)
-        .eq('name', conceptoToAdd.partida_name)
-        .single();
-      
-      if (!existingPartida) continue;
-      newPartidas[conceptoToAdd.partida_name] = existingPartida.id;
-    }
-
-    const tc = conceptoToAdd.concepto;
-    await supabase
-      .from('planning_conceptos')
+    
+    if (!profile) throw new Error('Usuario no autenticado');
+    
+    const { data, error } = await supabase
+      .from('planning_templates')
       .insert({
-        partida_id: newPartidas[conceptoToAdd.partida_name],
-        code: tc.code,
-        short_description: tc.short_description,
-        long_description: tc.long_description,
-        unit: tc.unit,
-        provider: tc.provider,
-        order_index: tc.order_index,
-        sumable: tc.sumable,
-        active: true,
-        // Apply default values from template
-        cantidad_real: Number(tc.default_values.cantidad_real || 0),
-        desperdicio_pct: Number(tc.default_values.desperdicio_pct || 0),
-        precio_real: Number(tc.default_values.precio_real || 0),
-        honorarios_pct: Number(tc.default_values.honorarios_pct || 0),
-        // Computed fields will be calculated by triggers/formulas
-        cantidad: 0,
-        pu: 0,
-        total_real: 0,
-        total: 0,
-        props: tc.default_values
-      });
+        name,
+        description: options.description,
+        is_main: options.isMain || false,
+        template_data: templateData,
+        metadata: {
+          total_partidas: templateData.partidas.length,
+          total_conceptos: templateData.conceptos.length,
+          source_file: options.sourceFile
+        },
+        created_by: profile.id
+      })
+      .select('id')
+      .single();
+    
+    if (error) throw error;
+    return data.id;
+  },
+  
+  /**
+   * Obtener todas las plantillas
+   */
+  async getTemplates(): Promise<BudgetTemplate[]> {
+    const { data, error } = await supabase
+      .from('planning_templates')
+      .select('*')
+      .order('is_main', { ascending: false })
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data as BudgetTemplate[];
+  },
+  
+  /**
+   * Obtener plantilla por ID
+   */
+  async getTemplate(templateId: string): Promise<BudgetTemplate | null> {
+    const { data, error } = await supabase
+      .from('planning_templates')
+      .select('*')
+      .eq('id', templateId)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') return null;
+      throw error;
+    }
+    
+    return data as BudgetTemplate;
+  },
+  
+  /**
+   * Calcular delta entre presupuesto actual y plantilla
+   */
+  calculateDelta(
+    currentPartidas: any[],
+    currentConceptos: any[],
+    template: TemplateData
+  ): {
+    newPartidas: TemplatePartida[];
+    newConceptos: TemplateConcepto[];
+    existingConceptos: TemplateConcepto[];
+  } {
+    const existingPartidaNames = new Set(currentPartidas.map(p => p.name));
+    const existingConceptoCodes = new Set(currentConceptos.map(c => c.code));
+    
+    const newPartidas = template.partidas.filter(
+      p => !existingPartidaNames.has(p.name)
+    );
+    
+    const newConceptos = template.conceptos.filter(
+      c => !existingConceptoCodes.has(c.code)
+    );
+    
+    const existingConceptos = template.conceptos.filter(
+      c => existingConceptoCodes.has(c.code)
+    );
+    
+    return { newPartidas, newConceptos, existingConceptos };
   }
-
-  // Update existing conceptos if needed
-  for (const update of delta.existing_conceptos_to_update) {
-    await supabase
-      .from('planning_conceptos')
-      .update(update.updates)
-      .eq('id', update.concepto_id);
-  }
-}
+};

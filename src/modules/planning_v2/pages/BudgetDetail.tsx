@@ -1,26 +1,34 @@
 /**
  * Budget Detail Page - Planning v2
  */
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CatalogGrid } from '../components/catalog/CatalogGrid';
 import { Summary } from '../components/summary/Summary';
 import { VersionsList } from '../components/versions/VersionsList';
+import { ApplyTemplateDialog } from '../components/templates/ApplyTemplateDialog';
 import { useCatalogGrid } from '../hooks/useCatalogGrid';
+import { usePartidas } from '../hooks/usePartidas';
+import { useConceptos } from '../hooks/useConceptos';
 
 export default function BudgetDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [showApplyTemplateDialog, setShowApplyTemplateDialog] = useState(false);
   
   const {
     rows,
     isLoading,
     budget,
   } = useCatalogGrid(id || '');
+
+  // Fetch partidas and conceptos for template application
+  const { data: partidas = [] } = usePartidas(id || '');
+  const { data: conceptos = [] } = useConceptos(id || '');
 
   useEffect(() => {
     if (!id) {
@@ -76,6 +84,14 @@ export default function BudgetDetail() {
             Presupuesto #{budget.id.slice(0, 8)}
           </p>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowApplyTemplateDialog(true)}
+        >
+          <FileText className="h-4 w-4 mr-2" />
+          Aplicar Plantilla
+        </Button>
       </div>
 
       <Tabs defaultValue="catalog" className="w-full">
@@ -97,6 +113,15 @@ export default function BudgetDetail() {
           <VersionsList budgetId={id!} />
         </TabsContent>
       </Tabs>
+
+      {/* Apply Template Dialog */}
+      <ApplyTemplateDialog
+        open={showApplyTemplateDialog}
+        onOpenChange={setShowApplyTemplateDialog}
+        budgetId={id!}
+        currentPartidas={partidas}
+        currentConceptos={conceptos}
+      />
     </div>
   );
 }
