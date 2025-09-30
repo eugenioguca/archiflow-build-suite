@@ -33,6 +33,17 @@ export async function importTUStructure(options: TUImportOptions): Promise<TUImp
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Usuario no autenticado');
 
+  // Get budget defaults for inheriting to new conceptos
+  const { data: budget } = await supabase
+    .from('planning_budgets')
+    .select('settings')
+    .eq('id', budgetId)
+    .single();
+
+  const budgetSettings = (budget?.settings || {}) as any;
+  const defaultHonorarios = budgetSettings.honorarios_pct_default ?? 0.17;
+  const defaultDesperdicio = budgetSettings.desperdicio_pct_default ?? 0.05;
+
   // Get max order_index for partidas in this budget
   const { data: existingPartidas } = await supabase
     .from('planning_partidas')
@@ -109,10 +120,10 @@ export async function importTUStructure(options: TUImportOptions): Promise<TUImp
           active: true,
           sumable: true,
           cantidad_real: 0,
-          desperdicio_pct: 0,
+          desperdicio_pct: defaultDesperdicio, // Inherit from budget defaults
           cantidad: 0,
           precio_real: 0,
-          honorarios_pct: 0,
+          honorarios_pct: defaultHonorarios, // Inherit from budget defaults
           pu: 0,
           total_real: 0,
           total: 0,

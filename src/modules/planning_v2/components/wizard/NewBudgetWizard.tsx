@@ -524,24 +524,26 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
       case 2:
         return (
           <div className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm font-medium">Estructura inicial</p>
-                <p className="text-xs text-muted-foreground">
-                  {useTUStructure 
-                    ? 'Selecciona estructura desde Transacciones Unificadas (Construcción)'
-                    : 'Partidas predeterminadas para construcción'}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Label htmlFor="use-tu" className="text-sm cursor-pointer">
-                  {useTUStructure ? 'Usar TU' : 'Usar Default'}
-                </Label>
-                <Switch 
-                  id="use-tu"
-                  checked={useTUStructure} 
-                  onCheckedChange={setUseTUStructure}
-                />
+            <div className="mb-4 p-4 bg-primary/5 border border-primary/10 rounded-lg">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="text-sm font-semibold mb-1">Estructura base (TU)</p>
+                  <p className="text-xs text-muted-foreground">
+                    {useTUStructure 
+                      ? '✓ Importando desde Transacciones Unificadas. Selecciona Mayores→Partidas→Subpartidas del catálogo de Construcción.'
+                      : 'Usando partidas predeterminadas. Activa el switch para importar estructura completa desde TU.'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 ml-4">
+                  <Label htmlFor="use-tu" className="text-xs cursor-pointer whitespace-nowrap">
+                    Desde TU
+                  </Label>
+                  <Switch 
+                    id="use-tu"
+                    checked={useTUStructure} 
+                    onCheckedChange={setUseTUStructure}
+                  />
+                </div>
               </div>
             </div>
 
