@@ -5858,6 +5858,8 @@ export type Database = {
           active: boolean
           budget_id: string
           created_at: string
+          desperdicio_pct_override: number | null
+          honorarios_pct_override: number | null
           id: string
           name: string
           notes: string | null
@@ -5868,6 +5870,8 @@ export type Database = {
           active?: boolean
           budget_id: string
           created_at?: string
+          desperdicio_pct_override?: number | null
+          honorarios_pct_override?: number | null
           id?: string
           name: string
           notes?: string | null
@@ -5878,6 +5882,8 @@ export type Database = {
           active?: boolean
           budget_id?: string
           created_at?: string
+          desperdicio_pct_override?: number | null
+          honorarios_pct_override?: number | null
           id?: string
           name?: string
           notes?: string | null

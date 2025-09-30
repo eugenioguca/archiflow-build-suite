@@ -24,6 +24,8 @@ export interface PlanningPartida {
   order_index: number;
   active: boolean;
   notes: string | null;
+  honorarios_pct_override: number | null;
+  desperdicio_pct_override: number | null;
   created_at: string;
   updated_at: string;
 }

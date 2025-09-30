@@ -148,13 +148,39 @@ export async function deletePartida(id: string) {
 }
 
 /**
- * Create concepto with computed fields
+ * Create concepto with computed fields and inherited defaults
  */
 export async function createConcepto(
   concepto: Omit<PlanningConcepto, 'id' | 'created_at' | 'updated_at'>
 ) {
+  // Get budget_id from partida
+  const { data: partida } = await supabase
+    .from('planning_partidas')
+    .select('budget_id')
+    .eq('id', concepto.partida_id)
+    .single();
+
+  if (!partida) throw new Error('Partida not found');
+
+  // Import defaults service
+  const { initializeConceptoDefaults } = await import('./defaultsService');
+  
+  // If honorarios_pct or desperdicio_pct are 0 (not set), inherit defaults
+  let conceptoWithDefaults = { ...concepto };
+  
+  if (concepto.honorarios_pct === 0 || concepto.desperdicio_pct === 0) {
+    const defaults = await initializeConceptoDefaults(partida.budget_id, concepto.partida_id);
+    
+    if (concepto.honorarios_pct === 0) {
+      conceptoWithDefaults.honorarios_pct = defaults.honorarios_pct;
+    }
+    if (concepto.desperdicio_pct === 0) {
+      conceptoWithDefaults.desperdicio_pct = defaults.desperdicio_pct;
+    }
+  }
+
   // Compute derived fields
-  const computed = computeConceptoFields(concepto);
+  const computed = computeConceptoFields(conceptoWithDefaults);
 
   const { data, error } = await supabase
     .from('planning_conceptos')

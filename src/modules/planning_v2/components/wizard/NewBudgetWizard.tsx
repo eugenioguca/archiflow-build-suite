@@ -166,6 +166,8 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
           order_index: p.order_index,
           active: true,
           notes: null,
+          honorarios_pct_override: null,
+          desperdicio_pct_override: null,
         })));
       }
 

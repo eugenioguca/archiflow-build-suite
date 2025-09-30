@@ -27,6 +27,7 @@ import { SubpartidaHeader } from './SubpartidaHeader';
 import { ConceptoEditPanel } from './ConceptoEditPanel';
 import { TemplatePickerDialog } from './TemplatePickerDialog';
 import { ImportTUDialog } from './ImportTUDialog';
+import { ApplyDefaultsDialog } from './ApplyDefaultsDialog';
 import { CatalogRowActions } from './CatalogRowActions';
 import { DevMonitor } from '../dev/DevMonitor';
 import { Button } from '@/components/ui/button';
@@ -68,6 +69,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
   const [editingConcepto, setEditingConcepto] = useState<any>(null);
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [importTUOpen, setImportTUOpen] = useState(false);
+  const [applyDefaultsOpen, setApplyDefaultsOpen] = useState(false);
   const { settings, saveSettings, isLoading: isLoadingSettings } = useColumnSettings(budgetId);
 
   // Load saved settings when available
@@ -273,6 +275,8 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
       order_index: orderIndex,
       active: true,
       notes: null,
+      honorarios_pct_override: null,
+      desperdicio_pct_override: null,
     });
   };
 
@@ -410,6 +414,15 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
           >
             <Plus className="h-4 w-4 mr-2" />
             Agregar desde TU
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setApplyDefaultsOpen(true)}
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Aplicar Defaults
           </Button>
 
           <Button
@@ -611,6 +624,14 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
         onClose={() => setImportTUOpen(false)}
         budgetId={budgetId}
         departamento="CONSTRUCCIÓN"
+      />
+
+      {/* Apply Defaults Dialog */}
+      <ApplyDefaultsDialog
+        open={applyDefaultsOpen}
+        onClose={() => setApplyDefaultsOpen(false)}
+        budgetId={budgetId}
+        budgetSettings={budget?.settings || {}}
       />
 
       {/* Column Manager */}

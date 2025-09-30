@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import { toast } from 'sonner';
 import type { PlanningPartida } from '../../types';
 
 interface EditablePartidaRowProps {
@@ -36,6 +37,16 @@ export function EditablePartidaRow({
   const [editName, setEditName] = useState(partida.name);
   const [editNotes, setEditNotes] = useState(partida.notes || '');
   const [editActive, setEditActive] = useState(partida.active);
+  const [editHonorariosOverride, setEditHonorariosOverride] = useState<string>(
+    partida.honorarios_pct_override !== null 
+      ? (partida.honorarios_pct_override * 100).toFixed(2) 
+      : ''
+  );
+  const [editDesperdicioOverride, setEditDesperdicioOverride] = useState<string>(
+    partida.desperdicio_pct_override !== null 
+      ? (partida.desperdicio_pct_override * 100).toFixed(2) 
+      : ''
+  );
 
   const {
     attributes,
@@ -47,10 +58,37 @@ export function EditablePartidaRow({
   } = useSortable({ id });
 
   const handleSave = () => {
+    // Validate numeric inputs
+    const honorariosValue = editHonorariosOverride.trim();
+    const desperdicioValue = editDesperdicioOverride.trim();
+    
+    let honorariosOverride: number | null = null;
+    let desperdicioOverride: number | null = null;
+    
+    if (honorariosValue !== '') {
+      const parsed = parseFloat(honorariosValue);
+      if (isNaN(parsed) || parsed < 0 || parsed > 100) {
+        toast.error('% Honorarios debe ser un número entre 0 y 100');
+        return;
+      }
+      honorariosOverride = parsed / 100;
+    }
+    
+    if (desperdicioValue !== '') {
+      const parsed = parseFloat(desperdicioValue);
+      if (isNaN(parsed) || parsed < 0 || parsed > 100) {
+        toast.error('% Desperdicio debe ser un número entre 0 y 100');
+        return;
+      }
+      desperdicioOverride = parsed / 100;
+    }
+    
     onUpdate({
       name: editName,
       notes: editNotes || null,
       active: editActive,
+      honorarios_pct_override: honorariosOverride,
+      desperdicio_pct_override: desperdicioOverride,
     });
     setIsEditing(false);
   };
@@ -59,6 +97,16 @@ export function EditablePartidaRow({
     setEditName(partida.name);
     setEditNotes(partida.notes || '');
     setEditActive(partida.active);
+    setEditHonorariosOverride(
+      partida.honorarios_pct_override !== null 
+        ? (partida.honorarios_pct_override * 100).toFixed(2) 
+        : ''
+    );
+    setEditDesperdicioOverride(
+      partida.desperdicio_pct_override !== null 
+        ? (partida.desperdicio_pct_override * 100).toFixed(2) 
+        : ''
+    );
     setIsEditing(false);
   };
 
@@ -98,6 +146,43 @@ export function EditablePartidaRow({
             placeholder="Notas (opcional)"
             rows={2}
           />
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label htmlFor={`honorarios-${partida.id}`} className="text-xs">
+                % Honorarios Override
+              </Label>
+              <Input
+                id={`honorarios-${partida.id}`}
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                value={editHonorariosOverride}
+                onChange={(e) => setEditHonorariosOverride(e.target.value)}
+                placeholder="Default del budget"
+                className="text-sm"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor={`desperdicio-${partida.id}`} className="text-xs">
+                % Desperdicio Override
+              </Label>
+              <Input
+                id={`desperdicio-${partida.id}`}
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                value={editDesperdicioOverride}
+                onChange={(e) => setEditDesperdicioOverride(e.target.value)}
+                placeholder="Default del budget"
+                className="text-sm"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Deja vacío para usar los defaults del presupuesto
+          </p>
           <div className="flex items-center gap-2">
             <Switch
               checked={editActive}

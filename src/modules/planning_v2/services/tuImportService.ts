@@ -56,6 +56,8 @@ export async function importTUStructure(options: TUImportOptions): Promise<TUImp
       order_index: currentOrderIndex++,
       active: true,
       notes: `Importado desde TU: ${departamento} / ${mayorSelection.mayorNombre}`,
+      honorarios_pct_override: null,
+      desperdicio_pct_override: null,
     });
 
     partidasCreated++;
