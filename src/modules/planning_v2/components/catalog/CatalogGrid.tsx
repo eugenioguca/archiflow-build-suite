@@ -22,6 +22,8 @@ import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { useColumnSettings } from '../../hooks/useColumnSettings';
 import { ColumnManager } from './ColumnManager';
 import { DraggableConceptoRow } from './DraggableConceptoRow';
+import { EditablePartidaRow } from './EditablePartidaRow';
+import { SubpartidaHeader } from './SubpartidaHeader';
 import { DevMonitor } from '../dev/DevMonitor';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -83,10 +85,13 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
     hideZeros,
     setHideZeros,
     togglePartida,
+    toggleSubpartida,
     toggleRowSelection,
     selectAll,
     clearSelection,
     createPartida,
+    updatePartida,
+    deletePartida,
     createConcepto,
     updateConcepto,
     reorderConcepto,
@@ -106,7 +111,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
     })
   );
 
-  // Handle drag end
+  // Handle drag end for both partidas and conceptos
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -119,28 +124,83 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
     const activeRow = rows.find(r => r.id === activeId);
     const overRow = rows.find(r => r.id === overId);
 
-    if (!activeRow || !overRow || activeRow.type !== 'concepto' || overRow.type !== 'concepto') {
+    if (!activeRow || !overRow) return;
+
+    // Handle partida reordering
+    if (activeRow.type === 'partida' && overRow.type === 'partida') {
+      const activePartida = activeRow.partida!;
+      const overPartida = overRow.partida!;
+      
+      updatePartida({
+        id: activePartida.id,
+        updates: { order_index: overPartida.order_index }
+      });
+      toast.success('Partida reordenada');
       return;
     }
 
-    const activeConcepto = activeRow.concepto!;
-    const overConcepto = overRow.concepto!;
+    // Handle concepto reordering
+    if (activeRow.type === 'concepto' && overRow.type === 'concepto') {
+      const activeConcepto = activeRow.concepto!;
+      const overConcepto = overRow.concepto!;
 
-    // Calculate new order index and partida
-    const newPartidaId = overConcepto.partida_id;
-    const newOrderIndex = overConcepto.order_index;
+      // Calculate new order index and partida
+      const newPartidaId = overConcepto.partida_id;
+      const newOrderIndex = overConcepto.order_index;
 
-    if (activeConcepto.id && newPartidaId) {
-      reorderConcepto(activeConcepto.id, newPartidaId, newOrderIndex);
-      toast.success('Concepto reordenado');
+      if (activeConcepto.id && newPartidaId) {
+        reorderConcepto(activeConcepto.id, newPartidaId, newOrderIndex);
+        toast.success('Concepto reordenado');
+      }
     }
-  }, [rows, reorderConcepto]);
+  }, [rows, reorderConcepto, updatePartida]);
 
-  // Keyboard navigation (Alt + Arrow keys)
+  // Keyboard navigation (Alt + Arrow keys) for both partidas and conceptos
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!e.altKey || selectedRows.size !== 1) return;
+      if (!e.altKey) return;
 
+      // Handle partida reordering
+      const partidaRows = rows.filter(r => r.type === 'partida');
+      const firstPartida = partidaRows[0];
+      
+      if (firstPartida) {
+        // Check if any partida is focused/selected
+        const activeElement = document.activeElement;
+        const partidaElement = activeElement?.closest('[data-partida-id]');
+        
+        if (partidaElement) {
+          const partidaId = partidaElement.getAttribute('data-partida-id');
+          const currentIndex = partidaRows.findIndex(r => r.partida?.id === partidaId);
+          
+          if (currentIndex !== -1) {
+            let targetIndex = -1;
+            if (e.key === 'ArrowUp' && currentIndex > 0) {
+              targetIndex = currentIndex - 1;
+              e.preventDefault();
+            } else if (e.key === 'ArrowDown' && currentIndex < partidaRows.length - 1) {
+              targetIndex = currentIndex + 1;
+              e.preventDefault();
+            }
+            
+            if (targetIndex >= 0) {
+              const currentPartida = partidaRows[currentIndex].partida!;
+              const targetPartida = partidaRows[targetIndex].partida!;
+              
+              updatePartida({
+                id: currentPartida.id,
+                updates: { order_index: targetPartida.order_index }
+              });
+              toast.success('Partida movida con teclado');
+            }
+            return;
+          }
+        }
+      }
+
+      // Handle concepto reordering (existing logic)
+      if (selectedRows.size !== 1) return;
+      
       const selectedId = Array.from(selectedRows)[0];
       const selectedRow = rows.find(r => r.id === selectedId);
       
@@ -178,7 +238,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [rows, selectedRows, reorderConcepto]);
+  }, [rows, selectedRows, reorderConcepto, updatePartida]);
 
   useKeyboardShortcuts({
     onDuplicate: () => console.log('Duplicate'),
@@ -206,6 +266,70 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
       active: true,
       notes: null,
     });
+  };
+
+  const handleAddSubpartida = (partidaId: string) => {
+    // Create a new concepto as a subpartida placeholder
+    const wbsCode = prompt('Ingrese el código WBS para la subpartida (ej: 1.1, 2.3):');
+    if (!wbsCode) return;
+
+    // Find max order_index in this partida
+    const partidaConceptos = rows
+      .filter(r => r.type === 'concepto' && r.concepto?.partida_id === partidaId)
+      .map(r => r.concepto!);
+    
+    const maxOrder = partidaConceptos.length > 0
+      ? Math.max(...partidaConceptos.map(c => c.order_index))
+      : 0;
+
+    // Create a header concepto for this subpartida
+    createConcepto({
+      partida_id: partidaId,
+      code: wbsCode,
+      short_description: `Subpartida ${wbsCode}`,
+      long_description: null,
+      unit: 'PZA',
+      provider: null,
+      order_index: maxOrder + 1,
+      active: true,
+      sumable: false, // Not sumable as it's a header
+      cantidad_real: 0,
+      desperdicio_pct: 0,
+      cantidad: 0,
+      precio_real: 0,
+      honorarios_pct: 0,
+      pu: 0,
+      total_real: 0,
+      total: 0,
+      wbs_code: wbsCode,
+      props: {},
+    });
+    
+    toast.success(`Subpartida ${wbsCode} creada`);
+  };
+
+  const handleDeleteSubpartida = async (partidaId: string, wbsCode: string) => {
+    if (!confirm(`¿Eliminar subpartida ${wbsCode} y todos sus conceptos?`)) return;
+    
+    try {
+      // Find all conceptos with this WBS code in this partida
+      const conceptosToDelete = rows
+        .filter(r => r.type === 'concepto' && 
+                r.concepto?.partida_id === partidaId && 
+                r.concepto?.wbs_code === wbsCode)
+        .map(r => r.concepto!);
+      
+      // Import deleteConcepto from service
+      const { deleteConcepto: deleteConceptoService } = await import('../../services/budgetService');
+      
+      // Delete all conceptos in this subpartida
+      await Promise.all(conceptosToDelete.map(c => deleteConceptoService(c.id)));
+      
+      toast.success(`Subpartida ${wbsCode} eliminada`);
+    } catch (error) {
+      console.error('Error deleting subpartida:', error);
+      toast.error('Error al eliminar subpartida');
+    }
   };
 
   const handleSeedDemo = async () => {
@@ -333,34 +457,50 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
 
             {/* Rows */}
             <SortableContext
-              items={rows.filter(r => r.type === 'concepto').map(r => r.id)}
+              items={[
+                ...rows.filter(r => r.type === 'partida').map(r => r.id),
+                ...rows.filter(r => r.type === 'concepto').map(r => r.id)
+              ]}
               strategy={verticalListSortingStrategy}
             >
               <div>
                 {rows.map((row) => {
                   if (row.type === 'partida') {
                     return (
-                      <div
+                      <EditablePartidaRow
                         key={row.id}
-                        className="flex items-center bg-muted/50 border-b hover:bg-muted"
-                      >
-                        <div className="w-12 border-r flex items-center justify-center">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => togglePartida(row.partida!.id)}
-                          >
-                            {row.isCollapsed ? (
-                              <ChevronRight className="h-4 w-4" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </div>
-                        <div className="px-3 py-3 font-medium flex-1">
-                          {row.partida!.name}
-                        </div>
-                      </div>
+                        id={row.id}
+                        partida={row.partida!}
+                        isCollapsed={row.isCollapsed || false}
+                        onToggle={() => togglePartida(row.partida!.id)}
+                        onUpdate={(updates) => updatePartida({ id: row.partida!.id, updates })}
+                        onDelete={() => {
+                          if (confirm('¿Eliminar partida?')) {
+                            deletePartida(row.partida!.id);
+                          }
+                        }}
+                        onAddSubpartida={() => handleAddSubpartida(row.partida!.id)}
+                      />
+                    );
+                  }
+
+                  if (row.type === 'subpartida') {
+                    return (
+                      <SubpartidaHeader
+                        key={row.id}
+                        wbsCode={row.subpartidaWbs!}
+                        count={row.subpartidaCount!}
+                        subtotal={row.subtotal!}
+                        isCollapsed={row.isCollapsed || false}
+                        onToggle={() => {
+                          const partidaId = row.id.split('-')[1];
+                          toggleSubpartida(`${partidaId}-${row.subpartidaWbs}`);
+                        }}
+                        onDelete={() => {
+                          const partidaId = row.id.split('-')[1];
+                          handleDeleteSubpartida(partidaId, row.subpartidaWbs!);
+                        }}
+                      />
                     );
                   }
 
@@ -376,7 +516,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                             key={col.key}
                             className="px-3 py-2 text-sm border-r min-w-[120px]"
                           >
-                            {i === 0 ? 'Subtotal' : col.key === 'total' ? formatAsCurrency(row.subtotal!) : ''}
+                            {i === 0 ? 'Subtotal Partida' : col.key === 'total' ? formatAsCurrency(row.subtotal!) : ''}
                           </div>
                         ))}
                       </div>
