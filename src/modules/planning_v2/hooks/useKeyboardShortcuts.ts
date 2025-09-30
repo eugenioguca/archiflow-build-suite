@@ -13,6 +13,8 @@ export interface KeyboardShortcutsConfig {
   onSelectAll?: () => void;
   onOpenColumns?: () => void;
   onOpenTemplates?: () => void;
+  onNewPartida?: () => void;
+  onNewSubpartida?: () => void;
 }
 
 export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
@@ -72,6 +74,24 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
       if (e.key === 't' && !cmdOrCtrl && !e.altKey && !isInputFocused()) {
         e.preventDefault();
         config.onOpenTemplates?.();
+      }
+
+      // N: Nueva Partida (when no input focused)
+      if (e.key === 'n' && !cmdOrCtrl && !e.altKey && !isInputFocused()) {
+        e.preventDefault();
+        config.onNewPartida?.();
+      }
+
+      // S: Agregar Subpartida (when no input focused)
+      if (e.key === 's' && !cmdOrCtrl && !e.altKey && !isInputFocused()) {
+        e.preventDefault();
+        config.onNewSubpartida?.();
+      }
+
+      // D: Duplicate selected (when no input focused)
+      if (e.key === 'd' && !cmdOrCtrl && !e.altKey && !isInputFocused()) {
+        e.preventDefault();
+        config.onDuplicate?.();
       }
     };
 

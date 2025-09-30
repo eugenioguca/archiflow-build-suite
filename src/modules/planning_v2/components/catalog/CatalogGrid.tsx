@@ -37,6 +37,7 @@ import { NewSubpartidaFromTUDialog } from './NewSubpartidaFromTUDialog';
 import { EditableCell } from './EditableCell';
 import { CatalogRowActions } from './CatalogRowActions';
 import { DevMonitor } from '../dev/DevMonitor';
+import { KeyboardHintsBar } from './KeyboardHintsBar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -274,13 +275,6 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [rows, selectedRows, reorderConcepto, updatePartida]);
 
-  useKeyboardShortcuts({
-    onDuplicate: () => console.log('Duplicate'),
-    onSearch: () => console.log('Search'),
-    onSelectAll: selectAll,
-    onDelete: () => console.log('Delete'),
-  });
-
   if (isLoading) {
     return <div className="p-8 text-center text-muted-foreground">Cargando catálogo...</div>;
   }
@@ -485,15 +479,45 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
     }
   };
 
+  // Setup keyboard shortcuts
+  useKeyboardShortcuts({
+    onNewPartida: handleAddPartida,
+    onNewSubpartida: () => {
+      // Find first selected row that is a concepto to get its partida_id
+      const selectedConcepto = rows.find(r => r.type === 'concepto' && selectedRows.has(r.id))?.concepto;
+      if (selectedConcepto) {
+        handleAddSubpartida(selectedConcepto.partida_id);
+      } else {
+        toast.info('Selecciona un concepto primero para agregar una subpartida');
+      }
+    },
+    onDuplicate: handleDuplicateSelected,
+    onOpenColumns: () => setColumnManagerOpen(true),
+    onOpenTemplates: () => setTemplateGalleryOpen(true),
+    onSelectAll: selectAll,
+  });
+
   return (
     <div className="flex flex-col h-full">
+      {/* Keyboard Hints Bar */}
+      <KeyboardHintsBar />
+
       {/* Toolbar */}
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex items-center gap-4">
-          <Button onClick={handleAddPartida} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Nueva Partida
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button onClick={handleAddPartida} size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nueva Partida
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Crear nueva partida (N)</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
           <div className="flex items-center gap-2">
             <Switch
@@ -508,9 +532,6 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
               <Badge variant="secondary">{hiddenCount} ocultas</Badge>
             )}
           </div>
-          <span className="text-xs text-muted-foreground ml-2">
-            Tip: Alt+↑/↓ para mover con teclado
-          </span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -527,14 +548,23 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                 Editar en Lote
               </Button>
               
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleDuplicateSelected}
-              >
-                <Copy className="h-4 w-4 mr-2" />
-                Duplicar
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleDuplicateSelected}
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Duplicar
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Duplicar seleccionadas (D)</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               
               <Button 
                 variant="destructive" 
@@ -569,23 +599,41 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
             </Tooltip>
           </TooltipProvider>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setImportTUOpen(true)}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Agregar desde TU
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setImportTUOpen(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar desde TU
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Agregar subpartidas desde Transacciones Unificadas</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setApplyDefaultsOpen(true)}
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            Aplicar Defaults
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setApplyDefaultsOpen(true)}
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Aplicar Defaults
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Aplicar valores predeterminados a conceptos seleccionados</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
           <TooltipProvider>
             <Tooltip>
