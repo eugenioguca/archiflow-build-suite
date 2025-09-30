@@ -1,8 +1,8 @@
 /**
  * Concepto Edit Panel - Side panel for editing concepto details
  */
-import { useState, useEffect } from 'react';
-import { X, Upload, FileText, Clock, Save } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { X, Upload, FileText, Clock, Save, Eye, Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -25,7 +25,8 @@ import { formatAsCurrency, toDisplayPrecision, formatAsPercentage } from '../../
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { PlanningConcepto } from '../../types';
-import { WBSBreadcrumb } from './WBSBreadcrumb';
+import { WBSSelector } from './WBSSelector';
+import ReactMarkdown from 'react-markdown';
 
 interface ConceptoEditPanelProps {
   concepto: PlanningConcepto | null;
@@ -42,8 +43,10 @@ export function ConceptoEditPanel({
 }: ConceptoEditPanelProps) {
   const queryClient = useQueryClient();
   const [uploading, setUploading] = useState(false);
+  const [showMarkdownPreview, setShowMarkdownPreview] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
-  const { register, handleSubmit, reset, setValue, watch } = useForm({
+  const { register, handleSubmit, reset, setValue, watch, getValues } = useForm({
     defaultValues: {
       code: '',
       short_description: '',
@@ -55,6 +58,7 @@ export function ConceptoEditPanel({
       precio_real: 0,
       honorarios_pct: 0,
       wbs_code: '',
+      notes: '',
     },
   });
 
@@ -72,9 +76,48 @@ export function ConceptoEditPanel({
         precio_real: concepto.precio_real,
         honorarios_pct: concepto.honorarios_pct,
         wbs_code: concepto.wbs_code || '',
+        notes: concepto.props?.notes || '',
       });
     }
   }, [concepto, reset]);
+
+  // Auto-save with 1s debounce
+  const debouncedSave = useCallback(
+    (() => {
+      let timeoutId: NodeJS.Timeout;
+      return (values: any) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          if (concepto?.id) {
+            setIsSaving(true);
+            updateConcepto(concepto.id, {
+              ...values,
+              props: { ...concepto.props, notes: values.notes },
+            })
+              .then(() => {
+                queryClient.invalidateQueries({ queryKey: ['planning-budget'] });
+                setIsSaving(false);
+              })
+              .catch(() => {
+                toast.error('Error al guardar');
+                setIsSaving(false);
+              });
+          }
+        }, 1000);
+      };
+    })(),
+    [concepto, queryClient]
+  );
+
+  // Watch for changes and trigger auto-save
+  useEffect(() => {
+    const subscription = watch((values) => {
+      if (concepto && open) {
+        debouncedSave(values);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, debouncedSave, concepto, open]);
 
   // Fetch attachments
   const { data: attachments = [] } = useQuery({
@@ -191,8 +234,9 @@ export function ConceptoEditPanel({
     }
   };
 
-  const onSubmit = (values: any) => {
-    updateMutation.mutate(values);
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Auto-save handles this now
   };
 
   if (!concepto) return null;
@@ -206,10 +250,20 @@ export function ConceptoEditPanel({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-2xl">
         <SheetHeader>
-          <SheetTitle>Editar Concepto</SheetTitle>
-          <SheetDescription>
-            {concepto.short_description}
-          </SheetDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <SheetTitle>Editar Concepto</SheetTitle>
+              <SheetDescription>
+                {concepto.short_description}
+              </SheetDescription>
+            </div>
+            {isSaving && (
+              <Badge variant="outline" className="ml-2">
+                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                Guardando...
+              </Badge>
+            )}
+          </div>
         </SheetHeader>
 
         <Tabs defaultValue="general" className="mt-6">
@@ -225,13 +279,13 @@ export function ConceptoEditPanel({
 
           <TabsContent value="general" className="mt-6">
             <ScrollArea className="h-[calc(100vh-250px)]">
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pr-4">
-                {/* WBS Breadcrumb */}
+              <form onSubmit={onSubmit} className="space-y-6 pr-4">
+                {/* WBS Selector */}
                 <div className="space-y-2">
-                  <Label>WBS</Label>
-                  <WBSBreadcrumb
+                  <Label>WBS (Dept → Mayor → Partida → Subpartida)</Label>
+                  <WBSSelector
                     value={watch('wbs_code')}
-                    onChange={(value) => setValue('wbs_code', value)}
+                    onChange={(value) => setValue('wbs_code', value || '')}
                   />
                 </div>
 
@@ -332,14 +386,46 @@ export function ConceptoEditPanel({
 
                 {/* Long Description (Markdown) */}
                 <div className="space-y-2">
-                  <Label htmlFor="long_description">
-                    Descripción Larga (Markdown)
-                  </Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="long_description">
+                      Descripción Larga (Markdown)
+                    </Label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setShowMarkdownPreview(!showMarkdownPreview)}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      {showMarkdownPreview ? 'Editar' : 'Vista Previa'}
+                    </Button>
+                  </div>
+                  {showMarkdownPreview ? (
+                    <div className="prose prose-sm max-w-none border rounded-md p-4 min-h-[150px] bg-muted/30">
+                      <ReactMarkdown>
+                        {watch('long_description') || '*Sin descripción*'}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
+                    <Textarea
+                      id="long_description"
+                      {...register('long_description')}
+                      rows={6}
+                      placeholder="Soporta **negritas**, *cursivas*, y listas:&#10;- Item 1&#10;- Item 2"
+                    />
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* Notes */}
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Notas Internas</Label>
                   <Textarea
-                    id="long_description"
-                    {...register('long_description')}
-                    rows={6}
-                    placeholder="Soporta **negritas**, *cursivas*, y listas:&#10;- Item 1&#10;- Item 2"
+                    id="notes"
+                    {...register('notes')}
+                    rows={3}
+                    placeholder="Notas adicionales para el concepto..."
                   />
                 </div>
 
@@ -349,20 +435,7 @@ export function ConceptoEditPanel({
                     variant="outline"
                     onClick={() => onOpenChange(false)}
                   >
-                    Cancelar
-                  </Button>
-                  <Button type="submit" disabled={updateMutation.isPending}>
-                    {updateMutation.isPending ? (
-                      <>
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
-                        Guardando...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4 mr-2" />
-                        Guardar
-                      </>
-                    )}
+                    Cerrar
                   </Button>
                 </div>
               </form>
