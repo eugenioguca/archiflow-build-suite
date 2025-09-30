@@ -215,13 +215,12 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
     return proyectos.filter(p => p.group === clientId);
   }, [proyectos, form.watch('client_id')]);
 
-  // Handler race-safe para cambio de cliente
+  // Handler race-safe para cambio de cliente (solo carga data, no modifica form)
   const handleClientChange = async (clientId: string | undefined) => {
     const reqId = ++clientReqIdRef.current;
     
     if (!clientId) {
       setSelectedClient(null);
-      form.setValue('project_id', undefined);
       return;
     }
 
@@ -246,7 +245,7 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
     }
   };
 
-  // Handler race-safe para cambio de proyecto
+  // Handler race-safe para cambio de proyecto (solo carga data, auto-selecciona cliente)
   const handleProjectChange = async (projectId: string | undefined) => {
     const reqId = ++projectReqIdRef.current;
     
@@ -261,6 +260,7 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
       setSelectedProject(project);
       
       if (project) {
+        // Auto-seleccionar cliente del proyecto
         form.setValue('client_id', project.client_id);
         const client = await clientsAdapter.getById(project.client_id);
         if (reqId !== projectReqIdRef.current) return;
@@ -271,6 +271,26 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
       console.error('Error loading project:', error);
     }
   };
+
+  // useEffect para observar cambios en client_id y ejecutar side-effects async
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'client_id') {
+        handleClientChange(value.client_id);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form.watch]);
+
+  // useEffect para observar cambios en project_id y ejecutar side-effects async
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'project_id') {
+        handleProjectChange(value.project_id);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form.watch]);
 
   const renderStep = () => {
     switch (step) {
@@ -301,10 +321,7 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
                       <SearchableCombobox
                         items={clientes}
                         value={field.value}
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          handleClientChange(value);
-                        }}
+                        onValueChange={field.onChange}
                         placeholder="Seleccionar cliente..."
                         searchPlaceholder="Buscar por nombre o código..."
                         emptyText="Sin resultados"
@@ -333,10 +350,7 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
                       <SearchableCombobox
                         items={proyectosFiltrados}
                         value={field.value}
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          handleProjectChange(value);
-                        }}
+                        onValueChange={field.onChange}
                         placeholder="Seleccionar proyecto..."
                         searchPlaceholder="Buscar por nombre o código..."
                         emptyText="Sin resultados"
