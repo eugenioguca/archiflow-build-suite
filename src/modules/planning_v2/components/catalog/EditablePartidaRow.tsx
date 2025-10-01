@@ -16,7 +16,10 @@ import type { PlanningPartida } from '../../types';
 
 interface EditablePartidaRowProps {
   id: string;
-  partida: PlanningPartida;
+  partida: PlanningPartida & { 
+    tuPartidaNombre?: string; 
+    tuPartidaCodigo?: string; 
+  };
   isCollapsed: boolean;
   onToggle: () => void;
   onUpdate: (updates: Partial<PlanningPartida>) => void;
@@ -234,7 +237,12 @@ export function EditablePartidaRow({
         )}
       </Button>
       <div className="px-3 py-3 font-medium flex-1">
-        {partida.name}
+        <span className="text-xs font-mono text-primary mr-2">
+          {partida.tuPartidaCodigo || partida.name}
+        </span>
+        {partida.tuPartidaNombre && (
+          <span className="text-sm">{partida.tuPartidaNombre}</span>
+        )}
         {partida.notes && (
           <span className="text-xs text-muted-foreground ml-2">({partida.notes})</span>
         )}

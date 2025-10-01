@@ -154,7 +154,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
     enabled: groupByMayor && !!tuMayoresIds && tuMayoresIds.length > 0,
   });
 
-  // Cargar mappings TU para las partidas del presupuesto
+  // Cargar mappings TU para las partidas del presupuesto con datos completos de TU
   const { data: partidaMappings = [] } = useQuery({
     queryKey: ['planning-tu-mappings', budgetId],
     queryFn: async () => {
@@ -163,17 +163,27 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
       
       const { data, error } = await supabase
         .from('planning_tu_mapping')
-        .select('partida_id, tu_mayor_id, tu_partida_id, tu_departamento')
+        .select(`
+          partida_id, 
+          tu_mayor_id, 
+          tu_partida_id, 
+          tu_departamento,
+          notes,
+          chart_of_accounts_partidas!planning_tu_mapping_tu_partida_id_fkey (
+            codigo,
+            nombre
+          )
+        `)
         .eq('budget_id', budgetId)
         .in('partida_id', partidaIds);
       
       if (error) throw error;
       return data || [];
     },
-    enabled: groupByMayor && partidas.length > 0,
+    enabled: partidas.length > 0,
   });
 
-  // Agrupar partidas por Mayor TU
+  // Agrupar partidas por Mayor TU con información completa
   const partidasByMayor = useMemo(() => {
     if (!groupByMayor || mayoresTU.length === 0) return null;
     
@@ -185,16 +195,37 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
       groups.set(mayor.id, []);
     });
     
-    // Asignar partidas a sus grupos
+    // Asignar partidas a sus grupos con info del mapping
     partidas.forEach(partida => {
       const mapping = mappingsMap.get(partida.id);
       if (mapping?.tu_mayor_id && groups.has(mapping.tu_mayor_id)) {
-        groups.get(mapping.tu_mayor_id)!.push(partida);
+        groups.get(mapping.tu_mayor_id)!.push({
+          ...partida,
+          tuPartidaNombre: mapping.chart_of_accounts_partidas?.nombre || '',
+          tuPartidaCodigo: mapping.chart_of_accounts_partidas?.codigo || partida.name,
+        });
       }
     });
     
     return { groups, mayores: mayoresTU };
   }, [groupByMayor, partidas, mayoresTU, partidaMappings]);
+
+  // Crear mapa de partidas enriquecidas para uso en vista plana también
+  const enrichedPartidasMap = useMemo(() => {
+    const mappingsMap = new Map(partidaMappings.map(m => [m.partida_id, m]));
+    const enrichedMap = new Map<string, any>();
+    
+    partidas.forEach(partida => {
+      const mapping = mappingsMap.get(partida.id);
+      enrichedMap.set(partida.id, {
+        ...partida,
+        tuPartidaNombre: mapping?.chart_of_accounts_partidas?.nombre || '',
+        tuPartidaCodigo: mapping?.chart_of_accounts_partidas?.codigo || partida.name,
+      });
+    });
+    
+    return enrichedMap;
+  }, [partidas, partidaMappings]);
 
   // DnD sensors
   const sensors = useSensors(
@@ -845,11 +876,14 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                         {/* Partidas y Conceptos del grupo */}
                         {rowsInGroup.map((row) => {
                           if (row.type === 'partida') {
+                            // Buscar la partida enriquecida con info TU
+                            const enrichedPartida = partidasInGroup.find(p => p.id === row.partida!.id) || row.partida!;
+                            
                             return (
                               <EditablePartidaRow
                                 key={row.id}
                                 id={row.id}
-                                partida={row.partida!}
+                                partida={enrichedPartida}
                                 isCollapsed={row.isCollapsed || false}
                                 onToggle={() => togglePartida(row.partida!.id)}
                                 onUpdate={(updates) => updatePartida({ id: row.partida!.id, updates })}
@@ -934,11 +968,14 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                   // Vista plana (sin agrupar)
                   rows.map((row) => {
                     if (row.type === 'partida') {
+                      // Usar partida enriquecida con info TU
+                      const enrichedPartida = enrichedPartidasMap.get(row.partida!.id) || row.partida!;
+                      
                       return (
                         <EditablePartidaRow
                           key={row.id}
                           id={row.id}
-                          partida={row.partida!}
+                          partida={enrichedPartida}
                           isCollapsed={row.isCollapsed || false}
                           onToggle={() => togglePartida(row.partida!.id)}
                           onUpdate={(updates) => updatePartida({ id: row.partida!.id, updates })}

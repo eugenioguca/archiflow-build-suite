@@ -118,14 +118,15 @@ export function NewPartidaFromTUDialog({
 
       if (!mayor || !partida) throw new Error('Mayor o Partida no encontrado');
 
-      const partidaName = `${mayor.codigo}.${partida.codigo} - ${partida.nombre}`;
+      // Usar el código de la Partida TU como name (no sintético)
+      const partidaCode = partida.codigo;
 
       // Crear Partida en planning_partidas
       const { data: newPartida, error: partidaError } = await supabase
         .from('planning_partidas')
         .insert({
           budget_id: budgetId,
-          name: partidaName,
+          name: partidaCode, // Solo el código, no sintético
           order_index: orderIndex,
           active: true,
           notes: values.notes || null,
@@ -139,7 +140,7 @@ export function NewPartidaFromTUDialog({
 
       // Crear mapeo TU
       const { data: { user } } = await supabase.auth.getUser();
-      await supabase
+      const { error: mappingError } = await supabase
         .from('planning_tu_mapping')
         .insert({
           budget_id: budgetId,
@@ -148,13 +149,16 @@ export function NewPartidaFromTUDialog({
           tu_mayor_id: values.tu_mayor_id,
           tu_partida_id: values.tu_partida_id,
           created_by: user?.id || '',
-          notes: `Mayor: ${mayor.nombre} / Partida: ${partida.nombre}`,
+          notes: `${mayor.codigo}.${partida.codigo} - ${partida.nombre}`,
         });
+
+      if (mappingError) throw mappingError;
 
       return newPartida;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['planning-budget', budgetId] });
+      queryClient.invalidateQueries({ queryKey: ['planning-tu-mappings', budgetId] });
       toast.success('Partida desde TU creada correctamente');
       form.reset();
       setSelectedMayorId(undefined);
