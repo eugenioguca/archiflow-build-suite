@@ -6,9 +6,9 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { tuAdapter } from '../../adapters/tu';
+import { useSubpartidasByPartida } from '../../hooks/useSubpartidasByPartida';
 import {
   Dialog,
   DialogContent,
@@ -29,7 +29,7 @@ import { SearchableCombobox, type SearchableComboboxItem } from '@/components/ui
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 
 const formSchema = z.object({
   tu_subpartida_id: z.string().uuid('Selecciona una Subpartida'),
@@ -64,6 +64,7 @@ export function NewSubpartidaFromTUDialog({
   budgetDefaults,
 }: NewSubpartidaFromTUDialogProps) {
   const queryClient = useQueryClient();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -80,15 +81,15 @@ export function NewSubpartidaFromTUDialog({
   useEffect(() => {
     if (!open) {
       form.reset();
+      setSearchQuery('');
     }
   }, [open, form]);
 
-  // Cargar Subpartidas de la Partida TU
-  const { data: subpartidas = [], isLoading: loadingSubpartidas } = useQuery({
-    queryKey: ['tu-subpartidas', tuPartidaId],
-    queryFn: () => tuAdapter.getSubpartidas(tuPartidaId),
-    enabled: !!tuPartidaId && open,
-  });
+  // Cargar Subpartidas de la Partida TU con búsqueda
+  const { data: subpartidas = [], isLoading: loadingSubpartidas } = useSubpartidasByPartida(
+    tuPartidaId,
+    searchQuery
+  );
 
   const subpartidasItems: SearchableComboboxItem[] = subpartidas.map(s => ({
     value: s.id,
@@ -160,9 +161,20 @@ export function NewSubpartidaFromTUDialog({
           <DialogHeader>
             <DialogTitle>Agregar Subpartida (desde TU)</DialogTitle>
             <DialogDescription>
-              Esta partida no está vinculada a TU. Usa "Nueva Partida (desde TU)" para crear partidas con vinculación TU.
+              No se puede agregar subpartida desde TU
             </DialogDescription>
           </DialogHeader>
+          <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-medium text-destructive mb-1">
+                Esta partida no está vinculada al catálogo TU
+              </p>
+              <p className="text-muted-foreground">
+                Para agregar subpartidas desde TU, primero crea una partida usando el botón "Nueva Partida (desde TU)" en los encabezados de grupo.
+              </p>
+            </div>
+          </div>
           <div className="flex justify-end">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cerrar
@@ -179,7 +191,7 @@ export function NewSubpartidaFromTUDialog({
         <DialogHeader>
           <DialogTitle>Agregar Subpartida (desde TU)</DialogTitle>
           <DialogDescription>
-            Selecciona una Subpartida del catálogo TU e ingresa valores iniciales
+            Selecciona una Subpartida del catálogo TU para esta partida
           </DialogDescription>
         </DialogHeader>
 
@@ -191,6 +203,15 @@ export function NewSubpartidaFromTUDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Subpartida (TU) *</FormLabel>
+                  <FormDescription className="text-xs">
+                    {loadingSubpartidas ? (
+                      'Cargando subpartidas...'
+                    ) : subpartidas.length === 0 ? (
+                      'No hay subpartidas disponibles para esta partida'
+                    ) : (
+                      `${subpartidas.length} subpartida${subpartidas.length === 1 ? '' : 's'} disponible${subpartidas.length === 1 ? '' : 's'}`
+                    )}
+                  </FormDescription>
                   <FormControl>
                     <SearchableCombobox
                       items={subpartidasItems}

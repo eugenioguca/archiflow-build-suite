@@ -125,6 +125,31 @@ export const tuAdapter = {
   },
 
   /**
+   * Get subpartidas by partida with optional search query
+   */
+  async getSubpartidasByPartida(partidaId: string, searchQuery?: string): Promise<SubpartidaAdapter[]> {
+    let query = supabase
+      .from('chart_of_accounts_subpartidas')
+      .select('id, codigo, nombre, partida_id, es_global, departamento_aplicable, activo')
+      .eq('activo', true)
+      .eq('partida_id', partidaId);
+
+    if (searchQuery && searchQuery.trim()) {
+      const search = `%${searchQuery.trim()}%`;
+      query = query.or(`codigo.ilike.${search},nombre.ilike.${search}`);
+    }
+
+    const { data, error } = await query.order('codigo').limit(100);
+
+    if (error) {
+      console.error('Error fetching subpartidas by partida:', error);
+      return [];
+    }
+
+    return data || [];
+  },
+
+  /**
    * Get full dimensions hierarchy (read-only)
    */
   async getDimensions() {
