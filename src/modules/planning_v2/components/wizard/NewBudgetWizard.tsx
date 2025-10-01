@@ -112,6 +112,19 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
     onClose();
   };
 
+  // Handler para toggle de Desde TU - limpiar estado del modo anterior
+  const handleTUStructureToggle = (checked: boolean) => {
+    setUseTUStructure(checked);
+    if (checked) {
+      // Al activar TU, limpiar partidas default
+      setPartidas(DEFAULT_PARTIDAS.map(p => ({ ...p, enabled: false })));
+    } else {
+      // Al desactivar TU, limpiar selección de Mayores y restaurar partidas
+      setSelectedMayorIds([]);
+      setPartidas(DEFAULT_PARTIDAS);
+    }
+  };
+
   const handleNext = async () => {
     if (step === 1) {
       const isValid = await form.trigger();
@@ -524,8 +537,8 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
                   <p className="text-sm font-semibold mb-1">Estructura base</p>
                   <p className="text-xs text-muted-foreground">
                     {useTUStructure 
-                      ? '✓ Desde TU: Los Mayores seleccionados estarán disponibles en el Catálogo. No se crearán filas todavía.'
-                      : 'Usando partidas predeterminadas. Activa el switch para usar Mayores de Construcción desde TU.'}
+                      ? '✓ Desde TU: Selecciona los Mayores de Construcción. No se crearán filas todavía.'
+                      : 'Usando partidas predeterminadas. Activa "Desde TU" para usar Mayores de Construcción.'}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 ml-4">
@@ -535,7 +548,7 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
                   <Switch 
                     id="use-tu"
                     checked={useTUStructure} 
-                    onCheckedChange={setUseTUStructure}
+                    onCheckedChange={handleTUStructureToggle}
                   />
                 </div>
               </div>
@@ -608,11 +621,11 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
                 <span className="font-medium">{(form.watch('desperdicio_pct_default') * 100).toFixed(0)}%</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Partidas iniciales:</span>
+                <span className="text-muted-foreground">Estructura inicial:</span>
                 <span className="font-medium">
                   {useTUStructure 
                     ? `${selectedMayorIds.length} Mayores desde TU`
-                    : `${partidas.filter(p => p.enabled).length} partidas default`}
+                    : `${partidas.filter(p => p.enabled).length} partidas predeterminadas`}
                 </span>
               </div>
             </div>
