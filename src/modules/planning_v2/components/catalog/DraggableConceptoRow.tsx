@@ -70,9 +70,7 @@ export function DraggableConceptoRow({
       {visibleColumns.map((col) => (
         <div
           key={col.key}
-          className={`px-3 py-2 text-sm border-r ${
-            col.key === 'honorarios_pct' ? 'min-w-[160px]' : 'min-w-[120px]'
-          } max-w-[200px] ${
+          className={`px-3 py-2 text-sm border-r min-w-[120px] max-w-[200px] ${
             col.type === 'computed' ? 'bg-muted/10' : ''
           }`}
         >
