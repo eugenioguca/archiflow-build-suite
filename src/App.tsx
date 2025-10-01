@@ -37,6 +37,7 @@ import BudgetDetail from "./modules/planning_v2/pages/BudgetDetail";
 import PendingApproval from "./components/PendingApproval";
 import { UserOnboarding } from "./components/UserOnboarding";
 import NotFound from "./pages/NotFound";
+import { ScrollToTop } from "@/components/navigation/ScrollToTop";
 
 const queryClient = new QueryClient();
 
@@ -154,6 +155,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ScrollToTop />
           <SafetyNetCleanup />
           <Routes>
             <Route path="/" element={<Index />} />

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -368,7 +369,9 @@ export default function ExecutiveFinalView({ selectedClientId, selectedProjectId
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink href="/presupuestos-planeacion">Presupuestos</BreadcrumbLink>
+              <BreadcrumbLink asChild>
+                <Link to="/presupuestos-planeacion">Presupuestos</Link>
+              </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
@@ -405,7 +408,9 @@ export default function ExecutiveFinalView({ selectedClientId, selectedProjectId
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink href="/presupuestos-planeacion">Presupuestos</BreadcrumbLink>
+              <BreadcrumbLink asChild>
+                <Link to="/presupuestos-planeacion">Presupuestos</Link>
+              </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
@@ -432,7 +437,9 @@ export default function ExecutiveFinalView({ selectedClientId, selectedProjectId
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink href="/presupuestos-planeacion">Presupuestos</BreadcrumbLink>
+              <BreadcrumbLink asChild>
+                <Link to="/presupuestos-planeacion">Presupuestos</Link>
+              </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
@@ -451,7 +458,7 @@ export default function ExecutiveFinalView({ selectedClientId, selectedProjectId
               Crea subpartidas en el presupuesto ejecutivo para ver la vista final.
             </p>
             <Button asChild>
-              <a href="/presupuestos-planeacion">Ir a Presupuesto Ejecutivo</a>
+              <Link to="/presupuestos-planeacion">Ir a Presupuesto Ejecutivo</Link>
             </Button>
           </CardContent>
         </Card>
@@ -466,7 +473,9 @@ export default function ExecutiveFinalView({ selectedClientId, selectedProjectId
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink href="/presupuestos-planeacion">Presupuestos</BreadcrumbLink>
+              <BreadcrumbLink asChild>
+                <Link to="/presupuestos-planeacion">Presupuestos</Link>
+              </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
