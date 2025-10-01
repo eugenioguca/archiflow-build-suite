@@ -46,6 +46,7 @@ interface NewPartidaFromTUDialogProps {
   orderIndex: number;
   tuMayoresWhitelist?: string[]; // budget.settings.tu_mayores
   preselectedMayorId?: string; // For pre-selecting a Mayor from group header
+  onCreated?: (mayorId: string) => void; // Callback after successful creation
 }
 
 export function NewPartidaFromTUDialog({
@@ -55,6 +56,7 @@ export function NewPartidaFromTUDialog({
   orderIndex,
   tuMayoresWhitelist,
   preselectedMayorId,
+  onCreated,
 }: NewPartidaFromTUDialogProps) {
   const queryClient = useQueryClient();
   const [selectedMayorId, setSelectedMayorId] = useState<string | undefined>(preselectedMayorId);
@@ -154,12 +156,20 @@ export function NewPartidaFromTUDialog({
 
       if (mappingError) throw mappingError;
 
-      return newPartida;
+      return { newPartida, mayorId: values.tu_mayor_id };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['planning-budget', budgetId] });
-      queryClient.invalidateQueries({ queryKey: ['planning-tu-mappings', budgetId] });
+    onSuccess: async (data) => {
+      // Invalidar queries para refresh inmediato
+      await queryClient.invalidateQueries({ queryKey: ['planning-budget', budgetId] });
+      await queryClient.invalidateQueries({ queryKey: ['planning-tu-mappings', budgetId] });
+      
       toast.success('Partida desde TU creada correctamente');
+      
+      // Callback con el mayorId para scroll automático
+      if (onCreated) {
+        onCreated(data.mayorId);
+      }
+      
       form.reset();
       setSelectedMayorId(undefined);
       onOpenChange(false);

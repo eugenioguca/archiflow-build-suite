@@ -104,6 +104,19 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
   }>({ open: false });
   const { settings, saveSettings, isLoading: isLoadingSettings } = useColumnSettings(budgetId);
 
+  // Handler para scroll automático al Mayor después de crear partida
+  const handlePartidaCreated = useCallback((mayorId: string) => {
+    setTimeout(() => {
+      const element = document.getElementById(`mayor-header-${mayorId}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Highlight efecto visual temporal
+        element.classList.add('animate-pulse');
+        setTimeout(() => element.classList.remove('animate-pulse'), 1000);
+      }
+    }, 300); // Pequeño delay para asegurar que el DOM se actualice
+  }, []);
+
   // Load saved settings when available
   useEffect(() => {
     if (settings && settings.length > 0) {
@@ -845,7 +858,10 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                     return (
                       <div key={mayor.id} className="mb-4">
                         {/* Mayor Group Header */}
-                        <div className="flex items-center justify-between px-4 py-3 bg-primary/10 border-y border-primary/20">
+                        <div 
+                          id={`mayor-header-${mayor.id}`}
+                          className="flex items-center justify-between px-4 py-3 bg-primary/10 border-y border-primary/20"
+                        >
                           <div className="flex items-center gap-3">
                             <FolderOpen className="h-5 w-5 text-primary" />
                             <div>
@@ -1172,7 +1188,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
         }}
       />
 
-      {/* New Partida from TU Dialog (for group headers with preselected Mayor) */}
+      {/* New Partida from Mayor Header (TU) - with preselected Mayor and auto-scroll */}
       <NewPartidaFromTUDialog
         open={newPartidaFromTUDialog.open}
         onOpenChange={(open) => setNewPartidaFromTUDialog({ open })}
@@ -1180,6 +1196,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
         orderIndex={partidas.length}
         tuMayoresWhitelist={tuMayoresIds}
         preselectedMayorId={newPartidaFromTUDialog.preselectedMayorId}
+        onCreated={handlePartidaCreated}
       />
 
       {/* Dev Monitor - Performance tracking (DEV-ONLY) */}
