@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { SearchableCombobox, type SearchableComboboxItem } from '@/components/ui/searchable-combobox';
-import { createBudget, createPartida } from '../../services/budgetService';
+import { createBudget } from '../../services/budgetService';
 import { projectsAdapter } from '../../adapters/projects';
 import { clientsAdapter } from '../../adapters/clients';
 import type { ProjectAdapter } from '../../adapters/projects';
@@ -43,23 +43,6 @@ const stepOneSchema = z.object({
 
 type StepOneData = z.infer<typeof stepOneSchema>;
 
-interface TemplatePartida {
-  name: string;
-  order_index: number;
-  enabled: boolean;
-}
-
-const DEFAULT_PARTIDAS: TemplatePartida[] = [
-  { name: 'Preliminares', order_index: 0, enabled: true },
-  { name: 'Cimentación', order_index: 1, enabled: true },
-  { name: 'Estructura', order_index: 2, enabled: true },
-  { name: 'Albañilería', order_index: 3, enabled: true },
-  { name: 'Instalaciones hidráulicas', order_index: 4, enabled: true },
-  { name: 'Instalaciones eléctricas', order_index: 5, enabled: true },
-  { name: 'Acabados', order_index: 6, enabled: true },
-  { name: 'Carpintería', order_index: 7, enabled: true },
-];
-
 interface NewBudgetWizardProps {
   open: boolean;
   onClose: () => void;
@@ -70,8 +53,6 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
   const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [partidas, setPartidas] = useState<TemplatePartida[]>(DEFAULT_PARTIDAS);
-  const [useTUStructure, setUseTUStructure] = useState(false);
   const [selectedMayorIds, setSelectedMayorIds] = useState<string[]>([]);
   const [selectedClient, setSelectedClient] = useState<ClientAdapter | null>(null);
   const [selectedProject, setSelectedProject] = useState<ProjectAdapter | null>(null);
@@ -108,25 +89,10 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
   const handleClose = () => {
     form.reset();
     setStep(1);
-    setPartidas(DEFAULT_PARTIDAS);
-    setUseTUStructure(false);
     setSelectedMayorIds([]);
     setSelectedClient(null);
     setSelectedProject(null);
     onClose();
-  };
-
-  // Handler para toggle de Desde TU - limpiar estado del modo anterior
-  const handleTUStructureToggle = (checked: boolean) => {
-    setUseTUStructure(checked);
-    if (checked) {
-      // Al activar TU, limpiar partidas default
-      setPartidas(DEFAULT_PARTIDAS.map(p => ({ ...p, enabled: false })));
-    } else {
-      // Al desactivar TU, limpiar selección de Mayores y restaurar partidas
-      setSelectedMayorIds([]);
-      setPartidas(DEFAULT_PARTIDAS);
-    }
   };
 
   const handleNext = async () => {
@@ -142,10 +108,6 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
     setStep(step - 1);
   };
 
-  const togglePartida = (index: number) => {
-    setPartidas(prev => prev.map((p, i) => i === index ? { ...p, enabled: !p.enabled } : p));
-  };
-
   const handleCreate = async () => {
     setLoading(true);
     try {
@@ -157,30 +119,15 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
         currency: values.currency,
         status: 'draft',
         settings: {
+          source: 'TU',
           enable_iva: values.enable_iva,
           iva_rate: values.iva_rate,
           honorarios_pct_default: values.honorarios_pct_default,
           desperdicio_pct_default: values.desperdicio_pct_default,
           notes: values.notes || null,
-          // Persistir selección de Mayores TU (sin crear filas)
-          tu_mayores: useTUStructure ? selectedMayorIds : undefined,
+          tu_mayores: selectedMayorIds,
         },
       });
-
-      // Solo crear partidas si NO usamos TU
-      if (!useTUStructure) {
-        // Create default partidas
-        const enabledPartidas = partidas.filter(p => p.enabled);
-        await Promise.all(enabledPartidas.map(p => createPartida({
-          budget_id: budget.id,
-          name: p.name,
-          order_index: p.order_index,
-          active: true,
-          notes: null,
-          honorarios_pct_override: null,
-          desperdicio_pct_override: null,
-        })));
-      }
 
       toast({ title: 'Presupuesto creado', description: `${budget.name} se creó correctamente` });
       handleClose();
@@ -536,52 +483,23 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
         return (
           <div className="space-y-4">
             <div className="mb-4 p-4 bg-primary/5 border border-primary/10 rounded-lg">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="text-sm font-semibold mb-1">Estructura base</p>
-                  <p className="text-xs text-muted-foreground">
-                    {useTUStructure 
-                      ? '✓ Desde TU: Selecciona los Mayores de Construcción. Los % configurados se aplicarán automáticamente.'
-                      : 'Usando partidas predeterminadas. Activa "Desde TU" para usar Mayores de Construcción.'}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 ml-4">
-                  <Label htmlFor="use-tu" className="text-xs cursor-pointer whitespace-nowrap">
-                    Desde TU
-                  </Label>
-                  <Switch 
-                    id="use-tu"
-                    checked={useTUStructure} 
-                    onCheckedChange={handleTUStructureToggle}
-                  />
-                </div>
-              </div>
+              <p className="text-sm font-semibold mb-1">Estructura base (TU)</p>
+              <p className="text-xs text-muted-foreground">
+                Selecciona los Mayores del catálogo de Construcción. Las Partidas/Subpartidas se agregarán después en el Catálogo.
+              </p>
             </div>
 
-            {useTUStructure ? (
-              <MayoresSelector
-                selectedMayorIds={selectedMayorIds}
-                onSelectionChange={setSelectedMayorIds}
-                departamento="CONSTRUCCIÓN"
-              />
-            ) : (
-              <>
-                <p className="text-sm text-muted-foreground">
-                  Selecciona las partidas iniciales para tu presupuesto. Puedes agregar o quitar partidas más tarde.
-                </p>
-                <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                  {partidas.map((partida, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/30">
-                      <span className="font-medium">{partida.name}</span>
-                      <Switch checked={partida.enabled} onCheckedChange={() => togglePartida(index)} />
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {partidas.filter(p => p.enabled).length} de {partidas.length} partidas seleccionadas
-                </p>
-              </>
-            )}
+            <MayoresSelector
+              selectedMayorIds={selectedMayorIds}
+              onSelectionChange={setSelectedMayorIds}
+              departamento="CONSTRUCCIÓN"
+            />
+            
+            <p className="text-xs text-muted-foreground text-center">
+              {selectedMayorIds.length === 0 
+                ? 'Ningún Mayor seleccionado' 
+                : `${selectedMayorIds.length} ${selectedMayorIds.length === 1 ? 'Mayor seleccionado' : 'Mayores seleccionados'}`}
+            </p>
           </div>
         );
 
@@ -628,12 +546,10 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
                 <div className="flex justify-between mb-2">
                   <span className="text-muted-foreground font-medium">Estructura inicial:</span>
                   <span className="font-semibold">
-                    {useTUStructure 
-                      ? `${selectedMayorIds.length} Mayores desde TU`
-                      : `${partidas.filter(p => p.enabled).length} partidas predeterminadas`}
+                    {selectedMayorIds.length} {selectedMayorIds.length === 1 ? 'Mayor' : 'Mayores'} desde TU
                   </span>
                 </div>
-                {useTUStructure && selectedMayorIds.length > 0 && (
+                {selectedMayorIds.length > 0 && (
                   <div className="mt-2 p-3 bg-muted/30 rounded-lg">
                     <p className="text-xs text-muted-foreground mb-2">Mayores seleccionados:</p>
                     <div className="flex flex-wrap gap-1">
