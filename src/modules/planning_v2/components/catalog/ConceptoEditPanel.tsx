@@ -64,7 +64,7 @@ export function ConceptoEditPanel({
       desperdicio_pct: 0,
       precio_real: 0,
       honorarios_pct: 0,
-      notes: '',
+      notas_md: '',
       is_postventa: false,
       change_reason: '',
     },
@@ -93,7 +93,7 @@ export function ConceptoEditPanel({
         desperdicio_pct: concepto.desperdicio_pct,
         precio_real: concepto.precio_real,
         honorarios_pct: concepto.honorarios_pct,
-        notes: concepto.props?.notes || '',
+        notas_md: (concepto as any).notas_md || '',
         is_postventa: concepto.is_postventa || false,
         change_reason: concepto.change_reason || '',
       });
@@ -109,10 +109,7 @@ export function ConceptoEditPanel({
         timeoutId = setTimeout(() => {
           if (concepto?.id) {
             setIsSaving(true);
-            updateConcepto(concepto.id, {
-              ...values,
-              props: { ...concepto.props, notes: values.notes },
-            })
+            updateConcepto(concepto.id, values)
               .then(() => {
                 queryClient.invalidateQueries({ queryKey: ['planning-budget'] });
                 setIsSaving(false);
@@ -192,32 +189,62 @@ export function ConceptoEditPanel({
     },
   });
 
+  // Get current user profile
+  const { data: currentProfile } = useQuery({
+    queryKey: ['current-profile'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // File upload handler (only PDF, JPG, PNG)
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !concepto?.id) return;
+    if (!file || !concepto?.id || !currentProfile?.id) return;
 
     // Validate file type
     const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
     if (!allowedTypes.includes(file.type)) {
       toast.error('Solo se permiten archivos PDF, JPG o PNG');
+      event.target.value = '';
       return;
     }
 
     // Validate file size (10 MB max)
     if (file.size > 10 * 1024 * 1024) {
       toast.error('El archivo no debe exceder 10 MB');
+      event.target.value = '';
       return;
     }
 
     setUploading(true);
     try {
-      // Upload to storage
+      const { data: budget } = await supabase
+        .from('planning_conceptos')
+        .select('partida_id, planning_partidas(budget_id)')
+        .eq('id', concepto.id)
+        .single();
+
+      const budgetId = (budget as any)?.planning_partidas?.budget_id;
+      if (!budgetId) throw new Error('Budget ID not found');
+
+      // Upload to storage with proper path structure
       const fileExt = file.name.split('.').pop();
-      const filePath = `conceptos/${concepto.id}/${Date.now()}.${fileExt}`;
+      const timestamp = Date.now();
+      const filePath = `${budgetId}/${concepto.id}/${timestamp}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
-        .from('planning_attachments')
+        .from('planning_v2_concept_attachments')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
@@ -231,12 +258,14 @@ export function ConceptoEditPanel({
           file_path: filePath,
           file_size: file.size,
           file_type: file.type,
+          created_by: currentProfile.id,
         });
 
       if (insertError) throw insertError;
 
       queryClient.invalidateQueries({ queryKey: ['concepto-attachments', concepto.id] });
-      toast.success('Archivo adjuntado');
+      toast.success('Archivo adjuntado correctamente');
+      event.target.value = '';
     } catch (error) {
       console.error('Error uploading file:', error);
       toast.error('Error al subir archivo');
@@ -247,10 +276,12 @@ export function ConceptoEditPanel({
 
   // Delete attachment
   const handleDeleteAttachment = async (attachmentId: string, filePath: string) => {
+    if (!confirm('¿Estás seguro de eliminar este archivo?')) return;
+
     try {
       // Delete from storage
       const { error: storageError } = await supabase.storage
-        .from('planning_attachments')
+        .from('planning_v2_concept_attachments')
         .remove([filePath]);
 
       if (storageError) throw storageError;
@@ -264,7 +295,7 @@ export function ConceptoEditPanel({
       if (deleteError) throw deleteError;
 
       queryClient.invalidateQueries({ queryKey: ['concepto-attachments', concepto?.id] });
-      toast.success('Archivo eliminado');
+      toast.success('Archivo eliminado correctamente');
     } catch (error) {
       console.error('Error deleting attachment:', error);
       toast.error('Error al eliminar archivo');
@@ -275,7 +306,7 @@ export function ConceptoEditPanel({
   const handleDownload = async (filePath: string, fileName: string) => {
     try {
       const { data, error } = await supabase.storage
-        .from('planning_attachments')
+        .from('planning_v2_concept_attachments')
         .download(filePath);
 
       if (error) throw error;
@@ -286,6 +317,7 @@ export function ConceptoEditPanel({
       a.download = fileName;
       a.click();
       URL.revokeObjectURL(url);
+      toast.success('Archivo descargado');
     } catch (error) {
       console.error('Error downloading file:', error);
       toast.error('Error al descargar archivo');
@@ -451,11 +483,11 @@ export function ConceptoEditPanel({
 
                 <Separator />
 
-                {/* Long Description (Markdown) */}
+                {/* Notas Markdown (large textarea) */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="long_description">
-                      Descripción Larga (Markdown)
+                    <Label htmlFor="notas_md">
+                      Notas y Comentarios (Markdown)
                     </Label>
                     <Button
                       type="button"
@@ -468,32 +500,19 @@ export function ConceptoEditPanel({
                     </Button>
                   </div>
                   {showMarkdownPreview ? (
-                    <div className="prose prose-sm max-w-none border rounded-md p-4 min-h-[150px] bg-muted/30">
+                    <div className="prose prose-sm max-w-none border rounded-md p-4 min-h-[200px] bg-muted/30">
                       <ReactMarkdown>
-                        {watch('long_description') || '*Sin descripción*'}
+                        {watch('notas_md') || '*Sin notas*'}
                       </ReactMarkdown>
                     </div>
                   ) : (
                     <Textarea
-                      id="long_description"
-                      {...register('long_description')}
-                      rows={6}
-                      placeholder="Soporta **negritas**, *cursivas*, y listas:&#10;- Item 1&#10;- Item 2"
+                      id="notas_md"
+                      {...register('notas_md')}
+                      rows={10}
+                      placeholder="Escribe notas largas aquí. Soporta Markdown:&#10;&#10;**Negritas**, *cursivas*&#10;&#10;- Lista 1&#10;- Lista 2&#10;&#10;Ideal para cotizaciones, comentarios técnicos, etc."
                     />
                   )}
-                </div>
-
-                <Separator />
-
-                {/* Notes */}
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Notas Internas</Label>
-                  <Textarea
-                    id="notes"
-                    {...register('notes')}
-                    rows={3}
-                    placeholder="Notas adicionales para el concepto..."
-                  />
                 </div>
 
                 <Separator />
@@ -549,18 +568,20 @@ export function ConceptoEditPanel({
           <TabsContent value="attachments" className="mt-6">
             <ScrollArea className="h-[calc(100vh-250px)]">
               <div className="space-y-4 pr-4">
-                <div>
-                  <Label htmlFor="file-upload" className="cursor-pointer">
-                    <div className="border-2 border-dashed rounded-lg p-6 hover:bg-muted/50 transition-colors text-center">
-                      <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">
-                        {uploading ? 'Subiendo archivo...' : 'Click para adjuntar cotización (PDF, JPG, PNG)'}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Máximo 10 MB
+                {/* Upload Section */}
+                <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                  <label htmlFor="file-upload" className="cursor-pointer">
+                    <div className="space-y-2">
+                      <Upload className="h-10 w-10 mx-auto text-muted-foreground" />
+                      <div className="text-sm">
+                        <span className="font-medium text-primary">Click para subir</span>
+                        {' '}o arrastra archivos aquí
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        PDF, JPG o PNG (máx. 10 MB)
                       </p>
                     </div>
-                  </Label>
+                  </label>
                   <input
                     id="file-upload"
                     type="file"
@@ -569,58 +590,81 @@ export function ConceptoEditPanel({
                     onChange={handleFileUpload}
                     disabled={uploading}
                   />
+                  {uploading && (
+                    <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Subiendo archivo...
+                    </div>
+                  )}
                 </div>
 
-                <Separator />
-
-                <div className="space-y-2">
-                  {attachments.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">
-                      No hay archivos adjuntos
+                {/* Attachments List */}
+                {attachments.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No hay archivos adjuntos</p>
+                    <p className="text-xs mt-1">
+                      Sube cotizaciones, fotos o documentos relacionados
                     </p>
-                  ) : (
-                    attachments.map((attachment) => (
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground mb-2">
+                      {attachments.length} archivo{attachments.length !== 1 ? 's' : ''} adjunto{attachments.length !== 1 ? 's' : ''}
+                    </p>
+                    {attachments.map((attachment) => (
                       <div
                         key={attachment.id}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
+                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/30 transition-colors group"
                       >
                         <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
-                          <div className="min-w-0 flex-1">
+                          <div className="p-2 bg-primary/10 rounded">
+                            <FileText className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">
                               {attachment.file_name}
                             </p>
-                            <p className="text-xs text-muted-foreground">
-                              {(attachment.file_size / 1024).toFixed(1)} KB • {' '}
-                              {new Date(attachment.created_at).toLocaleDateString('es-MX')}
-                            </p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                              <span>
+                                {(attachment.file_size / 1024).toFixed(1)} KB
+                              </span>
+                              <span>•</span>
+                              <span>
+                                {new Date(attachment.created_at).toLocaleDateString('es-MX', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric'
+                                })}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Button
-                            size="sm"
+                            type="button"
                             variant="ghost"
+                            size="sm"
                             onClick={() => handleDownload(attachment.file_path, attachment.file_name)}
+                            title="Descargar"
                           >
-                            Descargar
+                            <Eye className="h-4 w-4" />
                           </Button>
                           <Button
-                            size="sm"
+                            type="button"
                             variant="ghost"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => {
-                              if (confirm('¿Eliminar este archivo?')) {
-                                handleDeleteAttachment(attachment.id, attachment.file_path);
-                              }
-                            }}
+                            size="sm"
+                            onClick={() => handleDeleteAttachment(attachment.id, attachment.file_path)}
+                            className="hover:text-destructive"
+                            title="Eliminar"
                           >
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
-                    ))
-                  )}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </ScrollArea>
           </TabsContent>
@@ -629,48 +673,70 @@ export function ConceptoEditPanel({
             <ScrollArea className="h-[calc(100vh-250px)]">
               <div className="space-y-3 pr-4">
                 {auditHistory.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    No hay historial de cambios
-                  </p>
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Clock className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No hay historial de cambios</p>
+                    <p className="text-xs mt-1">
+                      Los cambios en precio, cantidad, proveedor y notas aparecerán aquí
+                    </p>
+                  </div>
                 ) : (
-                  auditHistory.map((entry) => (
-                    <div
-                      key={entry.id}
-                      className="flex gap-3 p-3 border rounded-lg"
-                    >
-                      <Clock className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge variant="outline" className="text-xs">
-                            {entry.action}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(entry.created_at).toLocaleString('es-MX')}
-                          </span>
-                        </div>
-                        <p className="text-sm font-medium mb-1">
-                          {entry.profiles?.full_name || 'Usuario'}
-                        </p>
-                        {entry.field_name && (
-                          <div className="text-sm space-y-1 mt-2">
-                            <p className="text-muted-foreground">
-                              Campo: <span className="font-medium text-foreground">{entry.field_name}</span>
-                            </p>
-                            {entry.old_value && (
-                              <p className="text-muted-foreground">
-                                Antes: <span className="text-foreground">{entry.old_value}</span>
-                              </p>
-                            )}
-                            {entry.new_value && (
-                              <p className="text-muted-foreground">
-                                Después: <span className="text-foreground">{entry.new_value}</span>
+                  <>
+                    <p className="text-sm font-medium text-muted-foreground mb-2">
+                      Historial de Cambios
+                    </p>
+                    {auditHistory.map((log) => (
+                      <div
+                        key={log.id}
+                        className="border rounded-lg p-4 space-y-2 hover:bg-muted/30 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs">
+                                {log.action_type === 'update' ? 'Actualización' : 
+                                 log.action_type === 'create' ? 'Creación' : 
+                                 log.action_type === 'delete' ? 'Eliminación' : 
+                                 log.action_type}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {log.profiles?.full_name || 'Usuario desconocido'}
+                              </span>
+                            </div>
+                            {log.description && (
+                              <p className="text-sm mt-1 text-foreground">
+                                {log.description}
                               </p>
                             )}
                           </div>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {new Date(log.created_at).toLocaleDateString('es-MX', {
+                              day: '2-digit',
+                              month: 'short',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
+                        
+                        {/* Show change details if available */}
+                        {log.changes && typeof log.changes === 'object' && (
+                          <div className="text-xs bg-muted/50 rounded p-2 space-y-1 mt-2">
+                            {Object.entries(log.changes as Record<string, any>).map(([key, value]) => (
+                              <div key={key} className="flex items-start gap-2">
+                                <span className="font-medium text-muted-foreground min-w-[100px]">
+                                  {key}:
+                                </span>
+                                <span className="flex-1 break-all">
+                                  {JSON.stringify(value)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
                         )}
                       </div>
-                    </div>
-                  ))
+                    ))}
+                  </>
                 )}
               </div>
             </ScrollArea>

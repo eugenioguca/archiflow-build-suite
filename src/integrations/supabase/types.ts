@@ -5881,6 +5881,7 @@ export type Database = {
           id: string
           is_postventa: boolean
           long_description: string | null
+          notas_md: string | null
           order_index: number
           partida_id: string
           precio_real: number | null
@@ -5908,6 +5909,7 @@ export type Database = {
           id?: string
           is_postventa?: boolean
           long_description?: string | null
+          notas_md?: string | null
           order_index?: number
           partida_id: string
           precio_real?: number | null
@@ -5935,6 +5937,7 @@ export type Database = {
           id?: string
           is_postventa?: boolean
           long_description?: string | null
+          notas_md?: string | null
           order_index?: number
           partida_id?: string
           precio_real?: number | null
