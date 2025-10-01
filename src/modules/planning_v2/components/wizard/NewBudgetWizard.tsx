@@ -24,6 +24,7 @@ import { clientsAdapter } from '../../adapters/clients';
 import type { ProjectAdapter } from '../../adapters/projects';
 import type { ClientAdapter } from '../../adapters/clients';
 import { MayoresSelector } from './MayoresSelector';
+import { useMayoresTU } from '@/hooks/gantt-v2/useMayoresTU';
 
 const stepOneSchema = z.object({
   name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres'),
@@ -87,6 +88,9 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
   // Race-safety refs para handlers async
   const clientReqIdRef = useRef(0);
   const projectReqIdRef = useRef(0);
+
+  // Cargar Mayores TU para mostrar nombres en resumen
+  const { data: mayoresTU = [] } = useMayoresTU();
 
   const form = useForm<StepOneData>({
     resolver: zodResolver(stepOneSchema),
@@ -537,7 +541,7 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
                   <p className="text-sm font-semibold mb-1">Estructura base</p>
                   <p className="text-xs text-muted-foreground">
                     {useTUStructure 
-                      ? '✓ Desde TU: Selecciona los Mayores de Construcción. No se crearán filas todavía.'
+                      ? '✓ Desde TU: Selecciona los Mayores de Construcción. Los % configurados se aplicarán automáticamente.'
                       : 'Usando partidas predeterminadas. Activa "Desde TU" para usar Mayores de Construcción.'}
                   </p>
                 </div>
@@ -613,20 +617,38 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
                 </div>
               )}
               <div className="flex justify-between">
-                <span className="text-muted-foreground">% Honorarios:</span>
+                <span className="text-muted-foreground">% Honorarios (default):</span>
                 <span className="font-medium">{(form.watch('honorarios_pct_default') * 100).toFixed(0)}%</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">% Desperdicio:</span>
+                <span className="text-muted-foreground">% Desperdicio (default):</span>
                 <span className="font-medium">{(form.watch('desperdicio_pct_default') * 100).toFixed(0)}%</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Estructura inicial:</span>
-                <span className="font-medium">
-                  {useTUStructure 
-                    ? `${selectedMayorIds.length} Mayores desde TU`
-                    : `${partidas.filter(p => p.enabled).length} partidas predeterminadas`}
-                </span>
+              <div className="border-t pt-3 mt-2">
+                <div className="flex justify-between mb-2">
+                  <span className="text-muted-foreground font-medium">Estructura inicial:</span>
+                  <span className="font-semibold">
+                    {useTUStructure 
+                      ? `${selectedMayorIds.length} Mayores desde TU`
+                      : `${partidas.filter(p => p.enabled).length} partidas predeterminadas`}
+                  </span>
+                </div>
+                {useTUStructure && selectedMayorIds.length > 0 && (
+                  <div className="mt-2 p-3 bg-muted/30 rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-2">Mayores seleccionados:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedMayorIds.map(mayorId => {
+                        const mayor = mayoresTU.find(m => m.id === mayorId);
+                        return mayor ? (
+                          <span key={mayorId} className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded text-xs">
+                            <span className="font-mono">{mayor.codigo}</span>
+                            <span>{mayor.nombre}</span>
+                          </span>
+                        ) : null;
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
