@@ -70,11 +70,13 @@ export function DraggableConceptoRow({
       {visibleColumns.map((col) => (
         <div
           key={col.key}
-          className={`px-3 py-2 text-sm border-r min-w-[120px] ${
+          className={`px-3 py-2 text-sm border-r min-w-[120px] max-w-[200px] ${
             col.type === 'computed' ? 'bg-muted/10' : ''
           }`}
         >
-          {renderCell(concepto, col)}
+          <div className="min-w-0 whitespace-pre-wrap break-words break-all">
+            {renderCell(concepto, col)}
+          </div>
         </div>
       ))}
       {actionsContent && (

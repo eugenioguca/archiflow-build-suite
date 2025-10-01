@@ -159,14 +159,16 @@ export function EditableCell({
 
   return (
     <div
-      className="cursor-pointer hover:bg-muted/50 rounded px-2 -mx-2 py-1"
+      className="cursor-pointer hover:bg-muted/50 rounded px-2 -mx-2 py-1 min-w-0 break-words"
       onClick={(e) => {
         e.stopPropagation();
         handleEdit();
       }}
       title="Click para editar"
     >
-      {formatFn ? formatFn(value || 0) : (value || '—')}
+      <span className="whitespace-pre-wrap break-words">
+        {formatFn ? formatFn(value || 0) : (value || '—')}
+      </span>
     </div>
   );
 }

@@ -30,6 +30,7 @@ import { TUBreadcrumb } from './TUBreadcrumb';
 import ReactMarkdown from 'react-markdown';
 import { SearchableCombobox, type SearchableComboboxItem } from '@/components/ui/searchable-combobox';
 import { useSuppliers } from '../../hooks/useSuppliers';
+import { AutoResizeTextarea } from '../ui/AutoResizeTextarea';
 
 interface ConceptoEditPanelProps {
   concepto: PlanningConcepto | null;
@@ -500,17 +501,19 @@ export function ConceptoEditPanel({
                     </Button>
                   </div>
                   {showMarkdownPreview ? (
-                    <div className="prose prose-sm max-w-none border rounded-md p-4 min-h-[200px] bg-muted/30">
+                    <div className="prose prose-sm max-w-none border rounded-md p-4 min-h-[200px] max-h-[400px] overflow-y-auto bg-muted/30 whitespace-pre-wrap break-words">
                       <ReactMarkdown>
                         {watch('notas_md') || '*Sin notas*'}
                       </ReactMarkdown>
                     </div>
                   ) : (
-                    <Textarea
+                    <AutoResizeTextarea
                       id="notas_md"
                       {...register('notas_md')}
-                      rows={10}
+                      minRows={4}
+                      maxRows={12}
                       placeholder="Escribe notas largas aquí. Soporta Markdown:&#10;&#10;**Negritas**, *cursivas*&#10;&#10;- Lista 1&#10;- Lista 2&#10;&#10;Ideal para cotizaciones, comentarios técnicos, etc."
+                      className="w-full"
                     />
                   )}
                 </div>
@@ -538,12 +541,13 @@ export function ConceptoEditPanel({
                   {watch('is_postventa') && (
                     <div className="space-y-2 pt-2">
                       <Label htmlFor="change_reason">Motivo del Cambio *</Label>
-                      <Textarea
+                      <AutoResizeTextarea
                         id="change_reason"
                         {...register('change_reason')}
-                        rows={3}
+                        minRows={3}
+                        maxRows={8}
                         placeholder="Describe el motivo del cambio post-venta..."
-                        className="bg-background"
+                        className="bg-background w-full"
                       />
                       <p className="text-xs text-muted-foreground">
                         Este motivo se incluirá en los reportes de post-venta

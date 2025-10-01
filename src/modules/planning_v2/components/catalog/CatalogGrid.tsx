@@ -606,7 +606,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
   });
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden min-w-0">
       {/* Keyboard Hints Bar */}
       <KeyboardHintsBar />
 
@@ -800,13 +800,13 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
       </div>
 
       {/* Grid */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 overflow-x-hidden">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
-          <div className="min-w-max">
+          <div className="min-w-max max-w-full overflow-x-auto">
             {/* Header */}
             <div className="sticky top-0 z-10 bg-background border-b">
               <div className="flex">
@@ -821,11 +821,11 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                 {visibleColumns.map((col) => (
                   <div
                     key={col.key}
-                    className={`px-3 py-2 text-sm font-medium border-r min-w-[120px] ${
+                    className={`px-3 py-2 text-sm font-medium border-r min-w-[120px] max-w-[200px] ${
                       col.type === 'computed' ? 'bg-muted/30' : ''
                     }`}
                   >
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 min-w-0">
                       {col.label}
                       {col.type === 'computed' && (
                         <Lock className="h-3 w-3 text-muted-foreground" />
@@ -913,41 +913,41 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                             );
                           }
 
-                          if (row.type === 'subtotal') {
-                            return (
-                              <div
-                                key={row.id}
-                                className="flex items-center bg-primary/5 border-b font-medium"
-                              >
-                                <div className="w-12 border-r"></div>
-                                {visibleColumns.map((col, i) => (
-                                  <div
-                                    key={col.key}
-                                    className="px-3 py-2 text-sm border-r min-w-[120px]"
-                                  >
-                                    {i === 0 ? 'Subtotal Partida' : col.key === 'total' ? formatAsCurrency(row.subtotal!) : ''}
-                                  </div>
-                                ))}
-                              </div>
-                            );
-                          }
+                    if (row.type === 'subtotal') {
+                      return (
+                        <div
+                          key={row.id}
+                          className="flex items-center bg-primary/5 border-b font-medium min-w-0"
+                        >
+                          <div className="w-12 border-r"></div>
+                          {visibleColumns.map((col, i) => (
+                            <div
+                              key={col.key}
+                              className="px-3 py-2 text-sm border-r min-w-[120px] max-w-[200px]"
+                            >
+                              {i === 0 ? 'Subtotal Partida' : col.key === 'total' ? formatAsCurrency(row.subtotal!) : ''}
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }
 
-                          if (row.type === 'subpartida') {
-                            return (
-                              <div
-                                key={row.id}
-                                className="flex items-center bg-muted/50 border-b font-medium"
-                              >
-                                <div className="w-12 border-r"></div>
-                                <div className="px-3 py-2 text-sm font-medium">
-                                  Subpartida ({row.subpartidaCount} conceptos)
-                                </div>
-                                <div className="ml-auto px-3 py-2 text-sm font-medium">
-                                  {formatAsCurrency(row.subtotal || 0)}
-                                </div>
-                              </div>
-                            );
-                          }
+                    if (row.type === 'subpartida') {
+                      return (
+                        <div
+                          key={row.id}
+                          className="flex items-center bg-muted/50 border-b font-medium min-w-0"
+                        >
+                          <div className="w-12 border-r"></div>
+                          <div className="px-3 py-2 text-sm font-medium min-w-0 break-words">
+                            Subpartida ({row.subpartidaCount} conceptos)
+                          </div>
+                          <div className="ml-auto px-3 py-2 text-sm font-medium">
+                            {formatAsCurrency(row.subtotal || 0)}
+                          </div>
+                        </div>
+                      );
+                    }
 
                           if (row.type !== 'concepto' || !row.concepto) return null;
                           
@@ -1009,13 +1009,13 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                       return (
                         <div
                           key={row.id}
-                          className="flex items-center bg-primary/5 border-b font-medium"
+                          className="flex items-center bg-primary/5 border-b font-medium min-w-0"
                         >
                           <div className="w-12 border-r"></div>
                           {visibleColumns.map((col, i) => (
                             <div
                               key={col.key}
-                              className="px-3 py-2 text-sm border-r min-w-[120px]"
+                              className="px-3 py-2 text-sm border-r min-w-[120px] max-w-[200px]"
                             >
                               {i === 0 ? 'Subtotal Partida' : col.key === 'total' ? formatAsCurrency(row.subtotal!) : ''}
                             </div>
@@ -1028,10 +1028,10 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                       return (
                         <div
                           key={row.id}
-                          className="flex items-center bg-muted/50 border-b font-medium"
+                          className="flex items-center bg-muted/50 border-b font-medium min-w-0"
                         >
                           <div className="w-12 border-r"></div>
-                          <div className="px-3 py-2 text-sm font-medium">
+                          <div className="px-3 py-2 text-sm font-medium min-w-0 break-words">
                             Subpartida ({row.subpartidaCount} conceptos)
                           </div>
                           <div className="ml-auto px-3 py-2 text-sm font-medium">
