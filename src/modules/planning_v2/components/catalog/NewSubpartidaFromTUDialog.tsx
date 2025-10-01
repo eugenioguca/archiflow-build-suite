@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useSubpartidasByPartida } from '../../hooks/useSubpartidasByPartida';
+import { useSubpartidasMixed } from '../../hooks/useSubpartidasMixed';
 import { useSuppliers } from '../../hooks/useSuppliers';
 import {
   Dialog,
@@ -88,8 +88,8 @@ export function NewSubpartidaFromTUDialog({
     }
   }, [open, form]);
 
-  // Cargar Subpartidas de la Partida TU con búsqueda
-  const { data: tuSubpartidas = [], isLoading: isLoadingSubpartidas } = useSubpartidasByPartida(
+  // Cargar Subpartidas mixtas: dependientes de la Partida TU + globales de Construcción
+  const { data: tuSubpartidas = [], isLoading: isLoadingSubpartidas } = useSubpartidasMixed(
     tuPartidaId,
     subpartidaSearch
   );
@@ -100,7 +100,7 @@ export function NewSubpartidaFromTUDialog({
   const subpartidasItems: SearchableComboboxItem[] = useMemo(() => {
     return tuSubpartidas.map(s => ({
       value: s.id,
-      label: s.nombre,
+      label: `${s.codigo} — ${s.nombre}${s.es_global ? ' (Global)' : ''}`,
       codigo: s.codigo,
       searchText: `${s.codigo} ${s.nombre}`.toLowerCase(),
     }));
@@ -178,25 +178,160 @@ export function NewSubpartidaFromTUDialog({
           <DialogHeader>
             <DialogTitle>Agregar Subpartida (desde TU)</DialogTitle>
             <DialogDescription>
-              No se puede agregar subpartida desde TU
+              Subpartidas globales de Construcción
             </DialogDescription>
           </DialogHeader>
-          <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+          <div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-lg flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
             <div className="text-sm">
-              <p className="font-medium text-destructive mb-1">
-                Esta partida no está vinculada al catálogo TU
+              <p className="font-medium text-amber-900 dark:text-amber-100 mb-1">
+                Partida sin vínculo TU
               </p>
               <p className="text-muted-foreground">
-                Para agregar subpartidas desde TU, primero crea una partida usando el botón "Nueva Partida (desde TU)" en los encabezados de grupo.
+                Esta partida no está vinculada al catálogo TU. Aún puedes agregar subpartidas globales del departamento Construcción.
               </p>
             </div>
           </div>
-          <div className="flex justify-end">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cerrar
-            </Button>
-          </div>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="tu_subpartida_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Subpartida Global (TU) *</FormLabel>
+                    <FormDescription className="text-xs">
+                      {isLoadingSubpartidas ? (
+                        'Cargando subpartidas globales...'
+                      ) : (
+                        `${tuSubpartidas.length} subpartida${tuSubpartidas.length === 1 ? '' : 's'} global${tuSubpartidas.length === 1 ? '' : 'es'} de Construcción`
+                      )}
+                    </FormDescription>
+                    <FormControl>
+                      <SearchableCombobox
+                        items={subpartidasItems}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Seleccionar Subpartida..."
+                        searchPlaceholder="Buscar por código o nombre..."
+                        emptyText="No se encontraron Subpartidas globales"
+                        loading={isLoadingSubpartidas}
+                        showCodes={true}
+                        searchFields={['label', 'codigo', 'searchText']}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="unit"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Unidad *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="PZA" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="cantidad_real"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cantidad Real</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          {...field}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="precio_real"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Precio Real (unitario)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        {...field}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="provider_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Proveedor (opcional)</FormLabel>
+                    <FormControl>
+                      <SearchableCombobox
+                        items={suppliers}
+                        value={field.value || ''}
+                        onValueChange={field.onChange}
+                        placeholder="Seleccionar proveedor..."
+                        searchPlaceholder="Buscar por nombre o RFC..."
+                        emptyText="No se encontraron proveedores"
+                        loading={isLoadingSuppliers}
+                        showCodes={true}
+                        searchFields={['label', 'codigo']}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {suppliers.length} proveedores disponibles
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="p-3 bg-muted/50 rounded-md text-xs space-y-1">
+                <p><strong>% Honorarios:</strong> {(budgetDefaults.honorarios_pct_default * 100).toFixed(2)}% (default)</p>
+                <p><strong>% Desperdicio:</strong> {(budgetDefaults.desperdicio_pct_default * 100).toFixed(2)}% (default)</p>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={createConceptoMutation.isPending}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={createConceptoMutation.isPending}>
+                  {createConceptoMutation.isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Agregar Concepto
+                </Button>
+              </div>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
     );
@@ -224,9 +359,11 @@ export function NewSubpartidaFromTUDialog({
                     {isLoadingSubpartidas ? (
                       'Cargando subpartidas...'
                     ) : tuSubpartidas.length === 0 ? (
-                      'No hay subpartidas disponibles para esta partida'
+                      tuPartidaId 
+                        ? 'No hay subpartidas disponibles para esta partida'
+                        : 'Selecciona primero una Partida TU para ver subpartidas'
                     ) : (
-                      `${tuSubpartidas.length} subpartida${tuSubpartidas.length === 1 ? '' : 's'} disponible${tuSubpartidas.length === 1 ? '' : 's'}`
+                      `${tuSubpartidas.length} subpartida${tuSubpartidas.length === 1 ? '' : 's'} (dependientes + globales de Construcción)`
                     )}
                   </FormDescription>
                   <FormControl>

@@ -150,6 +150,59 @@ export const tuAdapter = {
   },
 
   /**
+   * Get subpartidas for a partida (dependientes) + globales del departamento Construcción
+   * Deduplica por ID si una subpartida aparece en ambas fuentes
+   */
+  async getSubpartidasForPartidaOrGlobal(params: {
+    partidaId?: string;
+    departamento?: string;
+    searchQuery?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<SubpartidaAdapter[]> {
+    const { partidaId, departamento = 'CONSTRUCCIÓN', searchQuery, limit = 100, offset = 0 } = params;
+
+    // Construir query con OR: (partida_id = X) OR (es_global = true AND departamento_aplicable = Y)
+    let query = supabase
+      .from('chart_of_accounts_subpartidas')
+      .select('id, codigo, nombre, partida_id, es_global, departamento_aplicable, activo')
+      .eq('activo', true);
+
+    // Filtro OR: dependientes de la partida o globales del departamento
+    if (partidaId) {
+      query = query.or(`partida_id.eq.${partidaId},and(es_global.eq.true,departamento_aplicable.eq.${departamento})`);
+    } else {
+      // Si no hay partidaId, solo globales
+      query = query.eq('es_global', true).eq('departamento_aplicable', departamento);
+    }
+
+    // Búsqueda por código o nombre
+    if (searchQuery && searchQuery.trim()) {
+      const search = `%${searchQuery.trim()}%`;
+      query = query.or(`codigo.ilike.${search},nombre.ilike.${search}`);
+    }
+
+    const { data, error } = await query
+      .order('codigo')
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      console.error('Error fetching mixed subpartidas:', error);
+      return [];
+    }
+
+    // Deduplicar por ID (en caso de que una subpartida aparezca en ambas fuentes, aunque no debería)
+    const uniqueMap = new Map<string, SubpartidaAdapter>();
+    (data || []).forEach(item => {
+      if (!uniqueMap.has(item.id)) {
+        uniqueMap.set(item.id, item);
+      }
+    });
+
+    return Array.from(uniqueMap.values());
+  },
+
+  /**
    * Get full dimensions hierarchy (read-only)
    */
   async getDimensions() {
