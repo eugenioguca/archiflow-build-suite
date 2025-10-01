@@ -7,11 +7,11 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { AutoResizeTextarea } from '../ui/AutoResizeTextarea';
 import {
   Tooltip,
   TooltipContent,
@@ -142,18 +142,20 @@ export function EditablePartidaRow({
             <GripVertical className="h-4 w-4 text-muted-foreground" />
           </button>
         </div>
-        <div className="flex-1 space-y-2">
+        <div className="flex-1 space-y-2 min-w-0">
           <Input
             value={editName}
             onChange={(e) => setEditName(e.target.value)}
             placeholder="Nombre de la partida"
             className="font-medium"
           />
-          <Textarea
+          <AutoResizeTextarea
             value={editNotes}
             onChange={(e) => setEditNotes(e.target.value)}
             placeholder="Notas (opcional)"
-            rows={2}
+            minRows={2}
+            maxRows={8}
+            className="w-full"
           />
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
@@ -242,18 +244,22 @@ export function EditablePartidaRow({
           <ChevronDown className="h-4 w-4" />
         )}
       </Button>
-      <div className="px-3 py-3 font-medium flex-1">
-        <span className="text-xs font-mono text-primary mr-2">
-          {partida.tuPartidaCodigo || partida.name}
-        </span>
-        {partida.tuPartidaNombre && (
-          <span className="text-sm">{partida.tuPartidaNombre}</span>
-        )}
+      <div className="px-3 py-3 font-medium flex-1 min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-mono text-primary shrink-0">
+            {partida.tuPartidaCodigo || partida.name}
+          </span>
+          {partida.tuPartidaNombre && (
+            <span className="text-sm break-words">{partida.tuPartidaNombre}</span>
+          )}
+          {!partida.active && (
+            <span className="text-xs text-destructive shrink-0">[Inactiva]</span>
+          )}
+        </div>
         {partida.notes && (
-          <span className="text-xs text-muted-foreground ml-2">({partida.notes})</span>
-        )}
-        {!partida.active && (
-          <span className="text-xs text-destructive ml-2">[Inactiva]</span>
+          <div className="text-xs text-muted-foreground mt-1 plv2-partida-notes">
+            {partida.notes}
+          </div>
         )}
       </div>
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pr-2">

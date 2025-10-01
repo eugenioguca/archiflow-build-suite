@@ -58,6 +58,7 @@ import { toast } from 'sonner';
 import { seedDemoData } from '../../services/seedService';
 import { useAuth } from '@/hooks/useAuth';
 import { isTemplatesEnabled } from '../../config/featureFlag';
+import '../../styles/catalog-grid.css';
 
 interface CatalogGridProps {
   budgetId: string;
@@ -607,7 +608,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
   });
 
   return (
-    <div className="flex flex-col h-full overflow-hidden min-w-0">
+    <div className="plv2-catalog-container plv2-no-x-scroll">
       {/* Keyboard Hints Bar */}
       <KeyboardHintsBar />
 
@@ -801,15 +802,15 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
       </div>
 
       {/* Grid */}
-      <ScrollArea className="flex-1 overflow-x-hidden">
+      <ScrollArea className="flex-1 overflow-x-hidden plv2-no-x-scroll">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
-          <div className="min-w-max max-w-full overflow-x-auto">
+          <div className="min-w-0 w-full plv2-grid">
             {/* Header */}
-            <div className="sticky top-0 z-10 bg-background border-b">
+            <div className="sticky top-0 z-10 bg-background border-b min-w-0">
               <div className="flex">
                 <div className="w-12 border-r flex items-center justify-center">
                   <input

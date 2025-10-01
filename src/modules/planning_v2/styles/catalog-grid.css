@@ -1,0 +1,65 @@
+/**
+ * Planning v2 Catalog Grid - Anti-overflow y wrap styles
+ */
+
+/* Tablas y celdas: evitar ensanchar el layout */
+.plv2-grid {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.plv2-grid * {
+  min-width: 0; /* Clave en contenedores flex */
+}
+
+.plv2-cell-text {
+  white-space: pre-wrap; /* Respeta saltos y envuelve */
+  word-break: break-word; /* Rompe palabras largas */
+  overflow-wrap: anywhere; /* Fallback moderno */
+}
+
+.plv2-no-x-scroll {
+  overflow-x: hidden;
+}
+
+/* Grid container con virtualización */
+.plv2-catalog-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* Headers de Mayor (agrupación TU) */
+.plv2-mayor-header {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+/* Partida row - permitir crecimiento vertical */
+.plv2-partida-row {
+  display: flex;
+  align-items: start; /* Alinear al inicio para permitir crecimiento */
+  min-width: 0;
+}
+
+.plv2-partida-notes {
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+  line-height: 1.4;
+  margin-top: 0.25rem;
+}
+
+/* Concepto cells - wrap text */
+.plv2-concepto-cell {
+  min-width: 0;
+  max-width: 100%;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}

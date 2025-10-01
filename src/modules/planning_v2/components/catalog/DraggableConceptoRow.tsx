@@ -74,7 +74,7 @@ export function DraggableConceptoRow({
             col.type === 'computed' ? 'bg-muted/10' : ''
           }`}
         >
-          <div className="min-w-0 whitespace-pre-wrap break-words break-all">
+          <div className="plv2-concepto-cell">
             {renderCell(concepto, col)}
           </div>
         </div>
