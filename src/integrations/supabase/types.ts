@@ -5886,6 +5886,7 @@ export type Database = {
           precio_real: number | null
           props: Json | null
           provider: string | null
+          provider_id: string | null
           pu: number | null
           short_description: string
           sumable: boolean
@@ -5912,6 +5913,7 @@ export type Database = {
           precio_real?: number | null
           props?: Json | null
           provider?: string | null
+          provider_id?: string | null
           pu?: number | null
           short_description: string
           sumable?: boolean
@@ -5938,6 +5940,7 @@ export type Database = {
           precio_real?: number | null
           props?: Json | null
           provider?: string | null
+          provider_id?: string | null
           pu?: number | null
           short_description?: string
           sumable?: boolean
@@ -5953,6 +5956,13 @@ export type Database = {
             columns: ["partida_id"]
             isOneToOne: false
             referencedRelation: "planning_partidas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_conceptos_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]

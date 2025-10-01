@@ -2,13 +2,14 @@
  * Dialog para crear Subpartida (Concepto) desde TU
  * Dependiente de la Partida de Planning V2
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubpartidasByPartida } from '../../hooks/useSubpartidasByPartida';
+import { useSuppliers } from '../../hooks/useSuppliers';
 import {
   Dialog,
   DialogContent,
@@ -36,7 +37,7 @@ const formSchema = z.object({
   unit: z.string().min(1, 'La unidad es requerida'),
   cantidad_real: z.number().min(0).default(0),
   precio_real: z.number().min(0).default(0),
-  provider: z.string().optional(),
+  provider_id: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -64,7 +65,8 @@ export function NewSubpartidaFromTUDialog({
   budgetDefaults,
 }: NewSubpartidaFromTUDialogProps) {
   const queryClient = useQueryClient();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [subpartidaSearch, setSubpartidaSearch] = useState('');
+  const [supplierSearch, setSupplierSearch] = useState('');
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -73,7 +75,7 @@ export function NewSubpartidaFromTUDialog({
       unit: 'PZA',
       cantidad_real: 0,
       precio_real: 0,
-      provider: '',
+      provider_id: '',
     },
   });
 
@@ -81,27 +83,42 @@ export function NewSubpartidaFromTUDialog({
   useEffect(() => {
     if (!open) {
       form.reset();
-      setSearchQuery('');
+      setSubpartidaSearch('');
+      setSupplierSearch('');
     }
   }, [open, form]);
 
   // Cargar Subpartidas de la Partida TU con búsqueda
-  const { data: subpartidas = [], isLoading: loadingSubpartidas } = useSubpartidasByPartida(
+  const { data: tuSubpartidas = [], isLoading: isLoadingSubpartidas } = useSubpartidasByPartida(
     tuPartidaId,
-    searchQuery
+    subpartidaSearch
   );
 
-  const subpartidasItems: SearchableComboboxItem[] = subpartidas.map(s => ({
-    value: s.id,
-    label: s.nombre,
-    codigo: s.codigo,
-    searchText: `${s.codigo} ${s.nombre}`.toLowerCase(),
-  }));
+  // Fetch suppliers
+  const { data: suppliersData = [], isLoading: isLoadingSuppliers } = useSuppliers(supplierSearch);
+
+  const subpartidasItems: SearchableComboboxItem[] = useMemo(() => {
+    return tuSubpartidas.map(s => ({
+      value: s.id,
+      label: s.nombre,
+      codigo: s.codigo,
+      searchText: `${s.codigo} ${s.nombre}`.toLowerCase(),
+    }));
+  }, [tuSubpartidas]);
+
+  const suppliers: SearchableComboboxItem[] = useMemo(() => {
+    return suppliersData.map((supplier) => ({
+      value: supplier.id,
+      label: supplier.company_name,
+      codigo: supplier.rfc || '',
+      searchText: `${supplier.company_name} ${supplier.rfc || ''}`,
+    }));
+  }, [suppliersData]);
 
   const createConceptoMutation = useMutation({
     mutationFn: async (values: FormValues) => {
       // Obtener detalles de la Subpartida TU
-      const subpartida = subpartidas.find(s => s.id === values.tu_subpartida_id);
+      const subpartida = tuSubpartidas.find(s => s.id === values.tu_subpartida_id);
       if (!subpartida) throw new Error('Subpartida no encontrada');
 
       const conceptoCode = subpartida.codigo;
@@ -120,7 +137,7 @@ export function NewSubpartidaFromTUDialog({
           desperdicio_pct: budgetDefaults.desperdicio_pct_default,
           precio_real: values.precio_real,
           honorarios_pct: budgetDefaults.honorarios_pct_default,
-          provider: values.provider || null,
+          provider_id: values.provider_id || null,
           active: true,
           sumable: true,
           order_index: orderIndex,
@@ -204,12 +221,12 @@ export function NewSubpartidaFromTUDialog({
                 <FormItem>
                   <FormLabel>Subpartida (TU) *</FormLabel>
                   <FormDescription className="text-xs">
-                    {loadingSubpartidas ? (
+                    {isLoadingSubpartidas ? (
                       'Cargando subpartidas...'
-                    ) : subpartidas.length === 0 ? (
+                    ) : tuSubpartidas.length === 0 ? (
                       'No hay subpartidas disponibles para esta partida'
                     ) : (
-                      `${subpartidas.length} subpartida${subpartidas.length === 1 ? '' : 's'} disponible${subpartidas.length === 1 ? '' : 's'}`
+                      `${tuSubpartidas.length} subpartida${tuSubpartidas.length === 1 ? '' : 's'} disponible${tuSubpartidas.length === 1 ? '' : 's'}`
                     )}
                   </FormDescription>
                   <FormControl>
@@ -220,7 +237,7 @@ export function NewSubpartidaFromTUDialog({
                       placeholder="Seleccionar Subpartida..."
                       searchPlaceholder="Buscar por código o nombre..."
                       emptyText="No se encontraron Subpartidas"
-                      loading={loadingSubpartidas}
+                      loading={isLoadingSubpartidas}
                       showCodes={true}
                       searchFields={['label', 'codigo', 'searchText']}
                     />
@@ -288,13 +305,26 @@ export function NewSubpartidaFromTUDialog({
 
             <FormField
               control={form.control}
-              name="provider"
+              name="provider_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Proveedor (opcional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="Nombre del proveedor..." {...field} />
+                    <SearchableCombobox
+                      items={suppliers}
+                      value={field.value || ''}
+                      onValueChange={field.onChange}
+                      placeholder="Seleccionar proveedor..."
+                      searchPlaceholder="Buscar por nombre o RFC..."
+                      emptyText="No se encontraron proveedores"
+                      loading={isLoadingSuppliers}
+                      showCodes={true}
+                      searchFields={['label', 'codigo']}
+                    />
                   </FormControl>
+                  <FormDescription>
+                    {suppliers.length} proveedores disponibles (búsqueda optimizada)
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

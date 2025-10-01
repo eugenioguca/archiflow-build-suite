@@ -1,7 +1,7 @@
 /**
  * Concepto Edit Panel - Side panel for editing concepto details
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { X, Upload, FileText, Clock, Save, Eye, Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -28,6 +28,8 @@ import { toast } from 'sonner';
 import type { PlanningConcepto } from '../../types';
 import { TUBreadcrumb } from './TUBreadcrumb';
 import ReactMarkdown from 'react-markdown';
+import { SearchableCombobox, type SearchableComboboxItem } from '@/components/ui/searchable-combobox';
+import { useSuppliers } from '../../hooks/useSuppliers';
 
 interface ConceptoEditPanelProps {
   concepto: PlanningConcepto | null;
@@ -46,6 +48,10 @@ export function ConceptoEditPanel({
   const [uploading, setUploading] = useState(false);
   const [showMarkdownPreview, setShowMarkdownPreview] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [supplierSearch, setSupplierSearch] = useState('');
+
+  // Fetch suppliers
+  const { data: suppliersData = [], isLoading: isLoadingSuppliers } = useSuppliers(supplierSearch);
   
   const { register, handleSubmit, reset, setValue, watch, getValues } = useForm({
     defaultValues: {
@@ -53,7 +59,7 @@ export function ConceptoEditPanel({
       short_description: '',
       long_description: '',
       unit: '',
-      provider: '',
+      provider_id: '',
       cantidad_real: 0,
       desperdicio_pct: 0,
       precio_real: 0,
@@ -64,6 +70,16 @@ export function ConceptoEditPanel({
     },
   });
 
+  // Transform suppliers to combobox items
+  const suppliers: SearchableComboboxItem[] = useMemo(() => {
+    return suppliersData.map((supplier) => ({
+      value: supplier.id,
+      label: supplier.company_name,
+      codigo: supplier.rfc || '',
+      searchText: `${supplier.company_name} ${supplier.rfc || ''}`,
+    }));
+  }, [suppliersData]);
+
   // Reset form when concepto changes
   useEffect(() => {
     if (concepto) {
@@ -72,7 +88,7 @@ export function ConceptoEditPanel({
         short_description: concepto.short_description,
         long_description: concepto.long_description || '',
         unit: concepto.unit,
-        provider: concepto.provider || '',
+        provider_id: (concepto as any).provider_id || '',
         cantidad_real: concepto.cantidad_real,
         desperdicio_pct: concepto.desperdicio_pct,
         precio_real: concepto.precio_real,
@@ -350,8 +366,18 @@ export function ConceptoEditPanel({
                   </div>
 
                   <div className="space-y-2 col-span-2">
-                    <Label htmlFor="provider">Proveedor</Label>
-                    <Input id="provider" {...register('provider')} />
+                    <Label htmlFor="provider_id">Proveedor</Label>
+                    <SearchableCombobox
+                      items={suppliers}
+                      value={watch('provider_id') || ''}
+                      onValueChange={(value) => setValue('provider_id', value)}
+                      placeholder="Seleccionar proveedor..."
+                      searchPlaceholder="Buscar por nombre o RFC..."
+                      emptyText="No se encontraron proveedores"
+                      loading={isLoadingSuppliers}
+                      showCodes={true}
+                      searchFields={['label', 'codigo']}
+                    />
                   </div>
                 </div>
 

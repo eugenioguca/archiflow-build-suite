@@ -1,7 +1,7 @@
 /**
  * Bulk Edit Dialog - Edit multiple selected rows at once
  */
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,7 +16,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Form,
@@ -27,9 +26,11 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { SearchableCombobox, type SearchableComboboxItem } from '@/components/ui/searchable-combobox';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updateConcepto } from '../../services/budgetService';
+import { useSuppliers } from '../../hooks/useSuppliers';
 
 const formSchema = z.object({
   updateHonorarios: z.boolean(),
@@ -37,7 +38,7 @@ const formSchema = z.object({
   updateDesperdicio: z.boolean(),
   desperdicio_pct: z.coerce.number().min(0).max(100).optional(),
   updateProvider: z.boolean(),
-  provider: z.string().optional(),
+  provider_id: z.string().optional(),
 }).refine(
   data => data.updateHonorarios || data.updateDesperdicio || data.updateProvider,
   { message: 'Debes seleccionar al menos un campo para actualizar' }
@@ -60,6 +61,10 @@ export function BulkEditDialog({
 }: BulkEditDialogProps) {
   const queryClient = useQueryClient();
   const [isApplying, setIsApplying] = useState(false);
+  const [supplierSearch, setSupplierSearch] = useState('');
+
+  // Fetch suppliers
+  const { data: suppliersData = [], isLoading: isLoadingSuppliers } = useSuppliers(supplierSearch);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -69,6 +74,16 @@ export function BulkEditDialog({
       updateProvider: false,
     },
   });
+
+  // Transform suppliers to combobox items
+  const suppliers: SearchableComboboxItem[] = useMemo(() => {
+    return suppliersData.map((supplier) => ({
+      value: supplier.id,
+      label: supplier.company_name,
+      codigo: supplier.rfc || '',
+      searchText: `${supplier.company_name} ${supplier.rfc || ''}`,
+    }));
+  }, [suppliersData]);
 
   const handleApply = async (values: FormValues) => {
     if (selectedConceptos.length === 0) {
@@ -93,8 +108,8 @@ export function BulkEditDialog({
             updates.desperdicio_pct = values.desperdicio_pct / 100; // Convert to decimal
           }
 
-          if (values.updateProvider && values.provider !== undefined) {
-            updates.provider = values.provider || null;
+          if (values.updateProvider && values.provider_id !== undefined) {
+            updates.provider_id = values.provider_id || null;
           }
 
           if (Object.keys(updates).length > 0) {
@@ -253,13 +268,20 @@ export function BulkEditDialog({
               {form.watch('updateProvider') && (
                 <FormField
                   control={form.control}
-                  name="provider"
+                  name="provider_id"
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <Input
-                          placeholder="Nombre del proveedor"
-                          {...field}
+                        <SearchableCombobox
+                          items={suppliers}
+                          value={field.value || ''}
+                          onValueChange={field.onChange}
+                          placeholder="Seleccionar proveedor..."
+                          searchPlaceholder="Buscar por nombre o RFC..."
+                          emptyText="No se encontraron proveedores"
+                          loading={isLoadingSuppliers}
+                          showCodes={true}
+                          searchFields={['label', 'codigo']}
                         />
                       </FormControl>
                       <FormMessage />
