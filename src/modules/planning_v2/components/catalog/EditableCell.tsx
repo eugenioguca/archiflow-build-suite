@@ -1,11 +1,15 @@
 /**
  * Editable Cell - Inline editing for catalog cells
+ * Shows effective values with defaults and allows override editing
  */
 import { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Check, X, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatAsCurrency, toDisplayPrecision, formatAsPercentage } from '../../utils/monetary';
+import { getEffectiveHonorarios, getEffectiveDesperdicio, getDefaultSourceLabel } from '../../utils/defaults';
 
 interface EditableCellProps {
   value: any;
@@ -14,6 +18,7 @@ interface EditableCellProps {
   columnType: 'input' | 'computed';
   onSave: (conceptoId: string, field: string, value: any) => Promise<void>;
   formatFn?: (value: any) => string;
+  budgetSettings?: any;
 }
 
 export function EditableCell({
@@ -23,11 +28,35 @@ export function EditableCell({
   columnType,
   onSave,
   formatFn,
+  budgetSettings,
 }: EditableCellProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Calculate effective value and check if using default
+  let effectiveValue = value;
+  let isUsingDefault = false;
+  let defaultSource: 'concepto' | 'partida' | 'budget' | 'system' = 'concepto';
+  
+  if (columnKey === 'honorarios_pct' && budgetSettings) {
+    const result = getEffectiveHonorarios({
+      concepto: { honorarios_pct: value },
+      budgetSettings,
+    });
+    effectiveValue = result.value;
+    isUsingDefault = result.isDefault;
+    defaultSource = result.source;
+  } else if (columnKey === 'desperdicio_pct' && budgetSettings) {
+    const result = getEffectiveDesperdicio({
+      concepto: { desperdicio_pct: value },
+      budgetSettings,
+    });
+    effectiveValue = result.value;
+    isUsingDefault = result.isDefault;
+    defaultSource = result.source;
+  }
 
   // Non-editable computed fields
   if (columnType === 'computed') {
@@ -66,16 +95,17 @@ export function EditableCell({
   }, [isEditing]);
 
   const handleEdit = () => {
-    let displayValue = value || '';
+    // Format value for editing - use effective value
+    let displayValue = effectiveValue?.toString() || '';
     
-    // Convert percentages to display format (0.17 -> 17)
     if (columnKey === 'desperdicio_pct' || columnKey === 'honorarios_pct') {
-      displayValue = ((displayValue || 0) * 100).toFixed(2);
-    } else if (typeof displayValue === 'number') {
-      displayValue = displayValue.toFixed(6);
+      // Convert to percentage for editing (0.15 -> 15)
+      displayValue = (effectiveValue * 100).toFixed(2);
+    } else if (typeof effectiveValue === 'number') {
+      displayValue = effectiveValue.toFixed(2);
     }
     
-    setEditValue(String(displayValue));
+    setEditValue(displayValue);
     setIsEditing(true);
   };
 
@@ -116,6 +146,39 @@ export function EditableCell({
     } else if (e.key === 'Escape') {
       handleCancel();
     }
+  };
+
+  // Render display value
+  const renderDisplayValue = () => {
+    const formatted = formatFn ? formatFn(effectiveValue) : effectiveValue?.toString() || '-';
+    
+    if (isUsingDefault && (columnKey === 'honorarios_pct' || columnKey === 'desperdicio_pct')) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-1.5">
+                <span>{formatted}</span>
+                <Badge 
+                  variant="secondary" 
+                  className="text-[10px] px-1 py-0 h-4 bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-0"
+                >
+                  Default
+                </Badge>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs">
+              <p className="text-xs">{getDefaultSourceLabel(defaultSource)}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Haz clic para definir un valor específico
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+    
+    return <span className="whitespace-pre-wrap break-words">{formatted}</span>;
   };
 
   if (isEditing) {
@@ -166,9 +229,7 @@ export function EditableCell({
       }}
       title="Click para editar"
     >
-      <span className="whitespace-pre-wrap break-words">
-        {formatFn ? formatFn(value || 0) : (value || '—')}
-      </span>
+      {renderDisplayValue()}
     </div>
   );
 }

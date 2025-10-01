@@ -455,6 +455,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
             columnType={column.type}
             onSave={handleCellSave}
             formatFn={formatFn}
+            budgetSettings={budget?.settings}
           />
         );
       }

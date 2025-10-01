@@ -214,34 +214,20 @@ export async function deletePartida(id: string) {
 export async function createConcepto(
   concepto: Omit<PlanningConcepto, 'id' | 'created_at' | 'updated_at'>
 ) {
-  // Get budget_id from partida
+  // Get budget_id and settings from partida
   const { data: partida } = await supabase
     .from('planning_partidas')
-    .select('budget_id')
+    .select('budget_id, planning_budgets!inner(settings)')
     .eq('id', concepto.partida_id)
     .single();
 
   if (!partida) throw new Error('Partida not found');
 
-  // Import defaults service
-  const { initializeConceptoDefaults } = await import('./defaultsService');
+  const budgetSettings = (partida.planning_budgets?.settings || {}) as any;
   
-  // If honorarios_pct or desperdicio_pct are 0 (not set), inherit defaults
-  let conceptoWithDefaults = { ...concepto };
-  
-  if (concepto.honorarios_pct === 0 || concepto.desperdicio_pct === 0) {
-    const defaults = await initializeConceptoDefaults(partida.budget_id, concepto.partida_id);
-    
-    if (concepto.honorarios_pct === 0) {
-      conceptoWithDefaults.honorarios_pct = defaults.honorarios_pct;
-    }
-    if (concepto.desperdicio_pct === 0) {
-      conceptoWithDefaults.desperdicio_pct = defaults.desperdicio_pct;
-    }
-  }
-
-  // Compute derived fields
-  const computed = computeConceptoFields(conceptoWithDefaults);
+  // Keep NULL values for defaults inheritance (don't auto-apply)
+  // Compute derived fields using effective defaults
+  const computed = computeConceptoFields(concepto, budgetSettings);
 
   const { data, error } = await supabase
     .from('planning_conceptos')
@@ -266,9 +252,18 @@ export async function updateConcepto(id: string, updates: Partial<PlanningConcep
 
   if (fetchError) throw fetchError;
 
+  // Get budget settings for defaults
+  const { data: partida } = await supabase
+    .from('planning_partidas')
+    .select('budget_id, planning_budgets!inner(settings)')
+    .eq('id', current.partida_id)
+    .single();
+    
+  const budgetSettings = partida?.planning_budgets?.settings || {};
+
   // Merge updates and recompute
   const merged = { ...current, ...updates } as any;
-  const computed = computeConceptoFields(merged);
+  const computed = computeConceptoFields(merged, budgetSettings);
 
   const { data, error } = await supabase
     .from('planning_conceptos')
@@ -294,9 +289,19 @@ export async function deleteConcepto(id: string) {
 }
 
 /**
- * Compute all fields for a concepto
+ * Compute all fields for a concepto using effective defaults
  */
-function computeConceptoFields(concepto: any): any {
+function computeConceptoFields(concepto: any, budgetSettings?: any): any {
+  // Apply effective defaults using COALESCE logic
+  const effectiveHonorarios = concepto.honorarios_pct ?? budgetSettings?.honorarios_pct_default ?? 0.17;
+  const effectiveDesperdicio = concepto.desperdicio_pct ?? budgetSettings?.desperdicio_pct_default ?? 0.05;
+  
+  // Use effective values for computation but keep original NULL in data
+  const conceptoForComputation = {
+    ...concepto,
+    honorarios_pct: effectiveHonorarios,
+    desperdicio_pct: effectiveDesperdicio,
+  };
   // Default template fields for conceptos
   const fields = [
     { key: 'cantidad_real', role: 'input' as const },
@@ -310,7 +315,7 @@ function computeConceptoFields(concepto: any): any {
   ];
 
   const context: FormulaContext = {
-    entity: concepto,
+    entity: conceptoForComputation,
     scope: 'concepto',
     fields: fields.map(f => ({
       id: f.key,
@@ -336,6 +341,14 @@ function computeConceptoFields(concepto: any): any {
   const computed: any = { ...concepto };
   for (const [key, value] of Object.entries(result.values)) {
     computed[key] = parseFloat(value.toFixed(6));
+  }
+  
+  // Preserve NULL for honorarios_pct and desperdicio_pct if not explicitly set
+  if (concepto.honorarios_pct === null || concepto.honorarios_pct === undefined) {
+    computed.honorarios_pct = null;
+  }
+  if (concepto.desperdicio_pct === null || concepto.desperdicio_pct === undefined) {
+    computed.desperdicio_pct = null;
   }
 
   return computed;

@@ -134,9 +134,9 @@ export function NewSubpartidaFromTUDialog({
           long_description: `Subpartida TU: ${subpartida.nombre}`,
           unit: values.unit,
           cantidad_real: values.cantidad_real,
-          desperdicio_pct: budgetDefaults.desperdicio_pct_default,
+          desperdicio_pct: null, // Inherit from budget defaults
           precio_real: values.precio_real,
-          honorarios_pct: budgetDefaults.honorarios_pct_default,
+          honorarios_pct: null, // Inherit from budget defaults
           provider_id: values.provider_id || null,
           active: true,
           sumable: true,
