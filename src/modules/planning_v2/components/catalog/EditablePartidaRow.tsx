@@ -12,6 +12,12 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import type { PlanningPartida } from '../../types';
 
 interface EditablePartidaRowProps {
@@ -251,10 +257,19 @@ export function EditablePartidaRow({
         )}
       </div>
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
-        <Button size="sm" variant="ghost" onClick={onAddSubpartida}>
-          <Plus className="h-4 w-4 mr-1" />
-          Subpartida
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="sm" variant="ghost" onClick={onAddSubpartida}>
+                <Plus className="h-4 w-4 mr-1" />
+                Subpartida
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Agregar subpartida desde TU</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         <Button size="sm" variant="ghost" onClick={() => setIsEditing(true)}>
           <Edit2 className="h-4 w-4" />
         </Button>

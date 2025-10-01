@@ -12,7 +12,7 @@ interface DevMonitorProps {
 }
 
 export function DevMonitor({ recomputeTime = 0, dbLatency = 0 }: DevMonitorProps) {
-  // Guard: only render in development
+  // Only render in development
   if (!import.meta.env.DEV) return null;
 
   const [fps, setFps] = useState(60);

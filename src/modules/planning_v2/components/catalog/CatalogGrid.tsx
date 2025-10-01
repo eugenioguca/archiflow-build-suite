@@ -924,7 +924,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                               >
                                 <div className="w-12 border-r"></div>
                                 <div className="px-3 py-2 text-sm font-medium">
-                                  Subpartida {row.subpartidaWbs} ({row.subpartidaCount} conceptos)
+                                  Subpartida ({row.subpartidaCount} conceptos)
                                 </div>
                                 <div className="ml-auto px-3 py-2 text-sm font-medium">
                                   {formatAsCurrency(row.subtotal || 0)}
@@ -1016,7 +1016,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                         >
                           <div className="w-12 border-r"></div>
                           <div className="px-3 py-2 text-sm font-medium">
-                            Subpartida {row.subpartidaWbs} ({row.subpartidaCount} conceptos)
+                            Subpartida ({row.subpartidaCount} conceptos)
                           </div>
                           <div className="ml-auto px-3 py-2 text-sm font-medium">
                             {formatAsCurrency(row.subtotal || 0)}
