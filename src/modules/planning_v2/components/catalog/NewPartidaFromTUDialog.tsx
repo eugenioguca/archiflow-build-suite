@@ -45,6 +45,7 @@ interface NewPartidaFromTUDialogProps {
   budgetId: string;
   orderIndex: number;
   tuMayoresWhitelist?: string[]; // budget.settings.tu_mayores
+  preselectedMayorId?: string; // For pre-selecting a Mayor from group header
 }
 
 export function NewPartidaFromTUDialog({
@@ -53,26 +54,30 @@ export function NewPartidaFromTUDialog({
   budgetId,
   orderIndex,
   tuMayoresWhitelist,
+  preselectedMayorId,
 }: NewPartidaFromTUDialogProps) {
   const queryClient = useQueryClient();
-  const [selectedMayorId, setSelectedMayorId] = useState<string | undefined>();
+  const [selectedMayorId, setSelectedMayorId] = useState<string | undefined>(preselectedMayorId);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      tu_mayor_id: '',
+      tu_mayor_id: preselectedMayorId || '',
       tu_partida_id: '',
       notes: '',
     },
   });
 
-  // Reset selected mayor when dialog closes
+  // Reset selected mayor when dialog closes or when preselectedMayorId changes
   useEffect(() => {
     if (!open) {
       setSelectedMayorId(undefined);
       form.reset();
+    } else if (preselectedMayorId) {
+      setSelectedMayorId(preselectedMayorId);
+      form.setValue('tu_mayor_id', preselectedMayorId);
     }
-  }, [open, form]);
+  }, [open, preselectedMayorId, form]);
 
   // Cargar Mayores (filtrado si hay whitelist)
   const { data: allMayores = [], isLoading: loadingMayores } = useQuery({
@@ -186,6 +191,11 @@ export function NewPartidaFromTUDialog({
                   {tuMayoresWhitelist && tuMayoresWhitelist.length > 0 && (
                     <FormDescription className="text-xs">
                       Filtrado por Mayores seleccionados en el presupuesto
+                    </FormDescription>
+                  )}
+                  {preselectedMayorId && (
+                    <FormDescription className="text-xs text-primary">
+                      Mayor preseleccionado desde el grupo
                     </FormDescription>
                   )}
                   <FormControl>

@@ -1,9 +1,11 @@
 /**
  * Main Catalog Grid Component
  */
-import { useState, useEffect, useCallback } from 'react';
-import { Plus, Settings, Trash2, Copy } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Plus, Settings, Trash2, Copy, FolderOpen } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
+import { tuAdapter } from '../../adapters/tu';
 import {
   DndContext,
   closestCenter,
@@ -95,6 +97,11 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
     partidaId?: string; 
     tuPartidaId?: string;
   }>({ open: false });
+  const [groupByMayor, setGroupByMayor] = useState(true);
+  const [newPartidaFromTUDialog, setNewPartidaFromTUDialog] = useState<{
+    open: boolean;
+    preselectedMayorId?: string;
+  }>({ open: false });
   const { settings, saveSettings, isLoading: isLoadingSettings } = useColumnSettings(budgetId);
 
   // Load saved settings when available
@@ -134,6 +141,60 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
     recomputeTime,
     dbLatency,
   } = useCatalogGrid(budgetId);
+
+  // Cargar Mayores TU desde budget.settings.tu_mayores
+  const tuMayoresIds = budget?.settings?.tu_mayores as string[] | undefined;
+  const { data: mayoresTU = [], isLoading: loadingMayores } = useQuery({
+    queryKey: ['tu-mayores-for-budget', budgetId, tuMayoresIds],
+    queryFn: async () => {
+      if (!tuMayoresIds || tuMayoresIds.length === 0) return [];
+      const allMayores = await tuAdapter.getMayores('CONSTRUCCIÓN');
+      return allMayores.filter(m => tuMayoresIds.includes(m.id));
+    },
+    enabled: groupByMayor && !!tuMayoresIds && tuMayoresIds.length > 0,
+  });
+
+  // Cargar mappings TU para las partidas del presupuesto
+  const { data: partidaMappings = [] } = useQuery({
+    queryKey: ['planning-tu-mappings', budgetId],
+    queryFn: async () => {
+      const partidaIds = partidas.map(p => p.id);
+      if (partidaIds.length === 0) return [];
+      
+      const { data, error } = await supabase
+        .from('planning_tu_mapping')
+        .select('partida_id, tu_mayor_id, tu_partida_id, tu_departamento')
+        .eq('budget_id', budgetId)
+        .in('partida_id', partidaIds);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: groupByMayor && partidas.length > 0,
+  });
+
+  // Agrupar partidas por Mayor TU
+  const partidasByMayor = useMemo(() => {
+    if (!groupByMayor || mayoresTU.length === 0) return null;
+    
+    const groups = new Map<string, any[]>();
+    const mappingsMap = new Map(partidaMappings.map(m => [m.partida_id, m]));
+    
+    // Inicializar grupos con todos los Mayores (incluso vacíos)
+    mayoresTU.forEach(mayor => {
+      groups.set(mayor.id, []);
+    });
+    
+    // Asignar partidas a sus grupos
+    partidas.forEach(partida => {
+      const mapping = mappingsMap.get(partida.id);
+      if (mapping?.tu_mayor_id && groups.has(mapping.tu_mayor_id)) {
+        groups.get(mapping.tu_mayor_id)!.push(partida);
+      }
+    });
+    
+    return { groups, mayores: mayoresTU };
+  }, [groupByMayor, partidas, mayoresTU, partidaMappings]);
 
   // DnD sensors
   const sensors = useSensors(
@@ -535,6 +596,19 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
               <Badge variant="secondary">{hiddenCount} ocultas</Badge>
             )}
           </div>
+
+          {tuMayoresIds && tuMayoresIds.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Switch
+                id="group-by-mayor"
+                checked={groupByMayor}
+                onCheckedChange={setGroupByMayor}
+              />
+              <Label htmlFor="group-by-mayor" className="cursor-pointer">
+                Agrupar por Mayor (TU)
+              </Label>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -727,91 +801,223 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
               strategy={verticalListSortingStrategy}
             >
               <div>
-                {rows.map((row) => {
-                  if (row.type === 'partida') {
+                {groupByMayor && partidasByMayor ? (
+                  // Vista agrupada por Mayor
+                  mayoresTU.map((mayor) => {
+                    const partidasInGroup = partidasByMayor.groups.get(mayor.id) || [];
+                    const rowsInGroup = rows.filter(r => 
+                      r.type === 'partida' 
+                        ? partidasInGroup.some(p => p.id === r.partida?.id)
+                        : partidasInGroup.some(p => p.id === r.concepto?.partida_id)
+                    );
+
                     return (
-                      <EditablePartidaRow
+                      <div key={mayor.id} className="mb-4">
+                        {/* Mayor Group Header */}
+                        <div className="flex items-center justify-between px-4 py-3 bg-primary/10 border-y border-primary/20">
+                          <div className="flex items-center gap-3">
+                            <FolderOpen className="h-5 w-5 text-primary" />
+                            <div>
+                              <span className="text-xs font-mono text-primary font-semibold">
+                                {mayor.codigo}
+                              </span>
+                              <span className="ml-2 text-sm font-medium">
+                                {mayor.nombre}
+                              </span>
+                            </div>
+                            <Badge variant="secondary" className="ml-2">
+                              {partidasInGroup.length} {partidasInGroup.length === 1 ? 'partida' : 'partidas'}
+                            </Badge>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setNewPartidaFromTUDialog({ 
+                              open: true, 
+                              preselectedMayorId: mayor.id 
+                            })}
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Nueva Partida (desde TU)
+                          </Button>
+                        </div>
+
+                        {/* Partidas y Conceptos del grupo */}
+                        {rowsInGroup.map((row) => {
+                          if (row.type === 'partida') {
+                            return (
+                              <EditablePartidaRow
+                                key={row.id}
+                                id={row.id}
+                                partida={row.partida!}
+                                isCollapsed={row.isCollapsed || false}
+                                onToggle={() => togglePartida(row.partida!.id)}
+                                onUpdate={(updates) => updatePartida({ id: row.partida!.id, updates })}
+                                onDelete={() => {
+                                  if (confirm('¿Eliminar partida?')) {
+                                    deletePartida(row.partida!.id);
+                                  }
+                                }}
+                                onAddSubpartida={() => handleAddSubpartida(row.partida!.id)}
+                              />
+                            );
+                          }
+
+                          if (row.type === 'subtotal') {
+                            return (
+                              <div
+                                key={row.id}
+                                className="flex items-center bg-primary/5 border-b font-medium"
+                              >
+                                <div className="w-12 border-r"></div>
+                                {visibleColumns.map((col, i) => (
+                                  <div
+                                    key={col.key}
+                                    className="px-3 py-2 text-sm border-r min-w-[120px]"
+                                  >
+                                    {i === 0 ? 'Subtotal Partida' : col.key === 'total' ? formatAsCurrency(row.subtotal!) : ''}
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          }
+
+                          if (row.type === 'subpartida') {
+                            return (
+                              <div
+                                key={row.id}
+                                className="flex items-center bg-muted/50 border-b font-medium"
+                              >
+                                <div className="w-12 border-r"></div>
+                                <div className="px-3 py-2 text-sm font-medium">
+                                  Subpartida {row.subpartidaWbs} ({row.subpartidaCount} conceptos)
+                                </div>
+                                <div className="ml-auto px-3 py-2 text-sm font-medium">
+                                  {formatAsCurrency(row.subtotal || 0)}
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          if (row.type !== 'concepto' || !row.concepto) return null;
+                          
+                          const concepto = row.concepto;
+                          const isSelected = selectedRows.has(row.id);
+                          const isZeroQuantity = concepto.cantidad_real === 0 || concepto.cantidad_real == null;
+
+                          return (
+                            <DraggableConceptoRow
+                              key={row.id}
+                              id={row.id}
+                              concepto={concepto}
+                              isSelected={isSelected}
+                              isZeroQuantity={isZeroQuantity}
+                              visibleColumns={visibleColumns}
+                              onToggleSelection={() => toggleRowSelection(row.id)}
+                              onRowClick={() => setEditingConcepto(concepto)}
+                              renderCell={renderCell}
+                              actionsContent={
+                                <CatalogRowActions
+                                  row={row}
+                                  budgetId={budgetId}
+                                  projectId={budget?.project_id || ''}
+                                  clientId={budget?.client_id || ''}
+                                />
+                              }
+                            />
+                          );
+                        })}
+                      </div>
+                    );
+                  })
+                ) : (
+                  // Vista plana (sin agrupar)
+                  rows.map((row) => {
+                    if (row.type === 'partida') {
+                      return (
+                        <EditablePartidaRow
+                          key={row.id}
+                          id={row.id}
+                          partida={row.partida!}
+                          isCollapsed={row.isCollapsed || false}
+                          onToggle={() => togglePartida(row.partida!.id)}
+                          onUpdate={(updates) => updatePartida({ id: row.partida!.id, updates })}
+                          onDelete={() => {
+                            if (confirm('¿Eliminar partida?')) {
+                              deletePartida(row.partida!.id);
+                            }
+                          }}
+                          onAddSubpartida={() => handleAddSubpartida(row.partida!.id)}
+                        />
+                      );
+                    }
+
+                    if (row.type === 'subtotal') {
+                      return (
+                        <div
+                          key={row.id}
+                          className="flex items-center bg-primary/5 border-b font-medium"
+                        >
+                          <div className="w-12 border-r"></div>
+                          {visibleColumns.map((col, i) => (
+                            <div
+                              key={col.key}
+                              className="px-3 py-2 text-sm border-r min-w-[120px]"
+                            >
+                              {i === 0 ? 'Subtotal Partida' : col.key === 'total' ? formatAsCurrency(row.subtotal!) : ''}
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }
+
+                    if (row.type === 'subpartida') {
+                      return (
+                        <div
+                          key={row.id}
+                          className="flex items-center bg-muted/50 border-b font-medium"
+                        >
+                          <div className="w-12 border-r"></div>
+                          <div className="px-3 py-2 text-sm font-medium">
+                            Subpartida {row.subpartidaWbs} ({row.subpartidaCount} conceptos)
+                          </div>
+                          <div className="ml-auto px-3 py-2 text-sm font-medium">
+                            {formatAsCurrency(row.subtotal || 0)}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // Concepto rows with drag & drop
+                    if (row.type !== 'concepto' || !row.concepto) return null;
+                    
+                    const concepto = row.concepto;
+                    const isSelected = selectedRows.has(row.id);
+                    const isZeroQuantity = concepto.cantidad_real === 0 || concepto.cantidad_real == null;
+
+                    return (
+                      <DraggableConceptoRow
                         key={row.id}
                         id={row.id}
-                        partida={row.partida!}
-                        isCollapsed={row.isCollapsed || false}
-                        onToggle={() => togglePartida(row.partida!.id)}
-                        onUpdate={(updates) => updatePartida({ id: row.partida!.id, updates })}
-                        onDelete={() => {
-                          if (confirm('¿Eliminar partida?')) {
-                            deletePartida(row.partida!.id);
-                          }
-                        }}
-                        onAddSubpartida={() => handleAddSubpartida(row.partida!.id)}
+                        concepto={concepto}
+                        isSelected={isSelected}
+                        isZeroQuantity={isZeroQuantity}
+                        visibleColumns={visibleColumns}
+                        onToggleSelection={() => toggleRowSelection(row.id)}
+                        onRowClick={() => setEditingConcepto(concepto)}
+                        renderCell={renderCell}
+                        actionsContent={
+                          <CatalogRowActions
+                            row={row}
+                            budgetId={budgetId}
+                            projectId={budget?.project_id || ''}
+                            clientId={budget?.client_id || ''}
+                          />
+                        }
                       />
                     );
-                  }
-
-                  if (row.type === 'subtotal') {
-                    return (
-                      <div
-                        key={row.id}
-                        className="flex items-center bg-primary/5 border-b font-medium"
-                      >
-                        <div className="w-12 border-r"></div>
-                        {visibleColumns.map((col, i) => (
-                          <div
-                            key={col.key}
-                            className="px-3 py-2 text-sm border-r min-w-[120px]"
-                          >
-                            {i === 0 ? 'Subtotal Partida' : col.key === 'total' ? formatAsCurrency(row.subtotal!) : ''}
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  }
-
-                  if (row.type === 'subpartida') {
-                    return (
-                      <div
-                        key={row.id}
-                        className="flex items-center bg-muted/50 border-b font-medium"
-                      >
-                        <div className="w-12 border-r"></div>
-                        <div className="px-3 py-2 text-sm font-medium">
-                          Subpartida {row.subpartidaWbs} ({row.subpartidaCount} conceptos)
-                        </div>
-                        <div className="ml-auto px-3 py-2 text-sm font-medium">
-                          {formatAsCurrency(row.subtotal || 0)}
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  // Concepto rows with drag & drop
-                  if (row.type !== 'concepto' || !row.concepto) return null;
-                  
-                  const concepto = row.concepto;
-                  const isSelected = selectedRows.has(row.id);
-                  const isZeroQuantity = concepto.cantidad_real === 0 || concepto.cantidad_real == null;
-
-                  return (
-                    <DraggableConceptoRow
-                      key={row.id}
-                      id={row.id}
-                      concepto={concepto}
-                      isSelected={isSelected}
-                      isZeroQuantity={isZeroQuantity}
-                      visibleColumns={visibleColumns}
-                      onToggleSelection={() => toggleRowSelection(row.id)}
-                      onRowClick={() => setEditingConcepto(concepto)}
-                      renderCell={renderCell}
-                      actionsContent={
-                        <CatalogRowActions
-                          row={row}
-                          budgetId={budgetId}
-                          projectId={budget?.project_id || ''}
-                          clientId={budget?.client_id || ''}
-                        />
-                      }
-                    />
-                  );
-                })}
+                  })
+                )}
               </div>
             </SortableContext>
           </div>
@@ -927,6 +1133,16 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
           honorarios_pct_default: budget?.settings?.honorarios_pct_default ?? 0.17,
           desperdicio_pct_default: budget?.settings?.desperdicio_pct_default ?? 0.05,
         }}
+      />
+
+      {/* New Partida from TU Dialog (for group headers with preselected Mayor) */}
+      <NewPartidaFromTUDialog
+        open={newPartidaFromTUDialog.open}
+        onOpenChange={(open) => setNewPartidaFromTUDialog({ open })}
+        budgetId={budgetId}
+        orderIndex={partidas.length}
+        tuMayoresWhitelist={tuMayoresIds}
+        preselectedMayorId={newPartidaFromTUDialog.preselectedMayorId}
       />
 
       {/* Dev Monitor - Performance tracking (DEV-ONLY) */}
