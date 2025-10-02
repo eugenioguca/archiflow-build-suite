@@ -37,16 +37,29 @@ export function unfreezeUI(reason = 'manual') {
     document.body.style.position = '';
 
     // 7) Remove any full-screen blockers accidentally left (transparent sheets)
+    // IMPORTANT: Be very conservative - don't remove React-managed portals
     document.querySelectorAll<HTMLElement>('body > div')
       .forEach(el => {
         const s = getComputedStyle(el);
+        // Skip if it has any React-related attributes or Radix attributes
+        if (
+          el.hasAttribute('data-radix-portal') ||
+          el.hasAttribute('data-radix-popper-content-wrapper') ||
+          el.querySelector('[data-radix-portal]') ||
+          el.querySelector('[role]') ||
+          el.id // Don't remove elements with IDs
+        ) {
+          return;
+        }
+        
+        // Only remove truly generic blockers
         if (
           s.position === 'fixed' &&
           s.pointerEvents !== 'none' &&
           s.inset === '0px' &&
           !el.getAttribute('role') && 
           !el.getAttribute('aria-modal') &&
-          !el.id // Don't remove elements with IDs (likely important)
+          !el.textContent?.trim() // Has no content
         ) {
           // Generic blocker without semantic info - remove it
           el.remove();
