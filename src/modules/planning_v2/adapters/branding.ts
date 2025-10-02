@@ -38,8 +38,8 @@ export async function getBranding(): Promise<CompanyBranding> {
       phone: data?.phone || 'Tel: +52 (55) 1234-5678',
       email: data?.email || 'info@dovita.com.mx',
       website: data?.website || null,
-      primary_color: '#1e40af', // Blue from reference image
-      secondary_color: '#f59e0b', // Orange accent from logo
+      primary_color: '#28135f', // Brand purple
+      secondary_color: '#28135f', // Brand purple
     };
   } catch (error) {
     console.error('Error loading branding:', error);
@@ -50,8 +50,8 @@ export async function getBranding(): Promise<CompanyBranding> {
       phone: 'Tel: +52 (55) 1234-5678',
       email: 'info@dovita.com.mx',
       website: null,
-      primary_color: '#1e40af',
-      secondary_color: '#f59e0b',
+      primary_color: '#28135f',
+      secondary_color: '#28135f',
     };
   }
 }

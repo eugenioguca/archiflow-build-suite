@@ -62,41 +62,66 @@ async function addHeader(
   logoDataUrl: string | null
 ) {
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const primaryColor = hexToRgb(branding.primary_color);
+  const headerHeight = 72;
 
-  // Blue header band
+  // Header band
   doc.setFillColor(...primaryColor);
-  doc.rect(0, 0, pageWidth, 64, 'F');
+  doc.rect(0, 0, pageWidth, headerHeight, 'F');
 
-  // Logo on the left
+  // Logo on the left (centered vertically)
   if (logoDataUrl) {
     try {
-      doc.addImage(logoDataUrl, 'PNG', 40, 12, 80, 40);
+      const logoH = 42;
+      const logoW = 120;
+      const logoY = (headerHeight - logoH) / 2;
+      doc.addImage(logoDataUrl, 'PNG', 56, logoY, logoW, logoH);
     } catch (error) {
       console.error('Error adding logo:', error);
     }
   }
 
-  // Title and info on the right
+  // Right block: "PRESUPUESTO" + company info (centered vertically)
+  const rightX = pageWidth - 56;
+  const centerY = headerHeight / 2;
+
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
-  doc.text('PRESUPUESTO PARAMÉTRICO', pageWidth - 56, 28, { align: 'right' });
+  doc.setFontSize(15);
+  doc.text('PRESUPUESTO', rightX, centerY - 6, { align: 'right', baseline: 'middle' });
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
-  let yPos = 42;
-  doc.text(branding.phone || '', pageWidth - 56, yPos, { align: 'right' });
-  yPos += 10;
-  doc.text(`Email: ${branding.email || ''}`, pageWidth - 56, yPos, { align: 'right' });
-  yPos += 10;
-  doc.text(branding.address || '', pageWidth - 56, yPos, { align: 'right' });
+  const companyLines = [
+    branding.company_name || '',
+    branding.phone && branding.email ? `${branding.phone} • ${branding.email}` : (branding.phone || branding.email || ''),
+    branding.address || ''
+  ].filter(Boolean);
 
-  // Project info below header band
+  const companyStartY = centerY + 10;
+  companyLines.forEach((line, i) => {
+    doc.text(line, rightX, companyStartY + i * 12, { align: 'right' });
+  });
+
+  // Separator line below header
+  doc.setDrawColor(...primaryColor);
+  doc.setLineWidth(1);
+  doc.line(56, headerHeight + 18, pageWidth - 56, headerHeight + 18);
+
+  // Document title below header
   doc.setTextColor(0, 0, 0);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  doc.text(`Presupuesto — ${options.projectName}`, 56, headerHeight + 46);
+
+  // Project information block
   doc.setFontSize(11);
+  doc.text('Información del proyecto', 56, headerHeight + 70);
   
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+
   const date = options.generatedAt || new Date();
   const formattedDate = date.toLocaleDateString('es-MX', {
     day: '2-digit',
@@ -104,7 +129,21 @@ async function addHeader(
     year: 'numeric',
   });
   
-  doc.text(`Fecha de generación: ${formattedDate}`, 56, 88);
+  let infoY = headerHeight + 88;
+  doc.text(`Fecha de generación: ${formattedDate}`, 56, infoY);
+  
+  if (options.clientName) {
+    infoY += 14;
+    doc.text(`Cliente: ${options.clientName}`, 56, infoY);
+  }
+  
+  infoY += 14;
+  doc.text(`Proyecto: ${options.projectName}`, 56, infoY);
+  
+  if (options.folio) {
+    infoY += 14;
+    doc.text(`Folio: ${options.folio}`, 56, infoY);
+  }
 }
 
 /**
@@ -125,11 +164,11 @@ function addFooters(doc: jsPDF, branding: CompanyBranding) {
     // Page number and confidential text
     doc.setFontSize(9);
     doc.setTextColor(130, 130, 130);
-    doc.text(`Página ${i} de ${pageCount}`, 56, pageHeight - 36);
+    doc.text(`Página ${i} de ${pageCount}`, 56, pageHeight - 24);
     doc.text(
       `${branding.company_name} • Confidencial`,
       pageWidth - 56,
-      pageHeight - 36,
+      pageHeight - 24,
       { align: 'right' }
     );
   }
@@ -302,7 +341,7 @@ export async function exportBudgetPdf(options: ExportPdfOptions): Promise<void> 
     });
 
     // Page margins
-    const margin = { left: 56, right: 56, top: 120, bottom: 72 };
+    const margin = { left: 56, right: 56, top: 200, bottom: 72 };
 
     // Add header
     await addHeader(doc, branding, options, logoDataUrl);
@@ -351,7 +390,7 @@ export async function exportBudgetPdf(options: ExportPdfOptions): Promise<void> 
       rowPageBreak: 'avoid', // Don't split rows across pages
       styles: {
         font: 'helvetica',
-        fontSize: 10,
+        fontSize: 9,
         overflow: 'linebreak',
         cellPadding: 6,
       },
@@ -360,6 +399,7 @@ export async function exportBudgetPdf(options: ExportPdfOptions): Promise<void> 
         textColor: [255, 255, 255],
         halign: 'left',
         fontStyle: 'bold',
+        fontSize: 9.5,
       },
       alternateRowStyles: {
         fillColor: [248, 249, 252],
@@ -370,8 +410,53 @@ export async function exportBudgetPdf(options: ExportPdfOptions): Promise<void> 
         5: { halign: 'right' }, // Monto
       },
       didDrawPage: (data) => {
-        // This is called for each page - we don't redraw header here
-        // because it would create duplicates
+        // Redraw header on each page
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const headerHeight = 72;
+        const primaryColor = hexToRgb(branding.primary_color);
+
+        // Header band
+        doc.setFillColor(...primaryColor);
+        doc.rect(0, 0, pageWidth, headerHeight, 'F');
+
+        // Logo
+        if (logoDataUrl) {
+          try {
+            const logoH = 42;
+            const logoW = 120;
+            const logoY = (headerHeight - logoH) / 2;
+            doc.addImage(logoDataUrl, 'PNG', 56, logoY, logoW, logoH);
+          } catch (error) {
+            console.error('Error adding logo:', error);
+          }
+        }
+
+        // Right block
+        const rightX = pageWidth - 56;
+        const centerY = headerHeight / 2;
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(15);
+        doc.text('PRESUPUESTO', rightX, centerY - 6, { align: 'right', baseline: 'middle' });
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        const companyLines = [
+          branding.company_name || '',
+          branding.phone && branding.email ? `${branding.phone} • ${branding.email}` : (branding.phone || branding.email || ''),
+          branding.address || ''
+        ].filter(Boolean);
+
+        const companyStartY = centerY + 10;
+        companyLines.forEach((line, i) => {
+          doc.text(line, rightX, companyStartY + i * 12, { align: 'right' });
+        });
+
+        // Separator line
+        doc.setDrawColor(...primaryColor);
+        doc.setLineWidth(1);
+        doc.line(56, headerHeight + 18, pageWidth - 56, headerHeight + 18);
       },
     });
 
