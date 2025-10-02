@@ -73,8 +73,8 @@ async function addHeader(
   // Logo on the left (centered vertically)
   if (logoDataUrl) {
     try {
-      const logoH = 42;
-      const logoW = 120;
+      const logoH = 50;
+      const logoW = 150;
       const logoY = (headerHeight - logoH) / 2;
       doc.addImage(logoDataUrl, 'PNG', 56, logoY, logoW, logoH);
     } catch (error) {
@@ -110,21 +110,28 @@ async function addHeader(
   doc.setLineWidth(1);
   doc.line(56, headerHeight + 18, pageWidth - 56, headerHeight + 18);
 
-  // Document title below header
+  // Section title: INFORMACIÓN DEL PROYECTO
   doc.setTextColor(0, 0, 0);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13);
-  doc.text(`Presupuesto — ${options.projectName}`, 56, headerHeight + 46);
-
-  // Project information block
-  doc.setFontSize(11);
-  doc.text('INFORMACIÓN DEL PROYECTO', 56, headerHeight + 70);
+  doc.setFontSize(12);
+  doc.text('INFORMACIÓN DEL PROYECTO', 56, headerHeight + 44);
   
-  // Orange separator line under project info title
+  // Orange separator line
   doc.setDrawColor(245, 158, 11);
   doc.setLineWidth(2);
-  doc.line(56, headerHeight + 76, pageWidth - 56, headerHeight + 76);
+  doc.line(56, headerHeight + 50, pageWidth - 56, headerHeight + 50);
   
+  // Main title (larger and more prominent)
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text(`Presupuesto — ${options.projectName}`, 56, headerHeight + 70);
+
+  // Subtitle: Información del proyecto
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text('Información del proyecto', 56, headerHeight + 88);
+  
+  // Project details
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
 
@@ -135,7 +142,7 @@ async function addHeader(
     year: 'numeric',
   });
   
-  let infoY = headerHeight + 88;
+  let infoY = headerHeight + 100;
   doc.text(`Fecha de generación: ${formattedDate}`, 56, infoY);
   
   if (options.clientName) {
@@ -348,7 +355,7 @@ export async function exportBudgetPdf(options: ExportPdfOptions): Promise<void> 
     });
 
     // Page margins
-    const margin = { left: 56, right: 56, top: 200, bottom: 72 };
+    const margin = { left: 56, right: 56, top: 220, bottom: 72 };
 
     // Add header
     await addHeader(doc, branding, options, logoDataUrl);
@@ -429,8 +436,8 @@ export async function exportBudgetPdf(options: ExportPdfOptions): Promise<void> 
         // Logo
         if (logoDataUrl) {
           try {
-            const logoH = 42;
-            const logoW = 120;
+            const logoH = 50;
+            const logoW = 150;
             const logoY = (headerHeight - logoH) / 2;
             doc.addImage(logoDataUrl, 'PNG', 56, logoY, logoW, logoH);
           } catch (error) {
