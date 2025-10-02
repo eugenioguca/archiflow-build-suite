@@ -3,7 +3,6 @@
  * Centralized branding data loading
  */
 import { supabase } from '@/integrations/supabase/client';
-import dovitaLogo from '@/assets/dovita-logo-white.png';
 
 export interface CompanyBranding {
   company_name: string;
@@ -33,7 +32,7 @@ export async function getBranding(): Promise<CompanyBranding> {
 
     return {
       company_name: data?.company_name || 'DOVITA CONSTRUCCIONES',
-      logo_url: data?.logo_url || dovitaLogo,
+      logo_url: data?.logo_url || '/dovita-logo-white.png',
       address: data?.address || 'Monterrey, Nuevo León',
       phone: data?.phone || 'Tel: +52 (55) 1234-5678',
       email: data?.email || 'info@dovita.com.mx',
@@ -45,7 +44,7 @@ export async function getBranding(): Promise<CompanyBranding> {
     console.error('Error loading branding:', error);
     return {
       company_name: 'DOVITA CONSTRUCCIONES',
-      logo_url: dovitaLogo,
+      logo_url: '/dovita-logo-white.png',
       address: 'Monterrey, Nuevo León',
       phone: 'Tel: +52 (55) 1234-5678',
       email: 'info@dovita.com.mx',
