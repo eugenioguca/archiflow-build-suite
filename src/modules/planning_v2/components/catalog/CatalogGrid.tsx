@@ -613,9 +613,9 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
       <KeyboardHintsBar />
 
       {/* Toolbar */}
-      <div className="flex items-center justify-between p-4 border-b">
-        <div className="flex items-center gap-4">
-          <TooltipProvider>
+      <TooltipProvider>
+        <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center gap-4">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button onClick={handleAddPartida} size="sm">
@@ -627,7 +627,6 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                 <p>Crear nueva partida (N)</p>
               </TooltipContent>
             </Tooltip>
-          </TooltipProvider>
 
           <div className="flex items-center gap-2">
             <Switch
@@ -671,23 +670,21 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                 Editar en Lote
               </Button>
               
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={handleDuplicateSelected}
-                    >
-                      <Copy className="h-4 w-4 mr-2" />
-                      Duplicar
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Duplicar seleccionadas (D)</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleDuplicateSelected}
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Duplicar
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Duplicar seleccionadas (D)</p>
+                </TooltipContent>
+              </Tooltip>
               
               <Button 
                 variant="destructive" 
@@ -705,78 +702,70 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
           )}
 
           {isTemplatesEnabled() && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setTemplateGalleryOpen(true)}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Plantillas
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Agregar partidas desde plantillas (T)</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-
-          <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setImportTUOpen(true)}
+                  onClick={() => setTemplateGalleryOpen(true)}
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Agregar desde TU
+                  Plantillas
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Agregar subpartidas desde Transacciones Unificadas</p>
+                <p>Agregar partidas desde plantillas (T)</p>
               </TooltipContent>
             </Tooltip>
-          </TooltipProvider>
+          )}
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setApplyDefaultsOpen(true)}
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Aplicar Defaults
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Aplicar valores predeterminados a conceptos seleccionados</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setImportTUOpen(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar desde TU
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Agregar subpartidas desde Transacciones Unificadas</p>
+            </TooltipContent>
+          </Tooltip>
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setColumnManagerOpen(true)}
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Columnas
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Gestionar columnas visibles (C)</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setApplyDefaultsOpen(true)}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Aplicar Defaults
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Aplicar valores predeterminados a conceptos seleccionados</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setColumnManagerOpen(true)}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Columnas
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Gestionar columnas visibles (C)</p>
+            </TooltipContent>
+          </Tooltip>
 
           {import.meta.env.DEV && (
             <Button
@@ -798,17 +787,17 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
               )}
             </Button>
           )}
+          </div>
         </div>
-      </div>
 
-      {/* Grid */}
-      <ScrollArea className="flex-1 overflow-x-hidden plv2-no-x-scroll">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="min-w-0 w-full plv2-grid">
+        {/* Grid */}
+        <ScrollArea className="flex-1 overflow-x-hidden plv2-no-x-scroll">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="min-w-0 w-full plv2-grid">
             {/* Header */}
             <div className="sticky top-0 z-10 bg-background border-b min-w-0">
               <div className="flex">
@@ -1073,13 +1062,13 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
                     );
                   })
                 )}
-              </div>
-            </SortableContext>
-          </div>
-        </DndContext>
-      </ScrollArea>
+            </div>
+          </SortableContext>
+        </div>
+      </DndContext>
+    </ScrollArea>
 
-      {/* Concepto Edit Panel */}
+    {/* Concepto Edit Panel */}
       <ConceptoEditPanel
         concepto={editingConcepto}
         open={!!editingConcepto}
@@ -1203,6 +1192,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
 
       {/* Dev Monitor - Performance tracking (DEV-ONLY) */}
       <DevMonitor recomputeTime={recomputeTime} dbLatency={dbLatency} />
+      </TooltipProvider>
     </div>
   );
 }

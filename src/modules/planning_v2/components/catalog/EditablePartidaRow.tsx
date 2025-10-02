@@ -15,7 +15,6 @@ import { AutoResizeTextarea } from '../ui/AutoResizeTextarea';
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import type { PlanningPartida } from '../../types';
@@ -263,19 +262,17 @@ export function EditablePartidaRow({
         )}
       </div>
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button size="sm" variant="ghost" onClick={onAddSubpartida}>
-                <Plus className="h-4 w-4 mr-1" />
-                Subpartida
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Agregar subpartida desde TU</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button size="sm" variant="ghost" onClick={onAddSubpartida}>
+              <Plus className="h-4 w-4 mr-1" />
+              Subpartida
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Agregar subpartida desde TU</p>
+          </TooltipContent>
+        </Tooltip>
         <Button size="sm" variant="ghost" onClick={() => setIsEditing(true)}>
           <Edit2 className="h-4 w-4" />
         </Button>
