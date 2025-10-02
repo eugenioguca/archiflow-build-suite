@@ -95,7 +95,8 @@ async function addHeader(
   doc.setFontSize(10);
   const companyLines = [
     branding.company_name || '',
-    branding.phone && branding.email ? `${branding.phone} • ${branding.email}` : (branding.phone || branding.email || ''),
+    branding.phone ? `Tel: ${branding.phone}` : '',
+    branding.email ? `Email: ${branding.email}` : '',
     branding.address || ''
   ].filter(Boolean);
 
@@ -117,7 +118,12 @@ async function addHeader(
 
   // Project information block
   doc.setFontSize(11);
-  doc.text('Información del proyecto', 56, headerHeight + 70);
+  doc.text('INFORMACIÓN DEL PROYECTO', 56, headerHeight + 70);
+  
+  // Orange separator line under project info title
+  doc.setDrawColor(245, 158, 11);
+  doc.setLineWidth(2);
+  doc.line(56, headerHeight + 76, pageWidth - 56, headerHeight + 76);
   
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
@@ -157,8 +163,9 @@ function addFooters(doc: jsPDF, branding: CompanyBranding) {
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
 
-    // Footer line
-    doc.setDrawColor(230, 230, 230);
+    // Footer line (orange)
+    doc.setDrawColor(245, 158, 11);
+    doc.setLineWidth(2);
     doc.line(56, pageHeight - 60, pageWidth - 56, pageHeight - 60);
 
     // Page number and confidential text
@@ -354,6 +361,9 @@ export async function exportBudgetPdf(options: ExportPdfOptions): Promise<void> 
     // Build body rows from grouped data
     const body: RowInput[] = buildTableRows(options.groupedData);
 
+    // Generate primary color for grand total
+    const primaryColor = hexToRgb(branding.primary_color);
+
     // Add grand total row
     body.push([
       {
@@ -361,7 +371,7 @@ export async function exportBudgetPdf(options: ExportPdfOptions): Promise<void> 
         colSpan: 5,
         styles: {
           fontStyle: 'bold',
-          fillColor: [51, 51, 51],
+          fillColor: primaryColor,
           textColor: [255, 255, 255],
           fontSize: 12,
         },
@@ -370,16 +380,13 @@ export async function exportBudgetPdf(options: ExportPdfOptions): Promise<void> 
         content: formatAsCurrency(options.grandTotal),
         styles: {
           fontStyle: 'bold',
-          fillColor: [51, 51, 51],
+          fillColor: primaryColor,
           textColor: [255, 255, 255],
           halign: 'right',
           fontSize: 12,
         },
       },
     ]);
-
-    // Generate table with autoTable
-    const primaryColor = hexToRgb(branding.primary_color);
     
     autoTable(doc, {
       head: headers,
@@ -444,7 +451,8 @@ export async function exportBudgetPdf(options: ExportPdfOptions): Promise<void> 
         doc.setFontSize(10);
         const companyLines = [
           branding.company_name || '',
-          branding.phone && branding.email ? `${branding.phone} • ${branding.email}` : (branding.phone || branding.email || ''),
+          branding.phone ? `Tel: ${branding.phone}` : '',
+          branding.email ? `Email: ${branding.email}` : '',
           branding.address || ''
         ].filter(Boolean);
 
