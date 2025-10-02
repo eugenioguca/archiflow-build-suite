@@ -1,17 +1,23 @@
 /**
- * PDF Export Service for Planning v2
+ * PDF Export Service for Planning v2 - Dovita Style
  * Uses jsPDF and jspdf-autotable for professional letter-sized PDF exports
+ * Brand colors: PRIMARY #28135f (blue), ACCENT #f0a33a (orange)
  */
 import jsPDF from 'jspdf';
 import autoTable, { RowInput } from 'jspdf-autotable';
 import { getBranding, type CompanyBranding } from '../../../adapters/branding';
 import { formatAsCurrency } from '../../../utils/monetary';
 
+// Dovita brand colors
+const BRAND_PRIMARY = '#28135f'; // Blue
+const BRAND_ACCENT = '#f0a33a'; // Orange
+
 interface ExportPdfOptions {
   projectName: string;
   clientName?: string;
   folio?: string;
   generatedAt?: Date;
+  location?: string;
   groupedData: any[]; // GroupedData from planningExportService
   grandTotal: number;
 }
@@ -30,107 +36,150 @@ function hexToRgb(hex: string): [number, number, number] {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result
     ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)]
-    : [31, 64, 175]; // Default blue
+    : [40, 19, 95]; // Default to brand primary
 }
 
 /**
- * Load image as base64 data URL
+ * Robust logo loader: handles SVG conversion, CORS, base64
  */
-async function loadImageAsDataUrl(url: string): Promise<string | null> {
+async function getBrandingLogoDataUrl(branding: CompanyBranding): Promise<string | null> {
   try {
-    const response = await fetch(url);
+    // If already base64, use it directly
+    if (branding.logo_url?.startsWith('data:')) {
+      return branding.logo_url;
+    }
+
+    if (!branding.logo_url) return null;
+
+    const url = branding.logo_url;
+
+    // Try to fetch the image
+    const response = await fetch(url, { mode: 'cors' }).catch(() => null);
+    if (!response || !response.ok) return null;
+
     const blob = await response.blob();
-    return new Promise((resolve, reject) => {
+    
+    // If SVG, convert to PNG using canvas
+    if (blob.type === 'image/svg+xml' || url.endsWith('.svg')) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width || 400;
+            canvas.height = img.height || 140;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0);
+              resolve(canvas.toDataURL('image/png'));
+            } else {
+              resolve(null);
+            }
+          };
+          img.onerror = () => resolve(null);
+          img.src = e.target?.result as string;
+        };
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    // For PNG/JPG, convert to data URL
+    return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
       reader.readAsDataURL(blob);
     });
   } catch (error) {
-    console.error('Error loading image:', error);
+    console.warn('Error loading logo:', error);
     return null;
   }
 }
 
 /**
- * Add header with branding to each page
+ * Draw header with brand bar, logo, and company info
  */
-async function addHeader(
+function drawHeader(
   doc: jsPDF,
+  pageW: number,
+  margin: { left: number; right: number },
   branding: CompanyBranding,
-  options: ExportPdfOptions,
   logoDataUrl: string | null
 ) {
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const primaryColor = hexToRgb(branding.primary_color);
-  const headerHeight = 72;
+  const headerH = 96;
+  const [PR, PG, PB] = hexToRgb(BRAND_PRIMARY);
 
   // Header band
-  doc.setFillColor(...primaryColor);
-  doc.rect(0, 0, pageWidth, headerHeight, 'F');
+  doc.setFillColor(PR, PG, PB);
+  doc.rect(0, 0, pageW, headerH, 'F');
 
   // Logo on the left (centered vertically)
   if (logoDataUrl) {
     try {
-      const logoH = 50;
-      const logoW = 150;
-      const logoY = (headerHeight - logoH) / 2;
-      doc.addImage(logoDataUrl, 'PNG', 56, logoY, logoW, logoH);
+      const maxH = 54;
+      const logoY = (headerH - maxH) / 2;
+      const logoW = 140;
+      doc.addImage(logoDataUrl, 'PNG', margin.left, logoY, logoW, maxH, undefined, 'FAST');
     } catch (error) {
       console.error('Error adding logo:', error);
     }
   }
 
   // Right block: "PRESUPUESTO" + company info (centered vertically)
-  const rightX = pageWidth - 56;
-  const centerY = headerHeight / 2;
+  const rightX = pageW - margin.right;
+  const centerY = headerH / 2;
 
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(15);
-  doc.text('PRESUPUESTO', rightX, centerY - 6, { align: 'right', baseline: 'middle' });
+  doc.text('PRESUPUESTO', rightX, centerY - 8, { align: 'right', baseline: 'middle' });
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
-  const companyLines = [
-    branding.company_name || '',
-    branding.phone ? `Tel: ${branding.phone}` : '',
-    branding.email ? `Email: ${branding.email}` : '',
-    branding.address || ''
+  const info = [
+    branding.company_name || 'DOVITA CONSTRUCCIONES',
+    [branding.phone, branding.email].filter(Boolean).join(' • '),
+    branding.address || 'Querétaro, Qro.'
   ].filter(Boolean);
 
-  const companyStartY = centerY + 10;
-  companyLines.forEach((line, i) => {
-    doc.text(line, rightX, companyStartY + i * 12, { align: 'right' });
-  });
+  const startY = centerY + 8;
+  info.forEach((line, i) => doc.text(line, rightX, startY + i * 12, { align: 'right' }));
 
   // Separator line below header
-  doc.setDrawColor(...primaryColor);
+  doc.setDrawColor(PR, PG, PB);
   doc.setLineWidth(1);
-  doc.line(56, headerHeight + 18, pageWidth - 56, headerHeight + 18);
+  doc.line(margin.left, headerH + 18, pageW - margin.right, headerH + 18);
+}
 
-  // Section title: INFORMACIÓN DEL PROYECTO
+/**
+ * Draw project info section with title and orange line
+ */
+function drawProjectInfo(
+  doc: jsPDF,
+  pageW: number,
+  margin: { left: number; right: number },
+  options: ExportPdfOptions
+): number {
+  const headerH = 96;
+
+  // Main title: "Presupuesto — {Proyecto}"
   doc.setTextColor(0, 0, 0);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.text('INFORMACIÓN DEL PROYECTO', 56, headerHeight + 44);
-  
-  // Orange separator line
-  doc.setDrawColor(245, 158, 11);
-  doc.setLineWidth(2);
-  doc.line(56, headerHeight + 50, pageWidth - 56, headerHeight + 50);
-  
-  // Main title (larger and more prominent)
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.text(`Presupuesto — ${options.projectName}`, 56, headerHeight + 70);
+  doc.setFontSize(13);
+  doc.text(`Presupuesto — ${options.projectName}`, margin.left, headerH + 46);
 
-  // Subtitle: Información del proyecto
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.text('Información del proyecto', 56, headerHeight + 88);
-  
+  // Section title: "INFORMACIÓN DEL PROYECTO"
+  doc.setFontSize(11);
+  doc.text('INFORMACIÓN DEL PROYECTO', margin.left, headerH + 76);
+
+  // Orange separator line
+  const [AR, AG, AB] = hexToRgb(BRAND_ACCENT);
+  doc.setDrawColor(AR, AG, AB);
+  doc.setLineWidth(3);
+  doc.line(margin.left, headerH + 82, pageW - margin.right, headerH + 82);
+
   // Project details
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
@@ -141,51 +190,55 @@ async function addHeader(
     month: 'long',
     year: 'numeric',
   });
-  
-  let infoY = headerHeight + 100;
-  doc.text(`Fecha de generación: ${formattedDate}`, 56, infoY);
-  
+
+  let y = headerH + 102;
+  doc.text(`Fecha de generación: ${formattedDate}`, margin.left, y);
+  y += 14;
+  doc.text(`Proyecto: ${options.projectName}`, margin.left, y);
+  y += 14;
   if (options.clientName) {
-    infoY += 14;
-    doc.text(`Cliente: ${options.clientName}`, 56, infoY);
+    doc.text(`Cliente: ${options.clientName}`, margin.left, y);
+    y += 14;
   }
-  
-  infoY += 14;
-  doc.text(`Proyecto: ${options.projectName}`, 56, infoY);
-  
+  if (options.location) {
+    doc.text(`Ubicación: ${options.location}`, margin.left, y);
+    y += 14;
+  }
   if (options.folio) {
-    infoY += 14;
-    doc.text(`Folio: ${options.folio}`, 56, infoY);
+    doc.text(`Folio: ${options.folio}`, margin.left, y);
+    y += 14;
   }
+
+  return y + 16; // Return startY for table
 }
 
 /**
- * Add footer with pagination
+ * Draw footer with orange line and pagination
  */
-function addFooters(doc: jsPDF, branding: CompanyBranding) {
-  const pageCount = doc.getNumberOfPages();
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
+function drawFooter(
+  doc: jsPDF,
+  pageW: number,
+  pageH: number,
+  margin: { left: number; right: number; bottom: number },
+  branding: CompanyBranding
+) {
+  const page = doc.getCurrentPageInfo().pageNumber;
+  const totalPages = doc.getNumberOfPages();
 
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
+  // Orange line
+  const [AR, AG, AB] = hexToRgb(BRAND_ACCENT);
+  doc.setDrawColor(AR, AG, AB);
+  doc.setLineWidth(2);
+  doc.line(margin.left, pageH - margin.bottom + 18, pageW - margin.right, pageH - margin.bottom + 18);
 
-    // Footer line (orange)
-    doc.setDrawColor(245, 158, 11);
-    doc.setLineWidth(2);
-    doc.line(56, pageHeight - 60, pageWidth - 56, pageHeight - 60);
+  // Pagination and confidential text
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(120, 120, 120);
+  doc.text(`Página ${page} de ${totalPages}`, margin.left, pageH - 20);
 
-    // Page number and confidential text
-    doc.setFontSize(9);
-    doc.setTextColor(130, 130, 130);
-    doc.text(`Página ${i} de ${pageCount}`, 56, pageHeight - 24);
-    doc.text(
-      `${branding.company_name} • Confidencial`,
-      pageWidth - 56,
-      pageHeight - 24,
-      { align: 'right' }
-    );
-  }
+  const brandName = branding.company_name || 'DOVITA CONSTRUCCIONES';
+  doc.text(`${brandName} • Confidencial`, pageW - margin.right, pageH - 20, { align: 'right' });
 }
 
 /**
@@ -203,7 +256,8 @@ function buildTableRows(groupedData: any[]): RowInput[] {
         styles: {
           fontStyle: 'bold',
           fillColor: [224, 224, 224],
-          fontSize: 11,
+          textColor: [51, 51, 51],
+          fontSize: 10,
         },
       },
     ]);
@@ -217,7 +271,8 @@ function buildTableRows(groupedData: any[]): RowInput[] {
           styles: {
             fontStyle: 'bold',
             fillColor: [240, 240, 240],
-            fontSize: 10,
+            textColor: [51, 51, 51],
+            fontSize: 9,
           },
         },
       ]);
@@ -232,7 +287,7 @@ function buildTableRows(groupedData: any[]): RowInput[] {
             styles: {
               fontStyle: 'italic',
               fillColor: [248, 248, 248],
-              fontSize: 9,
+              fontSize: 8.5,
             },
           },
         ]);
@@ -258,13 +313,14 @@ function buildTableRows(groupedData: any[]): RowInput[] {
             {
               content: 'Subtotal',
               colSpan: 5,
-              styles: { fontStyle: 'bold', fillColor: [248, 248, 248] },
+              styles: { fontStyle: 'bold', fillColor: [230, 230, 230], textColor: [51, 51, 51] },
             },
             {
               content: formatAsCurrency(subtotal),
               styles: {
                 fontStyle: 'bold',
-                fillColor: [248, 248, 248],
+                fillColor: [230, 230, 230],
+                textColor: [51, 51, 51],
                 halign: 'right',
               },
             },
@@ -292,13 +348,14 @@ function buildTableRows(groupedData: any[]): RowInput[] {
         {
           content: `Total ${partida.name}`,
           colSpan: 5,
-          styles: { fontStyle: 'bold', fillColor: [230, 230, 230] },
+          styles: { fontStyle: 'bold', fillColor: [230, 230, 230], textColor: [51, 51, 51] },
         },
         {
           content: formatAsCurrency(total),
           styles: {
             fontStyle: 'bold',
             fillColor: [230, 230, 230],
+            textColor: [51, 51, 51],
             halign: 'right',
           },
         },
@@ -313,7 +370,8 @@ function buildTableRows(groupedData: any[]): RowInput[] {
         styles: {
           fontStyle: 'bold',
           fillColor: [200, 200, 200],
-          fontSize: 11,
+          textColor: [51, 51, 51],
+          fontSize: 10,
         },
       },
       {
@@ -321,14 +379,15 @@ function buildTableRows(groupedData: any[]): RowInput[] {
         styles: {
           fontStyle: 'bold',
           fillColor: [200, 200, 200],
+          textColor: [51, 51, 51],
           halign: 'right',
-          fontSize: 11,
+          fontSize: 10,
         },
       },
     ]);
 
     // Empty row between mayors
-    rows.push([{ content: '', colSpan: 6, styles: { fillColor: [255, 255, 255] } }]);
+    rows.push([{ content: '', colSpan: 6, styles: { fillColor: [255, 255, 255], minCellHeight: 8 } }]);
   }
 
   return rows;
@@ -342,10 +401,8 @@ export async function exportBudgetPdf(options: ExportPdfOptions): Promise<void> 
     // Load branding
     const branding = await getBranding();
 
-    // Load logo
-    const logoDataUrl = branding.logo_url
-      ? await loadImageAsDataUrl(branding.logo_url)
-      : null;
+    // Load logo (robust, handles SVG/CORS/base64)
+    const logoDataUrl = await getBrandingLogoDataUrl(branding);
 
     // Initialize PDF document (letter size)
     const doc = new jsPDF({
@@ -354,11 +411,17 @@ export async function exportBudgetPdf(options: ExportPdfOptions): Promise<void> 
       compress: true,
     });
 
-    // Page margins
-    const margin = { left: 56, right: 56, top: 220, bottom: 72 };
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
 
-    // Add header
-    await addHeader(doc, branding, options, logoDataUrl);
+    // Page margins
+    const margin = { left: 56, right: 56, top: 120, bottom: 72 };
+
+    // Draw initial header
+    drawHeader(doc, pageW, margin, branding, logoDataUrl);
+
+    // Draw project info and get startY for table
+    const startY = drawProjectInfo(doc, pageW, margin, options);
 
     // Prepare table data
     const headers = [
@@ -368,37 +431,14 @@ export async function exportBudgetPdf(options: ExportPdfOptions): Promise<void> 
     // Build body rows from grouped data
     const body: RowInput[] = buildTableRows(options.groupedData);
 
-    // Generate primary color for grand total
-    const primaryColor = hexToRgb(branding.primary_color);
+    // Brand colors for table
+    const [PR, PG, PB] = hexToRgb(BRAND_PRIMARY);
 
-    // Add grand total row
-    body.push([
-      {
-        content: 'TOTAL PRESUPUESTO',
-        colSpan: 5,
-        styles: {
-          fontStyle: 'bold',
-          fillColor: primaryColor,
-          textColor: [255, 255, 255],
-          fontSize: 12,
-        },
-      },
-      {
-        content: formatAsCurrency(options.grandTotal),
-        styles: {
-          fontStyle: 'bold',
-          fillColor: primaryColor,
-          textColor: [255, 255, 255],
-          halign: 'right',
-          fontSize: 12,
-        },
-      },
-    ]);
-    
+    // Generate table
     autoTable(doc, {
       head: headers,
       body,
-      startY: margin.top,
+      startY,
       margin,
       pageBreak: 'auto',
       rowPageBreak: 'avoid', // Don't split rows across pages
@@ -409,7 +449,7 @@ export async function exportBudgetPdf(options: ExportPdfOptions): Promise<void> 
         cellPadding: 6,
       },
       headStyles: {
-        fillColor: primaryColor,
+        fillColor: [PR, PG, PB],
         textColor: [255, 255, 255],
         halign: 'left',
         fontStyle: 'bold',
@@ -423,60 +463,44 @@ export async function exportBudgetPdf(options: ExportPdfOptions): Promise<void> 
         4: { halign: 'right' }, // P. Unitario
         5: { halign: 'right' }, // Monto
       },
-      didDrawPage: (data) => {
-        // Redraw header on each page
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const headerHeight = 72;
-        const primaryColor = hexToRgb(branding.primary_color);
-
-        // Header band
-        doc.setFillColor(...primaryColor);
-        doc.rect(0, 0, pageWidth, headerHeight, 'F');
-
-        // Logo
-        if (logoDataUrl) {
-          try {
-            const logoH = 50;
-            const logoW = 150;
-            const logoY = (headerHeight - logoH) / 2;
-            doc.addImage(logoDataUrl, 'PNG', 56, logoY, logoW, logoH);
-          } catch (error) {
-            console.error('Error adding logo:', error);
-          }
-        }
-
-        // Right block
-        const rightX = pageWidth - 56;
-        const centerY = headerHeight / 2;
-
-        doc.setTextColor(255, 255, 255);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(15);
-        doc.text('PRESUPUESTO', rightX, centerY - 6, { align: 'right', baseline: 'middle' });
-
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        const companyLines = [
-          branding.company_name || '',
-          branding.phone ? `Tel: ${branding.phone}` : '',
-          branding.email ? `Email: ${branding.email}` : '',
-          branding.address || ''
-        ].filter(Boolean);
-
-        const companyStartY = centerY + 10;
-        companyLines.forEach((line, i) => {
-          doc.text(line, rightX, companyStartY + i * 12, { align: 'right' });
-        });
-
-        // Separator line
-        doc.setDrawColor(...primaryColor);
-        doc.setLineWidth(1);
-        doc.line(56, headerHeight + 18, pageWidth - 56, headerHeight + 18);
+      didDrawPage: () => {
+        // Redraw header and footer on each page
+        drawHeader(doc, pageW, margin, branding, logoDataUrl);
+        drawFooter(doc, pageW, pageH, margin, branding);
       },
     });
 
-    // Add footers to all pages
-    addFooters(doc, branding);
+    // Add grand total bar
+    let finalY = (doc as any).lastAutoTable.finalY || startY;
+
+    // Check if we need a new page for the total
+    if (finalY > pageH - margin.bottom - 40) {
+      doc.addPage();
+      drawHeader(doc, pageW, margin, branding, logoDataUrl);
+      drawFooter(doc, pageW, pageH, margin, branding);
+      finalY = margin.top;
+    }
+
+    // Draw total bar with brand color
+    doc.setFillColor(PR, PG, PB);
+    doc.setTextColor(255, 255, 255);
+    doc.rect(margin.left, finalY + 12, pageW - margin.left - margin.right, 28, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('TOTAL PRESUPUESTO', margin.left + 10, finalY + 31, { baseline: 'middle' });
+    doc.text(
+      formatAsCurrency(options.grandTotal),
+      pageW - margin.right - 10,
+      finalY + 31,
+      { align: 'right', baseline: 'middle' }
+    );
+
+    // Draw footer on all pages
+    const totalPages = doc.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      drawFooter(doc, pageW, pageH, margin, branding);
+    }
 
     // Generate filename and download
     const filename = `Presupuesto — ${sanitizeFilename(options.projectName)}.pdf`;
