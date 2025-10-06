@@ -113,8 +113,8 @@ export function ApplyTemplateDialog({
       if (!profile) throw new Error('Usuario no autenticado');
       
       const budgetSettings = (budget?.settings || {}) as any;
-      const defaultHonorarios = budgetSettings.honorarios_pct_default ?? 0.17;
-      const defaultDesperdicio = budgetSettings.desperdicio_pct_default ?? 0.05;
+      const defaultHonorarios = budgetSettings.defaults?.honorarios_pct ?? budgetSettings.honorarios_pct_default ?? 0.17;
+      const defaultDesperdicio = budgetSettings.defaults?.desperdicio_pct ?? budgetSettings.desperdicio_pct_default ?? 0.05;
 
       // 1. Create partidas
       const partidasToInsert = selectedTemplate.template_data.partidas.map((p, idx) => ({

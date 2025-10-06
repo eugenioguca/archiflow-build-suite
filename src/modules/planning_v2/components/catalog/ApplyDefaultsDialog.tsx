@@ -92,8 +92,8 @@ export function ApplyDefaultsDialog({
     }
   };
 
-  const honorariosDefault = budgetSettings?.honorarios_pct_default ?? 0.17;
-  const desperdicioDefault = budgetSettings?.desperdicio_pct_default ?? 0.05;
+  const honorariosDefault = budgetSettings?.defaults?.honorarios_pct ?? budgetSettings?.honorarios_pct_default ?? 0.17;
+  const desperdicioDefault = budgetSettings?.defaults?.desperdicio_pct ?? budgetSettings?.desperdicio_pct_default ?? 0.05;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>

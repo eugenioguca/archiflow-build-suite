@@ -11,6 +11,11 @@ export interface EffectiveDefaultsContext {
   budgetSettings?: {
     honorarios_pct_default?: number;
     desperdicio_pct_default?: number;
+    defaults?: {
+      honorarios_pct?: number;
+      desperdicio_pct?: number;
+      iva_pct?: number;
+    };
   };
   partidaOverride?: {
     honorarios_pct_override?: number | null;
@@ -20,7 +25,7 @@ export interface EffectiveDefaultsContext {
 
 /**
  * Get effective honorarios percentage
- * Priority: Concepto value > Partida override > Budget default > 0.17
+ * Priority: Concepto value > Partida override > Budget default (new or old structure) > 0.17
  */
 export function getEffectiveHonorarios(context: EffectiveDefaultsContext): {
   value: number;
@@ -39,9 +44,12 @@ export function getEffectiveHonorarios(context: EffectiveDefaultsContext): {
     return { value: partidaOverride.honorarios_pct_override, isDefault: true, source: 'partida' };
   }
   
-  // Check budget default
-  if (budgetSettings?.honorarios_pct_default !== undefined) {
-    return { value: budgetSettings.honorarios_pct_default, isDefault: true, source: 'budget' };
+  // Check budget default (new structure or old structure)
+  if (budgetSettings) {
+    const budgetDefault = budgetSettings.defaults?.honorarios_pct ?? budgetSettings.honorarios_pct_default;
+    if (budgetDefault !== undefined) {
+      return { value: budgetDefault, isDefault: true, source: 'budget' };
+    }
   }
   
   // System default
@@ -50,7 +58,7 @@ export function getEffectiveHonorarios(context: EffectiveDefaultsContext): {
 
 /**
  * Get effective desperdicio percentage
- * Priority: Concepto value > Partida override > Budget default > 0.05
+ * Priority: Concepto value > Partida override > Budget default (new or old structure) > 0.05
  */
 export function getEffectiveDesperdicio(context: EffectiveDefaultsContext): {
   value: number;
@@ -69,9 +77,12 @@ export function getEffectiveDesperdicio(context: EffectiveDefaultsContext): {
     return { value: partidaOverride.desperdicio_pct_override, isDefault: true, source: 'partida' };
   }
   
-  // Check budget default
-  if (budgetSettings?.desperdicio_pct_default !== undefined) {
-    return { value: budgetSettings.desperdicio_pct_default, isDefault: true, source: 'budget' };
+  // Check budget default (new structure or old structure)
+  if (budgetSettings) {
+    const budgetDefault = budgetSettings.defaults?.desperdicio_pct ?? budgetSettings.desperdicio_pct_default;
+    if (budgetDefault !== undefined) {
+      return { value: budgetDefault, isDefault: true, source: 'budget' };
+    }
   }
   
   // System default

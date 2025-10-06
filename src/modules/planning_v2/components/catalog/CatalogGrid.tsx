@@ -1174,8 +1174,8 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
             : 0
         }
         budgetDefaults={{
-          honorarios_pct_default: budget?.settings?.honorarios_pct_default ?? 0.17,
-          desperdicio_pct_default: budget?.settings?.desperdicio_pct_default ?? 0.05,
+          honorarios_pct_default: budget?.settings?.defaults?.honorarios_pct ?? budget?.settings?.honorarios_pct_default ?? 0.17,
+          desperdicio_pct_default: budget?.settings?.defaults?.desperdicio_pct ?? budget?.settings?.desperdicio_pct_default ?? 0.05,
         }}
       />
 

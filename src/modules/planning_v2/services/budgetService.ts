@@ -292,9 +292,16 @@ export async function deleteConcepto(id: string) {
  * Compute all fields for a concepto using effective defaults
  */
 function computeConceptoFields(concepto: any, budgetSettings?: any): any {
-  // Apply effective defaults using COALESCE logic
-  const effectiveHonorarios = concepto.honorarios_pct ?? budgetSettings?.honorarios_pct_default ?? 0.17;
-  const effectiveDesperdicio = concepto.desperdicio_pct ?? budgetSettings?.desperdicio_pct_default ?? 0.05;
+  // Extract defaults from new structure or fall back to old structure
+  const defaults = budgetSettings?.defaults || budgetSettings || {};
+  const effectiveHonorarios = concepto.honorarios_pct ?? 
+    defaults.honorarios_pct ?? 
+    budgetSettings?.honorarios_pct_default ?? 
+    0.17;
+  const effectiveDesperdicio = concepto.desperdicio_pct ?? 
+    defaults.desperdicio_pct ?? 
+    budgetSettings?.desperdicio_pct_default ?? 
+    0.05;
   
   // Use effective values for computation but keep original NULL in data
   const conceptoForComputation = {
