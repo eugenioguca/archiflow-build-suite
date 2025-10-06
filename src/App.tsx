@@ -5,7 +5,7 @@ import { ClientProjectAlertNotification } from "@/components/calendar/ClientProj
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { BrowserRouter, HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Layout from "@/components/Layout";
 import Index from "./pages/Index";
@@ -148,13 +148,16 @@ function SafetyNetCleanup() {
   return null;
 }
 
+// Conditional Router: HashRouter for preview environments, BrowserRouter for production
+const Router = import.meta.env.VITE_USE_HASH_ROUTER === 'true' ? HashRouter : BrowserRouter;
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <Router>
           <ScrollToTop />
           <SafetyNetCleanup />
           <Routes>
@@ -343,12 +346,12 @@ const App = () => (
                </>
              )}
              
-             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-           </Routes>
-         </BrowserRouter>
-          <AlertNotification />
-          <ClientProjectAlertNotification />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+               <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Router>
+           <AlertNotification />
+           <ClientProjectAlertNotification />
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
