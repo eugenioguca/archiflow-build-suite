@@ -25,6 +25,8 @@ export interface ConceptCore {
   long_description: string | null;
   unit: string;
   provider: string | null;
+  provider_id: string | null;
+  provider_notes: string | null;
   order_index: number;
   
   // Estado

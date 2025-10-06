@@ -37,6 +37,7 @@ import { BulkEditDialog } from './BulkEditDialog';
 import { NewPartidaFromTUDialog } from './NewPartidaFromTUDialog';
 import { NewSubpartidaFromTUDialog } from './NewSubpartidaFromTUDialog';
 import { EditableCell } from './EditableCell';
+import { ProviderCell } from './ProviderCell';
 import { CatalogRowActions } from './CatalogRowActions';
 import { DevMonitor } from '../dev/DevMonitor';
 import { KeyboardHintsBar } from './KeyboardHintsBar';
@@ -437,6 +438,11 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
     (concepto: any, column: any) => {
       const value = concepto[column.key];
 
+      // Special handling for provider column
+      if (column.key === 'provider') {
+        return <ProviderCell concepto={concepto} onSave={handleCellSave} />;
+      }
+
       // Use EditableCell for input columns
       if (column.type === 'input') {
         const formatFn =
@@ -497,7 +503,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
 
       return value || '—';
     },
-    [handleCellSave]
+    [handleCellSave, budget?.settings]
   );
 
   const handleSeedDemo = async () => {

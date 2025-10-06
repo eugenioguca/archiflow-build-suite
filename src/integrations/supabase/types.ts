@@ -5888,6 +5888,7 @@ export type Database = {
           props: Json | null
           provider: string | null
           provider_id: string | null
+          provider_notes: string | null
           pu: number | null
           short_description: string
           sumable: boolean
@@ -5916,6 +5917,7 @@ export type Database = {
           props?: Json | null
           provider?: string | null
           provider_id?: string | null
+          provider_notes?: string | null
           pu?: number | null
           short_description: string
           sumable?: boolean
@@ -5944,6 +5946,7 @@ export type Database = {
           props?: Json | null
           provider?: string | null
           provider_id?: string | null
+          provider_notes?: string | null
           pu?: number | null
           short_description?: string
           sumable?: boolean
