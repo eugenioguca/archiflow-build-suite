@@ -178,7 +178,7 @@ export function EditableCell({
       );
     }
     
-    return <span className="whitespace-pre-wrap break-words">{formatted}</span>;
+    return <span className="whitespace-normal break-words overflow-wrap-anywhere">{formatted}</span>;
   };
 
   if (isEditing) {
@@ -222,7 +222,7 @@ export function EditableCell({
 
   return (
     <div
-      className="cursor-pointer hover:bg-muted/50 rounded px-2 -mx-2 py-1 min-w-0 break-words"
+      className="cursor-pointer hover:bg-muted/50 rounded px-2 -mx-2 py-1 break-words overflow-wrap-anywhere"
       onClick={(e) => {
         e.stopPropagation();
         handleEdit();

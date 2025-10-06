@@ -797,7 +797,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            <div className="min-w-0 w-full plv2-grid">
+            <div className="min-w-0 w-full plv2-grid overflow-x-hidden">
             {/* Header */}
             <div className="sticky top-0 z-10 bg-background border-b min-w-0">
               <div className="flex">

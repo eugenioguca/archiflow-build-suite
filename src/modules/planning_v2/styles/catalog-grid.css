@@ -59,7 +59,25 @@
 .plv2-concepto-cell {
   min-width: 0;
   max-width: 100%;
-  white-space: pre-wrap;
+  white-space: normal;
   word-break: break-word;
   overflow-wrap: anywhere;
+  overflow: hidden; /* No scroll horizontal */
+}
+
+/* Description columns - allow vertical growth */
+.plv2-concepto-cell [data-column="short_description"],
+.plv2-concepto-cell [data-column="long_description"] {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  max-width: 720px;
+  line-height: 1.5;
+}
+
+/* Ensure table cells don't create horizontal overflow */
+.plv2-grid [role="cell"],
+.plv2-grid .px-3 {
+  overflow: hidden;
+  text-overflow: clip;
 }

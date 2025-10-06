@@ -46,12 +46,12 @@ export function DraggableConceptoRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center border-b hover:bg-muted/30 cursor-pointer ${
+      className={`flex items-start border-b hover:bg-muted/30 cursor-pointer ${
         isSelected ? 'bg-primary/10' : ''
       } ${isDragging ? 'z-50' : ''}`}
       onClick={onRowClick}
     >
-      <div className="w-12 border-r flex items-center justify-center gap-1">
+      <div className="w-12 border-r flex items-center justify-center gap-1 py-2">
         <button
           {...attributes}
           {...listeners}
@@ -67,18 +67,26 @@ export function DraggableConceptoRow({
           className="rounded"
         />
       </div>
-      {visibleColumns.map((col) => (
-        <div
-          key={col.key}
-          className={`px-3 py-2 text-sm border-r min-w-[120px] max-w-[200px] ${
-            col.type === 'computed' ? 'bg-muted/10' : ''
-          }`}
-        >
-          <div className="plv2-concepto-cell">
-            {renderCell(concepto, col)}
+      {visibleColumns.map((col) => {
+        // Estilos especiales para columna de descripción (comentarios largos)
+        const isDescriptionColumn = col.key === 'short_description' || col.key === 'long_description';
+        const cellClasses = isDescriptionColumn
+          ? 'px-3 py-2 text-sm border-r min-w-[180px] max-w-[720px] whitespace-normal break-words'
+          : `px-3 py-2 text-sm border-r min-w-[120px] max-w-[200px] ${
+              col.type === 'computed' ? 'bg-muted/10' : ''
+            }`;
+        
+        return (
+          <div
+            key={col.key}
+            className={cellClasses}
+          >
+            <div className="plv2-concepto-cell overflow-hidden">
+              {renderCell(concepto, col)}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
       {actionsContent && (
         <div className="px-2 py-2 flex items-center justify-center border-r w-[60px]" onClick={(e) => e.stopPropagation()}>
           {actionsContent}
