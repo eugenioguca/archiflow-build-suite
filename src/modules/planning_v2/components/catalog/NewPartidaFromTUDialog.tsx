@@ -1,6 +1,6 @@
 /**
  * Dialog para crear Partida desde TU (Mayor + Partida)
- * Filtrado por budget.settings.tu_mayores si existe
+ * Filtrado por budget.settings.selected_majors si existe
  */
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -44,7 +44,7 @@ interface NewPartidaFromTUDialogProps {
   onOpenChange: (open: boolean) => void;
   budgetId: string;
   orderIndex: number;
-  tuMayoresWhitelist?: string[]; // budget.settings.tu_mayores
+  tuMayoresWhitelist?: string[]; // budget.settings.selected_majors
   preselectedMayorId?: string; // For pre-selecting a Mayor from group header
   onCreated?: (mayorId: string) => void; // Callback after successful creation
 }

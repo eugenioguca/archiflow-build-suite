@@ -156,16 +156,16 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
     dbLatency,
   } = useCatalogGrid(budgetId);
 
-  // Cargar Mayores TU desde budget.settings.tu_mayores
-  const tuMayoresIds = budget?.settings?.tu_mayores as string[] | undefined;
+  // Cargar Mayores TU desde budget.settings.selected_majors
+  const selectedMajorsIds = budget?.settings?.selected_majors as string[] | undefined;
   const { data: mayoresTU = [], isLoading: loadingMayores } = useQuery({
-    queryKey: ['tu-mayores-for-budget', budgetId, tuMayoresIds],
+    queryKey: ['tu-mayores-for-budget', budgetId, selectedMajorsIds],
     queryFn: async () => {
-      if (!tuMayoresIds || tuMayoresIds.length === 0) return [];
+      if (!selectedMajorsIds || selectedMajorsIds.length === 0) return [];
       const allMayores = await tuAdapter.getMayores('CONSTRUCCIÓN');
-      return allMayores.filter(m => tuMayoresIds.includes(m.id));
+      return allMayores.filter(m => selectedMajorsIds.includes(m.id));
     },
-    enabled: groupByMayor && !!tuMayoresIds && tuMayoresIds.length > 0,
+    enabled: groupByMayor && !!selectedMajorsIds && selectedMajorsIds.length > 0,
   });
 
   // Cargar mappings TU para las partidas del presupuesto con datos completos de TU
@@ -642,7 +642,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
             )}
           </div>
 
-          {tuMayoresIds && tuMayoresIds.length > 0 && (
+          {selectedMajorsIds && selectedMajorsIds.length > 0 && (
             <div className="flex items-center gap-2">
               <Switch
                 id="group-by-mayor"
@@ -1158,7 +1158,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
         onOpenChange={setNewPartidaOpen}
         budgetId={budgetId}
         orderIndex={rows.filter(r => r.type === 'partida').length}
-        tuMayoresWhitelist={budget?.settings?.tu_mayores || []}
+        tuMayoresWhitelist={budget?.settings?.selected_majors || []}
       />
 
       {/* New Subpartida Dialog (from TU) */}
@@ -1185,7 +1185,7 @@ export function CatalogGrid({ budgetId }: CatalogGridProps) {
         onOpenChange={(open) => setNewPartidaFromTUDialog({ open })}
         budgetId={budgetId}
         orderIndex={partidas.length}
-        tuMayoresWhitelist={tuMayoresIds}
+        tuMayoresWhitelist={selectedMajorsIds}
         preselectedMayorId={newPartidaFromTUDialog.preselectedMayorId}
         onCreated={handlePartidaCreated}
       />

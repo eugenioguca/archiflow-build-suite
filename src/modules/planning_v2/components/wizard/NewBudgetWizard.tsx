@@ -122,10 +122,17 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
           source: 'TU',
           enable_iva: values.enable_iva,
           iva_rate: values.iva_rate,
+          notes: values.notes || null,
+          // Nueva estructura
+          selected_majors: selectedMayorIds,
+          defaults: {
+            honorarios_pct: values.honorarios_pct_default,
+            desperdicio_pct: values.desperdicio_pct_default,
+            iva_pct: values.iva_rate,
+          },
+          // Mantener estructura antigua para compatibilidad
           honorarios_pct_default: values.honorarios_pct_default,
           desperdicio_pct_default: values.desperdicio_pct_default,
-          notes: values.notes || null,
-          tu_mayores: selectedMayorIds,
         },
       });
 
