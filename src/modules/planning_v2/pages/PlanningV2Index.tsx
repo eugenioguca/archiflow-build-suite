@@ -245,7 +245,7 @@ export default function PlanningV2Index() {
     setWizardOpen(true);
   };
 
-  // Mutations with proper cleanup - close dialog FIRST, unfreeze, then refresh
+  // Mutations with proper cleanup - close dialog FIRST, unfreeze, invalidate queries, then refresh
   const moveToTrashMutation = useMutation({
     mutationFn: (budgetId: string) => moveToTrash(budgetId),
     onSuccess: async () => {
@@ -255,10 +255,14 @@ export default function PlanningV2Index() {
       // 2. Unfreeze UI to remove any inert/overlays
       unfreezeUI('after-delete-trash');
       
-      // 3. Yield a frame to let dialog unmount
+      // 3. Invalidate all related queries
+      await queryClient.invalidateQueries({ queryKey: ['planning_v2', 'budgets'] });
+      await queryClient.invalidateQueries({ queryKey: ['planning_v2'] });
+      
+      // 4. Yield a frame to let dialog unmount
       await new Promise(r => setTimeout(r, 0));
       
-      // 4. Show toast and refresh
+      // 5. Show toast and refresh
       toast({
         title: 'Presupuesto movido a papelera',
         description: 'El presupuesto se movió a la papelera exitosamente'
@@ -289,10 +293,14 @@ export default function PlanningV2Index() {
       // 2. Unfreeze UI to remove any inert/overlays
       unfreezeUI('after-restore');
       
-      // 3. Yield a frame to let dialog unmount
+      // 3. Invalidate all related queries
+      await queryClient.invalidateQueries({ queryKey: ['planning_v2', 'budgets'] });
+      await queryClient.invalidateQueries({ queryKey: ['planning_v2'] });
+      
+      // 4. Yield a frame to let dialog unmount
       await new Promise(r => setTimeout(r, 0));
       
-      // 4. Show toast and refresh
+      // 5. Show toast and refresh
       toast({
         title: 'Presupuesto restaurado',
         description: 'El presupuesto se restauró exitosamente'
@@ -323,10 +331,14 @@ export default function PlanningV2Index() {
       // 2. Unfreeze UI to remove any inert/overlays
       unfreezeUI('after-delete-permanent');
       
-      // 3. Yield a frame to let dialog unmount
+      // 3. Invalidate all related queries
+      await queryClient.invalidateQueries({ queryKey: ['planning_v2', 'budgets'] });
+      await queryClient.invalidateQueries({ queryKey: ['planning_v2'] });
+      
+      // 4. Yield a frame to let dialog unmount
       await new Promise(r => setTimeout(r, 0));
       
-      // 4. Show toast and refresh
+      // 5. Show toast and refresh
       toast({
         title: 'Presupuesto eliminado',
         description: 'El presupuesto se eliminó permanentemente'
