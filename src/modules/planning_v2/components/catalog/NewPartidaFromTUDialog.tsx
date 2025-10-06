@@ -158,10 +158,10 @@ export function NewPartidaFromTUDialog({
 
       return { newPartida, mayorId: values.tu_mayor_id };
     },
-    onSuccess: async (data) => {
-      // Invalidar queries para refresh inmediato
-      await queryClient.invalidateQueries({ queryKey: ['planning-budget', budgetId] });
-      await queryClient.invalidateQueries({ queryKey: ['planning-tu-mappings', budgetId] });
+    onSuccess: (data) => {
+      // Invalidar queries para refresh inmediato (sin await para UI instantánea)
+      queryClient.invalidateQueries({ queryKey: ['planning-budget', budgetId] });
+      queryClient.invalidateQueries({ queryKey: ['planning-tu-mappings', budgetId] });
       
       toast.success('Partida desde TU creada correctamente');
       

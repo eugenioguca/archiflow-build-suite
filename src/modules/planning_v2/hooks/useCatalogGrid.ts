@@ -180,11 +180,38 @@ export function useCatalogGrid(budgetId: string) {
   // Mutations
   const createPartidaMutation = useMutation({
     mutationFn: createPartida,
+    onMutate: async (newPartida) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['planning-budget', budgetId] });
+      
+      // Snapshot current value
+      const previousData = queryClient.getQueryData(['planning-budget', budgetId]);
+      
+      // Optimistically update
+      queryClient.setQueryData(['planning-budget', budgetId], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          partidas: [...old.partidas, { 
+            ...newPartida, 
+            id: `temp-${Date.now()}`,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }],
+        };
+      });
+      
+      return { previousData };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['planning-budget', budgetId] });
       toast({ title: 'Partida creada' });
     },
-    onError: () => {
+    onError: (_err, _newPartida, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(['planning-budget', budgetId], context.previousData);
+      }
       toast({ title: 'Error al crear partida', variant: 'destructive' });
     },
   });
@@ -192,21 +219,77 @@ export function useCatalogGrid(budgetId: string) {
   const updatePartidaMutation = useMutation({
     mutationFn: ({ id, updates }: { id: string; updates: Partial<PlanningPartida> }) =>
       updatePartida(id, updates),
+    onMutate: async ({ id, updates }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['planning-budget', budgetId] });
+      
+      // Snapshot current value
+      const previousData = queryClient.getQueryData(['planning-budget', budgetId]);
+      
+      // Optimistically update
+      queryClient.setQueryData(['planning-budget', budgetId], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          partidas: old.partidas.map((p: any) => 
+            p.id === id ? { ...p, ...updates, updated_at: new Date().toISOString() } : p
+          ),
+        };
+      });
+      
+      return { previousData };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['planning-budget', budgetId] });
     },
-    onError: () => {
+    onError: (_err, _variables, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(['planning-budget', budgetId], context.previousData);
+      }
       toast({ title: 'Error al actualizar partida', variant: 'destructive' });
     },
   });
 
   const createConceptoMutation = useMutation({
     mutationFn: createConcepto,
+    onMutate: async (newConcepto) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['planning-budget', budgetId] });
+      
+      // Snapshot current value
+      const previousData = queryClient.getQueryData(['planning-budget', budgetId]);
+      
+      // Optimistically update
+      queryClient.setQueryData(['planning-budget', budgetId], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          conceptos: [...old.conceptos, { 
+            ...newConcepto, 
+            id: `temp-${Date.now()}`,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            // Computed fields with defaults
+            cantidad: 0,
+            pu: 0,
+            total: 0,
+            total_real: 0,
+          }],
+        };
+      });
+      
+      return { previousData };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['planning-budget', budgetId] });
       toast({ title: 'Concepto creado' });
     },
-    onError: () => {
+    onError: (_err, _newConcepto, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(['planning-budget', budgetId], context.previousData);
+      }
       toast({ title: 'Error al crear concepto', variant: 'destructive' });
     },
   });
@@ -214,21 +297,67 @@ export function useCatalogGrid(budgetId: string) {
   const updateConceptoMutation = useMutation({
     mutationFn: ({ id, updates }: { id: string; updates: Partial<PlanningConcepto> }) =>
       updateConcepto(id, updates),
+    onMutate: async ({ id, updates }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['planning-budget', budgetId] });
+      
+      // Snapshot current value
+      const previousData = queryClient.getQueryData(['planning-budget', budgetId]);
+      
+      // Optimistically update
+      queryClient.setQueryData(['planning-budget', budgetId], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          conceptos: old.conceptos.map((c: any) => 
+            c.id === id ? { ...c, ...updates, updated_at: new Date().toISOString() } : c
+          ),
+        };
+      });
+      
+      return { previousData };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['planning-budget', budgetId] });
     },
-    onError: () => {
+    onError: (_err, _variables, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(['planning-budget', budgetId], context.previousData);
+      }
       toast({ title: 'Error al actualizar concepto', variant: 'destructive' });
     },
   });
 
   const deleteConceptoMutation = useMutation({
     mutationFn: deleteConcepto,
+    onMutate: async (conceptoId) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['planning-budget', budgetId] });
+      
+      // Snapshot current value
+      const previousData = queryClient.getQueryData(['planning-budget', budgetId]);
+      
+      // Optimistically remove
+      queryClient.setQueryData(['planning-budget', budgetId], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          conceptos: old.conceptos.filter((c: any) => c.id !== conceptoId),
+        };
+      });
+      
+      return { previousData };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['planning-budget', budgetId] });
       toast({ title: 'Concepto eliminado' });
     },
-    onError: () => {
+    onError: (_err, _conceptoId, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(['planning-budget', budgetId], context.previousData);
+      }
       toast({ title: 'Error al eliminar concepto', variant: 'destructive' });
     },
   });
