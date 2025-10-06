@@ -65,7 +65,6 @@ export function NewSubpartidaFromTUDialog({
   budgetDefaults,
 }: NewSubpartidaFromTUDialogProps) {
   const queryClient = useQueryClient();
-  const [subpartidaSearch, setSubpartidaSearch] = useState('');
   const [supplierSearch, setSupplierSearch] = useState('');
 
   const form = useForm<FormValues>({
@@ -83,24 +82,40 @@ export function NewSubpartidaFromTUDialog({
   useEffect(() => {
     if (!open) {
       form.reset();
-      setSubpartidaSearch('');
       setSupplierSearch('');
     }
   }, [open, form]);
 
+  // Reset subpartida selection when tuPartidaId changes
+  useEffect(() => {
+    if (open && tuPartidaId) {
+      form.setValue('tu_subpartida_id', '');
+    }
+  }, [tuPartidaId, open, form]);
+
   // Cargar Subpartidas mixtas: dependientes de la Partida TU + globales de Construcción
+  // Sin búsqueda de servidor - SearchableCombobox hace filtrado del cliente
   const { data: tuSubpartidas = [], isLoading: isLoadingSubpartidas } = useSubpartidasMixed(
     tuPartidaId,
-    subpartidaSearch
+    '' // No pasamos búsqueda - el combobox la hace internamente
   );
 
   // Fetch suppliers
   const { data: suppliersData = [], isLoading: isLoadingSuppliers } = useSuppliers(supplierSearch);
 
   const subpartidasItems: SearchableComboboxItem[] = useMemo(() => {
-    return tuSubpartidas.map(s => ({
+    // Separar por tipo para mejor ordenamiento
+    const locales = tuSubpartidas.filter(s => !s.es_global);
+    const globales = tuSubpartidas.filter(s => s.es_global);
+    
+    // Combinar: locales primero, luego globales
+    const ordenadas = [...locales, ...globales];
+    
+    return ordenadas.map(s => ({
       value: s.id,
-      label: `${s.codigo} — ${s.nombre}${s.es_global ? ' (Global)' : ''}`,
+      label: s.es_global 
+        ? `${s.codigo} — ${s.nombre} 🌐` 
+        : `${s.codigo} — ${s.nombre}`,
       codigo: s.codigo,
       searchText: `${s.codigo} ${s.nombre}`.toLowerCase(),
     }));
@@ -205,7 +220,7 @@ export function NewSubpartidaFromTUDialog({
                       {isLoadingSubpartidas ? (
                         'Cargando subpartidas globales...'
                       ) : (
-                        `${tuSubpartidas.length} subpartida${tuSubpartidas.length === 1 ? '' : 's'} global${tuSubpartidas.length === 1 ? '' : 'es'} de Construcción`
+                        `${tuSubpartidas.length} subpartida${tuSubpartidas.length === 1 ? '' : 's'} global${tuSubpartidas.length === 1 ? '' : 'es'} de Construcción 🌐`
                       )}
                     </FormDescription>
                     <FormControl>
@@ -363,7 +378,12 @@ export function NewSubpartidaFromTUDialog({
                         ? 'No hay subpartidas disponibles para esta partida'
                         : 'Selecciona primero una Partida TU para ver subpartidas'
                     ) : (
-                      `${tuSubpartidas.length} subpartida${tuSubpartidas.length === 1 ? '' : 's'} (dependientes + globales de Construcción)`
+                      <>
+                        {tuSubpartidas.filter(s => !s.es_global).length} local
+                        {tuSubpartidas.filter(s => !s.es_global).length !== 1 ? 'es' : ''} + {' '}
+                        {tuSubpartidas.filter(s => s.es_global).length} global
+                        {tuSubpartidas.filter(s => s.es_global).length !== 1 ? 'es' : ''} (Construcción 🌐)
+                      </>
                     )}
                   </FormDescription>
                   <FormControl>
