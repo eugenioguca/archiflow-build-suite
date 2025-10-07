@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 type OpenDocOptions =
   | { type: "signed"; bucket: string; path: string; expiresIn?: number } // Supabase Storage
@@ -20,7 +21,15 @@ export async function openExternalDoc(opts: OpenDocOptions) {
       .storage
       .from(bucket)
       .createSignedUrl(path, expiresIn);
-    if (error || !data?.signedUrl) throw error ?? new Error("No signed URL");
+    if (error || !data?.signedUrl) {
+      console.warn('Failed to create signed URL:', { bucket, path, error: error?.message });
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo abrir el documento"
+      });
+      throw error ?? new Error("No signed URL");
+    }
     // Navegar a la URL firmada (inline). No usar ?download para ver en navegador
     win.location.href = data.signedUrl;
   } catch (_e) {

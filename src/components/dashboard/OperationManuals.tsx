@@ -147,9 +147,13 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
       });
     } catch (error) {
       console.error('Error opening manual:', error);
+      // Mensaje específico para manuales de empresa
+      const isCompanyManual = manual.category === 'manual_operacion' || manual.category === 'presentacion_corporativa';
       toast({
         title: "Error al abrir manual",
-        description: error instanceof Error ? error.message : "No se pudo abrir el manual.",
+        description: isCompanyManual 
+          ? "Manual no disponible. Contacta a soporte."
+          : (error instanceof Error ? error.message : "No se pudo abrir el manual."),
         variant: "destructive"
       });
     }
