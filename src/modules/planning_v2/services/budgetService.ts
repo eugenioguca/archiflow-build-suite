@@ -93,15 +93,27 @@ export async function updateBudget(id: string, updates: Partial<PlanningBudget>)
 }
 
 /**
- * Delete budget (deprecated - use moveToTrash instead)
+ * Delete budget using transactional RPC
+ * Deletes budget and all dependencies in a single atomic operation
  */
 export async function deleteBudget(id: string) {
-  const { error } = await supabase
-    .from('planning_budgets')
-    .delete()
-    .eq('id', id);
-
-  if (error) throw error;
+  const { error } = await supabase.rpc('planning_v2_delete_budget', { 
+    p_budget_id: id 
+  });
+  
+  if (error) {
+    // Map specific error messages to user-friendly Spanish
+    if (error.message.includes('Permission denied')) {
+      throw new Error('No tienes permiso para eliminar este presupuesto');
+    }
+    if (error.message.includes('Budget not found')) {
+      throw new Error('Presupuesto no encontrado');
+    }
+    if (error.message.includes('User profile not found')) {
+      throw new Error('Perfil de usuario no encontrado');
+    }
+    throw error;
+  }
 }
 
 /**

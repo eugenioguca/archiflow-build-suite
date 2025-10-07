@@ -41,10 +41,12 @@ import { NewBudgetWizard } from '../components/wizard/NewBudgetWizard';
 import { SearchableCombobox } from '@/components/ui/searchable-combobox';
 import { clientsAdapter } from '../adapters/clients';
 import { projectsAdapter } from '../adapters/projects';
-import { moveToTrash, restoreBudget, deleteBudgetPermanently } from '../services/budgetService';
+import { moveToTrash, restoreBudget, deleteBudget } from '../services/budgetService';
 import { DuplicateBudgetDialog } from '../components/budget/DuplicateBudgetDialog';
 import { useToast } from '@/hooks/use-toast';
 import { PlanningV2Shell } from '../components/common/PlanningV2Shell';
+import { useUILoadingStore } from '@/stores/uiLoadingStore';
+import { toast as sonnerToast } from 'sonner';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -52,6 +54,7 @@ export default function PlanningV2Index() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const withLoading = useUILoadingStore(state => state.withLoading);
   
   // State
   const [budgets, setBudgets] = useState<BudgetListItem[]>([]);
@@ -312,39 +315,66 @@ export default function PlanningV2Index() {
     }
   });
 
+  // Mutation for permanent delete using transactional RPC with robust pattern
   const deletePermanentlyMutation = useMutation({
-    mutationFn: (budgetId: string) => deleteBudgetPermanently(budgetId),
-    onSuccess: async () => {
-      // 1. Close dialog immediately
-      setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
+    mutationFn: (budgetId: string) => deleteBudget(budgetId),
+    onMutate: async (budgetId) => {
+      // Cancel any outgoing refetches to avoid optimistic update being overwritten
+      await queryClient.cancelQueries({ queryKey: ['planning_v2', 'budgets'] });
       
-      // 2. Wait for React to finish unmounting the dialog
-      await new Promise(resolve => setTimeout(resolve, 50));
+      // Snapshot the previous value
+      const previousBudgets = queryClient.getQueryData<BudgetListItem[]>(['planning_v2', 'budgets']);
       
-      // 3. Invalidate all related queries
-      await queryClient.invalidateQueries({ queryKey: ['planning_v2', 'budgets'] });
-      await queryClient.invalidateQueries({ queryKey: ['planning_v2'] });
+      // Optimistically remove the budget from the list
+      if (previousBudgets) {
+        queryClient.setQueryData<BudgetListItem[]>(
+          ['planning_v2', 'budgets'], 
+          previousBudgets.filter(b => b.id !== budgetId)
+        );
+      }
       
-      // 4. Show toast and refresh
-      toast({
-        title: 'Presupuesto eliminado',
-        description: 'El presupuesto se eliminó permanentemente'
-      });
-      loadBudgets();
+      return { previousBudgets };
     },
-    onError: (error: any) => {
+    onError: (error: any, _budgetId, context) => {
       console.error('Error deleting budget:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo eliminar el presupuesto',
-        variant: 'destructive'
-      });
+      
+      // Rollback to previous state
+      if (context?.previousBudgets) {
+        queryClient.setQueryData(['planning_v2', 'budgets'], context.previousBudgets);
+      }
+      
+      sonnerToast.error(error.message || 'No se pudo eliminar el presupuesto');
+    },
+    onSuccess: () => {
+      sonnerToast.success('Presupuesto eliminado permanentemente');
     },
     onSettled: () => {
-      // Always ensure dialog is closed
+      // Always refetch after error or success to ensure data consistency
+      queryClient.invalidateQueries({ queryKey: ['planning_v2', 'budgets'] });
+      queryClient.invalidateQueries({ queryKey: ['planning_v2'] });
       setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
     }
   });
+
+  // Handler for permanent delete with robust navigation pattern
+  const handleDeleteBudgetPermanently = async (budgetId: string) => {
+    await withLoading(async () => {
+      // 1. Navigate first to unmount dependent views (prevents hanging suspense)
+      navigate('/planning-v2', { replace: true });
+      
+      // 2. Close dialog
+      setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
+      
+      // 3. Small delay to let React finish unmounting
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // 4. Execute deletion
+      await deletePermanentlyMutation.mutateAsync(budgetId);
+      
+      // 5. Reload budgets list
+      await loadBudgets();
+    });
+  };
 
   const confirmAction = () => {
     if (!deleteDialog.budgetId) return;
@@ -358,7 +388,7 @@ export default function PlanningV2Index() {
         restoreMutation.mutate(deleteDialog.budgetId);
         break;
       case 'permanent':
-        deletePermanentlyMutation.mutate(deleteDialog.budgetId);
+        handleDeleteBudgetPermanently(deleteDialog.budgetId);
         break;
     }
   };
