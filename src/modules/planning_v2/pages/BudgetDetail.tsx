@@ -3,10 +3,21 @@
  */
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Copy, FileDown } from 'lucide-react';
+import { ArrowLeft, FileText, Copy, FileDown, Trash2 } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { CatalogGrid } from '../components/catalog/CatalogGrid';
 import { Summary } from '../components/summary/Summary';
 import { VersionsList } from '../components/versions/VersionsList';
@@ -15,6 +26,9 @@ import { DuplicateBudgetDialog } from '../components/budget/DuplicateBudgetDialo
 import { PlanningExportDialog } from '../components/export/PlanningExportDialog';
 import { useCatalogGrid } from '../hooks/useCatalogGrid';
 import { PlanningV2Shell } from '../components/common/PlanningV2Shell';
+import { deleteBudget } from '../services/budgetService';
+import { useUILoadingStore } from '@/stores/uiLoadingStore';
+import { toast } from 'sonner';
 import {
   Tooltip,
   TooltipContent,
@@ -25,9 +39,13 @@ import {
 export default function BudgetDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { withLoading } = useUILoadingStore();
+  
   const [showApplyTemplateDialog, setShowApplyTemplateDialog] = useState(false);
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   
   const {
     rows,
@@ -35,11 +53,52 @@ export default function BudgetDetail() {
     budget,
   } = useCatalogGrid(id || '');
 
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: (budgetId: string) => deleteBudget(budgetId),
+    onError: (error: any) => {
+      toast.error(error.message || 'No se pudo eliminar el presupuesto');
+    },
+    onSettled: () => {
+      // Invalidate budget list to refresh
+      queryClient.invalidateQueries({ queryKey: ['planning_v2', 'budgets'] });
+      queryClient.invalidateQueries({ queryKey: ['planning-budget', id] });
+    },
+  });
+
+  // Reset delete dialog on unmount
+  useEffect(() => {
+    return () => {
+      setDeleteDialogOpen(false);
+    };
+  }, []);
+
   useEffect(() => {
     if (!id) {
       navigate('/planning-v2');
     }
   }, [id, navigate]);
+
+  // Handle delete from detail
+  const handleDeleteFromDetail = async () => {
+    if (!id) return;
+
+    try {
+      await withLoading(async () => {
+        // 1. Navigate first to unmount dependent views (prevents stuck suspense)
+        navigate('/planning-v2', { replace: true });
+        
+        // 2. Execute deletion
+        await deleteMutation.mutateAsync(id);
+        
+        // 3. Show success message
+        toast.success('Presupuesto eliminado correctamente');
+      });
+    } finally {
+      // 4. Always cleanup modal state
+      setDeleteDialogOpen(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -135,6 +194,25 @@ export default function BudgetDetail() {
             <FileText className="h-4 w-4 mr-2" />
             Aplicar Plantilla
           </Button>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDeleteDialogOpen(true)}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Eliminar
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Eliminar este presupuesto permanentemente</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
 
@@ -180,6 +258,27 @@ export default function BudgetDetail() {
         budgetId={id!}
         budgetName={budget.name}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar presupuesto</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Seguro que deseas eliminar el presupuesto "{budget?.name}"? Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteFromDetail}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
     </PlanningV2Shell>
   );

@@ -288,4 +288,155 @@ test.describe('Planning V2 - Delete Budget (No Freeze)', () => {
     
     console.log('✅ Escenario ESC: UI responde correctamente');
   });
+
+  /**
+   * Escenario 5: Eliminar desde BudgetDetail exitosamente
+   * - Navegar a detalle de presupuesto
+   * - Click en botón "Eliminar"
+   * - Confirmar eliminación
+   * - Debe navegar a /planning-v2
+   * - La UI debe seguir siendo usable
+   */
+  test('eliminar presupuesto desde detalle exitosamente', async ({ page }) => {
+    // 1. Crear presupuesto de prueba
+    const budgetName = `E2E Detail Delete ${Date.now()}`;
+    await createTestBudget(page, budgetName);
+    
+    // 2. Navegar al detalle del presupuesto
+    await page.click(`text=${budgetName}`);
+    await page.waitForURL(/\/planning-v2\/[a-f0-9-]+/, { timeout: 5000 });
+    
+    // Verificar que estamos en la página de detalle
+    await expect(page.locator(`text=${budgetName}`)).toBeVisible();
+    
+    // 3. Click en botón "Eliminar"
+    await page.click('button:has-text("Eliminar")');
+    
+    // 4. Confirmar en el AlertDialog
+    await expect(page.locator('text=/Eliminar presupuesto/')).toBeVisible({ timeout: 3000 });
+    await expect(page.locator(`text=/¿Seguro que deseas eliminar el presupuesto.*${budgetName}/`)).toBeVisible();
+    
+    // Click en el botón de confirmación (el segundo "Eliminar")
+    await page.locator('button:has-text("Eliminar")').nth(1).click();
+    
+    // 5. Verificar que navega a /planning-v2
+    await page.waitForURL('/planning-v2', { timeout: 5000 });
+    
+    // 6. Verificar que NO hay overlays ni bloqueos
+    await page.waitForTimeout(500);
+    
+    const overlaysAfter = await page.locator('[data-radix-dialog-overlay][data-state="open"], [data-radix-alert-dialog-overlay][data-state="open"]').count();
+    expect(overlaysAfter).toBe(0);
+    
+    const bodyClasses = await page.locator('body').getAttribute('class') || '';
+    expect(bodyClasses).not.toContain('overflow-hidden');
+    
+    // 7. Verificar que la UI sigue usable
+    const newBudgetButton = page.locator('button:has-text("Nuevo presupuesto")');
+    await expect(newBudgetButton).toBeVisible();
+    await expect(newBudgetButton).toBeEnabled();
+    
+    // 8. Verificar que el presupuesto ya no aparece en la lista
+    await expect(page.locator(`text=${budgetName}`)).not.toBeVisible();
+    
+    console.log('✅ Escenario detail exitoso: Presupuesto eliminado y UI responde');
+  });
+
+  /**
+   * Escenario 6: Error al eliminar desde BudgetDetail
+   * - Navegar a detalle
+   * - Simular error en RPC
+   * - Verificar toast de error
+   * - UI debe seguir siendo usable
+   */
+  test('error al eliminar desde detalle no congela UI', async ({ page }) => {
+    // 1. Crear presupuesto de prueba
+    const budgetName = `E2E Detail Error ${Date.now()}`;
+    await createTestBudget(page, budgetName);
+    
+    // 2. Navegar al detalle
+    await page.click(`text=${budgetName}`);
+    await page.waitForURL(/\/planning-v2\/[a-f0-9-]+/, { timeout: 5000 });
+    
+    // 3. Interceptar RPC y forzar error
+    await page.route('**/rest/v1/rpc/planning_v2_delete_budget', route => {
+      route.fulfill({
+        status: 400,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          message: 'Error simulado desde detail',
+          code: 'SIMULATED_ERROR'
+        })
+      });
+    });
+    
+    // 4. Intentar eliminar
+    await page.click('button:has-text("Eliminar")');
+    await expect(page.locator('text=/Eliminar presupuesto/')).toBeVisible({ timeout: 3000 });
+    await page.locator('button:has-text("Eliminar")').nth(1).click();
+    
+    // 5. Debe navegar a /planning-v2 (incluso con error)
+    await page.waitForURL('/planning-v2', { timeout: 5000 });
+    
+    // 6. Verificar toast de error
+    await expect(page.locator('text=/No se pudo eliminar|error/i')).toBeVisible({ timeout: 5000 });
+    
+    // 7. Verificar que NO hay overlays bloqueando
+    await page.waitForTimeout(500);
+    
+    const overlaysAfter = await page.locator('[data-radix-dialog-overlay][data-state="open"], [data-radix-alert-dialog-overlay][data-state="open"]').count();
+    expect(overlaysAfter).toBe(0);
+    
+    const bodyClasses = await page.locator('body').getAttribute('class') || '';
+    expect(bodyClasses).not.toContain('overflow-hidden');
+    
+    // 8. Verificar que la UI sigue usable
+    const newBudgetButton = page.locator('button:has-text("Nuevo presupuesto")');
+    await expect(newBudgetButton).toBeVisible();
+    await expect(newBudgetButton).toBeEnabled();
+    
+    console.log('✅ Escenario detail error: UI responde después del error');
+  });
+
+  /**
+   * Escenario 7: Cancelar eliminación desde BudgetDetail
+   * - Abrir diálogo de confirmación
+   * - Cancelar
+   * - Debe permanecer en detail
+   * - UI usable
+   */
+  test('cancelar eliminación desde detalle no congela UI', async ({ page }) => {
+    // 1. Crear presupuesto
+    const budgetName = `E2E Detail Cancel ${Date.now()}`;
+    await createTestBudget(page, budgetName);
+    
+    // 2. Navegar a detalle
+    await page.click(`text=${budgetName}`);
+    const detailUrl = page.url();
+    await page.waitForURL(/\/planning-v2\/[a-f0-9-]+/, { timeout: 5000 });
+    
+    // 3. Abrir diálogo de eliminación
+    await page.click('button:has-text("Eliminar")');
+    await expect(page.locator('text=/Eliminar presupuesto/')).toBeVisible({ timeout: 3000 });
+    
+    // 4. Cancelar
+    await page.click('button:has-text("Cancelar")');
+    
+    // 5. Verificar que sigue en la página de detalle
+    await page.waitForTimeout(300);
+    expect(page.url()).toBe(detailUrl);
+    
+    // 6. Verificar limpieza de overlays
+    const overlaysAfter = await page.locator('[data-radix-dialog-overlay][data-state="open"], [data-radix-alert-dialog-overlay][data-state="open"]').count();
+    expect(overlaysAfter).toBe(0);
+    
+    const bodyClasses = await page.locator('body').getAttribute('class') || '';
+    expect(bodyClasses).not.toContain('overflow-hidden');
+    
+    // 7. Verificar que otros botones siguen funcionando
+    await expect(page.locator('button:has-text("Duplicar")')).toBeEnabled();
+    await expect(page.locator('button:has-text("Exportar")')).toBeEnabled();
+    
+    console.log('✅ Escenario detail cancel: UI responde después de cancelar');
+  });
 });
