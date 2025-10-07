@@ -9805,6 +9805,10 @@ export type Database = {
         Args: { _budget_id: string; _conceptos: Json; _partida_name: string }
         Returns: Json
       }
+      planning_v2_delete_budget: {
+        Args: { p_budget_id: string }
+        Returns: undefined
+      }
       recalc_pep_total: {
         Args: { pep_id: string }
         Returns: undefined

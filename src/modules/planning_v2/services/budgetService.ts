@@ -130,36 +130,26 @@ export async function restoreBudget(id: string): Promise<void> {
 
 /**
  * Permanently delete a budget (hard delete)
- * Should only be allowed for drafts without snapshots
+ * Uses RPC for transactional deletion of budget and all dependencies
+ * Permissions are validated server-side
  */
 export async function deleteBudgetPermanently(id: string): Promise<void> {
-  // Check if budget is draft
-  const { data: budget, error: budgetError } = await supabase
-    .from('planning_budgets')
-    .select('status')
-    .eq('id', id)
-    .maybeSingle();
-
-  if (budgetError) throw budgetError;
-  
-  if (!budget) {
-    throw new Error('Presupuesto no encontrado');
-  }
-  
-  if (budget.status !== 'draft') {
-    throw new Error('Solo se pueden eliminar permanentemente presupuestos en borrador');
-  }
-
-  // Perform hard delete
-  // Note: Database constraints will prevent deletion if snapshots exist
-  const { error } = await supabase
-    .from('planning_budgets')
-    .delete()
-    .eq('id', id);
+  // Call RPC for transactional deletion
+  // The RPC handles permissions and cascading deletes in a single atomic operation
+  const { error } = await supabase.rpc('planning_v2_delete_budget', {
+    p_budget_id: id
+  });
 
   if (error) {
-    if (error.code === '23503') {
-      throw new Error('No se puede eliminar permanentemente un presupuesto con snapshots publicados');
+    // Map specific error messages
+    if (error.message.includes('Permission denied')) {
+      throw new Error('No tienes permiso para eliminar este presupuesto');
+    }
+    if (error.message.includes('Budget not found')) {
+      throw new Error('Presupuesto no encontrado');
+    }
+    if (error.message.includes('User profile not found')) {
+      throw new Error('Perfil de usuario no encontrado');
     }
     throw error;
   }
