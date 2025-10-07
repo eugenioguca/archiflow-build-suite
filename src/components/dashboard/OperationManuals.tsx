@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { openDocumentInNewTab, downloadDocument } from '@/lib/documentUtils';
+import { openExternalDoc } from '@/lib/openExternalDoc';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface Manual {
@@ -109,27 +110,29 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
 
   const handleViewDocument = async (manual: Manual) => {
     try {
-      const result = await openDocumentInNewTab(manual.file_url, 'operation_manual');
-      if (result.success) {
-        let description = "El manual se ha abierto en una nueva pestaña.";
-        
-        // Mostrar información específica sobre fallbacks usados
-        if (result.fallbackUsed === 'download') {
-          description = "El navegador bloqueó la apertura automática. El manual se ha descargado.";
-        } else if (result.fallbackUsed === 'alternative_window_params') {
-          description = "El manual se abrió usando parámetros alternativos de ventana.";
-        } else if (result.error) {
-          description = result.error;
-        }
-        
+      // Si ya es una URL completa, usarla directamente
+      if (manual.file_url.startsWith('http://') || manual.file_url.startsWith('https://')) {
+        await openExternalDoc({ type: "url", href: manual.file_url });
         toast({
-          title: "Manual procesado",
-          description,
-          variant: result.fallbackUsed ? "default" : "default"
+          title: "Manual abierto",
+          description: "El manual se ha abierto en una nueva pestaña.",
         });
-      } else {
-        throw new Error(result.error || 'No se pudo abrir el manual');
+        return;
       }
+
+      // Para paths relativos, usar Storage firmado
+      const normalizedPath = manual.file_url.replace(/^\/+/, '');
+      await openExternalDoc({
+        type: "signed",
+        bucket: "operation-manuals",
+        path: normalizedPath,
+        expiresIn: 600
+      });
+      
+      toast({
+        title: "Manual abierto",
+        description: "El manual se ha abierto en una nueva pestaña.",
+      });
     } catch (error) {
       console.error('Error opening manual:', error);
       toast({
@@ -341,19 +344,13 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
                         
                         <div className="flex items-center space-x-1 ml-2">
                           <Button
+                            onClick={() => handleViewDocument(manual)}
                             variant="outline"
                             size="sm"
-                            asChild
                             className="h-8 px-2"
+                            title="Expandir"
                           >
-                            <a 
-                              href={manual.file_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center"
-                            >
-                              <ExternalLink className="h-3 w-3" />
-                            </a>
+                            <ExternalLink className="h-3 w-3" />
                           </Button>
                           <Button
                             onClick={() => handleDownloadDocument(manual)}
