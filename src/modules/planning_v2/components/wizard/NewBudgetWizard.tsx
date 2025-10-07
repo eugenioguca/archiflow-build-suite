@@ -4,6 +4,7 @@
  */
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -50,6 +51,7 @@ interface NewBudgetWizardProps {
 
 export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -136,6 +138,10 @@ export function NewBudgetWizard({ open, onClose }: NewBudgetWizardProps) {
         },
       });
 
+      // Invalidate queries to refresh budget list
+      await queryClient.invalidateQueries({ queryKey: ['planning_v2', 'budgets'] });
+      await queryClient.invalidateQueries({ queryKey: ['planning_v2'] });
+      
       toast({ title: 'Presupuesto creado', description: `${budget.name} se creó correctamente` });
       handleClose();
       navigate(`/planning-v2/budgets/${budget.id}`);

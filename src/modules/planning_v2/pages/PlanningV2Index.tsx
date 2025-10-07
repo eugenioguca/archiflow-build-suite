@@ -416,6 +416,13 @@ export default function PlanningV2Index() {
 
   const totalPages = Math.ceil(filteredBudgets.length / ITEMS_PER_PAGE);
 
+  // Auto-adjust current page if it goes out of range after deletions/filters
+  useEffect(() => {
+    if (totalPages > 0 && currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       draft: { label: 'Borrador', className: 'bg-gray-100 text-gray-800' },

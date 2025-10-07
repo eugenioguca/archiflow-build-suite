@@ -43,8 +43,11 @@ export function DuplicateBudgetDialog({
     mutationFn: async (options: DuplicateBudgetOptions) => {
       return duplicateBudget(budgetId, options);
     },
-    onSuccess: (newBudgetId) => {
-      queryClient.invalidateQueries({ queryKey: ['planning-budgets'] });
+    onSuccess: async (newBudgetId) => {
+      // Invalidate all related queries with correct query keys
+      await queryClient.invalidateQueries({ queryKey: ['planning_v2', 'budgets'] });
+      await queryClient.invalidateQueries({ queryKey: ['planning_v2'] });
+      
       toast.success('Presupuesto duplicado exitosamente');
       onOpenChange(false);
       navigate(`/planning-v2/budgets/${newBudgetId}`);
