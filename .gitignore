@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+# --- Security: never commit env files ---
+.env
+.env.*
+!.env.example
+
+# Lockfiles we don't use
+bun.lockb
