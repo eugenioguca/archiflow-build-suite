@@ -91,7 +91,7 @@ export default function PlanningV2Index() {
     action: 'trash'
   });
 
-  // Cleanup dialog on unmount to prevent stuck overlays
+  // Reset dialog state on unmount
   useEffect(() => {
     return () => {
       setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
@@ -376,17 +376,9 @@ export default function PlanningV2Index() {
     });
   };
 
-  // Cleanup function to ensure modal and body state are reset
+  // Cleanup function to reset dialog state
   const cleanupModalState = () => {
     setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
-    // Remove any stuck scroll locks or modal artifacts
-    document.body.classList.remove('overflow-hidden');
-    document.body.style.pointerEvents = '';
-    const rootEl = document.getElementById('root');
-    if (rootEl) {
-      rootEl.style.pointerEvents = '';
-      rootEl.removeAttribute('aria-hidden');
-    }
   };
 
   const confirmAction = async () => {

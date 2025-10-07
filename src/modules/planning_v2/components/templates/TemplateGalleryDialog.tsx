@@ -88,7 +88,7 @@ export function TemplateGalleryDialog({
     }
   });
 
-  // Cleanup on unmount to prevent stuck overlays
+  // Reset dialog state on unmount
   useEffect(() => {
     return () => {
       setDeleteDialogOpen(false);

@@ -27,7 +27,7 @@ export function TemplateList() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
-  // Cleanup on unmount to prevent stuck overlays
+  // Reset dialog state on unmount
   useEffect(() => {
     return () => {
       setDeleteDialogOpen(false);
