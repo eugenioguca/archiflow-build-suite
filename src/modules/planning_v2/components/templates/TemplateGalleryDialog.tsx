@@ -31,7 +31,6 @@ import { getTemplates, deleteTemplate } from '../../services/templateService';
 import { TemplateUploadDialog } from './TemplateUploadDialog';
 import type { BudgetTemplate } from '../../services/templateService';
 import { toast } from 'sonner';
-import { unfreezeUI } from '../../utils/unfreeze';
 
 interface TemplateGalleryDialogProps {
   open: boolean;
@@ -61,7 +60,7 @@ export function TemplateGalleryDialog({
     queryFn: getTemplates,
   });
   
-  // Delete mutation with guaranteed cleanup - close dialog FIRST, unfreeze
+  // Delete mutation with guaranteed cleanup
   const deleteMutation = useMutation({
     mutationFn: deleteTemplate,
     onSuccess: async () => {
@@ -70,17 +69,11 @@ export function TemplateGalleryDialog({
       const deletedId = templateToDelete?.id;
       setTemplateToDelete(null);
       
-      // 2. Unfreeze UI to remove any inert/overlays
-      unfreezeUI('after-delete-template');
-      
-      // 3. Yield a frame to let dialog unmount
-      await new Promise(r => setTimeout(r, 0));
-      
-      // 4. Show toast and refresh
+      // 2. Show toast and refresh
       toast.success('Plantilla eliminada');
       queryClient.invalidateQueries({ queryKey: ['planning-templates'] });
       
-      // 5. Clear preview if it was the deleted template
+      // 3. Clear preview if it was the deleted template
       if (previewTemplate?.id === deletedId) {
         setPreviewTemplate(null);
       }
@@ -89,10 +82,9 @@ export function TemplateGalleryDialog({
       toast.error(`Error al eliminar: ${error.message}`);
     },
     onSettled: () => {
-      // Always cleanup dialog state and unfreeze
+      // Always cleanup dialog state
       setDeleteDialogOpen(false);
       setTemplateToDelete(null);
-      unfreezeUI('settled-delete-template');
     }
   });
 

@@ -3,7 +3,7 @@
  */
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { unfreezeUI } from '../../utils/unfreeze';
+import { useUILoadingStore } from '@/stores/uiLoadingStore';
 
 interface PlanningV2ShellProps {
   children: React.ReactNode;
@@ -11,15 +11,16 @@ interface PlanningV2ShellProps {
 
 export function PlanningV2Shell({ children }: PlanningV2ShellProps) {
   const location = useLocation();
+  const stopLoading = useUILoadingStore(state => state.stop);
 
   useEffect(() => {
     // Cleanup function to run on route changes and visibility changes
-    const cleanup = () => unfreezeUI('route-change');
+    const cleanup = () => stopLoading();
     
     // Clean on visibility regain (user switches back to tab)
     const onVis = () => {
       if (document.visibilityState === 'visible') {
-        unfreezeUI('visibilitychange');
+        stopLoading();
       }
     };
     
@@ -29,7 +30,7 @@ export function PlanningV2Shell({ children }: PlanningV2ShellProps) {
       document.removeEventListener('visibilitychange', onVis);
       cleanup();
     };
-  }, [location.pathname]);
+  }, [location.pathname, stopLoading]);
 
   return <>{children}</>;
 }

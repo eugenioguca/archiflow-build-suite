@@ -44,8 +44,6 @@ import { projectsAdapter } from '../adapters/projects';
 import { moveToTrash, restoreBudget, deleteBudgetPermanently } from '../services/budgetService';
 import { DuplicateBudgetDialog } from '../components/budget/DuplicateBudgetDialog';
 import { useToast } from '@/hooks/use-toast';
-import { unfreezeUI } from '../utils/unfreeze';
-import { UnfreezeButton } from '../components/dev/UnfreezeButton';
 import { PlanningV2Shell } from '../components/common/PlanningV2Shell';
 
 const ITEMS_PER_PAGE = 20;
@@ -245,24 +243,18 @@ export default function PlanningV2Index() {
     setWizardOpen(true);
   };
 
-  // Mutations with proper cleanup - close dialog FIRST, unfreeze, invalidate queries, then refresh
+  // Mutations with proper cleanup
   const moveToTrashMutation = useMutation({
     mutationFn: (budgetId: string) => moveToTrash(budgetId),
     onSuccess: async () => {
       // 1. Close dialog immediately
       setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
       
-      // 2. Unfreeze UI to remove any inert/overlays
-      unfreezeUI('after-delete-trash');
-      
-      // 3. Invalidate all related queries
+      // 2. Invalidate all related queries
       await queryClient.invalidateQueries({ queryKey: ['planning_v2', 'budgets'] });
       await queryClient.invalidateQueries({ queryKey: ['planning_v2'] });
       
-      // 4. Yield a frame to let dialog unmount
-      await new Promise(r => setTimeout(r, 0));
-      
-      // 5. Show toast and refresh
+      // 3. Show toast and refresh
       toast({
         title: 'Presupuesto movido a papelera',
         description: 'El presupuesto se movió a la papelera exitosamente'
@@ -278,9 +270,8 @@ export default function PlanningV2Index() {
       });
     },
     onSettled: () => {
-      // Always ensure dialog is closed and UI is unfrozen
+      // Always ensure dialog is closed
       setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
-      unfreezeUI('settled-trash');
     }
   });
 
@@ -290,17 +281,11 @@ export default function PlanningV2Index() {
       // 1. Close dialog immediately
       setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
       
-      // 2. Unfreeze UI to remove any inert/overlays
-      unfreezeUI('after-restore');
-      
-      // 3. Invalidate all related queries
+      // 2. Invalidate all related queries
       await queryClient.invalidateQueries({ queryKey: ['planning_v2', 'budgets'] });
       await queryClient.invalidateQueries({ queryKey: ['planning_v2'] });
       
-      // 4. Yield a frame to let dialog unmount
-      await new Promise(r => setTimeout(r, 0));
-      
-      // 5. Show toast and refresh
+      // 3. Show toast and refresh
       toast({
         title: 'Presupuesto restaurado',
         description: 'El presupuesto se restauró exitosamente'
@@ -316,9 +301,8 @@ export default function PlanningV2Index() {
       });
     },
     onSettled: () => {
-      // Always ensure dialog is closed and UI is unfrozen
+      // Always ensure dialog is closed
       setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
-      unfreezeUI('settled-restore');
     }
   });
 
@@ -328,17 +312,11 @@ export default function PlanningV2Index() {
       // 1. Close dialog immediately
       setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
       
-      // 2. Unfreeze UI to remove any inert/overlays
-      unfreezeUI('after-delete-permanent');
-      
-      // 3. Invalidate all related queries
+      // 2. Invalidate all related queries
       await queryClient.invalidateQueries({ queryKey: ['planning_v2', 'budgets'] });
       await queryClient.invalidateQueries({ queryKey: ['planning_v2'] });
       
-      // 4. Yield a frame to let dialog unmount
-      await new Promise(r => setTimeout(r, 0));
-      
-      // 5. Show toast and refresh
+      // 3. Show toast and refresh
       toast({
         title: 'Presupuesto eliminado',
         description: 'El presupuesto se eliminó permanentemente'
@@ -354,9 +332,8 @@ export default function PlanningV2Index() {
       });
     },
     onSettled: () => {
-      // Always ensure dialog is closed and UI is unfrozen
+      // Always ensure dialog is closed
       setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
-      unfreezeUI('settled-permanent');
     }
   });
 
@@ -819,9 +796,6 @@ export default function PlanningV2Index() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Dev-only unfreeze button */}
-      <UnfreezeButton />
     </div>
     </PlanningV2Shell>
   );

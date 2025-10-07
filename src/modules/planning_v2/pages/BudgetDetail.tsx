@@ -15,7 +15,6 @@ import { DuplicateBudgetDialog } from '../components/budget/DuplicateBudgetDialo
 import { PlanningExportDialog } from '../components/export/PlanningExportDialog';
 import { useCatalogGrid } from '../hooks/useCatalogGrid';
 import { PlanningV2Shell } from '../components/common/PlanningV2Shell';
-import { UnfreezeButton } from '../components/dev/UnfreezeButton';
 import {
   Tooltip,
   TooltipContent,
@@ -181,9 +180,6 @@ export default function BudgetDetail() {
         budgetId={id!}
         budgetName={budget.name}
       />
-
-      {/* Dev-only unfreeze button */}
-      <UnfreezeButton />
     </div>
     </PlanningV2Shell>
   );
