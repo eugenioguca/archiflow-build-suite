@@ -250,11 +250,14 @@ export default function PlanningV2Index() {
       // 1. Close dialog immediately
       setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
       
-      // 2. Invalidate all related queries
+      // 2. Wait for React to finish unmounting the dialog
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // 3. Invalidate all related queries
       await queryClient.invalidateQueries({ queryKey: ['planning_v2', 'budgets'] });
       await queryClient.invalidateQueries({ queryKey: ['planning_v2'] });
       
-      // 3. Show toast and refresh
+      // 4. Show toast and refresh
       toast({
         title: 'Presupuesto movido a papelera',
         description: 'El presupuesto se movió a la papelera exitosamente'
@@ -281,11 +284,14 @@ export default function PlanningV2Index() {
       // 1. Close dialog immediately
       setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
       
-      // 2. Invalidate all related queries
+      // 2. Wait for React to finish unmounting the dialog
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // 3. Invalidate all related queries
       await queryClient.invalidateQueries({ queryKey: ['planning_v2', 'budgets'] });
       await queryClient.invalidateQueries({ queryKey: ['planning_v2'] });
       
-      // 3. Show toast and refresh
+      // 4. Show toast and refresh
       toast({
         title: 'Presupuesto restaurado',
         description: 'El presupuesto se restauró exitosamente'
@@ -312,11 +318,14 @@ export default function PlanningV2Index() {
       // 1. Close dialog immediately
       setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
       
-      // 2. Invalidate all related queries
+      // 2. Wait for React to finish unmounting the dialog
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // 3. Invalidate all related queries
       await queryClient.invalidateQueries({ queryKey: ['planning_v2', 'budgets'] });
       await queryClient.invalidateQueries({ queryKey: ['planning_v2'] });
       
-      // 3. Show toast and refresh
+      // 4. Show toast and refresh
       toast({
         title: 'Presupuesto eliminado',
         description: 'El presupuesto se eliminó permanentemente'
