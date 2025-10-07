@@ -1,0 +1,27 @@
+name: Block env files
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fail if .env exists
+        run: |
+          # Falla si existe .env o cualquier .env.* versionado
+          if [ -f ".env" ] || git ls-files | grep -E '(^|/)\.env(\.|$)'; then
+            echo "ERROR: .env detected in repo. Remove it and use .env.example + env secrets."
+            exit 1
+          fi
+
+      - name: Simple secret pattern scan
+        run: |
+          # Aviso (no bloquea) si aparecen cadenas que parecen llaves/secretos
+          if git grep -nE 'SUPABASE|service_role|PRIVATE_KEY|API_KEY|BEARER' -- . ':!*.md' ; then
+            echo "WARNING: Suspicious secret-like strings found above. Please review manually."
+          fi
