@@ -376,20 +376,41 @@ export default function PlanningV2Index() {
     });
   };
 
-  const confirmAction = () => {
+  // Cleanup function to ensure modal and body state are reset
+  const cleanupModalState = () => {
+    setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
+    // Remove any stuck scroll locks or modal artifacts
+    document.body.classList.remove('overflow-hidden');
+    document.body.style.pointerEvents = '';
+    const rootEl = document.getElementById('root');
+    if (rootEl) {
+      rootEl.style.pointerEvents = '';
+      rootEl.removeAttribute('aria-hidden');
+    }
+  };
+
+  const confirmAction = async () => {
     if (!deleteDialog.budgetId) return;
 
-    // Execute the appropriate mutation
-    switch (deleteDialog.action) {
-      case 'trash':
-        moveToTrashMutation.mutate(deleteDialog.budgetId);
-        break;
-      case 'restore':
-        restoreMutation.mutate(deleteDialog.budgetId);
-        break;
-      case 'permanent':
-        handleDeleteBudgetPermanently(deleteDialog.budgetId);
-        break;
+    try {
+      // Execute the appropriate mutation
+      switch (deleteDialog.action) {
+        case 'trash':
+          await moveToTrashMutation.mutateAsync(deleteDialog.budgetId);
+          break;
+        case 'restore':
+          await restoreMutation.mutateAsync(deleteDialog.budgetId);
+          break;
+        case 'permanent':
+          await handleDeleteBudgetPermanently(deleteDialog.budgetId);
+          break;
+      }
+    } catch (error) {
+      console.error('Error in confirmAction:', error);
+      // Error handling is already done in mutations
+    } finally {
+      // Always cleanup, even on error or cancellation
+      cleanupModalState();
     }
   };
 
@@ -770,15 +791,16 @@ export default function PlanningV2Index() {
       <AlertDialog 
         open={deleteDialog.open} 
         onOpenChange={(open) => {
-          if (!isDeleting) {
-            setDeleteDialog({ ...deleteDialog, open });
+          if (!isDeleting && !open) {
+            // User is closing the dialog (via backdrop or cancel)
+            cleanupModalState();
           }
         }}
       >
         <AlertDialogContent
           onEscapeKeyDown={(e) => {
             if (!isDeleting) {
-              setDeleteDialog({ open: false, budgetId: null, budgetName: '', action: 'trash' });
+              cleanupModalState();
             } else {
               e.preventDefault();
             }
@@ -813,7 +835,12 @@ export default function PlanningV2Index() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel 
+              disabled={isDeleting}
+              onClick={() => cleanupModalState()}
+            >
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmAction}
               disabled={isDeleting}
