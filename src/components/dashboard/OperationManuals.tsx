@@ -8,8 +8,8 @@ import { Book, Search, Download, ExternalLink, FileText, Filter, Trash2 } from '
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
-import { openDocumentInNewTab, downloadDocument } from '@/lib/documentUtils';
-import { openExternalDoc } from '@/lib/openExternalDoc';
+import { downloadDocument } from '@/lib/documentUtils';
+import { openCompanyManual } from '@/modules/manuals/companyManualsAdapter';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface Manual {
@@ -110,9 +110,28 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
 
   const handleViewDocument = async (manual: Manual) => {
     try {
-      // Si ya es una URL completa, usarla directamente
+      // Usar adapter para manuales de empresa específicos
+      if (manual.category === 'manual_operacion') {
+        await openCompanyManual('operacion');
+        toast({
+          title: "Manual abierto",
+          description: "El manual de operación se ha abierto en una nueva pestaña.",
+        });
+        return;
+      }
+      
+      if (manual.category === 'presentacion_corporativa') {
+        await openCompanyManual('presentacion');
+        toast({
+          title: "Manual abierto",
+          description: "La presentación corporativa se ha abierto en una nueva pestaña.",
+        });
+        return;
+      }
+
+      // Para otros manuales, usar URL directa si está disponible
       if (manual.file_url.startsWith('http://') || manual.file_url.startsWith('https://')) {
-        await openExternalDoc({ type: "url", href: manual.file_url });
+        window.open(manual.file_url, '_blank', 'noopener,noreferrer');
         toast({
           title: "Manual abierto",
           description: "El manual se ha abierto en una nueva pestaña.",
@@ -120,18 +139,11 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
         return;
       }
 
-      // Para paths relativos, usar Storage firmado
-      const normalizedPath = manual.file_url.replace(/^\/+/, '');
-      await openExternalDoc({
-        type: "signed",
-        bucket: "operation-manuals",
-        path: normalizedPath,
-        expiresIn: 600
-      });
-      
+      // Fallback: abrir path relativo como URL
       toast({
-        title: "Manual abierto",
-        description: "El manual se ha abierto en una nueva pestaña.",
+        title: "Error",
+        description: "No se pudo determinar la ubicación del manual.",
+        variant: "destructive"
       });
     } catch (error) {
       console.error('Error opening manual:', error);
