@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { downloadDocument } from '@/lib/documentUtils';
-import { openCompanyManual } from '@/modules/manuals/companyManualsAdapter';
+import { useCompanyManualUrl } from '@/modules/manuals/useCompanyManualUrl';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface Manual {
@@ -45,6 +45,10 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { isAdmin } = useUserRole();
+  
+  // Prefetch signed URLs for company manuals
+  const operacionUrl = useCompanyManualUrl('operacion');
+  const presentacionUrl = useCompanyManualUrl('presentacion');
 
   useEffect(() => {
     fetchManuals();
@@ -110,26 +114,7 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
 
   const handleViewDocument = async (manual: Manual) => {
     try {
-      // Usar adapter para manuales de empresa específicos
-      if (manual.category === 'manual_operacion') {
-        await openCompanyManual('operacion');
-        toast({
-          title: "Manual abierto",
-          description: "El manual de operación se ha abierto en una nueva pestaña.",
-        });
-        return;
-      }
-      
-      if (manual.category === 'presentacion_corporativa') {
-        await openCompanyManual('presentacion');
-        toast({
-          title: "Manual abierto",
-          description: "La presentación corporativa se ha abierto en una nueva pestaña.",
-        });
-        return;
-      }
-
-      // Para otros manuales, usar URL directa si está disponible
+      // Para manuales regulares, usar URL directa si está disponible
       if (manual.file_url.startsWith('http://') || manual.file_url.startsWith('https://')) {
         window.open(manual.file_url, '_blank', 'noopener,noreferrer');
         toast({
@@ -147,13 +132,9 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
       });
     } catch (error) {
       console.error('Error opening manual:', error);
-      // Mensaje específico para manuales de empresa
-      const isCompanyManual = manual.category === 'manual_operacion' || manual.category === 'presentacion_corporativa';
       toast({
         title: "Error al abrir manual",
-        description: isCompanyManual 
-          ? "Manual no disponible. Contacta a soporte."
-          : (error instanceof Error ? error.message : "No se pudo abrir el manual."),
+        description: error instanceof Error ? error.message : "No se pudo abrir el manual.",
         variant: "destructive"
       });
     }
@@ -359,15 +340,51 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
                         </div>
                         
                         <div className="flex items-center space-x-1 ml-2">
-                          <Button
-                            onClick={() => handleViewDocument(manual)}
-                            variant="outline"
-                            size="sm"
-                            className="h-8 px-2"
-                            title="Expandir"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                          </Button>
+                          {/* Render direct link for company manuals */}
+                          {manual.category === 'manual_operacion' && operacionUrl.url ? (
+                            <a
+                              href={operacionUrl.url}
+                              target="_blank"
+                              rel="noopener"
+                              className="inline-flex items-center justify-center h-8 px-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium transition-colors"
+                              title="Expandir"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          ) : manual.category === 'presentacion_corporativa' && presentacionUrl.url ? (
+                            <a
+                              href={presentacionUrl.url}
+                              target="_blank"
+                              rel="noopener"
+                              className="inline-flex items-center justify-center h-8 px-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium transition-colors"
+                              title="Expandir"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          ) : (
+                            <Button
+                              onClick={() => {
+                                // For company manuals without URL, retry fetching
+                                if (manual.category === 'manual_operacion') {
+                                  operacionUrl.refresh();
+                                } else if (manual.category === 'presentacion_corporativa') {
+                                  presentacionUrl.refresh();
+                                } else {
+                                  handleViewDocument(manual);
+                                }
+                              }}
+                              variant="outline"
+                              size="sm"
+                              className="h-8 px-2"
+                              title="Expandir"
+                              disabled={
+                                (manual.category === 'manual_operacion' && operacionUrl.loading) ||
+                                (manual.category === 'presentacion_corporativa' && presentacionUrl.loading)
+                              }
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                            </Button>
+                          )}
                           <Button
                             onClick={() => handleDownloadDocument(manual)}
                             variant="outline"
