@@ -11,7 +11,7 @@ interface UseSignedUrlRotatingParams {
 interface UseSignedUrlRotatingReturn {
   url: string | null;
   loading: boolean;
-  error: Error | null;
+  error: string | null;
   refresh: () => Promise<void>;
 }
 
@@ -22,47 +22,60 @@ export function useSignedUrlRotating({
   refreshSec,
 }: UseSignedUrlRotatingParams): UseSignedUrlRotatingReturn {
   const [url, setUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // Calculate refresh interval (default 80% of TTL)
-  const refreshInterval = refreshSec ? refreshSec * 1000 : ttlSec * 0.8 * 1000;
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const intervalRef = useRef<number | null>(null);
+  const refreshingRef = useRef(false);
+  const pathRef = useRef(path);
+  pathRef.current = path;
 
-  const signUrl = useCallback(async (retryOnJwtError = true): Promise<void> => {
+  const signUrl = useCallback(async (): Promise<void> => {
+    if (refreshingRef.current) return;
+    refreshingRef.current = true;
+    
     try {
       setLoading(true);
       setError(null);
 
       const { data, error: signError } = await supabase.storage
         .from(bucket)
-        .createSignedUrl(path, ttlSec);
+        .createSignedUrl(pathRef.current, ttlSec);
 
       if (signError || !data?.signedUrl) {
         throw signError || new Error('No se pudo crear la URL firmada');
       }
 
       setUrl(data.signedUrl);
-      setLoading(false);
     } catch (e: any) {
       const errorMsg = String(e?.message || e);
       
       // Retry once if JWT/exp error
-      if (retryOnJwtError && (errorMsg.includes('JWT') || errorMsg.includes('exp'))) {
+      if (/InvalidJWT|exp/i.test(errorMsg)) {
         try {
           await new Promise(resolve => setTimeout(resolve, 500));
-          return await signUrl(false);
+          const { data, error: signError } = await supabase.storage
+            .from(bucket)
+            .createSignedUrl(pathRef.current, ttlSec);
+          
+          if (signError || !data?.signedUrl) {
+            throw signError || new Error('No se pudo crear la URL firmada');
+          }
+          
+          setUrl(data.signedUrl);
+          setError(null);
         } catch (retryError: any) {
-          setError(retryError);
-          setLoading(false);
-          return;
+          setError(String(retryError?.message || retryError));
+          setUrl(null);
         }
+      } else {
+        setError(errorMsg);
+        setUrl(null);
       }
-      
-      setError(e);
+    } finally {
       setLoading(false);
+      refreshingRef.current = false;
     }
-  }, [bucket, path, ttlSec]);
+  }, [bucket, ttlSec]);
 
   const refresh = useCallback(async () => {
     await signUrl();
@@ -72,19 +85,22 @@ export function useSignedUrlRotating({
     // Initial sign
     signUrl();
 
+    // Calculate refresh interval (default 80% of TTL, minimum 60 seconds)
+    const interval = refreshSec ?? Math.max(60, Math.floor(ttlSec * 0.8));
+    
     // Setup auto-refresh
-    intervalRef.current = setInterval(() => {
+    intervalRef.current = window.setInterval(() => {
       signUrl();
-    }, refreshInterval);
+    }, interval * 1000);
 
     // Cleanup
     return () => {
       if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+        window.clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
     };
-  }, [signUrl, refreshInterval]);
+  }, [signUrl, ttlSec, refreshSec]);
 
   return { url, loading, error, refresh };
 }
