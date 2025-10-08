@@ -118,4 +118,69 @@ test.describe('Dashboard - Manuales de Operación', () => {
       expect(href).toMatch(/storage\.supabase\.co|supabase\.co\/storage\/v1\/object/i);
     }
   });
+
+  // ========== TESTS CRÍTICOS DE BLINDAJE ==========
+
+  test('lista sin alertas rojas - no debe existir texto "Error en Manual"', async ({ page }) => {
+    // Wait for manuals section to load
+    await page.waitForSelector('text=Manuales de Operación', { timeout: 10000 });
+    
+    // Wait for any potential errors to appear
+    await page.waitForTimeout(2000);
+    
+    // Verify there are no error messages in the manuals section
+    const errorText = page.locator('text=/error en manual/i');
+    await expect(errorText).toHaveCount(0);
+    
+    // Also check for common error indicators
+    const errorAlerts = page.locator('[role="alert"]').filter({ hasText: /error/i });
+    await expect(errorAlerts).toHaveCount(0);
+    
+    // Verify no destructive toast notifications
+    const destructiveToasts = page.locator('.bg-destructive, [data-variant="destructive"]');
+    await expect(destructiveToasts).toHaveCount(0);
+  });
+
+  test('abrir manual - verifica apertura correcta sin bloqueos', async ({ page, context }) => {
+    // Wait for manuals to load
+    await page.waitForSelector('text=Manuales de Operación', { timeout: 10000 });
+    
+    // Find first manual open link
+    const openButton = page.locator('a[target="_blank"][rel="noopener noreferrer"]').first();
+    await expect(openButton).toBeVisible({ timeout: 10000 });
+    
+    // Hover to trigger prefetch (ensures URL is ready)
+    const manualRow = openButton.locator('..').locator('..').locator('..');
+    await manualRow.hover();
+    await page.waitForTimeout(1500);
+    
+    // Verify the link has a valid href before clicking
+    const href = await openButton.getAttribute('href');
+    expect(href).toBeTruthy();
+    expect(href).not.toBe('#');
+    
+    // Listen for new page event
+    const newPagePromise = context.waitForEvent('page');
+    await openButton.click();
+    const newPage = await newPagePromise;
+    
+    // Wait for new page to start loading
+    await newPage.waitForLoadState('domcontentloaded', { timeout: 15000 });
+    
+    // Verify the URL matches Supabase Storage with PDF
+    const newPageUrl = newPage.url();
+    expect(newPageUrl).toMatch(/storage\.supabase\.co|supabase\.co\/storage\/v1\/object/i);
+    expect(newPageUrl).toMatch(/\.pdf(\?|$)/i);
+    
+    // Verify the URL is a signed URL (contains token parameter)
+    expect(newPageUrl).toContain('token=');
+    
+    // Close the new page
+    await newPage.close();
+    
+    // Verify no error appeared on the main page
+    const errorText = page.locator('text=/error/i');
+    const errorCount = await errorText.count();
+    expect(errorCount).toBe(0);
+  });
 });
