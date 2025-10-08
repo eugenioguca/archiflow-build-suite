@@ -11,6 +11,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { downloadDocument } from '@/lib/documentUtils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { listCompanyManuals, signCompanyManual, type ManualItem } from '@/modules/manuals/companyManualsAdapter';
+import { openCompanyManualPath } from '@/lib/openCompanyManual';
 
 interface Manual extends ManualItem {
   title: string;
@@ -316,17 +317,16 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
                         </div>
                         
                         <div className="flex items-center space-x-1 ml-2">
-                          <a
-                            href={getManualUrl(manual) ?? '#'}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => { if (!getManualUrl(manual)) e.preventDefault(); }}
-                            aria-disabled={!getManualUrl(manual)}
-                            className="inline-flex items-center justify-center h-8 px-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none"
-                            title={getManualUrl(manual) ? "Abrir en nueva pestaña" : "Generando enlace..."}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openCompanyManualPath(manual.path)}
+                            title="Abrir en nueva pestaña"
+                            aria-label="Abrir en nueva pestaña"
+                            className="h-8 px-2"
                           >
                             <ExternalLink className="h-3 w-3" />
-                          </a>
+                          </Button>
                           <Button
                             onClick={() => handleDownloadDocument(manual)}
                             variant="outline"
