@@ -316,27 +316,17 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
                         </div>
                         
                         <div className="flex items-center space-x-1 ml-2">
-                          {getManualUrl(manual) ? (
-                            <a
-                              href={getManualUrl(manual)!}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center justify-center h-8 px-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium transition-colors"
-                              title="Abrir manual"
-                            >
-                              <ExternalLink className="h-3 w-3" />
-                            </a>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 px-2"
-                              disabled
-                              title="URL no disponible"
-                            >
-                              <ExternalLink className="h-3 w-3" />
-                            </Button>
-                          )}
+                          <a
+                            href={getManualUrl(manual) ?? '#'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => { if (!getManualUrl(manual)) e.preventDefault(); }}
+                            aria-disabled={!getManualUrl(manual)}
+                            className="inline-flex items-center justify-center h-8 px-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                            title={getManualUrl(manual) ? "Abrir en nueva pestaña" : "Generando enlace..."}
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
                           <Button
                             onClick={() => handleDownloadDocument(manual)}
                             variant="outline"
