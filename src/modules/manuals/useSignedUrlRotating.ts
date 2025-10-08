@@ -49,6 +49,14 @@ export function useSignedUrlRotating({
     } catch (e: any) {
       const errorMsg = String(e?.message || e);
       
+      // Log error details (without secrets)
+      console.warn('[useSignedUrlRotating] Error signing URL:', {
+        bucket,
+        path: pathRef.current,
+        error: errorMsg,
+        ttlSec
+      });
+      
       // Retry once if JWT/exp error
       if (/InvalidJWT|exp/i.test(errorMsg)) {
         try {
@@ -64,7 +72,13 @@ export function useSignedUrlRotating({
           setUrl(data.signedUrl);
           setError(null);
         } catch (retryError: any) {
-          setError(String(retryError?.message || retryError));
+          const retryMsg = String(retryError?.message || retryError);
+          console.warn('[useSignedUrlRotating] Retry failed:', {
+            bucket,
+            path: pathRef.current,
+            error: retryMsg
+          });
+          setError(retryMsg);
           setUrl(null);
         }
       } else {
