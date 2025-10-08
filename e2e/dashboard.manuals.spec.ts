@@ -30,8 +30,8 @@ test.describe('Dashboard - Manuales de Operación', () => {
     // Wait for manuals list to load
     await page.waitForSelector('text=Manuales de Operación');
     
-    // Find the first manual open link (ExternalLink icon button)
-    const openButton = page.locator('a[target="_blank"][rel="noopener noreferrer"]').first();
+    // Find the first manual open button (Button with ExternalLink icon)
+    const openButton = page.locator('button[title="Abrir en nueva pestaña"]').first();
     
     // Wait for the button to be visible and enabled
     await expect(openButton).toBeVisible({ timeout: 10000 });
@@ -42,12 +42,17 @@ test.describe('Dashboard - Manuales de Operación', () => {
     const newPage = await newPagePromise;
 
     // Wait for the new page to load
-    await newPage.waitForLoadState('domcontentloaded');
+    await newPage.waitForLoadState('domcontentloaded', { timeout: 15000 });
     
-    // Verify the URL points to Supabase Storage
+    // Verify the URL points to Supabase Storage with signed URL
     const url = newPage.url();
     expect(url).toMatch(/storage\.supabase\.co|supabase\.co\/storage\/v1\/object/i);
     expect(url).toMatch(/\.pdf(\?|$)/i);
+    expect(url).toContain('token=');
+
+    // Verify no InvalidJWT or claim timestamp errors in the content
+    const pageContent = await newPage.content();
+    expect(pageContent).not.toMatch(/InvalidJWT|claim timestamp check failed/i);
 
     // Verify main page did not navigate
     expect(page.url()).toBe(initialUrl);
@@ -69,14 +74,11 @@ test.describe('Dashboard - Manuales de Operación', () => {
     // Wait a moment for prefetch to complete
     await page.waitForTimeout(1000);
 
-    // Verify the link has an href (signed URL was fetched)
-    const openLink = manualRow.locator('a[target="_blank"]').first();
-    const href = await openLink.getAttribute('href');
-    
-    expect(href).toBeTruthy();
-    if (href) {
-      expect(href).toMatch(/storage\.supabase\.co|supabase\.co\/storage\/v1\/object/i);
-    }
+    // Verify prefetch was triggered (component stores signed URLs internally)
+    // The button should be visible and ready
+    const openButton = manualRow.locator('button[title="Abrir en nueva pestaña"]');
+    await expect(openButton).toBeVisible();
+    await expect(openButton).toBeEnabled();
   });
 
   test('should filter manuals by search term', async ({ page }) => {
@@ -94,29 +96,21 @@ test.describe('Dashboard - Manuales de Operación', () => {
     await expect(searchInput).toHaveValue('test');
   });
 
-  test('manual links are direct URLs without javascript', async ({ page }) => {
+  test('manual buttons use onClick handler (not direct links)', async ({ page }) => {
     // Wait for manuals list
     await page.waitForSelector('text=Manuales de Operación');
     
-    // Find first manual open link
-    const openLink = page.locator('a[target="_blank"][rel="noopener noreferrer"]').first();
-    await expect(openLink).toBeVisible({ timeout: 10000 });
+    // Find first manual open button
+    const openButton = page.locator('button[title="Abrir en nueva pestaña"]').first();
+    await expect(openButton).toBeVisible({ timeout: 10000 });
     
-    // Hover to trigger prefetch
-    const manualRow = openLink.locator('..').locator('..').locator('..');
-    await manualRow.hover();
-    await page.waitForTimeout(1000);
+    // Verify it's a button (not a link) - uses onClick with just-in-time signing
+    const tagName = await openButton.evaluate(el => el.tagName.toLowerCase());
+    expect(tagName).toBe('button');
     
-    // Get href attribute
-    const href = await openLink.getAttribute('href');
-    
-    // Verify it's a real URL (not # or javascript:)
-    expect(href).toBeTruthy();
-    if (href) {
-      expect(href).not.toBe('#');
-      expect(href).not.toMatch(/^javascript:/);
-      expect(href).toMatch(/storage\.supabase\.co|supabase\.co\/storage\/v1\/object/i);
-    }
+    // Verify it has proper accessibility attributes
+    const ariaLabel = await openButton.getAttribute('aria-label');
+    expect(ariaLabel).toBe('Abrir en nueva pestaña');
   });
 
   // ========== TESTS CRÍTICOS DE BLINDAJE ==========
@@ -141,46 +135,47 @@ test.describe('Dashboard - Manuales de Operación', () => {
     await expect(destructiveToasts).toHaveCount(0);
   });
 
-  test('abrir manual - verifica apertura correcta sin bloqueos', async ({ page, context }) => {
+  test('abrir manual - verifica apertura correcta sin bloqueos ni InvalidJWT', async ({ page, context }) => {
     // Wait for manuals to load
     await page.waitForSelector('text=Manuales de Operación', { timeout: 10000 });
     
-    // Find first manual open link
-    const openButton = page.locator('a[target="_blank"][rel="noopener noreferrer"]').first();
+    // Find first manual open button
+    const openButton = page.locator('button[title="Abrir en nueva pestaña"]').first();
     await expect(openButton).toBeVisible({ timeout: 10000 });
     
-    // Hover to trigger prefetch (ensures URL is ready)
-    const manualRow = openButton.locator('..').locator('..').locator('..');
-    await manualRow.hover();
-    await page.waitForTimeout(1500);
-    
-    // Verify the link has a valid href before clicking
-    const href = await openButton.getAttribute('href');
-    expect(href).toBeTruthy();
-    expect(href).not.toBe('#');
-    
-    // Listen for new page event
+    // Listen for new page event BEFORE clicking to avoid popup blocker
     const newPagePromise = context.waitForEvent('page');
     await openButton.click();
     const newPage = await newPagePromise;
     
-    // Wait for new page to start loading
+    // Wait for new page to load completely
     await newPage.waitForLoadState('domcontentloaded', { timeout: 15000 });
     
-    // Verify the URL matches Supabase Storage with PDF
+    // Verify the URL matches Supabase Storage with signed PDF
     const newPageUrl = newPage.url();
     expect(newPageUrl).toMatch(/storage\.supabase\.co|supabase\.co\/storage\/v1\/object/i);
     expect(newPageUrl).toMatch(/\.pdf(\?|$)/i);
     
-    // Verify the URL is a signed URL (contains token parameter)
+    // CRITICAL: Verify the URL is a signed URL (contains token parameter)
     expect(newPageUrl).toContain('token=');
+    
+    // CRITICAL: Verify no InvalidJWT or JWT errors in the page content
+    const pageContent = await newPage.content();
+    expect(pageContent).not.toMatch(/InvalidJWT|JWT.*expired|claim timestamp check failed/i);
+    
+    // Also verify the page doesn't show JSON error response
+    expect(pageContent).not.toMatch(/\{"error":/i);
     
     // Close the new page
     await newPage.close();
     
-    // Verify no error appeared on the main page
+    // Verify no error appeared on the main dashboard page
     const errorText = page.locator('text=/error/i');
     const errorCount = await errorText.count();
     expect(errorCount).toBe(0);
+    
+    // Verify no destructive toasts appeared
+    const destructiveToasts = page.locator('.bg-destructive, [data-variant="destructive"]');
+    await expect(destructiveToasts).toHaveCount(0);
   });
 });
