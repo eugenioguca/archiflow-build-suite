@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Book, Search, Download, ExternalLink, FileText, Filter, Trash2 } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Book, Search, Download, ExternalLink, FileText, Filter, Trash2, Copy, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -174,6 +175,33 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
     return colors[category || 'General'] || 'bg-gray-100 text-gray-800';
   };
 
+  const handleCopyLink = async (url: string | null, refresh: () => void) => {
+    if (!url) {
+      // If no URL, try to refresh first
+      await refresh();
+      toast({
+        title: "Reintentando",
+        description: "Generando el enlace nuevamente...",
+      });
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({
+        title: "Enlace copiado",
+        description: "El enlace del manual ha sido copiado al portapapeles.",
+      });
+    } catch (error) {
+      console.error('Error copying link:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo copiar el enlace.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const deleteManual = async (manual: Manual) => {
     try {
       // First, delete the file from storage if it exists
@@ -255,6 +283,45 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
         </CardHeader>
         
         <CardContent className="space-y-4">
+          {/* Error alerts for company manuals */}
+          {operacionUrl.error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error en Manual de Operación</AlertTitle>
+              <AlertDescription className="flex items-center justify-between">
+                <span>No pudimos generar el enlace del manual. Intenta de nuevo o contáctanos.</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleCopyLink(operacionUrl.url, operacionUrl.refresh)}
+                  className="ml-2"
+                >
+                  <Copy className="h-3 w-3 mr-1" />
+                  Copiar enlace
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {presentacionUrl.error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error en Presentación Corporativa</AlertTitle>
+              <AlertDescription className="flex items-center justify-between">
+                <span>No pudimos generar el enlace del manual. Intenta de nuevo o contáctanos.</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleCopyLink(presentacionUrl.url, presentacionUrl.refresh)}
+                  className="ml-2"
+                >
+                  <Copy className="h-3 w-3 mr-1" />
+                  Copiar enlace
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Search and Filters */}
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
@@ -376,7 +443,12 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
                               variant="outline"
                               size="sm"
                               className="h-8 px-2"
-                              title="Expandir"
+                              title={
+                                (manual.category === 'manual_operacion' && operacionUrl.loading) ||
+                                (manual.category === 'presentacion_corporativa' && presentacionUrl.loading)
+                                  ? "Generando enlace..."
+                                  : "Expandir"
+                              }
                               disabled={
                                 (manual.category === 'manual_operacion' && operacionUrl.loading) ||
                                 (manual.category === 'presentacion_corporativa' && presentacionUrl.loading)
