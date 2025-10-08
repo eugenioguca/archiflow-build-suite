@@ -4,13 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Book, Search, Download, ExternalLink, FileText, Filter, Trash2, Copy, AlertCircle } from 'lucide-react';
+import { Book, Search, Download, ExternalLink, FileText, Filter, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { downloadDocument } from '@/lib/documentUtils';
-import { useCompanyManualUrl } from '@/modules/manuals/useCompanyManualUrl';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface Manual {
@@ -46,10 +44,6 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { isAdmin } = useUserRole();
-  
-  // Prefetch signed URLs for company manuals
-  const operacionUrl = useCompanyManualUrl('operacion');
-  const presentacionUrl = useCompanyManualUrl('presentacion');
 
   useEffect(() => {
     fetchManuals();
@@ -113,32 +107,11 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
     return FileText;
   };
 
-  const handleViewDocument = async (manual: Manual) => {
-    try {
-      // Para manuales regulares, usar URL directa si está disponible
-      if (manual.file_url.startsWith('http://') || manual.file_url.startsWith('https://')) {
-        window.open(manual.file_url, '_blank', 'noopener,noreferrer');
-        toast({
-          title: "Manual abierto",
-          description: "El manual se ha abierto en una nueva pestaña.",
-        });
-        return;
-      }
-
-      // Fallback: abrir path relativo como URL
-      toast({
-        title: "Error",
-        description: "No se pudo determinar la ubicación del manual.",
-        variant: "destructive"
-      });
-    } catch (error) {
-      console.error('Error opening manual:', error);
-      toast({
-        title: "Error al abrir manual",
-        description: error instanceof Error ? error.message : "No se pudo abrir el manual.",
-        variant: "destructive"
-      });
+  const getManualUrl = (manual: Manual): string | null => {
+    if (manual.file_url.startsWith('http://') || manual.file_url.startsWith('https://')) {
+      return manual.file_url;
     }
+    return null;
   };
 
   const handleDownloadDocument = async (manual: Manual) => {
@@ -175,32 +148,6 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
     return colors[category || 'General'] || 'bg-gray-100 text-gray-800';
   };
 
-  const handleCopyLink = async (url: string | null, refresh: () => void) => {
-    if (!url) {
-      // If no URL, try to refresh first
-      await refresh();
-      toast({
-        title: "Reintentando",
-        description: "Generando el enlace nuevamente...",
-      });
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(url);
-      toast({
-        title: "Enlace copiado",
-        description: "El enlace del manual ha sido copiado al portapapeles.",
-      });
-    } catch (error) {
-      console.error('Error copying link:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo copiar el enlace.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const deleteManual = async (manual: Manual) => {
     try {
@@ -283,45 +230,6 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
         </CardHeader>
         
         <CardContent className="space-y-4">
-          {/* Error alerts for company manuals */}
-          {operacionUrl.error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error en Manual de Operación</AlertTitle>
-              <AlertDescription className="flex items-center justify-between">
-                <span>No pudimos generar el enlace del manual. Intenta de nuevo o contáctanos.</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleCopyLink(operacionUrl.url, operacionUrl.refresh)}
-                  className="ml-2"
-                >
-                  <Copy className="h-3 w-3 mr-1" />
-                  Copiar enlace
-                </Button>
-              </AlertDescription>
-            </Alert>
-          )}
-          
-          {presentacionUrl.error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error en Presentación Corporativa</AlertTitle>
-              <AlertDescription className="flex items-center justify-between">
-                <span>No pudimos generar el enlace del manual. Intenta de nuevo o contáctanos.</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleCopyLink(presentacionUrl.url, presentacionUrl.refresh)}
-                  className="ml-2"
-                >
-                  <Copy className="h-3 w-3 mr-1" />
-                  Copiar enlace
-                </Button>
-              </AlertDescription>
-            </Alert>
-          )}
-
           {/* Search and Filters */}
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
@@ -407,52 +315,23 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
                         </div>
                         
                         <div className="flex items-center space-x-1 ml-2">
-                          {/* Render direct link for company manuals */}
-                          {manual.category === 'manual_operacion' && operacionUrl.url ? (
+                          {getManualUrl(manual) ? (
                             <a
-                              href={operacionUrl.url}
+                              href={getManualUrl(manual)!}
                               target="_blank"
-                              rel="noopener"
+                              rel="noopener noreferrer"
                               className="inline-flex items-center justify-center h-8 px-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium transition-colors"
-                              title="Expandir"
-                            >
-                              <ExternalLink className="h-3 w-3" />
-                            </a>
-                          ) : manual.category === 'presentacion_corporativa' && presentacionUrl.url ? (
-                            <a
-                              href={presentacionUrl.url}
-                              target="_blank"
-                              rel="noopener"
-                              className="inline-flex items-center justify-center h-8 px-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium transition-colors"
-                              title="Expandir"
+                              title="Abrir manual"
                             >
                               <ExternalLink className="h-3 w-3" />
                             </a>
                           ) : (
                             <Button
-                              onClick={() => {
-                                // For company manuals without URL, retry fetching
-                                if (manual.category === 'manual_operacion') {
-                                  operacionUrl.refresh();
-                                } else if (manual.category === 'presentacion_corporativa') {
-                                  presentacionUrl.refresh();
-                                } else {
-                                  handleViewDocument(manual);
-                                }
-                              }}
                               variant="outline"
                               size="sm"
                               className="h-8 px-2"
-                              title={
-                                (manual.category === 'manual_operacion' && operacionUrl.loading) ||
-                                (manual.category === 'presentacion_corporativa' && presentacionUrl.loading)
-                                  ? "Generando enlace..."
-                                  : "Expandir"
-                              }
-                              disabled={
-                                (manual.category === 'manual_operacion' && operacionUrl.loading) ||
-                                (manual.category === 'presentacion_corporativa' && presentacionUrl.loading)
-                              }
+                              disabled
+                              title="URL no disponible"
                             >
                               <ExternalLink className="h-3 w-3" />
                             </Button>
