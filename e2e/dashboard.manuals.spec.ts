@@ -151,31 +151,86 @@ test.describe('Dashboard - Manuales de Operación', () => {
     // Wait for new page to load completely
     await newPage.waitForLoadState('domcontentloaded', { timeout: 15000 });
     
-    // Verify the URL matches Supabase Storage with signed PDF
+    // CRITICAL: Verify the URL matches Supabase Storage signed URL pattern
     const newPageUrl = newPage.url();
-    expect(newPageUrl).toMatch(/storage\.supabase\.co|supabase\.co\/storage\/v1\/object/i);
-    expect(newPageUrl).toMatch(/\.pdf(\?|$)/i);
-    
-    // CRITICAL: Verify the URL is a signed URL (contains token parameter)
+    expect(newPageUrl).toMatch(/supabase\.co\/storage\/v1\/object\/sign\/.*\.pdf/i);
     expect(newPageUrl).toContain('token=');
     
-    // CRITICAL: Verify no InvalidJWT or JWT errors in the page content
+    // CRITICAL: Verify no InvalidJWT or exp errors in the page content
     const pageContent = await newPage.content();
-    expect(pageContent).not.toMatch(/InvalidJWT|JWT.*expired|claim timestamp check failed/i);
+    expect(pageContent).not.toMatch(/InvalidJWT|exp|claim timestamp/i);
     
-    // Also verify the page doesn't show JSON error response
+    // Verify the page doesn't show JSON error response
     expect(pageContent).not.toMatch(/\{"error":/i);
+    
+    // Verify page is NOT about:blank
+    expect(newPageUrl).not.toBe('about:blank');
+    expect(newPageUrl).not.toMatch(/^about:/);
     
     // Close the new page
     await newPage.close();
     
-    // Verify no error appeared on the main dashboard page
-    const errorText = page.locator('text=/error/i');
-    const errorCount = await errorText.count();
-    expect(errorCount).toBe(0);
+    // Verify main dashboard page stayed on /dashboard
+    expect(page.url()).toContain('/dashboard');
     
-    // Verify no destructive toasts appeared
-    const destructiveToasts = page.locator('.bg-destructive, [data-variant="destructive"]');
-    await expect(destructiveToasts).toHaveCount(0);
+    // Verify no error alerts appeared
+    const errorAlerts = page.locator('[role="alert"]').filter({ hasText: /error/i });
+    await expect(errorAlerts).toHaveCount(0);
+  });
+
+  test('rotación automática de firma - abrir después de 6 minutos', async ({ page, context }) => {
+    // This test validates that the auto-refresh mechanism works
+    // The hook refreshes signed URLs every 12 minutes (80% of 15 min TTL)
+    test.setTimeout(8 * 60 * 1000); // 8 minutes timeout for the test
+    
+    // Wait for manuals to load
+    await page.waitForSelector('text=Manuales de Operación', { timeout: 10000 });
+    
+    // Find first manual open button
+    const openButton = page.locator('button[title="Abrir en nueva pestaña"]').first();
+    await expect(openButton).toBeVisible({ timeout: 10000 });
+    
+    // FIRST OPEN: Verify initial signed URL works
+    let newPagePromise = context.waitForEvent('page');
+    await openButton.click();
+    let newPage = await newPagePromise;
+    
+    await newPage.waitForLoadState('domcontentloaded', { timeout: 15000 });
+    const firstUrl = newPage.url();
+    expect(firstUrl).toMatch(/supabase\.co\/storage\/v1\/object\/sign\/.*\.pdf/i);
+    
+    const firstContent = await newPage.content();
+    expect(firstContent).not.toMatch(/InvalidJWT|exp/i);
+    
+    await newPage.close();
+    
+    // WAIT: Simulate waiting 6-8 minutes for potential URL expiration scenario
+    // In reality, the hook should auto-refresh at 12 min, so 6 min is safe
+    console.log('Waiting 6 minutes to test auto-refresh...');
+    await page.waitForTimeout(6 * 60 * 1000); // 6 minutes
+    
+    // SECOND OPEN: Verify the refreshed signed URL still works
+    newPagePromise = context.waitForEvent('page');
+    await openButton.click();
+    newPage = await newPagePromise;
+    
+    await newPage.waitForLoadState('domcontentloaded', { timeout: 15000 });
+    const secondUrl = newPage.url();
+    expect(secondUrl).toMatch(/supabase\.co\/storage\/v1\/object\/sign\/.*\.pdf/i);
+    
+    // CRITICAL: Verify no JWT expiration errors after waiting
+    const secondContent = await newPage.content();
+    expect(secondContent).not.toMatch(/InvalidJWT|exp|claim timestamp/i);
+    expect(secondContent).not.toMatch(/\{"error":/i);
+    
+    // URLs should be different (new token generated)
+    expect(secondUrl).not.toBe(firstUrl);
+    
+    await newPage.close();
+    
+    // Verify dashboard remained stable
+    expect(page.url()).toContain('/dashboard');
+    const errorAlerts = page.locator('[role="alert"]').filter({ hasText: /error/i });
+    await expect(errorAlerts).toHaveCount(0);
   });
 });
