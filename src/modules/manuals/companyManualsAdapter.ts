@@ -11,96 +11,61 @@ export function getCompanyManualBucket(): string {
 }
 
 /**
- * Mapeo de tipos de manual a categorías en la DB
+ * Item de manual desde Storage
  */
-const MANUAL_CATEGORIES = {
-  operacion: "manual_operacion",
-  presentacion: "presentacion_corporativa",
-} as const;
+export type ManualItem = {
+  name: string;
+  path: string;
+  size?: number | null;
+  category?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  id?: string;
+};
 
 /**
- * Obtiene el path del manual desde la base de datos
- * @param kind - Tipo de manual ('operacion' | 'presentacion')
- * @returns Path del archivo en el bucket o null si no existe
+ * Lista todos los manuales del bucket de empresa
+ * @param prefix - Prefijo para filtrar (default: "manuals/")
+ * @returns Array de manuales disponibles
  */
-export async function getCompanyManualPath(
-  kind: "operacion" | "presentacion"
-): Promise<string | null> {
-  const category = MANUAL_CATEGORIES[kind];
-
-  const { data, error } = await supabase
-    .from("operation_manuals")
-    .select("file_url")
-    .eq("category", category)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
-
-  if (error || !data?.file_url) {
-    console.error(`No se encontró manual de tipo ${kind}:`, error);
-    return null;
-  }
-
-  // Extraer path relativo del bucket
-  // file_url puede ser: https://...supabase.co/storage/v1/object/public/operation-manuals/manuals/123.pdf
-  // o un path relativo como: manuals/123.pdf
-  const url = data.file_url;
+export async function listCompanyManuals(prefix = "manuals/"): Promise<ManualItem[]> {
+  const { data, error } = await supabase.storage
+    .from(COMPANY_MANUALS_BUCKET)
+    .list(prefix, { limit: 100 });
   
-  if (url.includes("/operation-manuals/")) {
-    // Extraer el path después del bucket
-    const parts = url.split("/operation-manuals/");
-    return parts[1] || null;
+  if (error) {
+    console.error("Error listing company manuals:", error);
+    throw error;
   }
   
-  // Si ya es un path relativo
-  return url.startsWith("/") ? url.substring(1) : url;
+  return (data ?? [])
+    .filter(x => !x.name.startsWith(".") && x.name !== "") // Ignora archivos ocultos y vacíos
+    .map(x => ({
+      name: x.name,
+      path: `${prefix}${x.name}`,
+      size: x.metadata?.size ?? null,
+      category: "General",
+      id: x.id,
+      created_at: x.created_at,
+      updated_at: x.updated_at,
+    }));
 }
 
 /**
- * Crea una URL firmada para un manual de empresa
- * @param kind - Tipo de manual ('operacion' | 'presentacion')
+ * Crea una URL firmada para un manual
+ * @param path - Path del archivo en el bucket
  * @param expiresIn - Tiempo de expiración en segundos (default: 600 = 10 minutos)
  * @returns URL firmada
  */
-export async function createCompanyManualSignedUrl(
-  kind: "operacion" | "presentacion",
-  expiresIn: number = 600
-): Promise<string> {
-  const path = await getCompanyManualPath(kind);
-  
-  if (!path) {
-    throw new Error(`No se encontró el manual de ${kind}`);
-  }
-
+export async function signCompanyManual(path: string, expiresIn = 600): Promise<string> {
   const { data, error } = await supabase.storage
     .from(COMPANY_MANUALS_BUCKET)
     .createSignedUrl(path, expiresIn);
-
+  
   if (error || !data?.signedUrl) {
+    console.error("Error signing company manual:", error);
     throw error ?? new Error("No se pudo crear la URL firmada");
   }
-
-  return data.signedUrl;
-}
-
-/**
- * Abre un manual de empresa en una nueva pestaña
- * @param kind - Tipo de manual ('operacion' | 'presentacion')
- */
-export async function openCompanyManual(
-  kind: "operacion" | "presentacion"
-): Promise<void> {
-  const bucket = getCompanyManualBucket();
-  const path = await getCompanyManualPath(kind);
   
-  if (!path) {
-    throw new Error(`No se encontró el manual de ${kind}`);
-  }
-
-  return openExternalDoc({
-    type: "signed",
-    bucket,
-    path,
-    expiresIn: 600,
-  });
+  return data.signedUrl;
 }

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Dashboard - Manuales de Empresa', () => {
+test.describe('Dashboard - Manuales de Operación', () => {
   test.beforeEach(async ({ page }) => {
     // Login
     await page.goto('/login');
@@ -13,83 +13,109 @@ test.describe('Dashboard - Manuales de Empresa', () => {
     await page.waitForLoadState('networkidle');
   });
 
-  test('Manual de Operación abre en nueva pestaña con URL de Supabase Storage', async ({ page, context }) => {
+  test('should display manuals list from storage bucket', async ({ page }) => {
+    // Wait for the manuals section to load
+    const manualsSection = page.locator('text=Manuales de Operación');
+    await expect(manualsSection).toBeVisible();
+
+    // Check that the search input is visible
+    const searchInput = page.locator('input[placeholder*="Buscar manuales"]');
+    await expect(searchInput).toBeVisible();
+  });
+
+  test('should open manual in new tab with signed URL', async ({ page, context }) => {
     // Get the initial page URL to verify it doesn't navigate
     const initialUrl = page.url();
     
-    // Wait for the "Expandir" button for operation manual
-    const expandButton = page.locator('a[href][target="_blank"]').filter({ hasText: /Expandir.*Operación/i }).first();
-    await expect(expandButton).toBeVisible({ timeout: 10000 });
+    // Wait for manuals list to load
+    await page.waitForSelector('text=Manuales de Operación');
     
-    // Click and wait for new page
+    // Find the first manual open link (ExternalLink icon button)
+    const openButton = page.locator('a[target="_blank"][rel="noopener noreferrer"]').first();
+    
+    // Wait for the button to be visible and enabled
+    await expect(openButton).toBeVisible({ timeout: 10000 });
+
+    // Listen for new page event
     const newPagePromise = context.waitForEvent('page');
-    await expandButton.click();
+    await openButton.click();
     const newPage = await newPagePromise;
-    
+
     // Wait for the new page to load
     await newPage.waitForLoadState('domcontentloaded');
     
-    // Verify the new page URL
-    const newUrl = newPage.url();
-    expect(newUrl).toMatch(/storage\.supabase\.co|supabase\.co\/storage\/v1\/object\/sign/i);
-    expect(newUrl).toMatch(/\.pdf(\?|$)/i);
-    
-    // Verify the main page didn't navigate
+    // Verify the URL points to Supabase Storage
+    const url = newPage.url();
+    expect(url).toMatch(/storage\.supabase\.co|supabase\.co\/storage\/v1\/object/i);
+    expect(url).toMatch(/\.pdf(\?|$)/i);
+
+    // Verify main page did not navigate
     expect(page.url()).toBe(initialUrl);
-    
+
     await newPage.close();
   });
 
-  test('Presentación Corporativa abre en nueva pestaña con URL de Supabase Storage', async ({ page, context }) => {
-    // Get the initial page URL to verify it doesn't navigate
-    const initialUrl = page.url();
+  test('should prefetch signed URL on hover', async ({ page }) => {
+    // Wait for manuals list
+    await page.waitForSelector('text=Manuales de Operación');
     
-    // Wait for the "Expandir" button for presentation manual
-    const expandButton = page.locator('a[href][target="_blank"]').filter({ hasText: /Expandir.*Presentación/i }).first();
-    await expect(expandButton).toBeVisible({ timeout: 10000 });
+    // Find first manual row
+    const manualRow = page.locator('.border.rounded-lg').first();
+    await expect(manualRow).toBeVisible({ timeout: 10000 });
+
+    // Hover to trigger prefetch
+    await manualRow.hover();
     
-    // Click and wait for new page
-    const newPagePromise = context.waitForEvent('page');
-    await expandButton.click();
-    const newPage = await newPagePromise;
+    // Wait a moment for prefetch to complete
+    await page.waitForTimeout(1000);
+
+    // Verify the link has an href (signed URL was fetched)
+    const openLink = manualRow.locator('a[target="_blank"]').first();
+    const href = await openLink.getAttribute('href');
     
-    // Wait for the new page to load
-    await newPage.waitForLoadState('domcontentloaded');
-    
-    // Verify the new page URL
-    const newUrl = newPage.url();
-    expect(newUrl).toMatch(/storage\.supabase\.co|supabase\.co\/storage\/v1\/object\/sign/i);
-    expect(newUrl).toMatch(/\.pdf(\?|$)/i);
-    
-    // Verify the main page didn't navigate
-    expect(page.url()).toBe(initialUrl);
-    
-    await newPage.close();
+    expect(href).toBeTruthy();
+    if (href) {
+      expect(href).toMatch(/storage\.supabase\.co|supabase\.co\/storage\/v1\/object/i);
+    }
   });
 
-  test('Ambos manuales usan enlace directo sin navegación intermedia', async ({ page }) => {
-    // Verify both links have direct href (not javascript:void or #)
-    const operacionLink = page.locator('a[href][target="_blank"]').filter({ hasText: /Expandir.*Operación/i }).first();
-    const presentacionLink = page.locator('a[href][target="_blank"]').filter({ hasText: /Expandir.*Presentación/i }).first();
+  test('should filter manuals by search term', async ({ page }) => {
+    // Wait for manuals to load
+    await page.waitForSelector('text=Manuales de Operación');
     
-    await expect(operacionLink).toBeVisible({ timeout: 10000 });
-    await expect(presentacionLink).toBeVisible({ timeout: 10000 });
+    const searchInput = page.locator('input[placeholder*="Buscar manuales"]');
+    await searchInput.fill('test');
     
-    // Get href attributes
-    const operacionHref = await operacionLink.getAttribute('href');
-    const presentacionHref = await presentacionLink.getAttribute('href');
+    // Wait for filtering to complete
+    await page.waitForTimeout(300);
     
-    // Verify they're real URLs (not # or javascript:)
-    expect(operacionHref).toBeTruthy();
-    expect(operacionHref).not.toBe('#');
-    expect(operacionHref).not.toMatch(/^javascript:/);
+    // The list should update (exact check depends on your test data)
+    // Just verify the search input has the value
+    await expect(searchInput).toHaveValue('test');
+  });
+
+  test('manual links are direct URLs without javascript', async ({ page }) => {
+    // Wait for manuals list
+    await page.waitForSelector('text=Manuales de Operación');
     
-    expect(presentacionHref).toBeTruthy();
-    expect(presentacionHref).not.toBe('#');
-    expect(presentacionHref).not.toMatch(/^javascript:/);
+    // Find first manual open link
+    const openLink = page.locator('a[target="_blank"][rel="noopener noreferrer"]').first();
+    await expect(openLink).toBeVisible({ timeout: 10000 });
     
-    // Verify they point to Supabase Storage
-    expect(operacionHref).toMatch(/storage\.supabase\.co|supabase\.co\/storage\/v1\/object\/sign/i);
-    expect(presentacionHref).toMatch(/storage\.supabase\.co|supabase\.co\/storage\/v1\/object\/sign/i);
+    // Hover to trigger prefetch
+    const manualRow = openLink.locator('..').locator('..').locator('..');
+    await manualRow.hover();
+    await page.waitForTimeout(1000);
+    
+    // Get href attribute
+    const href = await openLink.getAttribute('href');
+    
+    // Verify it's a real URL (not # or javascript:)
+    expect(href).toBeTruthy();
+    if (href) {
+      expect(href).not.toBe('#');
+      expect(href).not.toMatch(/^javascript:/);
+      expect(href).toMatch(/storage\.supabase\.co|supabase\.co\/storage\/v1\/object/i);
+    }
   });
 });

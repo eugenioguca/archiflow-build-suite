@@ -10,16 +10,14 @@ import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { downloadDocument } from '@/lib/documentUtils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { listCompanyManuals, signCompanyManual, type ManualItem } from '@/modules/manuals/companyManualsAdapter';
 
-interface Manual {
-  id: string;
+interface Manual extends ManualItem {
   title: string;
-  description: string | null;
-  file_url: string;
-  category: string | null;
-  file_size: number | null;
-  mime_type: string | null;
-  created_at: string;
+  description?: string | null;
+  file_url?: string;
+  mime_type?: string | null;
+  file_size?: number | null;
 }
 
 const CATEGORIES = [
@@ -42,6 +40,7 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [signedUrls, setSignedUrls] = useState<Map<string, string>>(new Map());
   const { toast } = useToast();
   const { isAdmin } = useUserRole();
 
@@ -56,19 +55,27 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
   const fetchManuals = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('operation_manuals')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching manuals:', error);
-        return;
-      }
-
-      setManuals(data || []);
+      const items = await listCompanyManuals("manuals/");
+      
+      const mappedManuals: Manual[] = items.map(item => ({
+        ...item,
+        id: item.id || item.name,
+        title: item.name.replace(/\.(pdf|ppt|pptx)$/i, ''),
+        description: null,
+        file_url: item.path,
+        file_size: item.size,
+        mime_type: item.name.endsWith('.pdf') ? 'application/pdf' : 
+                   item.name.match(/\.(ppt|pptx)$/i) ? 'application/vnd.ms-powerpoint' : null,
+      }));
+      
+      setManuals(mappedManuals);
     } catch (error) {
       console.error('Error fetching manuals:', error);
+      toast({
+        title: "Error al cargar manuales",
+        description: "No se pudieron cargar los manuales. Intenta de nuevo.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -108,23 +115,34 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
   };
 
   const getManualUrl = (manual: Manual): string | null => {
-    if (manual.file_url.startsWith('http://') || manual.file_url.startsWith('https://')) {
-      return manual.file_url;
+    return signedUrls.get(manual.path) || null;
+  };
+
+  const prefetchSignedUrl = async (manual: Manual) => {
+    if (signedUrls.has(manual.path)) return;
+    
+    try {
+      const url = await signCompanyManual(manual.path);
+      setSignedUrls(prev => new Map(prev).set(manual.path, url));
+    } catch (error) {
+      console.error('Error prefetching signed URL:', error);
     }
-    return null;
   };
 
   const handleDownloadDocument = async (manual: Manual) => {
     try {
-      const result = await downloadDocument(manual.file_url, manual.title + '.pdf', 'operation_manual');
-      if (result.success) {
-        toast({
-          title: "Descarga iniciada",
-          description: "El manual se está descargando.",
-        });
-      } else {
-        throw new Error(result.error || 'No se pudo descargar el manual');
-      }
+      const url = await signCompanyManual(manual.path);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = manual.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Descarga iniciada",
+        description: "El manual se está descargando.",
+      });
     } catch (error) {
       console.error('Error downloading manual:', error);
       toast({
@@ -151,29 +169,12 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
 
   const deleteManual = async (manual: Manual) => {
     try {
-      // First, delete the file from storage if it exists
-      if (manual.file_url) {
-        const fileName = manual.file_url.split('/').pop();
-        if (fileName) {
-          const { error: storageError } = await supabase.storage
-            .from('operation-manuals')
-            .remove([`manuals/${fileName}`]);
-          
-          if (storageError) {
-            console.error('Error deleting file from storage:', storageError);
-            // Continue with database deletion even if storage deletion fails
-          }
-        }
-      }
-
-      // Delete the manual record from the database
-      const { error: dbError } = await supabase
-        .from('operation_manuals')
-        .delete()
-        .eq('id', manual.id);
-
-      if (dbError) {
-        throw dbError;
+      const { error: storageError } = await supabase.storage
+        .from('operation-manuals')
+        .remove([manual.path]);
+      
+      if (storageError) {
+        throw storageError;
       }
 
       toast({
@@ -181,7 +182,6 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
         description: `El manual "${manual.title}" ha sido eliminado exitosamente.`,
       });
 
-      // Refresh the manuals list
       await fetchManuals();
     } catch (error) {
       console.error('Error deleting manual:', error);
@@ -283,6 +283,7 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
                   <div
                     key={manual.id}
                     className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/30 transition-colors"
+                    onMouseEnter={() => prefetchSignedUrl(manual)}
                   >
                     <div className="p-2 bg-info/20 rounded-lg">
                       <FileIcon className="h-5 w-5 text-info" />
