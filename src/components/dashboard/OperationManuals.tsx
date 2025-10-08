@@ -1,17 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Book, Search, Download, ExternalLink, FileText, Filter, Trash2 } from 'lucide-react';
+import { Book, Search, Filter } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
-import { downloadDocument } from '@/lib/documentUtils';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { listCompanyManuals, signCompanyManual, type ManualItem } from '@/modules/manuals/companyManualsAdapter';
-import { openCompanyManualPath } from '@/lib/openCompanyManual';
+import { ManualItem as ManualItemComponent } from './ManualItem';
 
 interface Manual extends ManualItem {
   title: string;
@@ -41,7 +37,6 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [signedUrls, setSignedUrls] = useState<Map<string, string>>(new Map());
   const { toast } = useToast();
   const { isAdmin } = useUserRole();
 
@@ -107,29 +102,6 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
     return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
   };
 
-  const getFileIcon = (mimeType: string | null) => {
-    if (!mimeType) return FileText;
-    if (mimeType.includes('pdf')) return FileText;
-    if (mimeType.includes('word')) return FileText;
-    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return FileText;
-    return FileText;
-  };
-
-  const getManualUrl = (manual: Manual): string | null => {
-    return signedUrls.get(manual.path) || null;
-  };
-
-  const prefetchSignedUrl = async (manual: Manual) => {
-    if (signedUrls.has(manual.path)) return;
-    
-    try {
-      const url = await signCompanyManual(manual.path);
-      setSignedUrls(prev => new Map(prev).set(manual.path, url));
-    } catch (error) {
-      console.error('Error prefetching signed URL:', error);
-    }
-  };
-
   const handleDownloadDocument = async (manual: Manual) => {
     try {
       const url = await signCompanyManual(manual.path);
@@ -153,20 +125,6 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
       });
     }
   };
-
-  const getCategoryColor = (category: string | null) => {
-    const colors: Record<string, string> = {
-      'Procedimientos': 'bg-blue-100 text-blue-800',
-      'Seguridad': 'bg-red-100 text-red-800',
-      'Recursos Humanos': 'bg-green-100 text-green-800',
-      'Calidad': 'bg-purple-100 text-purple-800',
-      'Técnico': 'bg-orange-100 text-orange-800',
-      'Administrativo': 'bg-gray-100 text-gray-800',
-      'General': 'bg-indigo-100 text-indigo-800'
-    };
-    return colors[category || 'General'] || 'bg-gray-100 text-gray-800';
-  };
-
 
   const deleteManual = async (manual: Manual) => {
     try {
@@ -277,101 +235,16 @@ export function OperationManuals({ showDeleteButton = false }: OperationManualsP
             </div>
           ) : (
             <div className="space-y-3 max-h-96 overflow-y-auto">
-              {filteredManuals.map((manual) => {
-                const FileIcon = getFileIcon(manual.mime_type);
-                
-                return (
-                  <div
-                    key={manual.id}
-                    className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/30 transition-colors"
-                    onMouseEnter={() => prefetchSignedUrl(manual)}
-                  >
-                    <div className="p-2 bg-info/20 rounded-lg">
-                      <FileIcon className="h-5 w-5 text-info" />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between">
-                        <div className="min-w-0 flex-1">
-                          <h4 className="font-medium text-sm truncate">{manual.title}</h4>
-                          {manual.description && (
-                            <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                              {manual.description}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-2 mt-2">
-                            {manual.category && (
-                              <Badge 
-                                variant="secondary" 
-                                className={`text-xs ${getCategoryColor(manual.category)}`}
-                              >
-                                {manual.category}
-                              </Badge>
-                            )}
-                            {manual.file_size && (
-                              <span className="text-xs text-muted-foreground">
-                                {formatFileSize(manual.file_size)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-1 ml-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openCompanyManualPath(manual.path)}
-                            title="Abrir en nueva pestaña"
-                            aria-label="Abrir en nueva pestaña"
-                            className="h-8 px-2"
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            onClick={() => handleDownloadDocument(manual)}
-                            variant="outline"
-                            size="sm"
-                            className="h-8 px-2"
-                          >
-                            <Download className="h-3 w-3" />
-                          </Button>
-                          {isAdmin && showDeleteButton && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>¿Eliminar manual?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Esta acción eliminará permanentemente el manual "{manual.title}" 
-                                    y no se podrá recuperar. ¿Estás seguro de que deseas continuar?
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => deleteManual(manual)}
-                                    className="bg-red-600 hover:bg-red-700"
-                                  >
-                                    Eliminar
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {filteredManuals.map((manual) => (
+                <ManualItemComponent
+                  key={manual.id}
+                  manual={manual}
+                  onDownload={handleDownloadDocument}
+                  onDelete={deleteManual}
+                  showDeleteButton={showDeleteButton}
+                  isAdmin={isAdmin}
+                />
+              ))}
             </div>
           )}
 
