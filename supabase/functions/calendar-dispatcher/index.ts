@@ -64,45 +64,62 @@ serve(async (req) => {
     const { data: dueReminders, error: queryError } = await query;
 
     if (queryError) {
-      console.error('Error querying reminders:', queryError);
+      console.error('❌ Error querying reminders:', queryError);
       throw queryError;
     }
 
     if (!dueReminders || dueReminders.length === 0) {
-      console.log('No due reminders found');
-      return new Response(JSON.stringify({ dispatched: 0 }), {
+      const result = { job: 'calendar-dispatch', queued: 0, sent: 0, failed: 0, mode };
+      console.log('✅ No due reminders found', result);
+      return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log(`Found ${dueReminders.length} due reminders`);
-    let dispatchedCount = 0;
+    console.log(`📋 Found ${dueReminders.length} due reminders (mode: ${mode})`);
+    let sentCount = 0;
+    let failedCount = 0;
 
     // Process each reminder
     for (const reminder of dueReminders) {
       const userId = reminder.personal_calendar_events.user_id;
+      const reminderId = reminder.id;
+
+      console.log(`📤 Processing reminder ${reminderId} for user ${userId}`);
 
       try {
         if (reminder.channel === 'push') {
           // Get user's push subscription
-          const { data: subscriptions } = await supabaseClient
+          const { data: subscriptions, error: subError } = await supabaseClient
             .from('push_subscriptions')
             .select('*')
             .eq('user_id', userId);
 
-          if (subscriptions && subscriptions.length > 0) {
-            // Send to all user subscriptions
-            for (const subscription of subscriptions) {
-              try {
-                await sendWebPush(subscription, {
-                  title: reminder.personal_calendar_events.title,
-                  body: `Recordatorio de evento`,
-                  icon: '/icon.png',
-                  tag: reminder.event_id,
-                });
-              } catch (pushError) {
-                console.error('Push send error:', pushError);
-              }
+          if (subError) {
+            throw new Error(`Subscription query failed: ${subError.message}`);
+          }
+
+          if (!subscriptions || subscriptions.length === 0) {
+            throw new Error('No push subscriptions found');
+          }
+
+          console.log(`✉️ Sending to ${subscriptions.length} subscription(s)`);
+
+          // Send to all user subscriptions
+          for (const subscription of subscriptions) {
+            try {
+              await sendWebPush(subscription, {
+                title: reminder.personal_calendar_events.title,
+                body: `Recordatorio de evento`,
+                icon: '/icon.png',
+                tag: reminder.event_id,
+              });
+              console.log(`✅ Push sent successfully to endpoint`);
+            } catch (pushError) {
+              // Detailed push error
+              const errorMsg = pushError.message || 'Unknown push error';
+              console.error(`❌ Push send error:`, errorMsg);
+              throw new Error(`Push endpoint error: ${errorMsg.slice(0, 100)}`);
             }
           }
         }
@@ -115,27 +132,42 @@ serve(async (req) => {
             sent_at: new Date().toISOString(),
             error: null,
           })
-          .eq('id', reminder.id);
+          .eq('id', reminderId);
 
-        dispatchedCount++;
+        console.log(`✅ Reminder ${reminderId} marked as sent`);
+        sentCount++;
+
       } catch (error) {
-        console.error(`Failed to dispatch reminder ${reminder.id}:`, error);
+        const errorMessage = error.message || 'Unknown error';
+        const shortError = errorMessage.slice(0, 200); // Keep it short
         
-        // Mark as failed
+        console.error(`❌ Failed to dispatch reminder ${reminderId}:`, shortError);
+        
+        // Mark as failed with short error message
         await supabaseClient
           .from('event_alerts')
           .update({
             status: 'failed',
-            error: error.message,
+            error: shortError,
           })
-          .eq('id', reminder.id);
+          .eq('id', reminderId);
+
+        failedCount++;
       }
     }
 
-    console.log({ dispatched: dispatchedCount });
+    const result = {
+      job: 'calendar-dispatch',
+      mode,
+      queued: dueReminders.length,
+      sent: sentCount,
+      failed: failedCount
+    };
+
+    console.log('📊 Dispatch summary:', result);
 
     return new Response(
-      JSON.stringify({ dispatched: dispatchedCount }),
+      JSON.stringify(result),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }

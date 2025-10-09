@@ -95,12 +95,14 @@ export function CalendarDebugPanel() {
       };
       console.info("📋 DEBUG - Recordatorio programado:", debugInfo);
 
-      console.log("✅ Test event and reminder created successfully");
+      console.info("✅ Test event and reminder created successfully");
 
       // Trigger immediate dispatch via edge function (bypass worker)
       try {
-        console.log("🚀 Triggering immediate dispatch for test reminder...");
-        const { error: dispatchError } = await supabase.functions.invoke('calendar-dispatcher', {
+        console.info("🚀 Triggering immediate dispatch for test reminder...");
+        console.info("📋 Dispatch payload:", { mode: 'single', reminder_id: reminderData?.id });
+        
+        const { data: dispatchResult, error: dispatchError } = await supabase.functions.invoke('calendar-dispatcher', {
           body: {
             mode: 'single',
             reminder_id: reminderData?.id
@@ -115,7 +117,7 @@ export function CalendarDebugPanel() {
             variant: "default"
           });
         } else {
-          console.log("✅ Immediate dispatch triggered successfully");
+          console.info("✅ Dispatch result:", dispatchResult);
           toast({
             title: "✅ Notificación de prueba enviada",
             description: "Deberías recibir la notificación push en unos segundos",
