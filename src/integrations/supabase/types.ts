@@ -3926,34 +3926,49 @@ export type Database = {
         Row: {
           alert_type: string
           alert_value: number
+          channel: string | null
           created_at: string
+          due_at: string | null
+          error: string | null
           event_id: string
           id: string
           is_triggered: boolean | null
+          sent_at: string | null
           sound_enabled: boolean | null
           sound_type: string | null
+          status: string | null
           updated_at: string
         }
         Insert: {
           alert_type: string
           alert_value: number
+          channel?: string | null
           created_at?: string
+          due_at?: string | null
+          error?: string | null
           event_id: string
           id?: string
           is_triggered?: boolean | null
+          sent_at?: string | null
           sound_enabled?: boolean | null
           sound_type?: string | null
+          status?: string | null
           updated_at?: string
         }
         Update: {
           alert_type?: string
           alert_value?: number
+          channel?: string | null
           created_at?: string
+          due_at?: string | null
+          error?: string | null
           event_id?: string
           id?: string
           is_triggered?: boolean | null
+          sent_at?: string | null
           sound_enabled?: boolean | null
           sound_type?: string | null
+          status?: string | null
           updated_at?: string
         }
         Relationships: [

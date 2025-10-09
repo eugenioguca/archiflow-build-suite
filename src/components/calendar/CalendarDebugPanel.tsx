@@ -5,46 +5,112 @@ import { usePersonalCalendar } from "@/hooks/usePersonalCalendar";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { DateTime } from "luxon";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export function CalendarDebugPanel() {
-  const { createEvent, events, loading } = usePersonalCalendar();
+  const { events, loading } = usePersonalCalendar();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [testTitle, setTestTitle] = useState("Evento de Prueba");
 
   const createTestEvent = async () => {
     if (!user) {
       console.error("❌ No user authenticated");
+      toast({
+        title: "Error",
+        description: "No hay usuario autenticado",
+        variant: "destructive"
+      });
       return;
     }
 
-    const now = new Date();
-    const eventDate = new Date(now.getTime() + 2 * 60 * 1000); // 2 minutes from now
+    try {
+      // Crear timestamp UTC para el recordatorio (+1 minuto desde ahora)
+      const dueAtUtc = DateTime.utc().plus({ minutes: 1 });
+      const dueAtUtcISO = dueAtUtc.toISO();
+      
+      // Crear el evento primero
+      const now = new Date();
+      const eventDate = new Date(now.getTime() + 2 * 60 * 1000); // 2 minutes from now
+      
+      const eventToCreate = {
+        user_id: user.id,
+        title: testTitle,
+        description: "Evento creado para pruebas de debug",
+        start_date: eventDate.toISOString(),
+        end_date: new Date(eventDate.getTime() + 30 * 60 * 1000).toISOString(),
+        all_day: false,
+        color: "#3b82f6",
+        location: "Prueba",
+      };
 
-    const testEvent = {
-      title: testTitle,
-      description: "Evento creado para pruebas de debug",
-      start_date: eventDate.toISOString(),
-      end_date: new Date(eventDate.getTime() + 30 * 60 * 1000).toISOString(), // 30 minutes duration
-      all_day: false,
-      color: "#3b82f6",
-      location: "Prueba",
-      alerts: [
-        {
-          alert_type: "minutes" as const,
+      console.log("🧪 Creating test event:", eventToCreate);
+      
+      const { data: createdEvent, error: eventError } = await supabase
+        .from('personal_calendar_events')
+        .insert(eventToCreate)
+        .select()
+        .single();
+
+      if (eventError || !createdEvent) {
+        throw eventError || new Error("No se pudo crear el evento");
+      }
+
+      console.log("✅ Test event created:", createdEvent);
+
+      // Insertar recordatorio en event_alerts con trazabilidad completa
+      const { data: reminderData, error: reminderError } = await supabase
+        .from('event_alerts')
+        .insert({
+          event_id: createdEvent.id,
+          alert_type: 'minutes',
           alert_value: 1,
           sound_enabled: true,
-          sound_type: "soft" as const,
-        }
-      ]
-    };
+          sound_type: 'soft',
+          channel: 'push',
+          due_at: dueAtUtcISO,
+          status: 'queued',
+          sent_at: null,
+          error: null,
+          is_triggered: false
+        })
+        .select()
+        .single();
 
-    console.log("🧪 Creating test event:", testEvent);
-    
-    try {
-      await createEvent(testEvent);
-      console.log("✅ Test event created successfully");
+      if (reminderError) {
+        throw reminderError;
+      }
+
+      // Log de trazabilidad en consola (dev-only)
+      const debugInfo = {
+        debugReminder: {
+          event_id: createdEvent.id,
+          due_at_utc: dueAtUtcISO,
+          status: 'queued',
+          channel: 'push',
+          reminder_id: reminderData?.id
+        }
+      };
+      console.info("📋 DEBUG - Recordatorio programado:", debugInfo);
+
+      // Toast con hora local
+      const dueAtLocal = dueAtUtc.toLocal();
+      toast({
+        title: "✅ Recordatorio de prueba programado",
+        description: `Se enviará a las ${dueAtLocal.toFormat('HH:mm')} (hora local)`,
+      });
+
+      console.log("✅ Test event and reminder created successfully");
+
     } catch (error) {
-      console.error("❌ Error creating test event:", error);
+      console.error("❌ Error creating test event with reminder:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo crear el recordatorio de prueba",
+        variant: "destructive"
+      });
     }
   };
 
@@ -82,12 +148,13 @@ export function CalendarDebugPanel() {
           disabled={!user}
           className="w-full"
         >
-          Crear Evento de Prueba (con Alerta en 1 min)
+          Crear Evento de Prueba (con Recordatorio en 1 min)
         </Button>
 
         <div className="text-xs text-muted-foreground">
-          <p>Este botón creará un evento con una alerta que se activará en 1 minuto.</p>
+          <p>Este botón creará un evento con un recordatorio que se activará en 1 minuto.</p>
           <p>Revisa la consola del navegador para ver los logs de debug.</p>
+          <p>El recordatorio se insertará en la DB con <code>status='queued'</code> y <code>due_at</code> en UTC.</p>
         </div>
 
         {events.length > 0 && (
