@@ -6,3 +6,6 @@ verify_jwt = false
 [functions.calendar-dispatcher.cron]
 # Run every minute
 schedule = "* * * * *"
+
+[functions.push-save-subscription]
+verify_jwt = true

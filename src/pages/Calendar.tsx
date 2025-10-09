@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Bug } from "lucide-react";
 import { usePersonalCalendar } from "@/hooks/usePersonalCalendar";
 import { CalendarDebugPanel } from "@/components/calendar/CalendarDebugPanel";
-import { ensurePushSubscription, checkPushSubscriptionStatus } from "@/utils/pushNotifications";
+import { ensurePushSubscription, checkPushSubscriptionStatus } from "@/modules/calendar/push/ensurePush";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Calendar() {
@@ -46,16 +46,16 @@ export default function Calendar() {
     
     // Ensure push subscription when opening debug panel
     if (!showDebug) {
-      const success = await ensurePushSubscription();
-      if (success) {
+      const result = await ensurePushSubscription();
+      if (result.ok) {
         toast({
-          title: "Push Notifications Enabled",
+          title: "✅ Push Notifications Enabled",
           description: "You will receive calendar reminders via push notifications",
         });
       } else {
         toast({
-          title: "Push Notifications Setup",
-          description: "Could not setup push notifications. Check console for details.",
+          title: "❌ Push Notifications Setup Failed",
+          description: `Failed at step: ${result.step}. ${result.error}`,
           variant: "destructive",
         });
       }
