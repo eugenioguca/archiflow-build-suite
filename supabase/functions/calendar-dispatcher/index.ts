@@ -29,18 +29,39 @@ serve(async (req) => {
   }
 
   try {
+    // Parse request body for mode and reminder_id
+    let mode = 'cron';
+    let targetReminderId = null;
+    
+    if (req.method === 'POST') {
+      const body = await req.json();
+      mode = body.mode || 'cron';
+      targetReminderId = body.reminder_id || null;
+    }
+
     // Create Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Query reminders due now
-    const { data: dueReminders, error: queryError } = await supabaseClient
+    // Query reminders based on mode
+    let query = supabaseClient
       .from('event_alerts')
       .select('*, personal_calendar_events!inner(title, user_id)')
-      .eq('status', 'queued')
-      .lte('due_at', new Date().toISOString());
+      .eq('status', 'queued');
+
+    if (mode === 'single' && targetReminderId) {
+      // Single mode: process specific reminder
+      query = query.eq('id', targetReminderId);
+      console.log(`Single mode: processing reminder ${targetReminderId}`);
+    } else {
+      // Cron mode: process all due reminders
+      query = query.lte('due_at', new Date().toISOString());
+      console.log('Cron mode: processing all due reminders');
+    }
+
+    const { data: dueReminders, error: queryError } = await query;
 
     if (queryError) {
       console.error('Error querying reminders:', queryError);

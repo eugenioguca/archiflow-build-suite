@@ -95,14 +95,41 @@ export function CalendarDebugPanel() {
       };
       console.info("📋 DEBUG - Recordatorio programado:", debugInfo);
 
-      // Toast con hora local
-      const dueAtLocal = dueAtUtc.toLocal();
-      toast({
-        title: "✅ Recordatorio de prueba programado",
-        description: `Se enviará a las ${dueAtLocal.toFormat('HH:mm')} (hora local)`,
-      });
-
       console.log("✅ Test event and reminder created successfully");
+
+      // Trigger immediate dispatch via edge function (bypass worker)
+      try {
+        console.log("🚀 Triggering immediate dispatch for test reminder...");
+        const { error: dispatchError } = await supabase.functions.invoke('calendar-dispatcher', {
+          body: {
+            mode: 'single',
+            reminder_id: reminderData?.id
+          }
+        });
+
+        if (dispatchError) {
+          console.error("❌ Dispatch error:", dispatchError);
+          toast({
+            title: "⚠️ Recordatorio programado",
+            description: "Se enviará según la programación (no se pudo enviar inmediatamente)",
+            variant: "default"
+          });
+        } else {
+          console.log("✅ Immediate dispatch triggered successfully");
+          toast({
+            title: "✅ Notificación de prueba enviada",
+            description: "Deberías recibir la notificación push en unos segundos",
+          });
+        }
+      } catch (dispatchError) {
+        console.error("❌ Error triggering immediate dispatch:", dispatchError);
+        // Toast con hora local como fallback
+        const dueAtLocal = dueAtUtc.toLocal();
+        toast({
+          title: "✅ Recordatorio de prueba programado",
+          description: `Se enviará a las ${dueAtLocal.toFormat('HH:mm')} (hora local)`,
+        });
+      }
 
     } catch (error) {
       console.error("❌ Error creating test event with reminder:", error);
