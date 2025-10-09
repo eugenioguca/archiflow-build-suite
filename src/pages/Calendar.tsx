@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import { CalendarHeader } from "@/components/calendar/CalendarHeader";
 import { CalendarGrid } from "@/components/calendar/CalendarGrid";
@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Plus, Bug } from "lucide-react";
 import { usePersonalCalendar } from "@/hooks/usePersonalCalendar";
 import { CalendarDebugPanel } from "@/components/calendar/CalendarDebugPanel";
+import { ensurePushSubscription, checkPushSubscriptionStatus } from "@/utils/pushNotifications";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -18,6 +20,47 @@ export default function Calendar() {
   const [showDebug, setShowDebug] = useState(false);
   
   const { events, loading, createEvent, updateEvent, deleteEvent } = usePersonalCalendar();
+  const { toast } = useToast();
+
+  // Setup push notifications on mount
+  useEffect(() => {
+    const setupPushNotifications = async () => {
+      const status = await checkPushSubscriptionStatus();
+      
+      if (!status.isSupported) {
+        console.log('Push notifications not supported');
+        return;
+      }
+
+      if (!status.hasPermission || !status.isSubscribed) {
+        // Will request permission when debug panel is opened or first interaction
+        console.log('Push notifications need setup');
+      }
+    };
+
+    setupPushNotifications();
+  }, []);
+
+  const handleDebugClick = async () => {
+    setShowDebug(!showDebug);
+    
+    // Ensure push subscription when opening debug panel
+    if (!showDebug) {
+      const success = await ensurePushSubscription();
+      if (success) {
+        toast({
+          title: "Push Notifications Enabled",
+          description: "You will receive calendar reminders via push notifications",
+        });
+      } else {
+        toast({
+          title: "Push Notifications Setup",
+          description: "Could not setup push notifications. Check console for details.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
 
   const handleEventClick = (event: any) => {
     setSelectedEvent(event);
@@ -52,7 +95,7 @@ export default function Calendar() {
           <div className="flex items-center gap-2">
             <Button 
               variant="outline" 
-              onClick={() => setShowDebug(!showDebug)} 
+              onClick={handleDebugClick} 
               className="flex items-center gap-2"
             >
               <Bug className="h-4 w-4" />
