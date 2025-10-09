@@ -1,1 +1,8 @@
 project_id = "ycbflvptfgrjclzzlxci"
+
+[functions.calendar-dispatcher]
+verify_jwt = false
+
+[functions.calendar-dispatcher.cron]
+# Run every minute
+schedule = "* * * * *"
