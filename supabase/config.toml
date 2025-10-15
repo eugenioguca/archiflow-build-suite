@@ -9,3 +9,6 @@ schedule = "* * * * *"
 
 [functions.push-save-subscription]
 verify_jwt = true
+
+[functions.push-send-test]
+verify_jwt = true
