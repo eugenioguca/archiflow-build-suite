@@ -8,12 +8,63 @@ import { Badge } from "@/components/ui/badge";
 import { DateTime } from "luxon";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ensurePushSubscription } from "@/modules/calendar/push/ensurePush";
+import { Bell } from "lucide-react";
 
 export function CalendarDebugPanel() {
   const { events, loading } = usePersonalCalendar();
   const { user } = useAuth();
   const { toast } = useToast();
   const [testTitle, setTestTitle] = useState("Evento de Prueba");
+  const [isTestingPush, setIsTestingPush] = useState(false);
+
+  const handleTestPushNotification = async () => {
+    setIsTestingPush(true);
+    try {
+      // 1. Ensure push subscription first
+      console.info("🔔 [Debug] Ensuring push subscription...");
+      const result = await ensurePushSubscription();
+      
+      if (!result.ok) {
+        toast({
+          title: "❌ No se pudo activar notificaciones",
+          description: `Error en paso: ${result.step}. ${result.error}`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.info("✅ [Debug] Push subscription ready");
+
+      // 2. Send test notification via edge function
+      console.info("📤 [Debug] Sending test notification...");
+      const { error } = await supabase.functions.invoke("push-send-test");
+
+      if (error) {
+        console.error("❌ [Debug] Test notification failed:", error);
+        toast({
+          title: "❌ Error al enviar notificación",
+          description: error.message || "Error desconocido",
+          variant: "destructive"
+        });
+      } else {
+        console.info("✅ [Debug] Test notification sent successfully");
+        toast({
+          title: "✅ Notificación de prueba enviada",
+          description: "Deberías ver la notificación en unos segundos",
+        });
+      }
+    } catch (error: any) {
+      console.error("❌ [Debug] Unexpected error:", error);
+      toast({
+        title: "❌ Error inesperado",
+        description: error.message || "Error desconocido",
+        variant: "destructive"
+      });
+    } finally {
+      setIsTestingPush(false);
+    }
+  };
 
   const createTestEvent = async () => {
     if (!user) {
@@ -172,10 +223,30 @@ export function CalendarDebugPanel() {
           />
         </div>
 
+        <div className="space-y-2">
+          <Button 
+            onClick={handleTestPushNotification} 
+            disabled={!user || isTestingPush}
+            className="w-full"
+            variant="default"
+          >
+            <Bell className="mr-2 h-4 w-4" />
+            {isTestingPush ? "Enviando..." : "Probar Notificación Push"}
+          </Button>
+          
+          <div className="text-xs text-muted-foreground p-2 bg-muted rounded">
+            <p><strong>Notificación Push:</strong> Prueba el sistema de notificaciones.</p>
+            <p>• Se solicitará permiso si no lo has dado</p>
+            <p>• Se guardará la suscripción en el backend</p>
+            <p>• Recibirás una notificación de prueba inmediata</p>
+          </div>
+        </div>
+
         <Button 
           onClick={createTestEvent} 
           disabled={!user}
           className="w-full"
+          variant="outline"
         >
           Crear Evento de Prueba (con Recordatorio en 1 min)
         </Button>
